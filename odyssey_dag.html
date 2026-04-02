@@ -1,0 +1,732 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>The Odyssey -- Interactive DAG (Force)</title>
+<script src="https://d3js.org/d3.v7.min.js"></script>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body { background:#111827; color:#e5e7eb; font-family:'Segoe UI',system-ui,sans-serif; overflow:hidden; height:100vh; }
+#app { display:flex; height:100vh; }
+#sidebar { width:320px; background:#1f2937; border-right:1px solid #374151; padding:20px; overflow-y:auto; flex-shrink:0; }
+#sidebar h1 { font-size:18px; color:#f9fafb; margin-bottom:2px; }
+#sidebar .sub { font-size:11px; color:#6b7280; margin-bottom:14px; }
+#sidebar h2 { font-size:12px; color:#9ca3af; text-transform:uppercase; letter-spacing:1px; margin:14px 0 6px; }
+.expr { font-family:'Cascadia Code','Fira Code',monospace; font-size:12px; color:#a5b4fc; background:#111827; padding:8px; border-radius:6px; margin:4px 0 8px; word-break:break-all; }
+.meta { font-size:12px; color:#9ca3af; line-height:1.7; }
+.meta span { color:#d1d5db; }
+.ctrls { display:flex; gap:5px; margin:10px 0; flex-wrap:wrap; }
+.ctrls button { background:#374151; color:#d1d5db; border:1px solid #4b5563; border-radius:6px; padding:4px 10px; font-size:11px; cursor:pointer; }
+.ctrls button:hover { background:#4b5563; color:#f9fafb; }
+.legend { display:flex; flex-wrap:wrap; gap:6px; margin:8px 0 12px; }
+.legend-i { display:flex; align-items:center; gap:3px; font-size:10px; color:#9ca3af; }
+.legend-d { width:10px; height:10px; border-radius:3px; }
+#graph-area { flex:1; position:relative; }
+svg { width:100%; height:100%; }
+.link { stroke-opacity:.5; fill:none; }
+.node { cursor:pointer; }
+.node:hover circle, .node:hover rect { filter:brightness(1.3); }
+.node-bloom rect {
+  animation: bloomRect .55s cubic-bezier(.34,1.56,.64,1);
+  transform-origin: center center;
+  transform-box: fill-box;
+}
+.node-bloom text {
+  animation: bloomFade .4s ease-out;
+}
+@keyframes bloomRect {
+  0%   { transform: scale(0); opacity:0; }
+  50%  { transform: scale(1.15); opacity:1; }
+  100% { transform: scale(1); opacity:1; }
+}
+@keyframes bloomFade {
+  0%   { opacity:0; }
+  60%  { opacity:0; }
+  100% { opacity:1; }
+}
+.group-hull { stroke-width:1; stroke-dasharray:5,3; opacity:.25; }
+#tip { position:absolute; background:#1f2937ee; border:1px solid #4b5563; border-radius:8px; padding:10px 14px; font-size:12px; pointer-events:none; opacity:0; transition:opacity .12s; max-width:280px; z-index:10; }
+#tip .t-e { font-family:'Cascadia Code',monospace; color:#a5b4fc; margin-top:3px; font-size:11px; }
+#tip .t-b { color:#6b7280; font-size:10px; }
+#instr { position:absolute; bottom:14px; left:50%; transform:translateX(-50%); background:#111827dd; border:1px solid #374151; border-radius:8px; padding:6px 14px; font-size:11px; color:#6b7280; pointer-events:none; }
+</style>
+</head>
+<body>
+<div id="app">
+<div id="sidebar">
+  <h1>The Odyssey</h1>
+  <div class="sub">Interactive Force DAG -- Retrocause formalism (FORMAL_MODEL_v2)</div>
+  <div class="ctrls">
+    <button onclick="doCascade()" id="btn-bloom">Bloom</button>
+    <button onclick="doCollapse()">Collapse All</button>
+    <button onclick="doReset()">Reset View</button>
+    <button onclick="doReheat()">Reheat</button>
+  </div>
+  <h2>Legend</h2>
+  <div class="legend">
+    <div class="legend-i"><div class="legend-d" style="background:#38bdf8"></div>Telemachy</div>
+    <div class="legend-i"><div class="legend-d" style="background:#a78bfa"></div>Release & Voyage</div>
+    <div class="legend-i"><div class="legend-d" style="background:#f97316"></div>Apologoi</div>
+    <div class="legend-i"><div class="legend-d" style="background:#2dd4bf"></div>Return</div>
+    <div class="legend-i"><div class="legend-d" style="background:#f43f5e"></div>Vengeance</div>
+    <div class="legend-i"><div class="legend-d" style="background:#fbbf24; width:12px; height:12px; border-radius:50%; border:2px solid #f59e0b"></div>Convergence</div>
+    <div class="legend-i"><div class="legend-d" style="background:transparent; border:1.5px dashed #818cf8; width:10px; height:10px"></div>Divine</div>
+  </div>
+  <div id="info">
+    <h2>Selected Node</h2>
+    <div class="meta" style="color:#4b5563">Click a node to inspect</div>
+  </div>
+</div>
+<div id="graph-area">
+  <svg id="svg"></svg>
+  <div id="tip"></div>
+  <div id="instr">Click to expand/collapse -- drag nodes -- scroll to zoom -- shift+drag to pan</div>
+</div>
+</div>
+
+<script>
+// =============================================================
+// CONFIG (story-specific)
+// =============================================================
+const ROOT_ID = "nostos";
+const TITLE = "The Odyssey";
+
+const ACT = {
+  telemachy:    {c:"#38bdf8", bg:"#0c4a6e"},
+  release:      {c:"#a78bfa", bg:"#1f0a36"},
+  apologoi:     {c:"#f97316", bg:"#431407"},
+  return_act:   {c:"#2dd4bf", bg:"#0a2f2a"},
+  vengeance:    {c:"#f43f5e", bg:"#4c0519"},
+};
+
+// =============================================================
+// DATA: NODES
+// =============================================================
+const N = [
+  // ROOT
+  {id:"nostos",label:"NOSTOS OF ODYSSEUS",x:"nostos(odysseus, troy, ithaca)",p:null,bk:"1-24"},
+
+  // ========== ACT 1: TELEMACHY (Bk 1-4) ==========
+  {id:"telemachy",label:"TELEMACHY",x:"telemachy(telemachus, athena)",p:"nostos",bk:"1-4"},
+
+  {id:"divine_c1",label:"Divine council",x:"divine_council(athena, zeus)",p:"telemachy",bk:"1.1-95",dv:1},
+  {id:"ath_mentes",label:"Athena visits as Mentes",x:"aid(athena, telemachus, as(mentes))",p:"telemachy",bk:"1.96-324",dv:1},
+  {id:"counsel_tel",label:"Athena counsels search",x:"counsel(athena, telemachus)",p:"telemachy",bk:"1.252-305"},
+  {id:"confront_s",label:"Telemachus confronts suitors",x:"confront(telemachus, suitors)",p:"telemachy",bk:"1.325-424"},
+  {id:"assembly",label:"Ithaca assembly",x:"assemble(telemachus, ithaca)",p:"telemachy",bk:"2.1-259"},
+  {id:"ath_mentor",label:"Athena provides ship",x:"aid(athena, telemachus, as(mentor))",p:"telemachy",bk:"2.260-295",dv:1},
+  {id:"j_pylos",label:"Sails to Pylos",x:"journey(telemachus, ithaca, pylos)",p:"telemachy",bk:"3"},
+  {id:"host_nestor",label:"Nestor hosts Telemachus",x:"hospitality(nestor, telemachus)",p:"telemachy",bk:"3.31-485"},
+  {id:"j_sparta",label:"Travels to Sparta",x:"journey(telemachus, pylos, sparta)",p:"telemachy",bk:"3.486"},
+  {id:"host_menel",label:"Menelaus hosts Telemachus",x:"hospitality(menelaus, telemachus)",p:"telemachy",bk:"4.1-624"},
+  {id:"learn_alive",label:"Learns father is alive",x:"learn(telemachus, alive(odysseus))",p:"telemachy",bk:"4.555"},
+  {id:"ambush_plot",label:"Suitors plot ambush",x:"scheme(suitors, telemachus)",p:"telemachy",bk:"4.625-786"},
+  {id:"pen_grieves",label:"Penelope grieves",x:"mourn(penelope, odysseus)",p:"telemachy",bk:"4.787"},
+  {id:"ath_dream",label:"Athena sends dream",x:"aid(athena, penelope, with(dream))",p:"telemachy",bk:"4.795",dv:1},
+
+  // ========== ACT 2: RELEASE & VOYAGE (Bk 5-8, 13) ==========
+  {id:"release",label:"RELEASE & VOYAGE",x:"release_and_voyage(odysseus, calypso, scheria)",p:"nostos",bk:"5-8,13"},
+
+  {id:"divine_c2",label:"Second divine council",x:"divine_council(athena, zeus)",p:"release",bk:"5.1-42",dv:1},
+  {id:"zeus_hermes",label:"Zeus sends Hermes",x:"command(zeus, hermes, release(calypso))",p:"release",bk:"5.28",dv:1},
+  {id:"calypso_rel",label:"Calypso releases Odysseus",x:"release(calypso, odysseus)",p:"release",bk:"5.43-227"},
+  {id:"tempt_immort",label:"Offers immortality",x:"tempt(calypso, odysseus, immortality)",p:"release",bk:"5.203"},
+  {id:"resist_cal",label:"Odysseus refuses",x:"resist(odysseus, calypso)",p:"release",bk:"5.215"},
+  {id:"build_raft",label:"Builds raft",x:"build(odysseus, raft)",p:"release",bk:"5.228-261"},
+  {id:"pos_storm",label:"Poseidon's storm",x:"wreck(poseidon, odysseus, with(storm))",p:"release",bk:"5.282-387",dv:1},
+  {id:"ath_calm",label:"Athena calms sea",x:"aid(athena, odysseus, with(calming_wind))",p:"release",bk:"5.382",dv:1},
+  {id:"arr_scheria",label:"Washes ashore Scheria",x:"arrive(odysseus, scheria)",p:"release",bk:"5.441"},
+  {id:"nausicaa",label:"Meets Nausicaa",x:"encounter(odysseus, nausicaa)",p:"release",bk:"6"},
+  {id:"host_alcin",label:"Alcinous hosts Odysseus",x:"hospitality(alcinous, odysseus)",p:"release",bk:"7"},
+  {id:"feast_phae",label:"Feast and games",x:"feast(alcinous, odysseus)",p:"release",bk:"8.1-255"},
+  {id:"weep_demo",label:"Weeps at Demodocus' song",x:"weep(odysseus, nostos)",p:"release",bk:"8.521"},
+  {id:"reveal_alc",label:"Reveals identity",x:"reveal(odysseus, identity, to(alcinous))",p:"release",bk:"9.1-38"},
+  // S3 embedded here narratively
+  {id:"gift_phae",label:"Phaeacians gift treasure",x:"gift(alcinous, odysseus, treasure)",p:"release",bk:"13.1"},
+  {id:"sail_home",label:"Conveyed to Ithaca",x:"sail(phaeacians, odysseus, ithaca)",p:"release",bk:"13.18-92"},
+  {id:"pos_petri",label:"Poseidon petrifies ship",x:"punish(poseidon, phaeacians, with(stone))",p:"release",bk:"13.125",dv:1},
+
+  // ========== ACT 3: APOLOGOI (Bk 9-12) ==========
+  {id:"apologoi",label:"APOLOGOI",x:"narrate(odysseus, alcinous, adventures)",p:"nostos",bk:"9-12"},
+
+  {id:"cicones",label:"Raid on Cicones",x:"sack(odysseus, crew, cicones)",p:"apologoi",bk:"9.39"},
+  {id:"lotus",label:"Lotus-eaters",x:"arrive(odysseus, crew, lotus_land)",p:"apologoi",bk:"9.82"},
+  {id:"tempt_lotus",label:"Crew tempted",x:"tempt(lotus_eaters, crew, oblivion)",p:"lotus",bk:"9.91"},
+  {id:"resist_lot",label:"Odysseus drags crew back",x:"resist(odysseus, lotus_eaters)",p:"lotus",bk:"9.98"},
+
+  {id:"cyclops",label:"Cyclops",x:"encounter(odysseus, polyphemus)",p:"apologoi",bk:"9.105-566"},
+  {id:"trapped",label:"Trapped in cave",x:"violate_hospitality(polyphemus, odysseus)",p:"cyclops",bk:"9.170"},
+  {id:"eaten",label:"Men devoured",x:"devour(polyphemus, crew_members)",p:"cyclops",bk:"9.287"},
+  {id:"nobody",label:"Nobody trick",x:"scheme(odysseus, polyphemus, with(cunning))",p:"cyclops",bk:"9.345"},
+  {id:"blind_poly",label:"Blinds Polyphemus",x:"blind(odysseus, polyphemus, with(olive_stake))",p:"cyclops",bk:"9.375"},
+  {id:"escape_sheep",label:"Escape under sheep",x:"escape(odysseus, crew, with(sheep))",p:"cyclops",bk:"9.415"},
+  {id:"boast",label:"Odysseus boasts name",x:"boast(odysseus, polyphemus, hubris)",p:"cyclops",bk:"9.474"},
+  {id:"CURSE",label:"CYCLOPS CURSE",x:"curse(polyphemus, odysseus)",p:"cyclops",bk:"9.507",cv:1},
+
+  {id:"aeolus_ep",label:"Aeolus",x:"hospitality(aeolus, odysseus)",p:"apologoi",bk:"10.1-76"},
+  {id:"wind_bag",label:"Bag of winds",x:"gift(aeolus, odysseus, bag_of_winds)",p:"aeolus_ep",bk:"10.17"},
+  {id:"crew_opens",label:"Crew opens bag",x:"betray(crew, odysseus, with(opening_bag))",p:"aeolus_ep",bk:"10.28"},
+
+  {id:"laestryg",label:"Laestrygonians",x:"arrive(odysseus, crew, laestrygonians)",p:"apologoi",bk:"10.80"},
+  {id:"lose_ships",label:"11 ships destroyed",x:"lose(odysseus, eleven_ships)",p:"laestryg",bk:"10.119"},
+
+  {id:"circe_ep",label:"Circe",x:"encounter(odysseus, circe)",p:"apologoi",bk:"10.133-12.143"},
+  {id:"pigs",label:"Crew turned to pigs",x:"enchant(circe, crew, with(potion))",p:"circe_ep",bk:"10.210"},
+  {id:"hermes_moly",label:"Hermes gives moly",x:"aid(hermes, odysseus, with(moly))",p:"circe_ep",bk:"10.274",dv:1},
+  {id:"resist_circe",label:"Resists Circe",x:"resist(odysseus, circe, with(moly))",p:"circe_ep",bk:"10.310"},
+  {id:"crew_restored",label:"Crew restored",x:"restore(circe, crew)",p:"circe_ep",bk:"10.383"},
+  {id:"year_circe",label:"One year with Circe",x:"detain(circe, odysseus, aeaea)",p:"circe_ep",bk:"10.449"},
+  {id:"counsel_under",label:"Circe: visit underworld",x:"counsel(circe, odysseus)",p:"circe_ep",bk:"10.488"},
+
+  {id:"underworld",label:"Underworld",x:"journey(odysseus, aeaea, underworld)",p:"apologoi",bk:"11"},
+  {id:"tiresias",label:"Tiresias prophesies",x:"prophesy(tiresias, odysseus)",p:"underworld",bk:"11.90"},
+  {id:"anticleia",label:"Meets dead mother",x:"encounter(odysseus, anticleia)",p:"underworld",bk:"11.152"},
+  {id:"agam_shade",label:"Agamemnon's shade warns",x:"encounter(odysseus, agamemnon_shade)",p:"underworld",bk:"11.385"},
+  {id:"achilles_shade",label:"Achilles: living slave > dead king",x:"encounter(odysseus, achilles_shade)",p:"underworld",bk:"11.465"},
+
+  {id:"return_sea",label:"Return to Sea",x:"dangers(sirens, scylla, charybdis)",p:"apologoi",bk:"12"},
+  {id:"circe_warn",label:"Circe warns of dangers",x:"counsel(circe, odysseus, dangers)",p:"return_sea",bk:"12.1"},
+  {id:"sirens",label:"Resists Sirens",x:"resist(odysseus, sirens, with(wax))",p:"return_sea",bk:"12.154"},
+  {id:"scylla",label:"Scylla takes 6 men",x:"lose(odysseus, crew_members, to(scylla))",p:"return_sea",bk:"12.222"},
+  {id:"thrinacia",label:"Land on Thrinacia",x:"arrive(odysseus, crew, thrinacia)",p:"return_sea",bk:"12.260"},
+  {id:"eat_cattle",label:"Crew eats sacred cattle",x:"sacrifice(crew, helios_cattle)",p:"return_sea",bk:"12.340"},
+  {id:"zeus_bolt",label:"Zeus destroys ship",x:"punish(zeus, crew, with(thunderbolt))",p:"return_sea",bk:"12.399",dv:1},
+  {id:"all_dead",label:"All crew dead",x:"die(crew)",p:"return_sea",bk:"12.417"},
+  {id:"arr_ogygia",label:"Washes up on Ogygia",x:"arrive(odysseus, ogygia)",p:"return_sea",bk:"12.447"},
+  {id:"seven_years",label:"7 years with Calypso",x:"detain(calypso, odysseus, ogygia)",p:"return_sea",bk:"12.449"},
+
+  // ========== ACT 4: RETURN TO ITHACA (Bk 13-16) ==========
+  {id:"return_act",label:"RETURN TO ITHACA",x:"return_to_ithaca(odysseus)",p:"nostos",bk:"13-16"},
+
+  {id:"arr_ithaca",label:"Arrives on Ithaca",x:"arrive(odysseus, ithaca)",p:"return_act",bk:"13.93"},
+  {id:"ath_disguise",label:"Athena disguises as beggar",x:"disguise(athena, odysseus, beggar)",p:"return_act",bk:"13.187",dv:1},
+  {id:"ath_counsel",label:"Athena reveals situation",x:"counsel(athena, odysseus)",p:"return_act",bk:"13.287"},
+  {id:"host_eumaeus",label:"Eumaeus hosts beggar",x:"hospitality(eumaeus, odysseus)",p:"return_act",bk:"14"},
+  {id:"test_eum",label:"Tests Eumaeus' loyalty",x:"test(odysseus, eumaeus, loyalty)",p:"return_act",bk:"14.115"},
+
+  {id:"tel_return",label:"Telemachus Returns",x:"return(telemachus, ithaca)",p:"return_act",bk:"15-16"},
+  {id:"ath_warn_tel",label:"Athena warns: return now",x:"aid(athena, telemachus, with(warning))",p:"tel_return",bk:"15.1",dv:1},
+  {id:"j_home",label:"Sails home, dodges ambush",x:"journey(telemachus, sparta, ithaca)",p:"tel_return",bk:"15.43"},
+  {id:"arr_eumaeus",label:"Arrives at swineherd's hut",x:"arrive(telemachus, eumaeus_hut)",p:"tel_return",bk:"16.1"},
+
+  {id:"REVEAL_SON",label:"REVEALS TO TELEMACHUS",x:"reveal(odysseus, identity, to(telemachus))",p:"return_act",bk:"16.155",cv:1},
+  {id:"ath_restore",label:"Athena restores form",x:"restore(athena, odysseus, appearance)",p:"return_act",bk:"16.172",dv:1},
+  {id:"plan_venge",label:"Father & son plan vengeance",x:"plan(odysseus, telemachus, vengeance)",p:"return_act",bk:"16.234"},
+  {id:"ambush_fail",label:"Suitors' ambush fails",x:"scheme(suitors, failed_ambush)",p:"return_act",bk:"16.342"},
+
+  // ========== ACT 5: VENGEANCE & REUNION (Bk 17-24) ==========
+  {id:"vengeance",label:"VENGEANCE & REUNION",x:"vengeance_and_reunion(odysseus)",p:"nostos",bk:"17-24"},
+
+  {id:"enter_palace",label:"Enters palace as beggar",x:"arrive(odysseus, palace, as(beggar))",p:"vengeance",bk:"17.182"},
+  {id:"argos_rec",label:"Argos recognizes master",x:"recognize(argos, odysseus)",p:"vengeance",bk:"17.290"},
+  {id:"argos_dies",label:"Argos dies",x:"die(argos)",p:"vengeance",bk:"17.326"},
+  {id:"abuse_beg",label:"Suitors abuse beggar",x:"abuse(suitors, odysseus_as_beggar)",p:"vengeance",bk:"17.345"},
+
+  {id:"pen_interview",label:"Penelope interviews beggar",x:"test(odysseus, penelope, loyalty)",p:"vengeance",bk:"19.53"},
+  {id:"SCAR_REC",label:"Eurycleia finds scar",x:"recognize(eurycleia, odysseus, with(scar))",p:"vengeance",bk:"19.386"},
+  {id:"silence_eur",label:"Odysseus silences her",x:"silence(odysseus, eurycleia)",p:"vengeance",bk:"19.467"},
+
+  {id:"bow_contest",label:"Penelope sets bow contest",x:"scheme(penelope, suitors, with(bow_contest))",p:"vengeance",bk:"21.1"},
+  {id:"suitors_fail",label:"Suitors fail to string bow",x:"test(suitors, bow, fail)",p:"vengeance",bk:"21.1-187"},
+  {id:"reveal_serv",label:"Reveals to loyal servants",x:"reveal(odysseus, identity, to(eumaeus))",p:"vengeance",bk:"21.188"},
+  {id:"lock_doors",label:"Doors locked, weapons removed",x:"prepare(odysseus, eumaeus, hall)",p:"vengeance",bk:"21.229"},
+  {id:"STRING_BOW",label:"STRINGS THE BOW",x:"string_bow(odysseus, bow)",p:"vengeance",bk:"21.245",cv:1},
+
+  {id:"kill_antin",label:"Kills Antinous",x:"shoot(odysseus, antinous, with(bow))",p:"vengeance",bk:"22.8"},
+  {id:"reveal_suit",label:"Reveals to suitors",x:"reveal(odysseus, identity, to(suitors))",p:"vengeance",bk:"22.35"},
+  {id:"SLAUGHTER",label:"SLAUGHTER OF SUITORS",x:"slaughter(odysseus, telemachus, suitors)",p:"vengeance",bk:"22.42",cv:1},
+  {id:"ath_aegis",label:"Athena aids with aegis",x:"aid(athena, odysseus, with(aegis))",p:"vengeance",bk:"22.297",dv:1},
+  {id:"punish_mel",label:"Melanthius punished",x:"punish(odysseus, melanthius)",p:"vengeance",bk:"22.435"},
+  {id:"hang_maids",label:"Disloyal maids hanged",x:"hang(odysseus, disloyal_maids)",p:"vengeance",bk:"22.440"},
+  {id:"purify",label:"Hall purified with sulfur",x:"purify(odysseus, palace, with(sulfur))",p:"vengeance",bk:"22.481"},
+
+  {id:"REUNION",label:"REUNION WITH PENELOPE",x:"reunite(odysseus, penelope)",p:"vengeance",bk:"23.1",cv:1},
+  {id:"bed_test",label:"Penelope's bed test",x:"test(penelope, odysseus, with(bed_secret))",p:"vengeance",bk:"23.173"},
+  {id:"bed_proof",label:"Bed is rooted olive tree",x:"verify(penelope, odysseus, with(bed_secret))",p:"vengeance",bk:"23.205"},
+  {id:"pen_accepts",label:"Penelope accepts Odysseus",x:"recognize(penelope, odysseus)",p:"vengeance",bk:"23.205"},
+
+  {id:"meet_laertes",label:"Meets father Laertes",x:"journey(odysseus, countryside, laertes)",p:"vengeance",bk:"24.205"},
+  {id:"laertes_rec",label:"Laertes recognizes son",x:"recognize(laertes, odysseus)",p:"vengeance",bk:"24.280"},
+  {id:"kin_revolt",label:"Suitors' kin revolt",x:"revolt(suitors_kin, odysseus)",p:"vengeance",bk:"24.413"},
+  {id:"ATH_PEACE",label:"ATHENA COMMANDS PEACE",x:"intervene(athena, peace)",p:"vengeance",bk:"24.531",dv:1},
+];
+
+// =============================================================
+// DATA: EDGES
+// =============================================================
+const E = [
+  // TELEMACHY chain
+  ["divine_c1","ath_mentes"],["ath_mentes","counsel_tel"],
+  ["counsel_tel","confront_s"],["counsel_tel","ath_mentor"],
+  ["confront_s","assembly"],["ath_mentor","j_pylos"],
+  ["j_pylos","host_nestor"],["host_nestor","j_sparta"],
+  ["j_sparta","host_menel"],["host_menel","learn_alive"],
+  ["confront_s","ambush_plot"],["ambush_plot","pen_grieves"],
+  ["pen_grieves","ath_dream"],
+
+  // RELEASE chain
+  ["divine_c2","zeus_hermes"],["zeus_hermes","calypso_rel"],
+  ["calypso_rel","tempt_immort"],["tempt_immort","resist_cal"],
+  ["resist_cal","build_raft"],["build_raft","pos_storm"],
+  ["pos_storm","ath_calm"],["ath_calm","arr_scheria"],
+  ["arr_scheria","nausicaa"],["nausicaa","host_alcin"],
+  ["host_alcin","feast_phae"],["feast_phae","weep_demo"],
+  ["weep_demo","reveal_alc"],
+  // after apologoi
+  ["reveal_alc","gift_phae"],["gift_phae","sail_home"],
+  ["sail_home","pos_petri"],
+
+  // APOLOGOI chain
+  ["cicones","lotus"],
+  ["tempt_lotus","resist_lot"],
+  ["lotus","cyclops"],
+  ["trapped","eaten"],["eaten","nobody"],["nobody","blind_poly"],
+  ["blind_poly","escape_sheep"],["escape_sheep","boast"],["boast","CURSE"],
+  // Curse -> Poseidon's storm (cross-act causal link!)
+  ["CURSE","pos_storm"],
+  ["escape_sheep","aeolus_ep"],
+  ["wind_bag","crew_opens"],
+  ["crew_opens","laestryg"],["lose_ships","circe_ep"],
+  ["pigs","hermes_moly"],["hermes_moly","resist_circe"],
+  ["resist_circe","crew_restored"],["crew_restored","year_circe"],
+  ["year_circe","counsel_under"],
+  ["counsel_under","underworld"],
+  ["tiresias","anticleia"],["tiresias","agam_shade"],["agam_shade","achilles_shade"],
+  ["counsel_under","return_sea"],
+  ["circe_warn","sirens"],["sirens","scylla"],["scylla","thrinacia"],
+  ["tiresias","thrinacia"],  // warning connects to the temptation
+  ["thrinacia","eat_cattle"],["eat_cattle","zeus_bolt"],
+  ["zeus_bolt","all_dead"],["all_dead","arr_ogygia"],
+  ["arr_ogygia","seven_years"],
+  // 7 years -> release
+  ["seven_years","calypso_rel"],
+
+  // RETURN chain
+  ["sail_home","arr_ithaca"],
+  ["arr_ithaca","ath_disguise"],["ath_disguise","ath_counsel"],
+  ["ath_counsel","host_eumaeus"],["host_eumaeus","test_eum"],
+  // Telemachus return thread
+  ["learn_alive","ath_warn_tel"],["ath_warn_tel","j_home"],
+  ["j_home","arr_eumaeus"],["ambush_plot","ambush_fail"],["j_home","ambush_fail"],
+  // CONVERGENCE: both arrive at hut
+  ["test_eum","REVEAL_SON"],["arr_eumaeus","REVEAL_SON"],
+  ["REVEAL_SON","ath_restore"],["ath_restore","plan_venge"],
+
+  // VENGEANCE chain
+  ["plan_venge","enter_palace"],["ath_disguise","enter_palace"],
+  ["enter_palace","argos_rec"],["argos_rec","argos_dies"],
+  ["enter_palace","abuse_beg"],
+  ["abuse_beg","pen_interview"],["pen_interview","SCAR_REC"],
+  ["SCAR_REC","silence_eur"],
+  ["pen_interview","bow_contest"],
+  ["bow_contest","suitors_fail"],
+  ["plan_venge","reveal_serv"],["reveal_serv","lock_doors"],
+  // MEGA CONVERGENCE: bow stringing
+  ["plan_venge","STRING_BOW"],["bow_contest","STRING_BOW"],
+  ["suitors_fail","STRING_BOW"],["lock_doors","STRING_BOW"],
+  ["silence_eur","STRING_BOW"],
+  // Slaughter
+  ["STRING_BOW","kill_antin"],["kill_antin","reveal_suit"],
+  ["reveal_suit","SLAUGHTER"],["SLAUGHTER","ath_aegis"],
+  ["SLAUGHTER","punish_mel"],["SLAUGHTER","hang_maids"],
+  ["hang_maids","purify"],
+  // Reunion
+  ["purify","REUNION"],
+  ["REUNION","bed_test"],["bed_test","bed_proof"],["bed_proof","pen_accepts"],
+  // Aftermath
+  ["SLAUGHTER","meet_laertes"],["meet_laertes","laertes_rec"],
+  ["SLAUGHTER","kin_revolt"],["kin_revolt","ATH_PEACE"],
+  ["laertes_rec","ATH_PEACE"],
+];
+
+// =============================================================
+// ENGINE (story-independent from here down)
+// =============================================================
+const nm = {};
+N.forEach(n => nm[n.id] = {...n, ch:[], _exp:false});
+N.forEach(n => { if(n.p && nm[n.p]) nm[n.p].ch.push(n.id); });
+nm[ROOT_ID]._exp = true;
+
+function act(id) {
+  let c = nm[id];
+  while(c) {
+    if(ACT[c.id]) return c.id;
+    c = c.p ? nm[c.p] : null;
+  }
+  return null;
+}
+
+function vis() {
+  const r = [];
+  (function walk(id){
+    if(id===ROOT_ID){ nm[id].ch.forEach(walk); return; }
+    r.push(id);
+    if(nm[id]._exp) nm[id].ch.forEach(walk);
+  })(ROOT_ID);
+  return r;
+}
+
+function visAnc(id) {
+  const s = new Set(vis());
+  let c = id;
+  while(c && !s.has(c)) c = nm[c].p;
+  return c;
+}
+
+function visEdges(vs) {
+  const s = new Set(vs), seen = new Set(), r = [];
+  E.forEach(([a,b]) => {
+    let f = s.has(a)?a:visAnc(a), t = s.has(b)?b:visAnc(b);
+    if(!f||!t||f===t) return;
+    const k=f+"->"+t;
+    if(!seen.has(k)){seen.add(k);r.push({source:f,target:t});}
+  });
+  return r;
+}
+
+function ranks(vs, es) {
+  const indeg = {}, adj = {};
+  vs.forEach(v => { indeg[v]=0; adj[v]=[]; });
+  es.forEach(e => {
+    const s = typeof e.source==='object'?e.source.id:e.source;
+    const t = typeof e.target==='object'?e.target.id:e.target;
+    if(indeg[t]!==undefined) indeg[t]++;
+    if(adj[s]) adj[s].push(t);
+  });
+  const rank = {}, q = vs.filter(v=>indeg[v]===0);
+  q.forEach(v=>rank[v]=0);
+  while(q.length) {
+    const v = q.shift();
+    (adj[v]||[]).forEach(w => {
+      rank[w] = Math.max(rank[w]||0, rank[v]+1);
+      indeg[w]--;
+      if(indeg[w]===0) q.push(w);
+    });
+  }
+  vs.forEach(v => { if(rank[v]===undefined) rank[v]=0; });
+  return rank;
+}
+
+function expSubs() {
+  const r = [];
+  (function walk(id){
+    const n=nm[id];
+    if(n._exp && n.ch.length && id!==ROOT_ID) r.push(id);
+    if(n._exp) n.ch.forEach(walk);
+  })(ROOT_ID);
+  return r;
+}
+
+// --- SVG SETUP ---
+const svg = d3.select("#svg");
+const width = () => document.getElementById("graph-area").clientWidth;
+const height = () => document.getElementById("graph-area").clientHeight;
+
+const defs = svg.append("defs");
+defs.append("marker").attr("id","ah").attr("viewBox","0 0 10 10")
+  .attr("refX",24).attr("refY",5).attr("markerWidth",6).attr("markerHeight",6)
+  .attr("orient","auto")
+  .append("path").attr("d","M0,0 L10,5 L0,10 z").attr("fill","#4b5563");
+
+const filt = defs.append("filter").attr("id","glow").attr("x","-50%").attr("y","-50%").attr("width","200%").attr("height","200%");
+filt.append("feGaussianBlur").attr("stdDeviation","4").attr("result","blur");
+filt.append("feMerge").selectAll("feMergeNode").data(["blur","SourceGraphic"])
+  .join("feMergeNode").attr("in",d=>d);
+
+const g = svg.append("g");
+const hullG = g.append("g");
+const linkG = g.append("g");
+const nodeG = g.append("g");
+
+const zoomBeh = d3.zoom().scaleExtent([0.1,4]).on("zoom",e=>g.attr("transform",e.transform));
+svg.call(zoomBeh);
+
+const tip = d3.select("#tip");
+
+// --- SIMULATION ---
+let sim, linkSel, nodeSel, hullSel;
+let curNodes = [], curEdges = [], curRank = {};
+
+function rebuild() {
+  const vs = vis();
+  const es = visEdges(vs);
+  curRank = ranks(vs, es);
+  const maxRank = Math.max(1, ...Object.values(curRank));
+
+  const oldPos = {};
+  curNodes.forEach(n => { oldPos[n.id] = {x:n.x,y:n.y}; });
+
+  const W = width(), H = height();
+  curNodes = vs.map(id => {
+    const n = nm[id];
+    const a = act(id);
+    const old = oldPos[id];
+    return {
+      id, label:n.label, expr:n.x, bk:n.bk,
+      dv:n.dv, cv:n.cv, hasCh:n.ch.length>0, exp:n._exp,
+      act:a, col: a?ACT[a]:{c:"#6b7280",bg:"#1f2937"},
+      rank: curRank[id],
+      x: old ? old.x : W/2 + (Math.random()-.5)*300,
+      y: old ? old.y : 60 + (curRank[id]/maxRank)*(H-120),
+    };
+  });
+
+  const nodeById = {};
+  curNodes.forEach(n => nodeById[n.id]=n);
+  curEdges = es.map(e => ({source:nodeById[e.source],target:nodeById[e.target]})).filter(e=>e.source&&e.target);
+
+  if(sim) sim.stop();
+  sim = d3.forceSimulation(curNodes)
+    .force("link", d3.forceLink(curEdges).id(d=>d.id).distance(65).strength(.4))
+    .force("charge", d3.forceManyBody().strength(-220).distanceMax(500))
+    .force("collide", d3.forceCollide(38))
+    .force("x", d3.forceX(W/2).strength(.03))
+    .force("y", d3.forceY(d => 60 + (d.rank / Math.max(1,maxRank)) * (H-120)).strength(.35))
+    .alphaDecay(.025)
+    .on("tick", ticked);
+
+  // Links
+  linkSel = linkG.selectAll("path.link").data(curEdges, d=>d.source.id+"->"+d.target.id);
+  linkSel.exit().transition().duration(200).attr("stroke-opacity",0).remove();
+  linkSel = linkSel.enter().append("path").attr("class","link")
+    .attr("stroke","#4b5563").attr("stroke-width",1.2).attr("marker-end","url(#ah)")
+    .merge(linkSel);
+
+  // Nodes
+  nodeSel = nodeG.selectAll("g.node").data(curNodes, d=>d.id);
+  nodeSel.exit().transition().duration(200).style("opacity",0).remove();
+  const enter = nodeSel.enter().append("g")
+    .attr("class",d => {
+      const pn = nm[d.id];
+      const par = pn ? nm[pn.p] : null;
+      return "node" + (par && par._blooming ? " node-bloom" : "");
+    })
+    .style("opacity",0);
+
+  enter.append("rect").attr("rx",8).attr("ry",8).attr("stroke-width",d=>d.cv?3:1.5);
+  enter.append("text").attr("class","nlbl")
+    .attr("text-anchor","middle").attr("dy","0.35em")
+    .attr("fill","#f9fafb").attr("font-size","11px")
+    .style("pointer-events","none");
+  enter.append("text").attr("class","nbadge")
+    .attr("text-anchor","end").attr("dy","0.35em")
+    .attr("fill","#6b7280").attr("font-size","8px")
+    .style("pointer-events","none");
+
+  nodeSel = enter.merge(nodeSel);
+  nodeSel.transition().duration(300).style("opacity",1);
+
+  nodeSel.select("rect")
+    .attr("width",d => Math.max(120, d.label.length*7.2+28))
+    .attr("height",d => d.cv?36:30)
+    .attr("x",d => -Math.max(120,d.label.length*7.2+28)/2)
+    .attr("y",d => d.cv?-18:-15)
+    .attr("fill",d => d.cv?"#422006":d.col.bg)
+    .attr("stroke",d => d.cv?"#fbbf24":d.col.c)
+    .attr("stroke-dasharray",d=>d.dv?"3,2":null)
+    .attr("filter",d=>d.cv?"url(#glow)":null);
+
+  nodeSel.select(".nlbl").text(d => {
+    let t = d.label;
+    if(d.hasCh) t = (d.exp?"[-] ":"[+] ")+t;
+    return t;
+  });
+  nodeSel.select(".nbadge")
+    .text(d=>"Bk "+d.bk)
+    .attr("x",d=>Math.max(120,d.label.length*7.2+28)/2-6)
+    .attr("y",d=>d.cv?13:10);
+
+  nodeSel.call(d3.drag()
+    .on("start",(e,d)=>{if(!e.active)sim.alphaTarget(.1).restart();d.fx=d.x;d.fy=d.y;})
+    .on("drag",(e,d)=>{d.fx=e.x;d.fy=e.y;})
+    .on("end",(e,d)=>{if(!e.active)sim.alphaTarget(0);d.fx=null;d.fy=null;})
+  );
+
+  nodeSel.on("click",(e,d)=>{
+    e.stopPropagation();
+    if(d.hasCh){ nm[d.id]._exp=!nm[d.id]._exp; rebuild(); }
+    showInfo(d.id);
+  });
+
+  nodeSel.on("mouseenter",(e,d)=>{
+    const r=document.getElementById("graph-area").getBoundingClientRect();
+    tip.html(`<b>${d.label}</b><div class="t-e">${d.expr}</div><div class="t-b">Book ${d.bk}${d.cv?" -- CONVERGENCE":""}${d.hasCh?" -- click to "+(d.exp?"collapse":"expand"):""}</div>`)
+      .style("left",(e.clientX-r.left+12)+"px").style("top",(e.clientY-r.top-10)+"px").style("opacity",1);
+  }).on("mouseleave",()=>tip.style("opacity",0));
+
+  drawHulls();
+}
+
+function drawHulls() {
+  const subs = expSubs();
+  const vset = new Set(vis());
+  const hullData = subs.map(sid => {
+    const n = nm[sid];
+    const a = act(sid);
+    const col = a ? ACT[a].c : "#6b7280";
+    const desc = [];
+    (function collect(id){ if(vset.has(id)) desc.push(id); if(nm[id]._exp) nm[id].ch.forEach(collect); })(sid);
+    return {id:sid, label:n.label, col, desc};
+  }).filter(d=>d.desc.length>1);
+
+  hullSel = hullG.selectAll("path.group-hull").data(hullData, d=>d.id);
+  hullSel.exit().transition().duration(200).style("opacity",0).remove();
+  hullSel = hullSel.enter().append("path").attr("class","group-hull")
+    .merge(hullSel)
+    .attr("fill",d=>d.col).attr("stroke",d=>d.col);
+}
+
+function ticked() {
+  linkSel.attr("d", d => {
+    const dy=d.target.y-d.source.y;
+    if(Math.abs(dy)<5) {
+      return `M${d.source.x},${d.source.y} C${d.source.x},${d.source.y+40} ${d.target.x},${d.target.y-40} ${d.target.x},${d.target.y}`;
+    }
+    const mx=(d.source.x+d.target.x)/2, my=(d.source.y+d.target.y)/2;
+    return `M${d.source.x},${d.source.y} Q${d.source.x},${my} ${mx},${my} Q${d.target.x},${my} ${d.target.x},${d.target.y}`;
+  });
+
+  nodeSel.attr("transform",d=>`translate(${d.x},${d.y})`);
+
+  if(hullSel) {
+    const nodeById = {};
+    curNodes.forEach(n=>nodeById[n.id]=n);
+    hullSel.attr("d", d => {
+      const pts = d.desc.map(id=>nodeById[id]).filter(Boolean).map(n=>[n.x,n.y]);
+      if(pts.length<2) return "";
+      const pad = 30;
+      const hull = d3.polygonHull(pts.concat(
+        pts.map(p=>[p[0]-pad,p[1]-pad]),
+        pts.map(p=>[p[0]+pad,p[1]-pad]),
+        pts.map(p=>[p[0]-pad,p[1]+pad]),
+        pts.map(p=>[p[0]+pad,p[1]+pad])
+      ));
+      if(!hull) return "";
+      return "M"+hull.map(p=>p.join(",")).join("L")+"Z";
+    });
+  }
+}
+
+function showInfo(id) {
+  const n = nm[id];
+  const a = act(id);
+  const col = a ? ACT[a].c : "#6b7280";
+  const aLabel = a ? a.replace("_act","").toUpperCase() : "";
+  let dc = 0;
+  (function cnt(i){ dc++; nm[i].ch.forEach(cnt); })(id); dc--;
+
+  const inc = E.filter(e=>e[1]===id).map(e=>nm[e[0]]?.label).filter(Boolean);
+  const out = E.filter(e=>e[0]===id).map(e=>nm[e[1]]?.label).filter(Boolean);
+
+  let h = `<h2 style="color:${col}">${n.label}</h2>`;
+  h += `<div class="expr">${n.x}</div><div class="meta">`;
+  h += `<b>Act:</b> <span>${aLabel}</span><br>`;
+  h += `<b>Book:</b> <span>${n.bk}</span><br>`;
+  if(n.dv) h+= `<b style="color:#818cf8">Divine intervention</b><br>`;
+  if(n.cv) h+= `<b style="color:#fbbf24">Convergence node</b><br>`;
+  if(n.ch.length) h+= `<b>SubDAG:</b> <span>${n.ch.length} children, ${dc} descendants</span><br>`;
+  if(inc.length) h+=`<br><b>Depends on:</b><br><span>${inc.join(", ")}</span>`;
+  if(out.length) h+=`<br><b>Leads to:</b><br><span>${out.join(", ")}</span>`;
+  h+=`</div>`;
+  document.getElementById("info").innerHTML = h;
+}
+
+// --- CONTROLS ---
+let cascadeTimers = [];
+let isCascading = false;
+
+function depthLevels() {
+  const levels = {};
+  (function walk(id, d) {
+    const n = nm[id];
+    if(n.ch.length && id!==ROOT_ID) {
+      if(!levels[d]) levels[d]=[];
+      levels[d].push(id);
+    }
+    n.ch.forEach(c => walk(c, d+1));
+  })(ROOT_ID, 0);
+  return levels;
+}
+
+function zoomToFit(duration) {
+  if(!curNodes.length) return;
+  let x0=Infinity, y0=Infinity, x1=-Infinity, y1=-Infinity;
+  curNodes.forEach(n => {
+    x0=Math.min(x0,n.x-80); y0=Math.min(y0,n.y-30);
+    x1=Math.max(x1,n.x+80); y1=Math.max(y1,n.y+30);
+  });
+  const W=width(), H=height();
+  const bw=x1-x0, bh=y1-y0;
+  if(bw<1||bh<1) return;
+  const scale = Math.min(W/bw, H/bh) * 0.85;
+  const clampedScale = Math.min(Math.max(scale, 0.15), 2);
+  const cx=x0+bw/2, cy=y0+bh/2;
+  const tx=W/2 - cx*clampedScale, ty=H/2 - cy*clampedScale;
+  svg.transition().duration(duration).ease(d3.easeCubicOut)
+    .call(zoomBeh.transform, d3.zoomIdentity.translate(tx,ty).scale(clampedScale));
+}
+
+function doCascade() {
+  if(isCascading) {
+    cascadeTimers.forEach(clearTimeout);
+    cascadeTimers = [];
+    isCascading = false;
+    document.getElementById("btn-bloom").textContent = "Bloom";
+    return;
+  }
+
+  isCascading = true;
+  document.getElementById("btn-bloom").textContent = "Stop";
+
+  Object.values(nm).forEach(n => n._exp=false);
+  nm[ROOT_ID]._exp = true;
+  rebuild();
+
+  const levels = depthLevels();
+  const depths = Object.keys(levels).map(Number).sort((a,b)=>a-b);
+
+  let cumDelay = 500;
+
+  depths.forEach((d, i) => {
+    const t = setTimeout(() => {
+      const nodesAtLevel = levels[d];
+      nodesAtLevel.forEach(id => {
+        nm[id]._exp = true;
+        nm[id]._blooming = true;
+      });
+      rebuild();
+      const zt = setTimeout(() => zoomToFit(600), 250);
+      cascadeTimers.push(zt);
+      const bt = setTimeout(() => {
+        nodesAtLevel.forEach(id => nm[id]._blooming = false);
+      }, 600);
+      cascadeTimers.push(bt);
+    }, cumDelay);
+    cascadeTimers.push(t);
+    cumDelay += 500 + i * 120;
+  });
+
+  const fin = setTimeout(() => {
+    zoomToFit(800);
+    isCascading = false;
+    document.getElementById("btn-bloom").textContent = "Bloom";
+    cascadeTimers = [];
+  }, cumDelay + 300);
+  cascadeTimers.push(fin);
+}
+
+function doCollapse(){
+  if(isCascading){ cascadeTimers.forEach(clearTimeout); cascadeTimers=[]; isCascading=false; document.getElementById("btn-bloom").textContent="Bloom"; }
+  Object.values(nm).forEach(n=>n._exp=false); nm[ROOT_ID]._exp=true; rebuild();
+  setTimeout(()=>zoomToFit(400),200);
+}
+function doReset(){ svg.transition().duration(400).call(zoomBeh.transform, d3.zoomIdentity); }
+function doReheat(){ if(sim) sim.alpha(.6).restart(); }
+
+// --- INIT ---
+rebuild();
+setTimeout(()=>svg.call(zoomBeh.transform, d3.zoomIdentity.translate(100,30).scale(0.85)), 200);
+window.addEventListener("resize",()=>{ if(sim) sim.force("x",d3.forceX(width()/2).strength(.03)); sim.alpha(.3).restart(); });
+</script>
+</body>
+</html>

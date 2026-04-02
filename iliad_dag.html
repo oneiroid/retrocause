@@ -1,0 +1,687 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>The Iliad -- Interactive DAG (Force)</title>
+<script src="https://d3js.org/d3.v7.min.js"></script>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body { background:#111827; color:#e5e7eb; font-family:'Segoe UI',system-ui,sans-serif; overflow:hidden; height:100vh; }
+#app { display:flex; height:100vh; }
+#sidebar { width:320px; background:#1f2937; border-right:1px solid #374151; padding:20px; overflow-y:auto; flex-shrink:0; }
+#sidebar h1 { font-size:18px; color:#f9fafb; margin-bottom:2px; }
+#sidebar .sub { font-size:11px; color:#6b7280; margin-bottom:14px; }
+#sidebar h2 { font-size:12px; color:#9ca3af; text-transform:uppercase; letter-spacing:1px; margin:14px 0 6px; }
+.expr { font-family:'Cascadia Code','Fira Code',monospace; font-size:12px; color:#a5b4fc; background:#111827; padding:8px; border-radius:6px; margin:4px 0 8px; word-break:break-all; }
+.meta { font-size:12px; color:#9ca3af; line-height:1.7; }
+.meta span { color:#d1d5db; }
+.ctrls { display:flex; gap:5px; margin:10px 0; flex-wrap:wrap; }
+.ctrls button { background:#374151; color:#d1d5db; border:1px solid #4b5563; border-radius:6px; padding:4px 10px; font-size:11px; cursor:pointer; }
+.ctrls button:hover { background:#4b5563; color:#f9fafb; }
+.legend { display:flex; flex-wrap:wrap; gap:6px; margin:8px 0 12px; }
+.legend-i { display:flex; align-items:center; gap:3px; font-size:10px; color:#9ca3af; }
+.legend-d { width:10px; height:10px; border-radius:3px; }
+#graph-area { flex:1; position:relative; }
+svg { width:100%; height:100%; }
+.link { stroke-opacity:.5; fill:none; }
+.node { cursor:pointer; }
+.node:hover circle, .node:hover rect { filter:brightness(1.3); }
+.node-bloom rect {
+  animation: bloomRect .55s cubic-bezier(.34,1.56,.64,1);
+  transform-origin: center center;
+  transform-box: fill-box;
+}
+.node-bloom text {
+  animation: bloomFade .4s ease-out;
+}
+@keyframes bloomRect {
+  0%   { transform: scale(0); opacity:0; }
+  50%  { transform: scale(1.15); opacity:1; }
+  100% { transform: scale(1); opacity:1; }
+}
+@keyframes bloomFade {
+  0%   { opacity:0; }
+  60%  { opacity:0; }
+  100% { opacity:1; }
+}
+.group-hull { stroke-width:1; stroke-dasharray:5,3; opacity:.25; }
+#tip { position:absolute; background:#1f2937ee; border:1px solid #4b5563; border-radius:8px; padding:10px 14px; font-size:12px; pointer-events:none; opacity:0; transition:opacity .12s; max-width:280px; z-index:10; }
+#tip .t-e { font-family:'Cascadia Code',monospace; color:#a5b4fc; margin-top:3px; font-size:11px; }
+#tip .t-b { color:#6b7280; font-size:10px; }
+#instr { position:absolute; bottom:14px; left:50%; transform:translateX(-50%); background:#111827dd; border:1px solid #374151; border-radius:8px; padding:6px 14px; font-size:11px; color:#6b7280; pointer-events:none; }
+</style>
+</head>
+<body>
+<div id="app">
+<div id="sidebar">
+  <h1>The Iliad</h1>
+  <div class="sub">Interactive Force DAG -- Retrocause formalism (FORMAL_MODEL_v2)</div>
+  <div class="ctrls">
+    <button onclick="doCascade()" id="btn-bloom">Bloom</button>
+    <button onclick="doCollapse()">Collapse All</button>
+    <button onclick="doReset()">Reset View</button>
+    <button onclick="doReheat()">Reheat</button>
+  </div>
+  <h2>Legend</h2>
+  <div class="legend">
+    <div class="legend-i"><div class="legend-d" style="background:#4361ee"></div>Cause</div>
+    <div class="legend-i"><div class="legend-d" style="background:#f77f00"></div>Consequence</div>
+    <div class="legend-i"><div class="legend-d" style="background:#ef4444"></div>Substitution</div>
+    <div class="legend-i"><div class="legend-d" style="background:#2dd4bf"></div>Return</div>
+    <div class="legend-i"><div class="legend-d" style="background:#a78bfa"></div>Resolution</div>
+    <div class="legend-i"><div class="legend-d" style="background:#fbbf24; width:12px; height:12px; border-radius:50%; border:2px solid #f59e0b"></div>Convergence</div>
+    <div class="legend-i"><div class="legend-d" style="background:transparent; border:1.5px dashed #818cf8; width:10px; height:10px"></div>Divine</div>
+  </div>
+  <div id="info">
+    <h2>Selected Node</h2>
+    <div class="meta" style="color:#4b5563">Click a node to inspect</div>
+  </div>
+</div>
+<div id="graph-area">
+  <svg id="svg"></svg>
+  <div id="tip"></div>
+  <div id="instr">Click to expand/collapse -- drag nodes -- scroll to zoom -- shift+drag to pan</div>
+</div>
+</div>
+
+<script>
+// =============================================================
+// DATA
+// =============================================================
+const N = [
+  // ROOT (always expanded, invisible)
+  {id:"wrath",label:"WRATH OF ACHILLES",x:"wrath(achilles)",p:null,bk:"1-24"},
+
+  // --- ACT 1: CAUSE ---
+  {id:"cause",label:"CAUSE",x:"cause(wrath)",p:"wrath",bk:"1"},
+  {id:"quarrel",label:"The Quarrel",x:"quarrel(achilles, agamemnon, over(briseis))",p:"cause",bk:"1"},
+  {id:"sup_chr",label:"Chryses supplicates",x:"supplicate(chryses, agamemnon, for(chryseis))",p:"quarrel",bk:"1.8-42"},
+  {id:"ref_chr",label:"Agamemnon refuses",x:"refuse(agamemnon, chryses)",p:"quarrel",bk:"1.26"},
+  {id:"pet_apo",label:"Prayer to Apollo",x:"petition(chryses, apollo, for(vengeance))",p:"quarrel",bk:"1.35",dv:1},
+  {id:"plague",label:"Apollo's plague",x:"intervene(apollo, plague(achaeans))",p:"quarrel",bk:"1.43",dv:1},
+  {id:"assembly",label:"Assembly called",x:"assembly(achaeans)",p:"quarrel",bk:"1.54"},
+  {id:"demand",label:"Achilles demands return",x:"demand(achilles, return(chryseis))",p:"quarrel",bk:"1.106"},
+  {id:"seize",label:"Briseis seized",x:"seize(agamemnon, briseis, from(achilles))",p:"quarrel",bk:"1.318"},
+  {id:"rage1",label:"Achilles rages",x:"rage(achilles, at(agamemnon))",p:"quarrel",bk:"1.188"},
+
+  {id:"withdrawal",label:"Withdrawal",x:"withdraw(achilles, from(war))",p:"cause",bk:"1"},
+  {id:"ref_fight",label:"Refuses to fight",x:"refuse(achilles, combat)",p:"withdrawal",bk:"1.306"},
+  {id:"pet_thetis",label:"Thetis petitions Zeus",x:"petition(thetis, zeus, for(trojan_victory))",p:"withdrawal",bk:"1.495",dv:1},
+  {id:"zeus_prom",label:"Zeus promises",x:"promise(zeus, honor(achilles))",p:"withdrawal",bk:"1.528",dv:1},
+
+  // --- ACT 2: CONSEQUENCE ---
+  {id:"consequence",label:"CONSEQUENCE",x:"consequence(withdrawal)",p:"wrath",bk:"2-15"},
+
+  {id:"early",label:"Early Battles",x:"early_combat(achaeans, trojans)",p:"consequence",bk:"2-7"},
+  {id:"catalog",label:"Catalog of Ships",x:"catalog(forces)",p:"early",bk:"2.484"},
+  {id:"duel_pm",label:"Paris vs Menelaus",x:"duel(paris, menelaus)",p:"early",bk:"3"},
+  {id:"aris_dio",label:"Aristeia of Diomedes",x:"aristeia(diomedes)",p:"early",bk:"5"},
+  {id:"wound_ares",label:"Diomedes wounds Ares",x:"wound(diomedes, ares)",p:"early",bk:"5.855",dv:1},
+  {id:"hec_ajax",label:"Hector vs Ajax",x:"duel(hector, ajax)",p:"early",bk:"7"},
+  {id:"wall",label:"Wall built",x:"build(achaeans, wall)",p:"early",bk:"7.433"},
+
+  {id:"advance",label:"Trojan Advance",x:"advance(trojans)",p:"consequence",bk:"8-15"},
+  {id:"zeus_fav",label:"Zeus empowers Trojans",x:"intervene(zeus, embolden(trojans))",p:"advance",bk:"8",dv:1},
+  {id:"wounds",label:"Heroes wounded",x:"wound(trojans, heroes)",p:"advance",bk:"11"},
+  {id:"w_agam",label:"Agamemnon falls",x:"wound(trojans, agamemnon)",p:"wounds",bk:"11.248"},
+  {id:"w_dio",label:"Diomedes falls",x:"wound(paris, diomedes)",p:"wounds",bk:"11.369"},
+  {id:"w_ody",label:"Odysseus falls",x:"wound(trojans, odysseus)",p:"wounds",bk:"11.434"},
+  {id:"aris_hec",label:"Aristeia of Hector",x:"aristeia(hector)",p:"advance",bk:"12-15"},
+  {id:"breach",label:"Wall breached",x:"breach(hector, wall)",p:"advance",bk:"12.445"},
+  {id:"poseidon",label:"Poseidon aids Achaeans",x:"intervene(poseidon, aid(achaeans))",p:"advance",bk:"13",dv:1},
+  {id:"zeus_wake",label:"Zeus wakes",x:"intervene(zeus, restore(trojan_push))",p:"advance",bk:"15",dv:1},
+  {id:"fire",label:"Ships on fire!",x:"assault(trojans, fire(ships))",p:"advance",bk:"15.704"},
+
+  {id:"embassy",label:"Embassy to Achilles",x:"embassy(achaeans, to(achilles))",p:"consequence",bk:"9"},
+  {id:"send_emb",label:"Embassy sent",x:"send(embassy)",p:"embassy",bk:"9.162"},
+  {id:"gifts",label:"Gifts offered",x:"offer(agamemnon, gifts)",p:"embassy",bk:"9.120"},
+  {id:"sp_ody",label:"Odysseus: duty",x:"speech(odysseus, duty)",p:"embassy",bk:"9.225"},
+  {id:"sp_phx",label:"Phoenix: wisdom",x:"speech(phoenix, meleager_story)",p:"embassy",bk:"9.434"},
+  {id:"sp_ajax",label:"Ajax: friendship",x:"speech(ajax, friendship)",p:"embassy",bk:"9.624"},
+  {id:"ref_emb",label:"Achilles refuses return",x:"refuse(achilles, return)",p:"embassy",bk:"9.308"},
+
+  // --- ACT 3: SUBSTITUTION ---
+  {id:"substitution",label:"SUBSTITUTION",x:"substitution(patroclus)",p:"wrath",bk:"16"},
+  {id:"despair",label:"Patroclus in anguish",x:"desperation(patroclus)",p:"substitution",bk:"16.1"},
+  {id:"pet_pat",label:"Begs Achilles",x:"petition(patroclus, achilles)",p:"substitution",bk:"16.21"},
+  {id:"grant",label:"Achilles grants (limited)",x:"grant(achilles, conditional(return_after_rout))",p:"substitution",bk:"16.83"},
+  {id:"arm_pat",label:"Arms in Achilles' armor",x:"arm(patroclus, with(armor_of_achilles))",p:"substitution",bk:"16.130"},
+  {id:"aris_pat",label:"Aristeia of Patroclus",x:"aristeia(patroclus)",p:"substitution",bk:"16.257"},
+  {id:"k_sarp",label:"Kills Sarpedon",x:"kill(patroclus, sarpedon)",p:"substitution",bk:"16.462"},
+  {id:"exceed",label:"Exceeds the limit",x:"exceed(patroclus, achilles_condition)",p:"substitution",bk:"16.684"},
+  {id:"stun_ap",label:"Apollo stuns Patroclus",x:"intervene(apollo, stun(patroclus))",p:"substitution",bk:"16.788",dv:1},
+  {id:"strip",label:"Armor stripped",x:"strip(apollo, armor)",p:"substitution",bk:"16.804",dv:1},
+  {id:"w_euph",label:"Euphorbus wounds",x:"wound(euphorbus, patroclus)",p:"substitution",bk:"16.806"},
+  {id:"KILL_PAT",label:"HECTOR KILLS PATROCLUS",x:"kill(hector, patroclus)",p:"substitution",bk:"16.818",cv:1},
+
+  // --- ACT 4: RETURN ---
+  {id:"return_act",label:"RETURN",x:"return(achilles)",p:"wrath",bk:"17-21"},
+
+  {id:"grief",label:"Grief & Reconciliation",x:"grief(achilles)",p:"return_act",bk:"17-19"},
+  {id:"fight_body",label:"Fight over body",x:"fight(over(body_of_patroclus))",p:"grief",bk:"17"},
+  {id:"news",label:"News reaches Achilles",x:"deliver(antilochus, news)",p:"grief",bk:"18.15"},
+  {id:"lament_ach",label:"Achilles laments",x:"lament(achilles, patroclus)",p:"grief",bk:"18.22"},
+  {id:"rage2",label:"Wrath redirected",x:"rage(achilles, at(hector))",p:"grief",bk:"18.90"},
+  {id:"thetis_h",label:"Thetis visits Hephaestus",x:"petition(thetis, hephaestus)",p:"grief",bk:"18.369",dv:1},
+  {id:"forge",label:"New armor forged",x:"forge(hephaestus, armor)",p:"grief",bk:"18.468",dv:1},
+  {id:"shield",label:"Shield of Achilles",x:"describe(shield, cosmos)",p:"grief",bk:"18.478"},
+  {id:"reconcile",label:"Reconciliation",x:"reconcile(achilles, agamemnon)",p:"grief",bk:"19.56"},
+  {id:"arm_ach",label:"Achilles arms",x:"arm(achilles, with(armor_of_hephaestus))",p:"grief",bk:"19.364"},
+
+  {id:"rampage",label:"Achilles' Rampage",x:"aristeia(achilles)",p:"return_act",bk:"20-21"},
+  {id:"aris_ach",label:"Aristeia of Achilles",x:"aristeia(achilles)",p:"rampage",bk:"20"},
+  {id:"river",label:"Fights the River",x:"fight(achilles, scamander)",p:"rampage",bk:"21.211"},
+  {id:"theomachy",label:"Battle of the Gods",x:"battle(gods, gods)",p:"rampage",bk:"21.385",dv:1},
+  {id:"rout_fin",label:"Trojans routed",x:"rout(achilles, trojans)",p:"rampage",bk:"21.520"},
+  {id:"flee_troy",label:"Trojans flee into Troy",x:"flee(trojans, into(troy))",p:"rampage",bk:"21.607"},
+
+  // --- ACT 5: RESOLUTION ---
+  {id:"resolution",label:"RESOLUTION",x:"resolution(wrath)",p:"wrath",bk:"22-24"},
+
+  {id:"duel_d",label:"The Duel",x:"duel_and_death(achilles, hector)",p:"resolution",bk:"22"},
+  {id:"hec_wait",label:"Hector waits alone",x:"wait(hector, outside(troy))",p:"duel_d",bk:"22.92"},
+  {id:"hec_flee",label:"Hector flees (3x around)",x:"flee(hector, from(achilles))",p:"duel_d",bk:"22.136"},
+  {id:"ath_trick",label:"Athena tricks Hector",x:"intervene(athena, disguise(deiphobus))",p:"duel_d",bk:"22.226",dv:1},
+  {id:"DUEL",label:"ACHILLES vs HECTOR",x:"duel(achilles, hector)",p:"duel_d",bk:"22.248",cv:1},
+  {id:"k_hec",label:"Hector killed",x:"kill(achilles, hector)",p:"duel_d",bk:"22.326"},
+  {id:"defile",label:"Body defiled",x:"defile(achilles, body_of_hector)",p:"duel_d",bk:"22.395"},
+  {id:"lam_andr",label:"Andromache laments",x:"lament(andromache, hector)",p:"duel_d",bk:"22.437"},
+
+  {id:"funerals",label:"Funerals & Ransom",x:"funerals_and_ransom",p:"resolution",bk:"23-24"},
+  {id:"fun_pat",label:"Patroclus' funeral",x:"funeral(patroclus)",p:"funerals",bk:"23.1"},
+  {id:"games",label:"Funeral games",x:"games(patroclus)",p:"funerals",bk:"23.257"},
+  {id:"gods_deb",label:"Gods debate body's fate",x:"debate(gods, body_of_hector)",p:"funerals",bk:"24.23",dv:1},
+  {id:"hermes",label:"Hermes guides Priam",x:"guide(hermes, priam)",p:"funerals",bk:"24.322",dv:1},
+  {id:"SUP_PRI",label:"PRIAM SUPPLICATES",x:"supplicate(priam, achilles, for(body))",p:"funerals",bk:"24.468",cv:1},
+  {id:"compass",label:"Achilles shows compassion",x:"compassion(achilles, priam)",p:"funerals",bk:"24.507"},
+  {id:"ransom",label:"Body ransomed",x:"ransom(priam, body_of_hector)",p:"funerals",bk:"24.552"},
+  {id:"lam_troy",label:"Troy laments",x:"lament(troy, hector)",p:"funerals",bk:"24.718"},
+  {id:"fun_hec",label:"Hector's funeral",x:"funeral(hector)",p:"funerals",bk:"24.777"},
+];
+
+const E = [
+  // QUARREL chain
+  ["sup_chr","ref_chr"],["ref_chr","pet_apo"],["pet_apo","plague"],
+  ["plague","assembly"],["assembly","demand"],["demand","seize"],["seize","rage1"],
+  // quarrel -> withdrawal
+  ["rage1","ref_fight"],["rage1","pet_thetis"],["pet_thetis","zeus_prom"],
+  // cause -> consequence
+  ["zeus_prom","zeus_fav"],["ref_fight","catalog"],["wall","zeus_fav"],
+  // early battles
+  ["catalog","duel_pm"],["duel_pm","aris_dio"],["aris_dio","wound_ares"],
+  ["aris_dio","hec_ajax"],["hec_ajax","wall"],
+  // trojan advance
+  ["zeus_fav","wounds"],["zeus_fav","aris_hec"],
+  ["w_agam","w_dio"],["w_dio","w_ody"],
+  ["aris_hec","breach"],["breach","poseidon"],["poseidon","zeus_wake"],["zeus_wake","fire"],
+  // embassy
+  ["wounds","send_emb"],["send_emb","gifts"],["gifts","sp_ody"],
+  ["sp_ody","sp_phx"],["sp_phx","sp_ajax"],["sp_ajax","ref_emb"],
+  // consequence -> substitution
+  ["fire","despair"],["ref_emb","despair"],
+  // substitution chain
+  ["despair","pet_pat"],["pet_pat","grant"],["grant","arm_pat"],["arm_pat","aris_pat"],
+  ["aris_pat","k_sarp"],["k_sarp","exceed"],["exceed","stun_ap"],
+  ["stun_ap","strip"],["strip","w_euph"],["w_euph","KILL_PAT"],
+  // substitution -> return
+  ["KILL_PAT","fight_body"],
+  // grief
+  ["fight_body","news"],["news","lament_ach"],["lament_ach","rage2"],
+  ["lament_ach","thetis_h"],["thetis_h","forge"],["forge","shield"],
+  ["shield","arm_ach"],["rage2","reconcile"],["reconcile","arm_ach"],
+  // rampage
+  ["arm_ach","aris_ach"],["aris_ach","river"],["river","theomachy"],
+  ["theomachy","rout_fin"],["rout_fin","flee_troy"],
+  // return -> resolution
+  ["flee_troy","hec_wait"],
+  // duel
+  ["hec_wait","hec_flee"],["hec_flee","ath_trick"],["ath_trick","DUEL"],
+  ["DUEL","k_hec"],["k_hec","defile"],["defile","lam_andr"],
+  // funerals
+  ["defile","fun_pat"],["fun_pat","games"],
+  ["k_hec","gods_deb"],["gods_deb","hermes"],["hermes","SUP_PRI"],
+  ["games","SUP_PRI"],
+  ["SUP_PRI","compass"],["compass","ransom"],["ransom","lam_troy"],["lam_troy","fun_hec"],
+];
+
+// =============================================================
+// COLORS
+// =============================================================
+const ACT = {
+  cause:{c:"#4361ee",bg:"#1e3a5f"},
+  consequence:{c:"#f77f00",bg:"#3d2800"},
+  substitution:{c:"#ef4444",bg:"#3d0a0a"},
+  return_act:{c:"#2dd4bf",bg:"#0a2f2a"},
+  resolution:{c:"#a78bfa",bg:"#1f0a36"},
+};
+
+// =============================================================
+// BUILD TREE
+// =============================================================
+const nm = {};
+N.forEach(n => nm[n.id] = {...n, ch:[], _exp:false});
+N.forEach(n => { if(n.p && nm[n.p]) nm[n.p].ch.push(n.id); });
+nm["wrath"]._exp = true;
+
+function act(id) {
+  let c = nm[id];
+  while(c) {
+    if(ACT[c.id]) return c.id;
+    c = c.p ? nm[c.p] : null;
+  }
+  return null;
+}
+
+function vis() {
+  const r = [];
+  (function walk(id){
+    if(id==="wrath"){ nm[id].ch.forEach(walk); return; }
+    r.push(id);
+    if(nm[id]._exp) nm[id].ch.forEach(walk);
+  })("wrath");
+  return r;
+}
+
+function visAnc(id) {
+  const s = new Set(vis());
+  let c = id;
+  while(c && !s.has(c)) c = nm[c].p;
+  return c;
+}
+
+function visEdges(vs) {
+  const s = new Set(vs), seen = new Set(), r = [];
+  E.forEach(([a,b]) => {
+    let f = s.has(a)?a:visAnc(a), t = s.has(b)?b:visAnc(b);
+    if(!f||!t||f===t) return;
+    const k=f+"->"+t;
+    if(!seen.has(k)){seen.add(k);r.push({source:f,target:t});}
+  });
+  return r;
+}
+
+// Compute topological rank for y-positioning
+function ranks(vs, es) {
+  const indeg = {}, adj = {};
+  vs.forEach(v => { indeg[v]=0; adj[v]=[]; });
+  es.forEach(e => {
+    const s = typeof e.source==='object'?e.source.id:e.source;
+    const t = typeof e.target==='object'?e.target.id:e.target;
+    if(indeg[t]!==undefined) indeg[t]++;
+    if(adj[s]) adj[s].push(t);
+  });
+  const rank = {}, q = vs.filter(v=>indeg[v]===0);
+  q.forEach(v=>rank[v]=0);
+  while(q.length) {
+    const v = q.shift();
+    (adj[v]||[]).forEach(w => {
+      rank[w] = Math.max(rank[w]||0, rank[v]+1);
+      indeg[w]--;
+      if(indeg[w]===0) q.push(w);
+    });
+  }
+  // nodes not reached get rank 0
+  vs.forEach(v => { if(rank[v]===undefined) rank[v]=0; });
+  return rank;
+}
+
+// Expanded subdags for hulls
+function expSubs() {
+  const r = [];
+  (function walk(id){
+    const n=nm[id];
+    if(n._exp && n.ch.length && id!=="wrath") r.push(id);
+    if(n._exp) n.ch.forEach(walk);
+  })("wrath");
+  return r;
+}
+
+// =============================================================
+// SVG SETUP
+// =============================================================
+const svg = d3.select("#svg");
+const width = () => document.getElementById("graph-area").clientWidth;
+const height = () => document.getElementById("graph-area").clientHeight;
+
+const defs = svg.append("defs");
+defs.append("marker").attr("id","ah").attr("viewBox","0 0 10 10")
+  .attr("refX",24).attr("refY",5).attr("markerWidth",6).attr("markerHeight",6)
+  .attr("orient","auto")
+  .append("path").attr("d","M0,0 L10,5 L0,10 z").attr("fill","#4b5563");
+
+// glow filter for convergence
+const filt = defs.append("filter").attr("id","glow").attr("x","-50%").attr("y","-50%").attr("width","200%").attr("height","200%");
+filt.append("feGaussianBlur").attr("stdDeviation","4").attr("result","blur");
+filt.append("feMerge").selectAll("feMergeNode").data(["blur","SourceGraphic"])
+  .join("feMergeNode").attr("in",d=>d);
+
+const g = svg.append("g");
+const hullG = g.append("g");
+const linkG = g.append("g");
+const nodeG = g.append("g");
+
+const zoom = d3.zoom().scaleExtent([0.1,4]).on("zoom",e=>g.attr("transform",e.transform));
+svg.call(zoom);
+
+const tip = d3.select("#tip");
+
+// =============================================================
+// SIMULATION
+// =============================================================
+let sim, linkSel, nodeSel, hullSel;
+let curNodes = [], curEdges = [], curRank = {};
+
+function rebuild() {
+  const vs = vis();
+  const es = visEdges(vs);
+  curRank = ranks(vs, es);
+  const maxRank = Math.max(1, ...Object.values(curRank));
+
+  // preserve positions of existing nodes
+  const oldPos = {};
+  curNodes.forEach(n => { oldPos[n.id] = {x:n.x,y:n.y}; });
+
+  const W = width(), H = height();
+  curNodes = vs.map(id => {
+    const n = nm[id];
+    const a = act(id);
+    const old = oldPos[id];
+    return {
+      id, label:n.label, expr:n.x, bk:n.bk,
+      dv:n.dv, cv:n.cv, hasCh:n.ch.length>0, exp:n._exp,
+      act:a, col: a?ACT[a]:{c:"#6b7280",bg:"#1f2937"},
+      rank: curRank[id],
+      x: old ? old.x : W/2 + (Math.random()-.5)*300,
+      y: old ? old.y : 60 + (curRank[id]/maxRank)*(H-120),
+    };
+  });
+
+  const nodeById = {};
+  curNodes.forEach(n => nodeById[n.id]=n);
+  curEdges = es.map(e => ({source:nodeById[e.source],target:nodeById[e.target]})).filter(e=>e.source&&e.target);
+
+  // --- Force sim ---
+  if(sim) sim.stop();
+  sim = d3.forceSimulation(curNodes)
+    .force("link", d3.forceLink(curEdges).id(d=>d.id).distance(65).strength(.4))
+    .force("charge", d3.forceManyBody().strength(-220).distanceMax(500))
+    .force("collide", d3.forceCollide(38))
+    .force("x", d3.forceX(W/2).strength(.03))
+    .force("y", d3.forceY(d => 60 + (d.rank / Math.max(1,maxRank)) * (H-120)).strength(.35))
+    .alphaDecay(.025)
+    .on("tick", ticked);
+
+  // --- Draw links ---
+  linkSel = linkG.selectAll("path.link").data(curEdges, d=>d.source.id+"->"+d.target.id);
+  linkSel.exit().transition().duration(200).attr("stroke-opacity",0).remove();
+  linkSel = linkSel.enter().append("path").attr("class","link")
+    .attr("stroke","#4b5563").attr("stroke-width",1.2).attr("marker-end","url(#ah)")
+    .merge(linkSel);
+
+  // --- Draw nodes ---
+  nodeSel = nodeG.selectAll("g.node").data(curNodes, d=>d.id);
+  nodeSel.exit().transition().duration(200).style("opacity",0).remove();
+  const enter = nodeSel.enter().append("g")
+    .attr("class",d => {
+      // check if parent is freshly blooming
+      const pn = nm[d.id];
+      const par = pn ? nm[pn.p] : null;
+      return "node" + (par && par._blooming ? " node-bloom" : "");
+    })
+    .style("opacity",0);
+
+  enter.append("rect")
+    .attr("rx",8).attr("ry",8)
+    .attr("stroke-width",d=>d.cv?3:1.5);
+  enter.append("text").attr("class","nlbl")
+    .attr("text-anchor","middle").attr("dy","0.35em")
+    .attr("fill","#f9fafb").attr("font-size","11px")
+    .style("pointer-events","none");
+  enter.append("text").attr("class","nbadge")
+    .attr("text-anchor","end").attr("dy","0.35em")
+    .attr("fill","#6b7280").attr("font-size","8px")
+    .style("pointer-events","none");
+
+  nodeSel = enter.merge(nodeSel);
+  nodeSel.transition().duration(300).style("opacity",1);
+
+  nodeSel.select("rect")
+    .attr("width",d => Math.max(120, d.label.length*7.2+28))
+    .attr("height",d => d.cv?36:30)
+    .attr("x",d => -Math.max(120,d.label.length*7.2+28)/2)
+    .attr("y",d => d.cv?-18:-15)
+    .attr("fill",d => d.cv?"#422006":d.col.bg)
+    .attr("stroke",d => d.cv?"#fbbf24":d.col.c)
+    .attr("stroke-dasharray",d=>d.dv?"3,2":null)
+    .attr("filter",d=>d.cv?"url(#glow)":null);
+
+  nodeSel.select(".nlbl").text(d => {
+    let t = d.label;
+    if(d.hasCh) t = (d.exp?"[-] ":"[+] ")+t;
+    return t;
+  });
+  nodeSel.select(".nbadge")
+    .text(d=>"Bk "+d.bk)
+    .attr("x",d=>Math.max(120,d.label.length*7.2+28)/2-6)
+    .attr("y",d=>d.cv?13:10);
+
+  // Drag
+  nodeSel.call(d3.drag()
+    .on("start",(e,d)=>{if(!e.active)sim.alphaTarget(.1).restart();d.fx=d.x;d.fy=d.y;})
+    .on("drag",(e,d)=>{d.fx=e.x;d.fy=e.y;})
+    .on("end",(e,d)=>{if(!e.active)sim.alphaTarget(0);d.fx=null;d.fy=null;})
+  );
+
+  // Click
+  nodeSel.on("click",(e,d)=>{
+    e.stopPropagation();
+    if(d.hasCh){ nm[d.id]._exp=!nm[d.id]._exp; rebuild(); }
+    showInfo(d.id);
+  });
+
+  // Tooltip
+  nodeSel.on("mouseenter",(e,d)=>{
+    const r=document.getElementById("graph-area").getBoundingClientRect();
+    tip.html(`<b>${d.label}</b><div class="t-e">${d.expr}</div><div class="t-b">Book ${d.bk}${d.cv?" -- CONVERGENCE":""}${d.hasCh?" -- click to "+(d.exp?"collapse":"expand"):""}</div>`)
+      .style("left",(e.clientX-r.left+12)+"px").style("top",(e.clientY-r.top-10)+"px").style("opacity",1);
+  }).on("mouseleave",()=>tip.style("opacity",0));
+
+  // --- Hull for expanded subdags ---
+  drawHulls();
+}
+
+function drawHulls() {
+  const subs = expSubs();
+  const vset = new Set(vis());
+  const hullData = subs.map(sid => {
+    const n = nm[sid];
+    const a = act(sid);
+    const col = a ? ACT[a].c : "#6b7280";
+    // collect visible descendants
+    const desc = [];
+    (function collect(id){ if(vset.has(id)) desc.push(id); if(nm[id]._exp) nm[id].ch.forEach(collect); })(sid);
+    // but only if we have node objects
+    return {id:sid, label:n.label, col, desc};
+  }).filter(d=>d.desc.length>1);
+
+  hullSel = hullG.selectAll("path.group-hull").data(hullData, d=>d.id);
+  hullSel.exit().transition().duration(200).style("opacity",0).remove();
+  hullSel = hullSel.enter().append("path").attr("class","group-hull")
+    .merge(hullSel)
+    .attr("fill",d=>d.col).attr("stroke",d=>d.col);
+}
+
+function ticked() {
+  linkSel.attr("d", d => {
+    const dx=d.target.x-d.source.x, dy=d.target.y-d.source.y;
+    if(Math.abs(dy)<5) {
+      return `M${d.source.x},${d.source.y} C${d.source.x},${d.source.y+40} ${d.target.x},${d.target.y-40} ${d.target.x},${d.target.y}`;
+    }
+    const mx=(d.source.x+d.target.x)/2, my=(d.source.y+d.target.y)/2;
+    return `M${d.source.x},${d.source.y} Q${d.source.x},${my} ${mx},${my} Q${d.target.x},${my} ${d.target.x},${d.target.y}`;
+  });
+
+  nodeSel.attr("transform",d=>`translate(${d.x},${d.y})`);
+
+  // update hulls
+  if(hullSel) {
+    const nodeById = {};
+    curNodes.forEach(n=>nodeById[n.id]=n);
+    hullSel.attr("d", d => {
+      const pts = d.desc.map(id=>nodeById[id]).filter(Boolean).map(n=>[n.x,n.y]);
+      if(pts.length<2) return "";
+      // padded convex hull
+      const pad = 30;
+      const hull = d3.polygonHull(pts.concat(
+        pts.map(p=>[p[0]-pad,p[1]-pad]),
+        pts.map(p=>[p[0]+pad,p[1]-pad]),
+        pts.map(p=>[p[0]-pad,p[1]+pad]),
+        pts.map(p=>[p[0]+pad,p[1]+pad])
+      ));
+      if(!hull) return "";
+      return "M"+hull.map(p=>p.join(",")).join("L")+"Z";
+    });
+  }
+}
+
+function showInfo(id) {
+  const n = nm[id];
+  const a = act(id);
+  const col = a ? ACT[a].c : "#6b7280";
+  const aLabel = a ? a.replace("_act","").toUpperCase() : "";
+  let dc = 0;
+  (function cnt(i){ dc++; nm[i].ch.forEach(cnt); })(id); dc--;
+
+  const inc = E.filter(e=>e[1]===id).map(e=>nm[e[0]]?.label).filter(Boolean);
+  const out = E.filter(e=>e[0]===id).map(e=>nm[e[1]]?.label).filter(Boolean);
+
+  let h = `<h2 style="color:${col}">${n.label}</h2>`;
+  h += `<div class="expr">${n.x}</div><div class="meta">`;
+  h += `<b>Act:</b> <span>${aLabel}</span><br>`;
+  h += `<b>Book:</b> <span>${n.bk}</span><br>`;
+  if(n.dv) h+= `<b style="color:#818cf8">Divine intervention</b><br>`;
+  if(n.cv) h+= `<b style="color:#fbbf24">Convergence node</b><br>`;
+  if(n.ch.length) h+= `<b>SubDAG:</b> <span>${n.ch.length} children, ${dc} descendants</span><br>`;
+  if(inc.length) h+=`<br><b>Depends on:</b><br><span>${inc.join(", ")}</span>`;
+  if(out.length) h+=`<br><b>Leads to:</b><br><span>${out.join(", ")}</span>`;
+  h+=`</div>`;
+  document.getElementById("info").innerHTML = h;
+}
+
+// =============================================================
+// CONTROLS
+// =============================================================
+// --- Cascade "Bloom" expand ---
+let cascadeTimers = [];
+let isCascading = false;
+
+function depthLevels() {
+  // group expandable nodes by their nesting depth in the containment tree
+  const levels = {};
+  (function walk(id, d) {
+    const n = nm[id];
+    if(n.ch.length && id!=="wrath") {
+      if(!levels[d]) levels[d]=[];
+      levels[d].push(id);
+    }
+    n.ch.forEach(c => walk(c, d+1));
+  })("wrath", 0);
+  return levels;
+}
+
+function zoomToFit(duration) {
+  // compute bounding box of all visible nodes, then zoom to fit
+  if(!curNodes.length) return;
+  let x0=Infinity, y0=Infinity, x1=-Infinity, y1=-Infinity;
+  curNodes.forEach(n => {
+    x0=Math.min(x0,n.x-80); y0=Math.min(y0,n.y-30);
+    x1=Math.max(x1,n.x+80); y1=Math.max(y1,n.y+30);
+  });
+  const W=width(), H=height();
+  const bw=x1-x0, bh=y1-y0;
+  if(bw<1||bh<1) return;
+  const scale = Math.min(W/bw, H/bh) * 0.85;
+  const clampedScale = Math.min(Math.max(scale, 0.15), 2);
+  const cx=x0+bw/2, cy=y0+bh/2;
+  const tx=W/2 - cx*clampedScale, ty=H/2 - cy*clampedScale;
+  svg.transition().duration(duration).ease(d3.easeCubicOut)
+    .call(zoom.transform, d3.zoomIdentity.translate(tx,ty).scale(clampedScale));
+}
+
+function doCascade() {
+  // if already running, stop it
+  if(isCascading) {
+    cascadeTimers.forEach(clearTimeout);
+    cascadeTimers = [];
+    isCascading = false;
+    document.getElementById("btn-bloom").textContent = "Bloom";
+    return;
+  }
+
+  isCascading = true;
+  document.getElementById("btn-bloom").textContent = "Stop";
+
+  // collapse first
+  Object.values(nm).forEach(n => n._exp=false);
+  nm["wrath"]._exp = true;
+  rebuild();
+
+  const levels = depthLevels();
+  const depths = Object.keys(levels).map(Number).sort((a,b)=>a-b);
+
+  // schedule each depth level with increasing delay
+  // delays: 400, 700, 1050, 1450, ... (accelerating gaps)
+  let cumDelay = 500; // initial pause after collapse
+
+  depths.forEach((d, i) => {
+    const t = setTimeout(() => {
+      const nodesAtLevel = levels[d];
+      // mark these nodes for bloom animation
+      nodesAtLevel.forEach(id => {
+        nm[id]._exp = true;
+        nm[id]._blooming = true;
+      });
+      rebuild();
+      // zoom out smoothly to fit new extent
+      // wait a beat for sim to settle, then fit
+      const zt = setTimeout(() => zoomToFit(600), 250);
+      cascadeTimers.push(zt);
+      // clear bloom flags after animation
+      const bt = setTimeout(() => {
+        nodesAtLevel.forEach(id => nm[id]._blooming = false);
+      }, 600);
+      cascadeTimers.push(bt);
+    }, cumDelay);
+    cascadeTimers.push(t);
+    // each step gets a bit more time: 500 + 100*i ms gap
+    cumDelay += 500 + i * 120;
+  });
+
+  // final zoom-to-fit and cleanup
+  const fin = setTimeout(() => {
+    zoomToFit(800);
+    isCascading = false;
+    document.getElementById("btn-bloom").textContent = "Bloom";
+    cascadeTimers = [];
+  }, cumDelay + 300);
+  cascadeTimers.push(fin);
+}
+
+function doCollapse(){
+  // stop any cascade
+  if(isCascading){ cascadeTimers.forEach(clearTimeout); cascadeTimers=[]; isCascading=false; document.getElementById("btn-bloom").textContent="Bloom"; }
+  Object.values(nm).forEach(n=>n._exp=false); nm["wrath"]._exp=true; rebuild();
+  setTimeout(()=>zoomToFit(400),200);
+}
+function doReset(){ svg.transition().duration(400).call(zoom.transform, d3.zoomIdentity); }
+function doReheat(){ if(sim) sim.alpha(.6).restart(); }
+
+// =============================================================
+// INIT
+// =============================================================
+rebuild();
+setTimeout(()=>svg.call(zoom.transform, d3.zoomIdentity.translate(100,30).scale(0.85)), 200);
+window.addEventListener("resize",()=>{ if(sim) sim.force("x",d3.forceX(width()/2).strength(.03)); sim.alpha(.3).restart(); });
+</script>
+</body>
+</html>
