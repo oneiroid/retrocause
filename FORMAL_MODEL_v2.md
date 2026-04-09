@@ -70,22 +70,6 @@ The formal object is the typed functional expression. Two expressions
 are identical iff they have the same function and arguments, regardless
 of gloss.
 
-### 1.4 Extension: Compound Types (UNFINISHED)
-
-The paper uses only simple types. We need:
-
-- **Sequence type** `slist(expr_1, expr_2, ...)` -- an ordered list of
-  sub-expressions forming a composite event. Used inside subDAGs.
-- **Set type** `set(expr_1, expr_2, ...)` -- an unordered collection.
-  For independent sub-events with no internal dependency.
-- **Conditional type** `if(condition, then_expr, else_expr)` -- branching
-  within a single node's content. (Tentative -- may be better handled
-  by DAG structure than by expression-internal branching.)
-
-**OPEN:** Do we need a recursive type? An expression whose arguments
-are themselves completions? The paper hints at this with nested subDAGs
-but doesn't formalize the type signature.
-
 ---
 
 ## 2. Semantic Expressions
@@ -151,52 +135,45 @@ causation. There is no separate "law of physics" -- G's edge structure
 is physical law. In local story DAGs, dependency is whatever the
 analyst identifies as relevant connection.
 
-### 3.2 SubDAGs
+### 3.2 Two Scales
 
-A **subDAG** is a node D that contains interior nodes and edges.
-From outside, D looks like a single node with a single semantic
-expression. From inside, D has structure.
+The DAG has two operational scales:
 
-```
-wakeup(phil) = slist(
-    hear(phil, song),
-    hear(phil, dj_banter)
-)
-```
-
-Here `wakeup(phil)` is the exterior expression. The `slist` reveals
-two interior nodes with an implicit ordering dependency.
-
-SubDAGs nest: a subDAG can contain subDAGs to arbitrary depth.
-This gives the multi-scale hierarchy:
+- **Scale 0:** The whole story (or domain) as a single node with a
+  one-line gloss. This IS a subDAG -- it contains all of Scale 1.
+- **Scale 1:** Events -- individual causal nodes with semantic
+  expressions, connected by dependency edges.
 
 ```
 improve(phil)                          -- scale 0: the whole movie
-  ├── setup(phil, punxsutawney)        -- scale 1: act-level
-  ├── recursion(phil)                  -- scale 1
-  │     ├── explore_no_consequences()  -- scale 2: sequence-level
-  │     ├── attempt_seduction()        -- scale 2
-  │     │     ├── meet(phil, rita)      -- scale 3: event-level
-  │     │     ├── learn(phil, ...)      -- scale 3
-  │     │     └── ...
-  │     └── develop_altruism()         -- scale 2
-  └── escape(phil)                     -- scale 1
+  |- hear(phil, song)                  -- scale 1: event
+  |- meet(phil, rita)                  -- scale 1: event
+  |- kill(phil, phil, with(toaster))   -- scale 1: event
+  |- learn(phil, of(rita, poetry))     -- scale 1: event
+  ...
 ```
 
-### 3.3 Dependency Within and Across SubDAGs
+Scale 1 is the working level: the DAG of events and their causal
+dependencies. There is no imposed grouping (no "acts," no "sequences").
+If events cluster, that clustering **emerges from the causal topology**
+(connected components, bottleneck nodes, dense subgraphs) and is
+computed downstream, not declared by the analyst.
 
-Interior nodes of a subDAG may have:
+### 3.3 Dependency
 
-1. **Internal dependencies** -- edges between interior nodes
+Nodes may have:
+
+1. **Dependencies** -- edges between nodes
    (e.g., buy_drink -> make_toast: must buy to toast)
-2. **No internal dependencies** -- independent sub-events
+2. **No dependencies** -- causally independent events
    (e.g., get_tattoo, throw_party: either order)
-3. **Mixed** -- some dependent, some independent
+3. **Mixed** -- some nodes connected, some independent
 
-Edges can also cross subDAG boundaries. An interior node of one
-subDAG can depend on an interior node of another. This is how
-the paper captures connections between otherwise separate story
-segments.
+The edge structure IS the causal structure. No sub-classification
+of edge types (temporal, logical, material) is imposed -- a
+dependency means "the semantic content of w relies on information
+established at v," tested by counterfactual: if v hadn't happened,
+could w have happened as described?
 
 ### 3.4 The Universal DAG G (Retrocause Ontological Claim)
 
@@ -211,7 +188,11 @@ mathematics.
 
 ---
 
-## 4. Threading
+## 4. Threading (analytical tool, not core structure)
+
+Threading describes how a narrative TELLS a causal structure. It is
+metadata about presentation, not about the DAG itself. The DAG
+(causal flow) is primary; threading is secondary.
 
 ### 4.1 Definition
 
@@ -221,84 +202,20 @@ A **thread** T on a DAG D is an ordered sequence of nodes:
 T = (v_t1, v_t2, ..., v_tn)
 ```
 
-where each v_ti is a node of D, and the subscript t_i is the
-thread segment number.
+A thread need not follow edges, can revisit nodes, and can skip nodes.
+The ordering represents narrative telling order (sjuzhet), which may
+differ from causal order (fabula = a topological sort of the DAG).
 
-Crucially, a thread:
+### 4.2 When Threading Matters
 
-- **Need not follow edges.** T can jump between non-adjacent nodes.
-- **Need not be acyclic.** T can revisit the same node. (The DAG is
-  acyclic; the thread is not.)
-- **Need not cover all nodes.** T can skip nodes entirely.
-- **Has ordered segments.** The ordering represents narrative time
-  (the sequence of telling, not the sequence of the fabula).
+Threading is analytically useful when the telling order **deviates**
+from causal order -- flashbacks, in-medias-res, withholding. When
+sjuzhet = fabula (as in most fairy tales), threading adds no information.
 
-### 4.2 The Fabula/Sjuzhet Distinction
-
-This is the paper's core structural insight, and it maps directly
-to retrocause's "two graphs" (Intuition #21):
-
-| Paper's Term | Retrocause Term | Formal Object |
-|-------------|----------------|---------------|
-| Fabula (histoire) | Structure graph | The DAG D |
-| Sjuzhet (recit) | Traversal graph | A threading T on D |
-
-The DAG is the reality. The threading is a telling of it.
-
-The same DAG can support many different threadings:
-- Chronological ("once upon a time...")
-- Reverse ("they were preparing for the wedding... she had been kidnapped...")
-- Point-of-view (thread following one character's nodes only)
-- Thematic (thread following one motif across the narrative)
-
-### 4.3 Thread Revisitation = Semantic Repetition
-
-When a thread passes through the same node more than once, that
-IS semantic repetition. The event exists once in the DAG; the
-narrative mentions it multiple times.
-
-```
-Thread: ... t9:meet(phil, beggar), ...,
-            t53:meet(phil, beggar), ...,
-            t146:meet(phil, beggar), ...
-```
-
-Three threadings through one node. The beggar encounter is one
-event (or one subDAG) in the fabula, visited three times in the
-sjuzhet.
-
-### 4.4 Thread Shortcuts
-
-Later revisitations can traverse fewer interior nodes of a subDAG:
-
-```
-First pass (thread 5-6):   wakeup -> hear(song) -> hear(banter)
-Later pass (thread 36):    wakeup -> hear(banter)     [song skipped]
-Later pass (thread 120):   wakeup -> hear(song)        [banter skipped]
-```
-
-The subDAG hasn't changed. The threading takes shortcuts through it.
-This is narrative compression: mentioning one interior node to
-activate the entire subDAG in the reader's mind.
-
-**Retrocause extension:** Thread shortcuts formalize what a
-mind-cursor with finite bandwidth does. A mind that has already
-traversed a subDAG can re-enter it at lower resolution, touching
-fewer interior nodes. The bandwidth epsilon from v1 maps to the
-minimum subDAG scale that the threading still explicitly visits.
-
-### 4.5 Retrocause: Mind-Cursor as Threading Agent
-
-A mind-cursor (v1's D3) IS a threading T equipped with:
-
-- **Position** t_k: the current segment number
-- **Bandwidth** epsilon: the minimum subDAG scale still explicitly
-  threaded (below epsilon, subDAGs are traversed as atomic nodes)
-- **Agency** sigma: at nodes with multiple outgoing edges in G,
-  sigma selects which edge the thread follows next
-
-This collapses two previously separate concepts (mind-cursor and
-traversal path) into one: the threading IS the mind's experience.
+Thread revisitation (same node visited multiple times) and thread
+shortcuts (abbreviating repeated structure) are the paper's tools for
+describing narrative compression. These are properties of the TELLING,
+not of the causal structure.
 
 ---
 
@@ -482,77 +399,23 @@ become parametrically parallel under a more abstract template.
 
 ---
 
-## 7. Operators (DRAFT -- UNFINISHED)
+## 7. Operators
 
-The paper provides the representational machinery but no operators.
-We need operators to COMPUTE with this formalism.
+Two operators are currently operational. Others are deferred.
 
-### 7.1 Refinement: D -> D'
-
-Expand a node into its interior subDAG.
-
-```
-refine(wakeup(phil)) = slist(hear(phil, song), hear(phil, dj_banter))
-```
-
-Inverse: **abstraction** -- collapse a subDAG into a single node.
-
-```
-abstract({hear(phil,song), hear(phil,dj_banter)}) = wakeup(phil)
-```
-
-These must be mutual inverses: refine(abstract(D)) = D.
-
-### 7.2 Instantiation: A[p] -> S
+### 7.1 Instantiation: A[p] -> S
 
 Fill a parametrized template with concrete values.
 
 ```
-instantiate(experiment, [phil, rita]) = slist(
+instantiate(experiment, [phil, rita]) = {
     meet(phil, rita),
     learn(phil, of(rita, characteristics)),
     apply(phil, knowledge, to(rita))
-)
+}
 ```
 
-### 7.3 Anti-Unification: (S_1, S_2) -> A[p]
-
-Given two concrete subDAGs, compute their most specific common template.
-
-```
-anti_unify(
-    slist(meet(phil,rita), learn(phil, of(rita, ...))),
-    slist(meet(phil,nancy), learn(phil, of(nancy, ...)))
-) = slist(meet(phil, X), learn(phil, of(X, ...)))
-  with X :: entity
-```
-
-This is the archetype extraction operator.
-
-**OPEN:** Anti-unification of DAG structures (not just flat
-expressions) is non-trivial. We need to handle:
-- Different numbers of interior nodes
-- Different edge structures
-- Partial matches (some sub-structure shared, some not)
-
-### 7.4 Threading: (D, constraints) -> T
-
-Produce a threading of a DAG given narrative constraints:
-- Point of view (which character's nodes to include)
-- Temporal ordering (chronological, reverse, in-medias-res)
-- Detail level (which subDAGs to expand, which to skip)
-- Repetition pattern (which nodes to revisit)
-
-```
-thread(groundhog_dag,
-    pov = phil,
-    order = chronological,
-    detail = medium,
-    repeat = {wakeup, meet_beggar}
-) = T
-```
-
-### 7.5 Contrast: (A[q_1], A[q_2]) -> diff
+### 7.2 Contrast: (A[q_1], A[q_2]) -> diff
 
 Compute the meaningful differences between parallel instances.
 
@@ -563,87 +426,51 @@ contrast(
 ) = {target: rita/nancy, outcome: fail/succeed}
 ```
 
-### 7.6 Dependency Analysis: D -> properties
+The meaning of a parallelism lives in the contrast -- the parameter
+positions where instances differ.
 
-Compute structural properties of a subDAG:
+### 7.3 DEFERRED: Anti-Unification, Composition
 
-- **in_degree(v):** number of incoming edges (convergence measure)
-- **out_degree(v):** number of outgoing edges (divergence measure)
-- **depth(D):** longest directed path in the subDAG
-- **width(D):** maximum number of independent paths at any level
-- **convergence_nodes(D):** nodes with in-degree >> mean
-
-### 7.7 OPEN: Composition Operator
-
-How do subDAGs compose into larger DAGs? The paper shows hierarchical
-nesting (subDAGs within subDAGs) but doesn't formalize the composition
-rules. We need:
-
-- **Sequential composition:** D_1 ; D_2 -- target of D_1 feeds
-  source of D_2
-- **Parallel composition:** D_1 | D_2 -- independent subDAGs
-  sharing only external dependencies
-- **Convergent composition:** D_1 >< D_2 -- independent subDAGs
-  merging at a shared target node
-
-These may be the fundamental operations from which all DAG structure
-is built. If so, the archetype question becomes: how many distinct
-well-formed compositions exist at bounded depth?
+**Anti-unification** (computing the most specific common template from
+two concrete subgraphs) and **composition** (formal rules for combining
+subDAGs) are needed but unfinished. See Section 5.5 for the template
+extraction problem statement.
 
 ---
 
 ## 8. Retrocause-Specific Extensions
 
-### 8.1 Convergence (retained, reformulated)
+### 8.1 Convergence (retained, reformulated -- SCOPE CORRECTION)
 
-In the paper's terms, a convergence node is a node with high in-degree:
-many edges arrive at it. In retrocause terms, this is an attractor.
+Convergence is a **global DAG (G) concept**, not a single-story concept.
+A convergence node is a node in G where multiple *independent* causal
+paths originating from *different* source regions arrive. This requires
+a domain with many branches and high die-out rate -- most paths fail,
+and the few that survive funnel into convergence nodes (attractors).
 
-**Reformulation:** A convergence node v in a story DAG S is a node
-such that multiple independent directed paths within S terminate at v.
-"Independent" = no shared ancestor within S other than S's source region.
+Within a single story DAG S, high in-degree nodes are just **merge
+nodes** -- structurally interesting but not convergence in the
+retrocause sense, because events in S typically share a common origin.
+True convergence requires cross-narrative scope: multiple independent
+stories (or branches of G) arriving at the same structural outcome.
 
-The paper doesn't discuss convergence explicitly because Groundhog Day's
-structure is mostly iterative (thread revisitation), not convergent
-(multiple paths merging). But the formalism supports it directly.
+The paper doesn't discuss convergence because Groundhog Day's structure
+is iterative (thread revisitation), not convergent. The formalism
+supports convergence directly, but only at the scale of G or
+domain-level DAGs with sufficient branching.
 
-### 8.2 Mind-Cursor (retained, grounded in threading)
+### 8.2 Meaning (hypothesis, not definition)
 
-A mind-cursor is a threading agent (Section 4.5). The v1 formalism
-(bandwidth epsilon, position v_k, agency sigma) maps onto threading
-operations:
-
-| v1 Concept | v2 Formalization |
-|-----------|------------------|
-| Position v_k | Current thread segment t_k |
-| Bandwidth epsilon | Minimum subDAG depth that the thread expands |
-| Agency sigma | At DAG branch points, the function selecting the next node |
-| "Present" | The current segment: past = threaded so far, future = DAG downstream |
-| Attention | Locally decreasing epsilon (expanding more subDAGs) |
-| Shortcuts | Locally increasing epsilon (threading subDAGs atomically) |
-
-### 8.3 Meaning (retained, reformulated)
-
-**Definition (new):** The meaning of a node v is:
+**Hypothesis:** The structural importance of a node v correlates with
+the number of templates it participates in:
 
 ```
-M(v) = the set of all templates A such that v participates in
-        some instance A[q] within the DAG
+importance(v) ~ |{A : v in some instance A[q]}|
 ```
 
-A node that appears in many template instances (many parallel subDAGs
-pass through it) has richer meaning than a node that appears in only
-one. This replaces v1's "sum over convergence structures" with a
-concrete, computable definition.
-
-### 8.4 Time, Space, Free Will
-
-These retrocause concepts are compatible with the paper's formalism
-and don't need reformulation. They remain as stated in v1:
-
-- **Time** = segment counter along a threading (D1)
-- **Space** = perceptual embedding of branching structure (D2)
-- **Free will** = the agency function sigma in the threading agent (D8)
+A node that appears in many template instances carries more structural
+weight. This is testable once we have a corpus of extracted DAGs.
+It is NOT a definition of "meaning" -- it is a measurable proxy.
 
 ---
 
@@ -655,11 +482,10 @@ The paper provides: representation of a single analyzed text.
 We add:
 
 1. **Ontological interpretation** -- the DAG as reality, not just model
-2. **Mind-cursor theory** -- threading as cognition, not just narration
-3. **Archetype as template** -- parametrized subDAGs as the mechanism
+2. **Archetype as template** -- parametrized subDAGs as the mechanism
    for structural recurrence across stories
-4. **Operators** -- computational operations on DAGs and templates
-5. **Convergence theory** -- high-in-degree nodes as structural attractors
+3. **Instantiation + contrast** -- operational tools for template analysis
+4. **Convergence** -- global-DAG concept for cross-narrative attractor nodes
 
 ### 9.2 Over v1
 
@@ -675,47 +501,36 @@ The paper gives us:
 ### 9.3 What's Still Missing
 
 1. **Template extraction algorithm** -- how to compute anti-unification on DAGs
-2. **Composition algebra** -- formal rules for combining subDAGs
-3. **Quality metrics** -- when is a template meaningful vs. trivial?
-4. **Domain bridging** -- how to apply this to non-narrative DAGs (gene networks, ecosystems)
-5. **The archetype count** -- can we derive a finite bound on templates at a given abstraction level from the composition algebra?
-6. **Convergence analysis** -- the paper focuses on iteration (Groundhog Day's loops); we need the formalism for convergent structure (multiple paths merging)
+2. **Quality metrics** -- when is a template meaningful vs. trivial?
+3. **Domain bridging** -- how to apply this to non-narrative DAGs (gene networks, ecosystems)
+4. **The archetype count** -- can we derive a finite bound on templates at a given abstraction level?
+5. **Cross-narrative convergence** -- building domain-scale DAGs where convergence is meaningful
 
 ---
 
-## 10. Tensions and Open Problems
+## 10. Open Problems
 
-### T1: Static Graph, Dynamic Threading (retained)
-
-The paper sidesteps this: it treats threading as an analytical tool
-applied by a human analyst. We treat it as cognition itself. The
-tension from v1 remains: what does it mean for a threading to "happen"
-in a static DAG?
-
-### T2: Human-Dependent Template Identification
+### T1: Human-Dependent Template Identification
 
 The paper admits: "only human intelligence has permitted the
 identification of semantic repetition in its various forms." We need
 automated extraction. Anti-unification on typed DAGs is the path,
 but the specifics are unfinished.
 
-### T3: Granularity Anchoring
+### T2: Granularity Anchoring
 
 At what granularity do you analyze? The same story can be one node
 or ten thousand. The paper chose "intermediate" without formal criteria.
 We need a principled way to select analysis granularity -- possibly
-tied to bandwidth epsilon (analyze at the granularity your mind-cursor
-operates at).
+tied to the domain's natural causal resolution.
 
-### T4: Dependency Sub-Classification
+### T3: Dependency Sub-Classification
 
 The paper uses a single undifferentiated "dependency" relation. Real
 causal structure has types: temporal, logical, material, informational.
-Do we sub-classify edges? The paper says "we will not do that here."
-We probably need to eventually. The typing would enrich the template
+Do we sub-classify edges? The typing would enrich the template
 language: two subDAGs might share the same node structure but differ
-in edge types, making them distinct archetypes at one level and
-equivalent at another.
+in edge types.
 
 ---
 
@@ -725,19 +540,18 @@ equivalent at another.
 |------|-----------|
 | **Completion** | A fully-saturated semantic expression (all argument slots filled). One node. |
 | **Contrast** | The parameter differences between two parallel instances of the same template. |
+| **Convergence** | A node in G where multiple independent causal paths from different origins meet. Global-DAG concept only. |
 | **DAG** | Directed acyclic graph. Nodes = events, edges = dependencies. |
-| **Dependency** | An edge e(v,w): w's semantic content relies on information from v. |
-| **Fabula** | The story's underlying event structure. = the DAG. |
+| **Dependency** | An edge e(v,w): w's semantic content relies on information from v. Tested by counterfactual. |
+| **Fabula** | The underlying causal structure. = the DAG. |
 | **G** | The universal DAG. All events, all dependencies. Reality itself (ontological claim). |
-| **L** | The semantic lexicon. Typed vocabulary for building expressions. |
-| **Parallel DAGs** | Two subDAGs that instantiate the same template with different parameters. |
-| **Parametrized subDAG** | A subDAG template D[p] with typed parameter slots. = archetype. |
-| **Semantic expression** | A well-typed composition of L entries. The content of a node. |
-| **Sjuzhet** | A particular telling of a story. = a threading of the DAG. |
-| **SubDAG** | A node with interior structure: contains its own nodes and edges. |
-| **Template** | A parametrized subDAG with open parameter slots. The archetype mechanism. |
-| **Thread** | An ordered sequence of node visits. May revisit, skip, jump. |
-| **Thread shortcut** | A thread that traverses only some interior nodes of a subDAG. |
+| **L** | The semantic lexicon. Vocabulary for building expressions. |
+| **Merge node** | A node with in-degree >= 2 within a single DAG. Not convergence. |
+| **Parallel DAGs** | Two subgraphs that instantiate the same template with different parameters. |
+| **Semantic expression** | A composition of L entries. The content of a node. |
+| **Sjuzhet** | A particular telling. = a threading of the DAG. Analytical tool, not core structure. |
+| **Template** | A parametrized pattern with open parameter slots. The archetype mechanism. |
+| **Thread** | An ordered sequence of node visits. Describes telling order. |
 
 ---
 
@@ -745,30 +559,31 @@ equivalent at another.
 
 Concepts adopted directly from the paper:
 - DAG as fabula representation
-- Threading as sjuzhet representation
+- Threading as sjuzhet representation (demoted to analytical tool)
 - Semantic expressions as node content
-- SubDAG hierarchy for multi-scale structure
 - Parametrized subDAGs for repeated-with-variation patterns
 - Parallel DAGs for cross-segment structural similarity
-- Thread shortcuts for narrative compression
 
 Concepts extended beyond the paper:
 - Ontological interpretation of G
-- Mind-cursor as threading agent with bandwidth
-- Formal operators (7.1 -- 7.7)
 - Archetype as template equivalence class
-- Convergence nodes and attractor theory
-- Anti-unification as archetype extraction
+- Instantiation + contrast as operational tools
+- Convergence as global-DAG attractor (cross-narrative scope)
 
 Concepts from v1 that are REPLACED:
 - "Topological equivalence class" -> parametrized template
-- "Persistence homology" -> subDAG hierarchy
-- "Scale-dependent meaning" -> multi-level subDAG expansion
-- Abstract topology talk -> concrete typed expressions
+- "Persistence homology" -> two-scale DAG hierarchy
+- Abstract topology talk -> concrete expressions
+- Mind-cursor formalism -> simple threading (if needed)
+
+Concepts from v1 that are DROPPED:
+- Compound types (slist, set, conditional) -- redundant with edge structure
+- Mind-cursor bandwidth/agency formalism -- renaming, not adding
+- Time/space/free will mappings -- philosophy, not operational
+- Arbitrary-depth nesting -- we use 2 scales
 
 Concepts from v1 that are DEFERRED:
 - Base narrative catalogs (Booker, Vonnegut, Campbell)
 - Archetype count derivation
 - Observable domain windows (ecology, markets, gene regulation)
-- Substrate sequence (atoms -> ... -> language -> ?)
-- Spatial dimension conjecture
+- Anti-unification algorithm for template extraction
