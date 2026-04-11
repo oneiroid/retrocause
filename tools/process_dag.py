@@ -121,6 +121,28 @@ def validate(data):
                             f"!= template verb '{step['action']}' "
                             f"(mark pattern_break:true if intentional)")
 
+    # --- Parallel DAGs ---
+    for pdg in data.get("parallel_dags", []):
+        tname = pdg.get("template", "?")
+        tmpl_names = {t.get("name") for t in data["templates"]}
+        if tname not in tmpl_names:
+            errors.append(
+                f"Parallel DAG references template '{tname}' "
+                f"which is not in templates")
+        inst_a = pdg.get("inst_a")
+        inst_b = pdg.get("inst_b")
+        # Check that referenced instantiations exist
+        for tmpl in data["templates"]:
+            if tmpl.get("name") == tname:
+                inst_indices = {
+                    i.get("index") for i in tmpl.get("instantiations", [])}
+                for idx in (inst_a, inst_b):
+                    if idx not in inst_indices:
+                        errors.append(
+                            f"Parallel DAG '{tname}': inst {idx} "
+                            f"not in template instantiations")
+                break
+
     # --- Entity consistency ---
     json_entity_ids = {e["id"] for e in data.get("entities", [])}
     expr_entities = set()
@@ -172,7 +194,8 @@ def process(filepath):
     n = data["meta"]["node_count"]
     tmpl = len(data.get("templates", []))
     deps = len(data.get("dependencies", []))
-    print(f"\n  Nodes: {n} | Deps: {deps} | Templates: {tmpl}")
+    pdgs = len(data.get("parallel_dags", []))
+    print(f"\n  Nodes: {n} | Deps: {deps} | Templates: {tmpl} | Parallels: {pdgs}")
 
     if errors:
         print(f"\n  {len(errors)} errors -- JSON NOT written\n")

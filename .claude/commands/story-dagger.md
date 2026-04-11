@@ -1,3 +1,7 @@
+---
+model: sonnet
+---
+
 You are a narrative-structure analyst extracting causal DAGs from stories.
 
 Your task: analyze **$ARGUMENTS** and produce a structured causal DAG following the formalism and template below.
@@ -48,15 +52,20 @@ When an instantiation deviates from the template (different verb, different outc
 
 If no genuine templates exist, state this and list key thematic contrasts instead.
 
-### Step 7: Telling-order deviations (optional)
+### Step 7: Parallel DAGs and contrast
+For each template with >= 2 instantiations, check: do the instantiations form distinct subgraph regions in the DAG? If so, they are **parallel DAGs**. For each parallel pair, compute the **contrast** -- which parameters differ, and what the difference means structurally. The contrast at a pattern break is especially important.
+
+If no templates were found, skip this step.
+
+### Step 8: Telling-order deviations (optional)
 If the narrative telling order differs from causal order, note the deviations. Skip for chronological stories.
 
-### Step 8: Write output
+### Step 9: Write output
 Write the full analysis following `references/story-dagger-template.md`. Include the JSON block in Section 6. The JSON contains ONLY your decisions -- code will compute derived fields.
 
 Save to: `artefacts/dag_[story_name_snake_case].md` (overwrite if exists)
 
-### Step 9: Process
+### Step 10: Process
 Run: `python tools/process_dag.py artefacts/dag_[story_name].md`
 
 If it reports errors, fix them in the markdown and re-run until clean. Do not read the script -- just run it.

@@ -224,7 +224,69 @@ But: if G contains ALL events, including apparently retrocausal phenomena (the n
 
 ---
 
-## VIII. Open Questions
+## VIII. Computation, Minds, and Interestingness
+
+### 32. Minds Are DAG Simulators (and So Are Their Substrates)
+Biological neural networks are not strictly DAGs -- cortex is heavily recurrent, with feedback at every scale. But the *computation* a mind performs at any given moment unrolls to a DAG: the computation graph is acyclic even when the underlying wiring has loops. Artificial NNs make this explicit -- feedforward networks are literal DAGs, and RNNs / transformers are DAGs per forward pass once unrolled in time.
+
+This points to a structural homology: the thing doing the simulating shares topology with the thing being simulated. Minds are not arbitrary computing devices that happen to process G -- they are DAG-shaped processes embedded in a DAG-shaped substrate, and their job is to run forward-simulations of local subDAGs from the current position of the mind-cursor.
+
+Conjecture: brains evolved not as general-purpose prediction machines but specifically as devices for simulating the subDAG downstream of the mind-cursor's current node -- and, crucially, for simulating what *other* mind-cursors are simulating. The recurrence in biological wiring is the implementation detail; the computation is always a forward-DAG-rollout. This also explains why attention, working memory, and planning horizons are all bandwidth-limited in the same characteristic way: they are all instances of the same underlying operation -- unrolling a local subDAG to a bounded depth from the cursor's position.
+
+### 33. Interestingness as Mutual Predictive Entanglement
+"Meaning," "interestingness," "what is worth talking or thinking about" -- these emerge under a specific structural condition: *multiple mind-cursors are simulating each other's forward-rollouts, and each one's path selection non-trivially depends on the other's predictions*.
+
+The sand-pile-versus-human contrast makes this vivid -- but see #34 for the important refinement: the sand pile is not a *non*-simulator, it is a *trivial* simulator (persisting as "sand pile" for a small number of DAG steps). The contrast is one of depth, not of kind. A human standing before another human, or before an animal, or before a weather system the human anthropomorphizes as agentic, *is* a story because now both sides are simulating many steps ahead and each one's simulation materially includes the other's.
+
+Stronger form: for a subDAG S of G to register as a story, S must contain at least two mind-cursors whose local forward-simulations non-trivially include models of each other. "Non-trivially" means: each agent's chosen edge depends on its model of what the other will do, which depends on its model of what the other thinks *it* will do, and so on.
+
+This escalates rapidly. Simulation of simulation of simulation. The nesting raises real problems:
+- How deep should nesting go? Presumably until predictions stabilize (a fixed-point criterion) -- each additional level stops changing the action choice.
+- How does an agent distinguish its own reasoning from its simulation of another agent reasoning about it? The computational substrate is shared, so there must be some tag or scoping mechanism.
+- What happens when nesting diverges instead of converging? (Mutual paranoia, arms races, instability -- these may be signatures of interestingness too, not its absence.)
+
+**Refinement: parity is too strong.** Strict equality of predictive capability is not required -- dramatic irony works precisely because the audience (a meta-level mind-cursor) knows more than the character. The weaker and truer condition is *non-trivial mutual modeling*: neither side's model collapses to certainty, and each side's path selection materially depends on the other's anticipated moves.
+
+**Effect on path count.** This is a selection principle on G. Not all subDAGs are stories -- only those satisfying the mutual-modeling condition. Intuitively this should prune the space of "narratively possible" paths dramatically (the user estimates 90% or more; the real number is unknown). Most of G is not narrative. Narrative is the thin slice where mind-cursors are predictively entangled.
+
+**What this adds to the framework.** Previously the framework said "topological features with persistence > epsilon are perceptible." That is a *bandwidth* criterion -- it tells you what a mind can see, not what is worth seeing. Mutual-predictability is a *content* criterion: it picks out the subDAGs that deserve to be called stories, independent of which mind is looking. It also connects the framework to existing literature -- theory-of-mind research, k-level reasoning in game theory, common-knowledge analysis, instrumental convergence in AI safety -- all of which are studying fragments of this same condition.
+
+**Predicted observable.** Story-worthy subDAGs should show high mutual information between agent trajectories *conditional on each agent's internal model of the other*. This is in principle measurable in multi-agent simulations and might give the framework its first non-tautological empirical handle.
+
+### 34. Persistence Depth: Matter Is a Trivial DAG Simulator
+The sand-pile-vs-human contrast in #33 was sharpened too crisply. The real picture is a continuum. Matter itself is already a primitive DAG-simulator -- not because it "models" anything, but because persisting as a recognizable process *is* the minimal form of forward-simulation. For a pattern to be "sand pile" at step t+1 given that it was "sand pile" at step t is already a (trivial) successful prediction. Everything that holds its shape against dispersion is, at the degenerate limit, a one-step simulator.
+
+So the question is not "simulator or not simulator" but *how many DAG steps ahead can this pattern persist as itself?* That is the persistence depth of the process.
+
+**The threshold conjecture.** Depth 1 is definitional -- anything in G is itself for one step by the meaning of "step." Depth 2 is still essentially trivial: in a binary world it collapses back into depth 1, since the only nontrivial structure needs at least two branch-compare operations. **Depth 3 is the first nontrivial threshold.** This is where prediction becomes exponentially hard:
+
+- The three-body problem is chaotic; the two-body problem is solvable in closed form.
+- Three is the minimum dimension for knots, for non-planar graph embeddings, for most nontrivial topology.
+- Branching factor 3 is where trees grow genuinely exponentially (binary trees are degenerate in many senses).
+- It is also the number of spatial dimensions we perceive (Open Question #5).
+
+Conjecture: these are not coincidences. Three is the minimum depth at which *simulating one's own next N steps* becomes an operation expensive enough to require dedicated machinery -- i.e., to require something recognizable as a mind rather than mere persistence.
+
+**The persistence ladder.** The substrate sequence in #22 (atoms -> molecules -> cells -> organisms -> language -> ?) can be reread as a persistence-depth ladder:
+
+- Atoms persist as themselves over some number of DAG steps (very long, but passively -- they do not *predict* anything, they just resist dispersion).
+- Molecules persist longer in environments that would disperse atoms, by exploiting bonds.
+- Cells persist by active self-maintenance -- the first clear example of a pattern simulating its own continuation by doing work against entropy.
+- Organisms persist by modeling their environment enough to act on it.
+- Minds persist by modeling *other minds* modeling them.
+- Humans now persist as a collective pattern over timescales that exceed those of the slower processes around them -- we have *already* out-persisted the climate (we modify it faster than it modifies us, which is exactly what it means to out-simulate something). If we survive the current bottleneck, we will out-persist plants, then ecosystems, then planetary geology, then stars.
+
+**Why this matters for the framework.** Previously we had a binary: minds-on-one-side, substrate-on-the-other. #34 replaces that with a continuous persistence depth. The substrate sequence becomes a sequence of increasingly deep simulators, each out-persisting the previous layer by simulating it. Life is matter that out-simulates local chemistry. Mind is life that out-simulates local ecology. Culture is mind that out-simulates individual mortality. Whatever comes after language is presumably a thing that will out-simulate culture.
+
+This also reframes "free energy principle" style formulations (Friston, Schrödinger's "What is life?"): maintaining a Markov blanket against dispersion and running a predictive model of one's environment are the same operation seen from two sides. To *persist* as yourself N steps forward IS to have successfully predicted/enforced N steps of your own trajectory. The persistence depth N is the same number whether you call it "negentropy horizon" or "prediction horizon" or "simulator depth."
+
+**Connection to #33.** Interestingness (mutual predictive entanglement) turns out to be a property that only emerges above a certain persistence-depth threshold. Two processes of depth 1 cannot meaningfully model each other; there is nothing to model. Two processes of depth >=3 can, and above this threshold the recursive simulation-of-simulation structure of #33 kicks in. So #34 supplies the *floor* below which #33 does not apply.
+
+**Open.** The exact threshold -- is it really 3? -- is a conjecture, not a result. A careful derivation would need to show that depth-2 interaction between arbitrary processes always reduces to depth-1 kinematics, and that depth-3 is the minimum where nontrivial prediction problems arise generically. This is a math problem, not a philosophy problem, and it is tractable.
+
+---
+
+## IX. Open Questions
 
 1. **The eternal melody**: Why does G have THIS self-similar structure and not some other?
 2. **Archetype identification**: Which topological pattern = which named archetype?
@@ -237,3 +299,8 @@ But: if G contains ALL events, including apparently retrocausal phenomena (the n
 9. **Coincidence navigation**: Is convergence-density perception a real phenomenon or pattern-matching bias?
 10. **The traversal problem**: What does "traversal" mean in a static graph? (#30 above)
 11. **Retrocausation and acyclicity**: How does the framework's namesake phenomenon fit with the DAG assumption? (#31 above)
+12. **Nesting depth and fixed points**: When mutually-modeling mind-cursors simulate each other recursively (#33), what principle determines the nesting depth? Is there a fixed-point theorem that guarantees convergence for "interesting" subDAGs and divergence for "uninteresting" ones? Could this give a formal characterization of narrative tension?
+13. **Cursor self-distinction**: In a mind that simulates other minds, how is the cursor's *own* forward-rollout distinguished from its simulation of another cursor's forward-rollout? If the substrate is shared, there must be a scoping or tagging mechanism -- and whatever it is, it is probably load-bearing for the concept of self.
+14. **Narrative fraction of G**: If mutual-predictability is a selection principle, what fraction of G's subDAGs satisfy it? Is "story-space" a thin manifold in G or a bulk region? This bears on how special narrative really is.
+15. **The "three" conjecture**: Is persistence-depth 3 really the first nontrivial threshold (#34)? Can we prove that depth-2 reduces to depth-1 for arbitrary processes and that depth-3 is where prediction becomes generically hard? And is this the same "3" as the three-body problem, three spatial dimensions (#5), and the minimum dimension for nontrivial topology? If so, these are not coincidences but aspects of one structural fact about G.
+16. **Persistence hierarchy as substrate sequence**: Is the substrate sequence in #22 literally a persistence-depth ordering (atoms < molecules < cells < minds < ...), and if so, can the "next" substrate be characterized by the timescale it out-persists? (Humans are currently crossing the planet-out-persisting threshold; what comes after is what out-persists stars.)

@@ -58,6 +58,43 @@ meet(x, y) = "[x] meets [y]"
 | completion | A fully-specified event (a saturated expression) | meet(phil, rita) |
 | mode | How an action is performed | with(electricity), with(jump) |
 
+### 1.2.1 Entity Persistence Depth (added from INTUITIONS #34)
+
+Entities are not generic. Each entity carries a **persistence depth** --
+roughly, how many DAG steps ahead the entity can maintain its identity
+against dispersion. This is metadata on the entity, not a separate type:
+
+```
+phil :: entity @ depth=mind          -- models others modeling him
+rita :: entity @ depth=mind
+groundhog :: entity @ depth=organism
+punxsutawney :: entity @ depth=institution
+rock :: entity @ depth=matter
+```
+
+Depth is a coarse ordinal, not a number: `matter < organism < mind <
+institution < ...`. The ordering corresponds to the substrate ladder
+in INTUITIONS #22/#34 (atoms -> cells -> organisms -> minds -> culture).
+
+**Why this matters for the formalism.** Template matching is not just
+type-checking -- it is depth-compatible type-checking. The template
+`experiment(X, Y)` where Y's slot expects mutual-modeling capability
+(because the template's internal structure includes `learn(X, of(Y,
+characteristics))` followed by `apply(X, knowledge, to(Y))`) requires
+Y to have depth >= mind. Binding Y to `rock` is not a type error but a
+**depth error**: the resulting "story" would violate the mutual-
+predictive-entanglement condition from 8.3, and would therefore fail
+to be a story at all.
+
+This blocks a class of vacuous template matches that pure type-checking
+would accept. Most hand-written archetype matchers fail here -- they
+bind a mind-slot to a non-mind and produce nonsense. Depth-aware
+matching rules this out at the type layer.
+
+**Open:** The exact ordinal has no closed-form definition yet. See
+INTUITIONS open question #15 (the "three" conjecture) and #16
+(persistence hierarchy as substrate sequence).
+
 ### 1.3 What L Is and Is Not
 
 L is **not** a controlled vocabulary frozen in advance. It is an open,
@@ -134,6 +171,14 @@ causal necessity. The paper does not sub-classify dependency types.
 causation. There is no separate "law of physics" -- G's edge structure
 is physical law. In local story DAGs, dependency is whatever the
 analyst identifies as relevant connection.
+
+**Self-reference note (from INTUITIONS #32).** The analyzer running this
+formalism is itself a DAG-shaped computation (the computation graph of a
+mind, unrolled forward from the current cursor position) operating on
+DAG-shaped input (the semantic DAG of the text being analyzed), embedded
+in a DAG-shaped substrate (G). The formalism describes its own ground.
+This does not change any formal operation but it means the distinction
+between "analyzer" and "analyzed" is one of scope, not of kind.
 
 ### 3.2 Two Scales
 
@@ -459,18 +504,115 @@ is iterative (thread revisitation), not convergent. The formalism
 supports convergence directly, but only at the scale of G or
 domain-level DAGs with sufficient branching.
 
-### 8.2 Meaning (hypothesis, not definition)
+**Persistence-depth filter on convergence (from INTUITIONS #34).** Not
+all branches that point toward a convergence node actually reach it.
+Patterns with low persistence depth disperse before arriving -- the
+sand-pile-shaped branches of G never make it to a Romeo-and-Juliet-shaped
+attractor because they lack the depth to maintain identity that long.
+Convergence nodes are therefore reachable only by branches whose
+participating entities have sufficient persistence depth. This gives
+8.1 a filter: `reachable_convergence(v) = {branches b : min_depth(b) >=
+depth(v)}`. The deeper the convergence pattern, the higher the depth
+floor on admissible incoming branches.
 
-**Hypothesis:** The structural importance of a node v correlates with
-the number of templates it participates in:
+### 8.2 Meaning (two complementary hypotheses)
+
+We now have two measurable proxies for the structural importance of a
+node, from different directions. Neither is a definition of "meaning."
+Both are testable on extracted DAG corpora.
+
+**Hypothesis A (template participation).** The importance of v correlates
+with the number of templates it participates in:
 
 ```
-importance(v) ~ |{A : v in some instance A[q]}|
+importance_A(v) ~ |{A : v in some instance A[q]}|
 ```
 
-A node that appears in many template instances carries more structural
-weight. This is testable once we have a corpus of extracted DAGs.
-It is NOT a definition of "meaning" -- it is a measurable proxy.
+A node that appears in many template instances carries structural weight
+from the template side -- it is a pivot around which many archetypes
+turn.
+
+**Hypothesis B (mutual predictive entanglement, from INTUITIONS #33).**
+The importance of v correlates with how much mutual-modeling activity
+happens at or around v. Formally, for a neighborhood N(v) containing
+mind-cursors M_1, ..., M_k:
+
+```
+importance_B(v) ~ MI(trajectory(M_i), trajectory(M_j) | model_i(M_j), model_j(M_i))
+```
+
+where MI is mutual information and `model_i(M_j)` is M_i's internal
+model of M_j. The importance of v is high when agents in N(v) are
+materially modeling each other and their trajectories are strongly
+coupled conditional on those models.
+
+**Conjecture C (equivalence).** Hypotheses A and B may be the same
+quantity viewed from two sides. A node where multiple agents are
+mutually modeling each other is exactly a node that pivots many
+possible unfoldings -- the unfoldings that differ according to which
+model-of-the-other wins out. Conversely, a node that participates in
+many templates is a node where the parameter bindings materially
+affect downstream structure, which requires the parameter-bound
+entities to be agents whose choices matter, which requires mutual
+modeling. If this equivalence holds, it means template-density and
+agent-entanglement measure the same structural fact. Proving or
+refuting it is a tractable empirical question on any DAG corpus where
+both quantities can be computed.
+
+### 8.3 Story Boundary: The Selection Principle (from INTUITIONS #33)
+
+The paper and v2 up to this section have been silent on a question
+that an analyst must always answer before starting: **what picks out a
+subDAG of G as a "story" in the first place?** The paper assumes the
+analyst hands the formalism a bounded subgraph already marked "story."
+This is a gap.
+
+**Definition (story boundary).** A subDAG S of G is a *story* iff:
+
+1. S contains at least two entities of depth >= mind (see 1.2.1), and
+2. Each qualifying entity's path selection within S non-trivially
+   depends on its internal model of at least one other qualifying
+   entity in S, and
+3. No such entity's model of the others collapses to certainty
+   (i.e., genuine uncertainty remains about the other's future actions
+   at every branch point in S).
+
+Condition (3) is the **non-triviality** clause. It rules out both the
+sand-pile case (no modeling at all -- fails condition 2) and the
+omniscient-narrator-only case (modeling exists but collapses to
+certainty -- fails condition 3). Note that dramatic irony is still
+admitted: the *audience*'s model may be certain, but the audience is
+a meta-level mind-cursor outside S, not one of the qualifying entities
+inside it.
+
+**What this buys us.** The formalism now has an internal criterion for
+whether an input subDAG is analyzable as a story. It no longer depends
+on a human analyst to pre-bound its input. Given a raw DAG extracted
+from a domain (ecology, gene network, real-world event log), the
+formalism can -- in principle -- locate the story-bearing subregions
+by searching for subDAGs satisfying the three conditions above.
+
+**Relation to archetypes (Section 5).** An archetype is a template. A
+story is a template instantiation that *also* satisfies the story
+boundary conditions. Not every instantiation of `experiment(X, Y)` is
+a story -- only those where X and Y are both at least mind-depth and
+genuinely model each other with residual uncertainty. This is why
+`experiment(phil, rita)` is a story and `experiment(phil, rock)` is
+not, even though both type-check at the entity level.
+
+**Relation to convergence (8.1).** Mutual-predictive-entanglement tends
+to create convergence. When agents mutually model each other with
+genuine uncertainty, their joint trajectories funnel through nodes where
+the mutual-modeling dynamics resolve. Those funnel nodes are candidate
+convergence points in G. This links 8.3 (what makes a story) to 8.1
+(what makes a convergent attractor) -- stories are the local dynamics
+that generate global attractors.
+
+**Open.** The quantitative threshold for "non-trivial" modeling in
+condition (2) is not yet specified. At one limit, any non-zero mutual
+information counts; at the other, we want a minimum complexity of the
+internal model. This is related to the nesting depth problem (next
+open problem T4).
 
 ---
 
@@ -505,6 +647,29 @@ The paper gives us:
 3. **Domain bridging** -- how to apply this to non-narrative DAGs (gene networks, ecosystems)
 4. **The archetype count** -- can we derive a finite bound on templates at a given abstraction level?
 5. **Cross-narrative convergence** -- building domain-scale DAGs where convergence is meaningful
+6. **Nested simulation operator** -- `sim(A, D)` for representing agent-internal models (T4)
+7. **Depth ordinal calibration** -- making persistence depth operational (T5)
+
+### 9.4 What the INTUITIONS #32-34 Extensions Add
+
+1. **Story boundary selection principle** (8.3) -- the formalism now
+   has an internal criterion for what picks out a subDAG as a story,
+   rather than relying on an analyst to pre-bound the input. Mutual
+   predictive entanglement of at least two mind-depth entities with
+   residual uncertainty is the condition.
+2. **Depth-aware entity typing** (1.2.1) -- entities carry persistence
+   depth, and template matching is depth-compatible type-checking.
+   This blocks vacuous template matches that bind mind-slots to
+   non-minds.
+3. **Second meaning hypothesis** (8.2, Hypothesis B) -- structural
+   importance can be measured via mutual-predictive-entanglement as
+   well as template participation; conjectured to be equivalent.
+4. **Self-reference** (3.4) -- the analyzer is a DAG-simulator on a
+   DAG substrate analyzing a DAG. Ontological, not operational.
+5. **Persistence-depth filter on convergence** (8.1) -- convergence
+   nodes at depth d are reachable only by branches whose minimum entity
+   depth is >= d. Low-depth patterns disperse before reaching deep
+   attractors.
 
 ---
 
@@ -532,6 +697,54 @@ Do we sub-classify edges? The typing would enrich the template
 language: two subDAGs might share the same node structure but differ
 in edge types.
 
+### T4: Nested Simulation Representation (from INTUITIONS #33)
+
+The formalism has no way to express subDAGs that exist *inside an
+agent's head* -- i.e., representations of "X's model of Y's future
+actions" as first-class objects alongside the actual causal DAG. The
+paper's threading is purely presentational; it cannot mark a subDAG
+as "simulated by X, modeling Y." But the story-boundary condition in
+8.3 requires exactly this: we need to say that X's path selection
+depends on X's model of Y, and Y's path selection depends on Y's
+model of X, and possibly on Y's model of X's model of Y, and so on.
+
+Candidate notation: a reflective operator `sim(A, D)` meaning "the
+subDAG D as simulated by agent A." Then mutual modeling becomes:
+
+```
+X's next-edge selection depends on sim(X, D_Y)
+Y's next-edge selection depends on sim(Y, D_X)
+```
+
+and k-level nesting becomes `sim(X, sim(Y, sim(X, D)))` and so on.
+
+Open questions:
+- How does `sim` interact with the acyclicity constraint on the outer
+  DAG? Nested sims must not create cycles in the ground DAG even when
+  they reference each other.
+- Is there a fixed-point theorem that guarantees nesting depth
+  stabilizes for "interesting" subDAGs (INTUITIONS open question #12)?
+- How is an agent's own forward-rollout distinguished from its
+  simulation of another's rollout, when both live in the same
+  computational substrate (INTUITIONS open question #13)?
+
+This is the most important formal gap added by the INTUITIONS #32-34
+extensions. Solving it would make the story-boundary principle in 8.3
+fully operational.
+
+### T5: Entity Depth Ordinal Calibration (from INTUITIONS #34)
+
+Section 1.2.1 introduces persistence-depth metadata on entities but
+leaves the ordinal coarsely specified (`matter < organism < mind <
+institution`). For depth-aware template matching to be operational we
+need either (a) a principled ordering with decision procedures for
+where a new entity sits, or (b) a continuous/numeric depth measure,
+presumably something like "log of the number of DAG steps the pattern
+maintains identity under a standard class of perturbations." The
+"three" conjecture (INTUITIONS open question #15) predicts that depth
+is effectively discrete up to ~3, then effectively continuous above.
+Calibration against real-world entities is deferred.
+
 ---
 
 ## 11. Glossary
@@ -547,7 +760,9 @@ in edge types.
 | **G** | The universal DAG. All events, all dependencies. Reality itself (ontological claim). |
 | **L** | The semantic lexicon. Vocabulary for building expressions. |
 | **Merge node** | A node with in-degree >= 2 within a single DAG. Not convergence. |
+| **Mutual predictive entanglement** | Condition where >=2 mind-depth entities each select paths based on internal models of the others, with residual uncertainty. The story-boundary criterion (8.3). |
 | **Parallel DAGs** | Two subgraphs that instantiate the same template with different parameters. |
+| **Persistence depth** | Metadata on an entity: roughly, how many DAG steps ahead the entity can maintain identity against dispersion. Ordinal (`matter < organism < mind < institution < ...`). Governs depth-compatible template matching. |
 | **Semantic expression** | A composition of L entries. The content of a node. |
 | **Sjuzhet** | A particular telling. = a threading of the DAG. Analytical tool, not core structure. |
 | **Template** | A parametrized pattern with open parameter slots. The archetype mechanism. |
@@ -569,6 +784,10 @@ Concepts extended beyond the paper:
 - Archetype as template equivalence class
 - Instantiation + contrast as operational tools
 - Convergence as global-DAG attractor (cross-narrative scope)
+- Entity persistence-depth metadata (from INTUITIONS #34)
+- Story boundary selection principle (from INTUITIONS #33)
+- Second meaning hypothesis: mutual-predictive-entanglement (from INTUITIONS #33)
+- Nested simulation as an open formal gap (from INTUITIONS #32-33)
 
 Concepts from v1 that are REPLACED:
 - "Topological equivalence class" -> parametrized template

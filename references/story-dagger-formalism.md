@@ -94,7 +94,51 @@ the contrast at a pattern break shows the story's thesis.
 
 ---
 
-## 5. Threading (optional annotation)
+## 5. Parallel DAGs (intra-narrative)
+
+Two subDAGs D_1 and D_2 within the same story are **parallel** if they
+are instances of the same parametrized template:
+
+```
+D_1 = A[q_1]
+D_2 = A[q_2]
+```
+
+### When to identify parallel DAGs
+
+After finding templates (Section 4), check: do any two instantiations
+of the same template form distinct subgraph regions in the DAG? If so,
+they are parallel DAGs.
+
+Parallelism creates resonance -- the reader perceives structural
+similarity and extracts meaning from the DIFFERENCES between instances.
+
+### The Contrast operator
+
+The **contrast** between two parallel instances is the set of parameter
+positions where they differ:
+
+```
+contrast(A[q_1], A[q_2]) = {i : q_1[i] != q_2[i]}
+```
+
+The meaning of the parallelism lives in the contrast. Same template,
+different parameters, different outcomes -- the contrast IS the point.
+
+Example from Groundhog Day:
+```
+experiment(phil, nancy) -> succeeds (seduction works)
+experiment(phil, rita)   -> fails    (genuine connection resists manipulation)
+
+contrast = {target: nancy/rita, outcome: succeed/fail}
+```
+
+The contrast at a **pattern break** (where the template's verb or
+structure changes) shows the story's thesis.
+
+---
+
+## 6. Threading (optional annotation)
 
 Threading describes HOW a story is TOLD, not the causal structure.
 It is metadata, not core structure.

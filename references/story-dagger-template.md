@@ -104,16 +104,37 @@ Key contrasts: [list thematic oppositions]."]
 
 ---
 
-## 5. Telling-Order Deviations (optional)
+## 5. Parallel DAGs and Contrast (if templates exist)
+
+[For each template with >= 2 instantiations, identify the parallel
+subDAG pairs and compute their contrast.]
+
+**Parallel pair:** template_name inst #A vs inst #B
+
+| Parameter | Inst #A | Inst #B |
+|-----------|---------|---------|
+| param_1 | value | value |
+| param_2 | value | value |
+| outcome | what happens | what happens |
+
+**Contrast meaning:** [What the difference reveals about the story's structure.]
+
+[If a pattern break exists in the pair, note how the break changes
+the structural meaning.]
+
+---
+
+## 6. Telling-Order Deviations (optional)
 
 [Only if sjuzhet differs from fabula. Skip for chronological stories.]
 
 ---
 
-## 6. JSON Export
+## 7. JSON Export
 
 [This is the structured deliverable. Contains ONLY your decisions --
-entities, nodes, edges, templates. Code computes everything else.]
+entities, nodes, edges, templates, parallel DAGs. Code computes
+everything else.]
 
 ```json
 {
@@ -151,6 +172,15 @@ entities, nodes, edges, templates. Code computes everything else.]
          "pattern_break": false}
       ],
       "contrast": "what differs"
+    }
+  ],
+  "parallel_dags": [
+    {
+      "template": "template_name",
+      "inst_a": 1,
+      "inst_b": 2,
+      "contrast": {"param_name": ["val_a", "val_b"]},
+      "meaning": "what the contrast reveals"
     }
   ]
 }
