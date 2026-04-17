@@ -16,76 +16,53 @@ This is not a model. Models represent something else. G is not representing anyt
 ### 2. Events Are Atomic but Low-Meaning
 Events are nodes -- individually as meaningless as individual letters. Meaning lives entirely in relational structure: how events connect, what patterns they form, what topological features they participate in. An isolated event is ontologically real but semantically empty.
 
-### 3. All Events Exist
-There is no ontological distinction between events that "did happen" and events that "didn't happen." The phrase "events that didn't happen but causally influenced the story" is incoherent in this framework. All events in G exist. What differs is which events a particular mind-cursor traverses. "Counterfactual" is a property of a path, not of a node.
+## VIII. Computation, Prediction, and Interestingness
 
-### 4. Time Is Not a Dimension
-Time = event counter along a traversal path. It is a byproduct of sequential reading by a mind-cursor, not a coordinate of reality. Different mind-cursors at different positions experience different "times" -- but none of these are privileged. There is no global clock, no "simultaneity," no "before" and "after" except relative to a specific path.
+### 32. Minds Are DAG Simulators (and So Are Their Substrates)
+Biological neural networks are not strictly DAGs — cortex is heavily recurrent, with feedback at every scale. But the computation a mind performs at any given moment unrolls to a DAG: the computation graph is acyclic even when the underlying wiring has loops. Artificial neural networks make this explicit — feedforward nets are literal DAGs, and RNNs/transformers are DAGs per forward pass once unrolled in time.
 
-### 5. Space Is Perceptual Projection
-Space = the dimensional structure we add to "unfold" branching chains for simultaneous comparison. We don't perceive distance -- we perceive chains of events (riding a bus, seeing pictures through windows). "20 km" is lossy compression of a causal chain. We add spatial dimensions to resolve the branching complexity of the graph without edge-crossings.
+This points to a structural homology: the thing doing the simulating shares topology with the thing being simulated. Minds are DAG-shaped processes embedded in a DAG-shaped substrate, and their primary operation is running forward-simulations of local subDAGs from the current position of the mind-cursor.
 
-Open conjecture: 3 spatial dimensions = the minimum embedding dimension required for the typical local branching complexity of G. If the graph's branching structure were simpler, fewer dimensions would suffice; if more complex, we'd perceive more.
+Conjecture: brains evolved specifically as devices for simulating the subDAG downstream of the mind-cursor's current node — and, crucially, for simulating what other mind-cursors will do in the next N steps through G. The recurrence in biological wiring is the implementation detail; the computation is always a forward-DAG-rollout. This explains why attention, working memory, and planning horizons are all bandwidth-limited in the same characteristic way: they are instances of the same underlying operation — unrolling a local subDAG to a bounded depth from the cursor's position.
 
-### 6. Perception Is Ground Truth
-Perception is our only hard fact. All ontological claims must trace back to experienced event sequences. This is the methodological anchor -- we cannot step outside perception to verify claims about the graph directly. The framework is built FROM perception outward, not from an assumed ontology downward.
+### 33. Interestingness as Mutual Predictive Entanglement
+"Meaning," "interestingness," and "what is worth talking or thinking about" emerge under a specific structural condition: multiple entities are simulating each other's forward-rollouts, and each entity's path selection non-trivially depends on the other's predictions.
 
----
+Refinement: the sand-pile vs human contrast shows that the distinction is one of predictive depth, not kind. The sand pile is a trivially shallow predictor; humans are deeper predictors of other agents. A subDAG S of G registers as a story when it contains at least two entities whose forward-simulations of each other are non-trivial — each entity's chosen edge depends on its model of the other, which in turn depends on its model of the first, and so on.
 
-## II. Story as Primary Structure
+This nesting (simulation-of-simulation) raises practical questions:
+- How deep should nesting go? Presumably until predictions stabilize (a fixed-point criterion).
+- How does an entity distinguish its own reasoning from its simulation of another's reasoning? There must be scoping or tagging mechanisms in the substrate.
+- What if nesting diverges? Mutual paranoia or arms races may themselves be signatures of interestingness.
 
-### 7. The Inversion
-The standard view: matter exists, stories are what brains do with it.
-This framework: story-structure exists, matter is what it looks like at the atomic event level.
+Refinement: strict parity of predictive power is unnecessary — dramatic irony works when the audience (a meta-level entity) knows more than a character. The minimal condition is non-trivial mutual modeling: neither side's model collapses to certainty, and each side's path selection materially depends on the other's anticipated moves.
 
-Narrative structure is ontologically primary. Physical law is a description of G's local regularity. Chemistry is what intermediate-scale structure looks like. Biology is what self-referential subgraphs look like. Stories are what the large-scale topology looks like from inside, to a traversing mind.
+Effect on path count: mutual-predictive-entanglement is a selection principle on G. Not all subDAGs are stories — only those satisfying the mutual-modeling condition. This should prune the space of narratively possible paths dramatically; most of G is not narrative.
 
-### 8. Attractors Are Real Topology
-Convergence nodes (high in-degree) are REAL graph features, not perception artifacts. What we call "prophecy," "narrative structure," "destiny" = pattern-recognition of convergence nodes that exist in G. When multiple independent paths must pass through the same node, that node is an attractor -- and the convergence is structural, not projected.
+Predicted observable: story-worthy subDAGs should show high mutual information between entity trajectories conditional on each entity's internal model of the other. This is measurable in multi-agent simulations and provides an empirical handle on the framework.
 
-### 9. Convergence Creates Mutual Influence
-If two branches share a downstream convergence node, those branches are not independent -- the existence of the shared node constrains what can happen on both branches leading into it. The branches "pass through the same or very similar node."
+### 34. Predictive Reach Over Others: The Real Metric
+The substrate sequence (atoms → molecules → cells → organisms → language) can be read as a ladder of prediction capability, but self-persistence is only the floor. The key metric is how many DAG steps ahead an entity E can correctly predict other entities' actions — its predictive reach.
 
-This is the mechanism behind what feels like "destiny": convergence nodes pull branches toward them. Not dynamically (nothing moves in a static graph) -- structurally. The constraint is already built into G.
+Self-persistence is necessary but not sufficient for interestingness. The sand pile persists but predicts little about agents; humans persist less but predict a lot about other humans. The threshold conjecture: Depth 1 (predicting others one step ahead) is trivial; Depth 2 is often degenerate; Depth 3 is the first nontrivial threshold where modeling others generally becomes substantially harder and requires dedicated machinery.
 
-This also means that events on one branch causally influence events on the other, even without a direct edge between them. The influence is mediated by the shared convergence node. Think of it as: knowing the destination constrains the routes.
+Reasons why "3" recurs:
+- The three-body problem exhibits chaos while two-body is solvable.
+- Three is the minimum dimension for many nontrivial topological phenomena.
+- Branching factor 3 enables genuinely exponential tree growth beyond degenerate binary cases.
+- It matches our observed number of spatial dimensions (an open connection).
 
-### 10. The Great Story
-The graph's trunk-level structure -- multifaceted, incomprehensible to any single mind in whole. Every story ever told is a partial projection of this structure. Myths and religions are projections. Scientific theories are projections. Each captures some features of the Great Story and distorts others.
+Conjecture: these are related structural facts — other-prediction-depth ≈ 3 is where mind-like modeling emerges and story-space opens.
 
-### 11. Basic Plots as Coordinate System (Mind-Dependent)
-Booker's 7 basic plots, Vonnegut's ~6 shapes, and Campbell's monomyth are low-dimensional projections of the Great Story through HUMAN minds using HUMAN language. They form a coordinate system for narrative space as perceived by our specific type of mind-cursor.
+### 35. Predictive Surplus and Self-Multiplication
+When an entity E has predictive surplus (it can predict its environment better than the environment can resist), the cheapest available move is self-multiplication: produce copies. Copies are similar to E and thus hardest for E to predict, making them ideal sources of rich mutual-predictive-entanglement.
 
-The real claim is NOT "there are exactly 7 archetypes." It is: the number of topologically distinct convergence patterns in G is small and finite (a structural constraint). But which patterns are perceptible and how they are categorized depends on the form of mind doing the perceiving -- its bandwidth epsilon, its cognitive architecture, its language.
+This process is gradual: reproduction begins as soon as any surplus exists, matching biological observation. Copies become primary objects of prediction — similar enough for deep modeling, different enough to preserve uncertainty.
 
-The count mismatch between Booker (7), Vonnegut (~6), and Campbell (1 monomyth) is itself evidence of this: different projection methods carve the same topology into different basis sets. A mind with different epsilon -- wider bandwidth, alien cognition, collective intelligence -- might perceive a different number of archetypes, or perceive ones invisible to us, or merge several of ours into one.
+Formal restatement: let R(E) be E's predictive reach. Self-multiplication begins when R(E) exceeds copying cost. Copies E_1..E_k will have high template overlap with E, small parametric differences, and satisfy mutual-modeling conditions that enrich the predictive environment. This creates a continuous gradient: as predictive reach grows, self-multiplication increases and the predictive field becomes richer.
 
-Myths from independent cultures that match = same topological feature of G detected independently. Not cultural diffusion -- parallel discovery of the same structural reality, through similar (human) minds.
+Connection to substrates and archetypes: each substrate level has its mode of self-multiplication (molecules, cells, organisms, minds, culture), and the small number of archetypes may correspond to a small number of distinct self-multiplication modes under the branching constraints of G.
 
-### 12. Instrumental Convergence = Narrative Convergence
-Vonnegut's narrative shapes are not cultural conventions -- they are attractors in the phase space of agent-in-environment systems. Any sufficiently complex agent facing resource constraints visits one of a small number of structural situations. Instrumental convergence (in AI safety) and narrative convergence (in literature) are the same phenomenon seen at different scales.
-
----
-
-## III. Minds and Perception
-
-### 13. Minds as Read-Heads
-Minds = narrow agentic attention cursors traversing the graph. Many of them -- one per mind. What they experience = a path = necessarily chain-like.
-
-But what makes them "agentic"? A recording device also follows a path through events. The difference seems to be: a mind is at the saddle points, at the branch points, and something about it SELECTS which branch to follow. Whether this selection is deterministic (determined by G's structure) or genuinely free is the free will question recast in graph terms.
-
-### 14. Why So Limited?
-Prime question: WHY are mind-cursors so narrow? Can't perceive the whole tree.
-Possible answers:
-(a) Agency requires not-knowing -- if you see the full graph, there's nothing to "do," no choices to make, no narrative to experience.
-(b) Infinite branching exceeds finite bandwidth -- the narrowness is a resource constraint.
-(c) "Mind" IS the narrowness itself -- the limitation isn't a constraint on something else, it's the defining feature. A mind is precisely a narrow sequential read-head. Widen it and it's no longer a mind but something else.
-
-### 15. Mind Bandwidth as Persistence Threshold
-A mind with bandwidth epsilon can only perceive topological features with persistence > epsilon. This gives precise mathematical meaning to:
-- "Paying attention" = locally lowering epsilon, seeing finer structure
-- "Missing the bigger picture" = epsilon too high to detect large-scale features
-- "Wisdom" = the ability to adjust epsilon across scales
 - "Insight" = sudden decrease in epsilon that reveals previously invisible structure
 
 ### 16. Coincidence Density as Navigation Signal
@@ -224,69 +201,96 @@ But: if G contains ALL events, including apparently retrocausal phenomena (the n
 
 ---
 
-## VIII. Computation, Minds, and Interestingness
+## VIII. Computation, Prediction, and Interestingness
 
 ### 32. Minds Are DAG Simulators (and So Are Their Substrates)
 Biological neural networks are not strictly DAGs -- cortex is heavily recurrent, with feedback at every scale. But the *computation* a mind performs at any given moment unrolls to a DAG: the computation graph is acyclic even when the underlying wiring has loops. Artificial NNs make this explicit -- feedforward networks are literal DAGs, and RNNs / transformers are DAGs per forward pass once unrolled in time.
 
-This points to a structural homology: the thing doing the simulating shares topology with the thing being simulated. Minds are not arbitrary computing devices that happen to process G -- they are DAG-shaped processes embedded in a DAG-shaped substrate, and their job is to run forward-simulations of local subDAGs from the current position of the mind-cursor.
+This points to a structural homology: the thing doing the simulating shares topology with the thing being simulated. Minds are not arbitrary computing devices that happen to process G -- they are DAG-shaped processes embedded in a DAG-shaped substrate, and their primary operation is running forward-simulations of local subDAGs from the current position of the mind-cursor.
 
-Conjecture: brains evolved not as general-purpose prediction machines but specifically as devices for simulating the subDAG downstream of the mind-cursor's current node -- and, crucially, for simulating what *other* mind-cursors are simulating. The recurrence in biological wiring is the implementation detail; the computation is always a forward-DAG-rollout. This also explains why attention, working memory, and planning horizons are all bandwidth-limited in the same characteristic way: they are all instances of the same underlying operation -- unrolling a local subDAG to a bounded depth from the cursor's position.
+Conjecture: brains evolved specifically as devices for simulating the subDAG downstream of the mind-cursor's current node -- and, crucially, for simulating what *other* mind-cursors will do in the next N steps through G. The recurrence in biological wiring is the implementation detail; the computation is always a forward-DAG-rollout. This also explains why attention, working memory, and planning horizons are all bandwidth-limited in the same characteristic way: they are all instances of the same underlying operation -- unrolling a local subDAG to a bounded depth from the cursor's position.
 
 ### 33. Interestingness as Mutual Predictive Entanglement
 "Meaning," "interestingness," "what is worth talking or thinking about" -- these emerge under a specific structural condition: *multiple mind-cursors are simulating each other's forward-rollouts, and each one's path selection non-trivially depends on the other's predictions*.
 
-The sand-pile-versus-human contrast makes this vivid -- but see #34 for the important refinement: the sand pile is not a *non*-simulator, it is a *trivial* simulator (persisting as "sand pile" for a small number of DAG steps). The contrast is one of depth, not of kind. A human standing before another human, or before an animal, or before a weather system the human anthropomorphizes as agentic, *is* a story because now both sides are simulating many steps ahead and each one's simulation materially includes the other's.
+The sand-pile-versus-human contrast makes this vivid -- but see #34 for the important refinement: the sand pile is not a *non*-predictor, it is a *trivially shallow* predictor. The real contrast is one of predictive depth over others, not of kind. A human standing before another human, or before an animal, or before a weather system the human anthropomorphizes as agentic, *is* a story because now both sides are simulating the other's actions many steps ahead and each one's path selection materially includes the other's anticipated moves.
 
-Stronger form: for a subDAG S of G to register as a story, S must contain at least two mind-cursors whose local forward-simulations non-trivially include models of each other. "Non-trivially" means: each agent's chosen edge depends on its model of what the other will do, which depends on its model of what the other thinks *it* will do, and so on.
+Stronger form: for a subDAG S of G to register as a story, S must contain at least two entities whose forward-simulations of *each other* are non-trivial. "Non-trivially" means: each entity's chosen edge depends on its model of what the other will do, which depends on its model of what the other thinks *it* will do, and so on.
 
 This escalates rapidly. Simulation of simulation of simulation. The nesting raises real problems:
 - How deep should nesting go? Presumably until predictions stabilize (a fixed-point criterion) -- each additional level stops changing the action choice.
-- How does an agent distinguish its own reasoning from its simulation of another agent reasoning about it? The computational substrate is shared, so there must be some tag or scoping mechanism.
+- How does an entity distinguish its own reasoning from its simulation of another entity reasoning about it? The computational substrate is shared, so there must be some tag or scoping mechanism.
 - What happens when nesting diverges instead of converging? (Mutual paranoia, arms races, instability -- these may be signatures of interestingness too, not its absence.)
 
 **Refinement: parity is too strong.** Strict equality of predictive capability is not required -- dramatic irony works precisely because the audience (a meta-level mind-cursor) knows more than the character. The weaker and truer condition is *non-trivial mutual modeling*: neither side's model collapses to certainty, and each side's path selection materially depends on the other's anticipated moves.
 
-**Effect on path count.** This is a selection principle on G. Not all subDAGs are stories -- only those satisfying the mutual-modeling condition. Intuitively this should prune the space of "narratively possible" paths dramatically (the user estimates 90% or more; the real number is unknown). Most of G is not narrative. Narrative is the thin slice where mind-cursors are predictively entangled.
+**Effect on path count.** This is a selection principle on G. Not all subDAGs are stories -- only those satisfying the mutual-modeling condition. Intuitively this should prune the space of "narratively possible" paths dramatically. Most of G is not narrative. Narrative is the thin slice where mind-cursors are predictively entangled.
 
-**What this adds to the framework.** Previously the framework said "topological features with persistence > epsilon are perceptible." That is a *bandwidth* criterion -- it tells you what a mind can see, not what is worth seeing. Mutual-predictability is a *content* criterion: it picks out the subDAGs that deserve to be called stories, independent of which mind is looking. It also connects the framework to existing literature -- theory-of-mind research, k-level reasoning in game theory, common-knowledge analysis, instrumental convergence in AI safety -- all of which are studying fragments of this same condition.
+**What this adds to the framework.** Previously the framework said "topological features with persistence > epsilon are perceptible." That is a *bandwidth* criterion -- it tells you what a mind can see, not what is worth seeing. Mutual-predictive-entanglement is a *content* criterion: it picks out the subDAGs that deserve to be called stories, independent of which mind is looking.
 
-**Predicted observable.** Story-worthy subDAGs should show high mutual information between agent trajectories *conditional on each agent's internal model of the other*. This is in principle measurable in multi-agent simulations and might give the framework its first non-tautological empirical handle.
+**Predicted observable.** Story-worthy subDAGs should show high mutual information between entity trajectories *conditional on each entity's internal model of the other*. This is in principle measurable in multi-agent simulations and might give the framework its first non-tautological empirical handle.
 
-### 34. Persistence Depth: Matter Is a Trivial DAG Simulator
-The sand-pile-vs-human contrast in #33 was sharpened too crisply. The real picture is a continuum. Matter itself is already a primitive DAG-simulator -- not because it "models" anything, but because persisting as a recognizable process *is* the minimal form of forward-simulation. For a pattern to be "sand pile" at step t+1 given that it was "sand pile" at step t is already a (trivial) successful prediction. Everything that holds its shape against dispersion is, at the degenerate limit, a one-step simulator.
+### 34. Predictive Reach Over Others: The Real Metric
+The substrate sequence in #22 (atoms -> molecules -> cells -> organisms -> language) has been described as a persistence ladder -- how long a pattern holds its shape against dispersion. But self-persistence is just the *floor*. The load-bearing quantity is **how many DAG steps ahead can entity E correctly predict what other entities will do**.
 
-So the question is not "simulator or not simulator" but *how many DAG steps ahead can this pattern persist as itself?* That is the persistence depth of the process.
+Self-persistence is a prerequisite: you can't predict others if you disperse. But the metric that drives interestingness (#33) and narrative (#35) is other-prediction depth. The sand pile persists as "sand pile" for eons but predicts nothing about the human standing on it. The human persists for fewer steps but can model the sand pile's behavior perfectly (trivial prediction) and other humans' behavior partially (non-trivial prediction, the zone where stories live).
 
-**The threshold conjecture.** Depth 1 is definitional -- anything in G is itself for one step by the meaning of "step." Depth 2 is still essentially trivial: in a binary world it collapses back into depth 1, since the only nontrivial structure needs at least two branch-compare operations. **Depth 3 is the first nontrivial threshold.** This is where prediction becomes exponentially hard:
+**The threshold conjecture.** Depth 1 (predicting others one step ahead) is trivial -- mere reaction, physics. Depth 2 is still essentially degenerate: in a binary environment it collapses back. **Depth 3 is the first nontrivial threshold.** This is where prediction becomes exponentially hard:
 
 - The three-body problem is chaotic; the two-body problem is solvable in closed form.
 - Three is the minimum dimension for knots, for non-planar graph embeddings, for most nontrivial topology.
 - Branching factor 3 is where trees grow genuinely exponentially (binary trees are degenerate in many senses).
 - It is also the number of spatial dimensions we perceive (Open Question #5).
 
-Conjecture: these are not coincidences. Three is the minimum depth at which *simulating one's own next N steps* becomes an operation expensive enough to require dedicated machinery -- i.e., to require something recognizable as a mind rather than mere persistence.
+Conjecture: these are not coincidences. Three is the minimum other-prediction-depth at which *modeling what others will do* becomes an operation expensive enough to require dedicated machinery -- i.e., to require something recognizable as a mind rather than mere reactive matter.
 
-**The persistence ladder.** The substrate sequence in #22 (atoms -> molecules -> cells -> organisms -> language -> ?) can be reread as a persistence-depth ladder:
+**The prediction-reach ladder.** Re-reading the substrate sequence through other-prediction depth:
 
-- Atoms persist as themselves over some number of DAG steps (very long, but passively -- they do not *predict* anything, they just resist dispersion).
-- Molecules persist longer in environments that would disperse atoms, by exploiting bonds.
-- Cells persist by active self-maintenance -- the first clear example of a pattern simulating its own continuation by doing work against entropy.
-- Organisms persist by modeling their environment enough to act on it.
-- Minds persist by modeling *other minds* modeling them.
-- Humans now persist as a collective pattern over timescales that exceed those of the slower processes around them -- we have *already* out-persisted the climate (we modify it faster than it modifies us, which is exactly what it means to out-simulate something). If we survive the current bottleneck, we will out-persist plants, then ecosystems, then planetary geology, then stars.
+- Atoms: predict nothing about others. Pure physics. No story.
+- Molecules: predict the behavior of nearby atoms (bonding). Still physics.
+- Cells: predict local chemistry well enough to actively maintain their boundary (Markov blanket). Minimal other-prediction; self-persistence is the main game.
+- Organisms: predict enough about their *environment* to act on it. Beginning of genuine other-modeling.
+- Minds: predict what *other minds* will do -- and crucially, model how other minds model them. This is where story-space opens up.
+- Humans as a collective: currently out-predicting the climate (we modify planetary systems faster than they modify us). We have *already* exceeded the prediction-reach of geological processes -- which is exactly what it means to out-simulate something. If we survive, we will out-predict ecosystems, then planetary geology, then stellar evolution.
 
-**Why this matters for the framework.** Previously we had a binary: minds-on-one-side, substrate-on-the-other. #34 replaces that with a continuous persistence depth. The substrate sequence becomes a sequence of increasingly deep simulators, each out-persisting the previous layer by simulating it. Life is matter that out-simulates local chemistry. Mind is life that out-simulates local ecology. Culture is mind that out-simulates individual mortality. Whatever comes after language is presumably a thing that will out-simulate culture.
+**What matters for the framework.** The interestingness condition in #33 (mutual predictive entanglement) has a floor: it only kicks in when both entities have other-prediction-depth above the nontrivial threshold. Below that threshold, you get physics. Above it, you get story. The threshold IS the boundary between dead matter and narrative.
 
-This also reframes "free energy principle" style formulations (Friston, Schrödinger's "What is life?"): maintaining a Markov blanket against dispersion and running a predictive model of one's environment are the same operation seen from two sides. To *persist* as yourself N steps forward IS to have successfully predicted/enforced N steps of your own trajectory. The persistence depth N is the same number whether you call it "negentropy horizon" or "prediction horizon" or "simulator depth."
+### 35. Predictive Surplus and Self-Multiplication
+When an entity E can predict its environment better than the environment can "resist" -- i.e., E has predictive surplus -- the cheapest available move is self-multiplication: produce copies of yourself. This is not a dramatic crisis or structural fracture. It is the mundane, default output of surplus capacity. The copies are the interesting thing.
 
-**Connection to #33.** Interestingness (mutual predictive entanglement) turns out to be a property that only emerges above a certain persistence-depth threshold. Two processes of depth 1 cannot meaningfully model each other; there is nothing to model. Two processes of depth >=3 can, and above this threshold the recursive simulation-of-simulation structure of #33 kicks in. So #34 supplies the *floor* below which #33 does not apply.
+**Why copies, not something else?** A copy of E is the entity most similar to E -- therefore the entity hardest for E to predict. Two copies of E are almost perfectly matched predictors, which is exactly the condition for rich mutual-predictive-entanglement (#33). Self-multiplication is the most efficient way to generate interestingness from surplus.
 
-**Open.** The exact threshold -- is it really 3? -- is a conjecture, not a result. A careful derivation would need to show that depth-2 interaction between arbitrary processes always reduces to depth-1 kinematics, and that depth-3 is the minimum where nontrivial prediction problems arise generically. This is a math problem, not a philosophy problem, and it is tractable.
+**This is gradual, not threshold-triggered.** Self-multiplication does not wait for prediction dominance to be achieved. It starts well before -- as soon as there is *any* surplus. This is exactly what we observe in evolution: organisms reproduce continuously, not only when they "dominate" their niche. Speciation is not a crisis response to dominance; it is an ongoing consequence of reproduction + variation + selection. The copying IS the strategy, from the beginning.
+
+**The "boring solitude" of total dominance is never actually reached.** An entity with growing predictive reach starts producing copies long before it runs out of things to predict. The copies then become the primary objects of prediction -- similar enough to be deeply modeled, different enough to remain uncertain. By the time E *could* have dominated everything, it is surrounded by variants of itself that constitute a richer predictive environment than the original.
+
+**The pattern at every scale:**
+- Molecules that stably predict their local chemistry: the ones that also self-replicate (autocatalytic sets) are the ones that generate further complexity. The replication is not a response to "dominance" -- it is what surplus stability *does*.
+- Cells with metabolic surplus: they divide. They don't wait until they've "solved" their environment. Division is the default output of having more energy than maintenance requires.
+- Organisms with behavioral surplus (they can predict and survive in their niche): they reproduce, and their offspring vary. The variation creates the next generation of mutual predictors.
+- Species that outcompete others: they don't sit in lonely dominance. They radiate into subspecies, filling new niches. The radiation starts before and continues through competitive success.
+- Cultures with technological surplus: they don't stagnate. They proliferate schools of thought, factions, subcultures -- copies with variation, each one a new locus of mutual prediction.
+
+**Formal restatement.** Let R(E) be entity E's predictive reach over its environment. Self-multiplication begins as soon as R(E) exceeds the cost of copying (which is low -- biological reproduction is energetically cheap relative to maintenance). The copies E_1, ..., E_k satisfy:
+
+1. Each E_i is structurally similar to E (high template overlap)
+2. Each E_i differs from E and from other E_j by small parametric variations
+3. The mutual-modeling condition (#33) is richly satisfied among {E_1, ..., E_k} precisely because similarity makes deep modeling possible while variation preserves uncertainty
+4. The predictive environment becomes richer, not poorer, as copies accumulate
+
+This is NOT a cycle (competition -> dominance -> crisis -> fragmentation). It is a **continuous gradient**: as predictive reach grows, self-multiplication grows with it, and the resulting copies constitute an ever-richer field of mutual predictors.
+
+**"The story must unfold"** restated without drama: self-multiplication is trivially available to any entity with surplus, and copies of a predictor are the best possible source of new stories. The monopoly state is not structurally forbidden -- it is simply never reached, because copying starts first.
+
+**Connection to #22 (substrate sequence).** Each level of the substrate sequence is characterized by a new mode of self-multiplication at higher predictive reach. Molecules that replicate -> cells that divide -> organisms that reproduce -> minds that propagate through language and culture -> whatever comes next. Each level's self-multiplication creates the predictive field that the next level operates in.
+
+**Connection to #20 (why few attractors).** The small number of archetypes may correspond to the small number of structurally distinct self-multiplication patterns. How many qualitatively different ways can an entity with surplus produce copies that become mutual predictors? If constrained by branching complexity at depth ~3, the answer might be small.
 
 ---
 
 ## IX. Open Questions
+
+
 
 1. **The eternal melody**: Why does G have THIS self-similar structure and not some other?
 2. **Archetype identification**: Which topological pattern = which named archetype?
@@ -299,8 +303,10 @@ This also reframes "free energy principle" style formulations (Friston, Schrödi
 9. **Coincidence navigation**: Is convergence-density perception a real phenomenon or pattern-matching bias?
 10. **The traversal problem**: What does "traversal" mean in a static graph? (#30 above)
 11. **Retrocausation and acyclicity**: How does the framework's namesake phenomenon fit with the DAG assumption? (#31 above)
-12. **Nesting depth and fixed points**: When mutually-modeling mind-cursors simulate each other recursively (#33), what principle determines the nesting depth? Is there a fixed-point theorem that guarantees convergence for "interesting" subDAGs and divergence for "uninteresting" ones? Could this give a formal characterization of narrative tension?
+12. **Nesting depth and fixed points**: When mutually-modeling mind-cursors simulate each other recursively (#33), what principle determines the nesting depth? Is there a fixed-point theorem that guarantees convergence for "interesting" subDAGs and divergence for "uninteresting" ones?
 13. **Cursor self-distinction**: In a mind that simulates other minds, how is the cursor's *own* forward-rollout distinguished from its simulation of another cursor's forward-rollout? If the substrate is shared, there must be a scoping or tagging mechanism -- and whatever it is, it is probably load-bearing for the concept of self.
-14. **Narrative fraction of G**: If mutual-predictability is a selection principle, what fraction of G's subDAGs satisfy it? Is "story-space" a thin manifold in G or a bulk region? This bears on how special narrative really is.
-15. **The "three" conjecture**: Is persistence-depth 3 really the first nontrivial threshold (#34)? Can we prove that depth-2 reduces to depth-1 for arbitrary processes and that depth-3 is where prediction becomes generically hard? And is this the same "3" as the three-body problem, three spatial dimensions (#5), and the minimum dimension for nontrivial topology? If so, these are not coincidences but aspects of one structural fact about G.
-16. **Persistence hierarchy as substrate sequence**: Is the substrate sequence in #22 literally a persistence-depth ordering (atoms < molecules < cells < minds < ...), and if so, can the "next" substrate be characterized by the timescale it out-persists? (Humans are currently crossing the planet-out-persisting threshold; what comes after is what out-persists stars.)
+14. **Narrative fraction of G**: If mutual-predictability is a selection principle, what fraction of G's subDAGs satisfy it? Is "story-space" a thin manifold in G or a bulk region?
+15. **The "three" conjecture**: Is other-prediction-depth 3 really the first nontrivial threshold (#34)? Can we prove that depth-2 reduces to depth-1 for arbitrary processes and that depth-3 is where prediction of others becomes generically hard? And is this the same "3" as the three-body problem, three spatial dimensions (#5), and the minimum dimension for nontrivial topology?
+16. **Prediction-reach hierarchy as substrate sequence**: Is the substrate sequence (#22) literally a prediction-reach ordering (atoms < molecules < cells < minds < ...), with each level characterized by a new mode of self-multiplication (#35)?
+17. **Copying threshold**: At what predictive surplus does self-multiplication become the cheapest available move (#35)? Is this threshold related to the depth-3 conjecture (#15)? In biological terms, what is the minimal metabolic surplus that makes cell division favorable?
+18. **Archetypes as multiplication modes**: Does the small number of archetypes (#20) correspond to the small number of structurally distinct self-multiplication patterns? How many qualitatively different ways can a surplus-entity produce copies that become mutual predictors?
