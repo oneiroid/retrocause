@@ -1,4 +1,22 @@
-# Retrocause: Collected Intuitions and Statements
+# Retrocause: Collected Intuitions and Statements (ARCHIVED)
+
+**Status:** archived as of the v2 -> v3 formal-model cut. No longer a live
+dependency of the project. Retained for historical reference.
+
+What was absorbed into `FORMAL_MODEL_v3.md`:
+
+- #21 (structure vs. traversal) -> v3 §5.1
+- #27 (sand-castle problem)     -> v3 §5.2
+
+Everything else in this file is either (a) content that v3 deliberately
+cut as non-load-bearing (ontology, substrate sequence, predictive reach,
+predictive surplus, mutual predictive entanglement, self-multiplication,
+story boundary, narrative-specific asides) or (b) open philosophical
+questions that do not constrain current code. Do not re-import items
+from here into v3 without a deliberate decision to reverse the v2->v3
+cuts.
+
+---
 
 All valuable ideas, insights, and philosophical positions gathered across the collaboration.
 Organized by theme, not chronologically. Each item is a substantive claim or insight,
