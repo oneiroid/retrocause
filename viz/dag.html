@@ -15,6 +15,15 @@
     --node-alive: #6aa6ff;
     --node-dead: #4a4a4a;
     --node-terminal: #c86464;
+    --node-open: #b48eff;
+    --node-actor-a: #6aa6ff;
+    --node-actor-b: #ffa85a;
+    --node-accepted: #5fbf72;
+    --node-walked: #c86464;
+    --node-timeout: #6a6a6a;
+    --node-rps-win: #5fbf72;
+    --node-rps-draw: #8a93a0;
+    --node-rps-wipeout: #c86464;
     --converge: #ffc857;
     --pinned: #7dd3a5;
   }
@@ -25,9 +34,9 @@
     font-size: 13px;
   }
   #app { display: grid; grid-template-columns: 1fr 320px; height: 100vh; }
-  #canvas-wrap { position: relative; }
-  svg { display: block; width: 100%; height: 100%; background: var(--bg); cursor: grab; }
-  svg:active { cursor: grabbing; }
+  #canvas-wrap { position: relative; overflow: hidden; }
+  canvas { display: block; width: 100%; height: 100%; background: var(--bg); cursor: grab; }
+  canvas.grabbing { cursor: grabbing; }
   #sidebar {
     border-left: 1px solid var(--panel-border);
     background: var(--panel);
@@ -37,7 +46,7 @@
   #sidebar h2 { margin: 0 0 8px; font-size: 12px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.08em; }
   #sidebar .kv { display: grid; grid-template-columns: 110px 1fr; gap: 4px 8px; margin-bottom: 12px; }
   #sidebar .kv .k { color: var(--text-dim); }
-  #sidebar ul { margin: 0; padding-left: 18px; }
+  #sidebar ul { margin: 0; padding-left: 18px; max-height: 200px; overflow-y: auto; }
   #toolbar {
     position: absolute; top: 8px; left: 8px; z-index: 10;
     background: rgba(21,26,34,0.9); border: 1px solid var(--panel-border);
@@ -57,56 +66,82 @@
     font-size: 11px; color: var(--text); opacity: 0; transition: opacity 100ms;
     white-space: nowrap; z-index: 20;
   }
-  .node-circle { stroke: #0c0f14; stroke-width: 1.2px; cursor: pointer; }
-  .node-circle.converge { stroke: var(--converge); stroke-width: 2px; }
-  .node-circle.strong-converge { stroke: var(--converge); stroke-width: 2.6px; filter: drop-shadow(0 0 5px rgba(255,200,87,0.7)); }
-  .node-circle.pinned { stroke: var(--pinned); stroke-width: 2.4px; }
-  .node-circle.selected { stroke: #fff; stroke-width: 3px; }
-  .node-circle.tpl-match { stroke: #c792ea; stroke-width: 2.2px; }
-  .node-label { font-size: 9px; fill: var(--text-dim); pointer-events: none; text-anchor: middle; }
-  .edge-line { stroke: var(--edge); stroke-width: 0.9px; fill: none; opacity: 0.55; }
-  .edge-line.highlight { stroke: var(--accent); stroke-width: 1.8px; opacity: 1; }
   #legend {
     position: absolute; bottom: 8px; left: 8px; z-index: 10;
     background: rgba(21,26,34,0.9); border: 1px solid var(--panel-border);
     padding: 6px 10px; border-radius: 4px; font-size: 11px; color: var(--text-dim);
+    max-width: 70%;
   }
   #legend span.sw { display: inline-block; width: 10px; height: 10px; border-radius: 5px; vertical-align: middle; margin: 0 4px 0 10px; }
   #legend span.sw:first-child { margin-left: 0; }
+  #hint {
+    position: absolute; bottom: 8px; right: 12px; z-index: 10;
+    color: var(--text-dim); font-size: 11px; user-select: none;
+  }
 </style>
 </head>
 <body>
 <div id="app">
   <div id="canvas-wrap">
     <div id="toolbar">
+      <button id="btn-mode-summary" class="active">summary</button>
+      <button id="btn-mode-full">full</button>
       <button id="btn-fit">fit</button>
-      <button id="btn-bloom">bloom</button>
-      <button id="btn-toggle-converge" class="active">converge</button>
-      <button id="btn-toggle-labels">labels</button>
+      <button id="btn-focus">focus</button>
+      <button id="btn-clear">clear</button>
       <span class="stats" id="stats">loading&hellip;</span>
     </div>
-    <div id="template-bar" style="position:absolute;top:48px;left:8px;z-index:10;display:flex;gap:6px;flex-wrap:wrap;max-width:70%;background:rgba(21,26,34,0.9);border:1px solid var(--panel-border);padding:4px 6px;border-radius:4px;font-size:11px;"></div>
-    <div id="legend">
-      <span class="sw" style="background: var(--node-alive)"></span>alive
-      <span class="sw" style="background: var(--node-dead)"></span>dead
-      <span class="sw" style="background: var(--node-terminal)"></span>terminal(gen-cap)
-      <span class="sw" style="border: 2px solid var(--converge); background: transparent"></span>strong converge
-      <span class="sw" style="border: 2px solid #c792ea; background: transparent"></span>template match
-      <span class="sw" style="border: 2px solid var(--pinned); background: transparent"></span>pinned
-    </div>
-    <svg></svg>
+    <div id="legend"></div>
+    <div id="hint">drag = pan · wheel = zoom · click = select · dbl-click a supernode = drill</div>
+    <canvas></canvas>
     <div id="tooltip"></div>
   </div>
   <aside id="sidebar">
     <h2>Inspector</h2>
     <div id="inspector-body">
-      <p style="color: var(--text-dim)">Click a node to inspect.</p>
+      <p style="color: var(--text-dim)">Click a node to inspect. Click "focus" to narrow view to its neighborhood.</p>
     </div>
   </aside>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/d3@7.9.0/dist/d3.min.js"></script>
 <script>
+"use strict";
+
+// ---- tuning ---------------------------------------------------------
+const X_SCALE = 28;      // px per layout x-unit
+const Y_SCALE = 90;      // px per generation
+// Zoom thresholds that drive level-of-detail in full mode.
+const LOD_SUPERNODES   = 0.35;   // below this, fall back to summary overlay
+const LOD_SHOW_EDGES   = 0.35;
+const LOD_SHOW_LABELS  = 0.9;
+const FOCUS_HOPS = 2;
+
+const KIND_COLOR = {
+  open:         "#b48eff",
+  actor_a:      "#6aa6ff",
+  actor_b:      "#ffa85a",
+  accepted:     "#5fbf72",
+  walked:       "#c86464",
+  timeout:      "#6a6a6a",
+  rps_win:      "#5fbf72",
+  rps_draw:     "#8a93a0",
+  rps_wipeout:  "#c86464",
+  alive:        "#6aa6ff",
+  dead:         "#4a4a4a",
+  terminal:     "#c86464",
+};
+const KIND_LABEL = {
+  open: "open", actor_a: "actor a", actor_b: "actor b",
+  accepted: "accepted", walked: "walked", timeout: "timeout",
+  rps_win: "win/ended", rps_draw: "draw", rps_wipeout: "wipeout",
+  alive: "alive", dead: "dead", terminal: "terminal",
+};
+const KIND_ORDER = [
+  "open","actor_a","actor_b","accepted","walked","timeout",
+  "rps_win","rps_draw","rps_wipeout","alive","dead","terminal",
+];
+
 // ---- load -----------------------------------------------------------
 const params = new URLSearchParams(location.search);
 const DATA_URL = params.get("data") || "dag.json";
@@ -117,228 +152,519 @@ d3.json(DATA_URL).then(run).catch(err => {
 });
 
 function run(data) {
-  const svg = d3.select("svg");
-  const width = () => svg.node().clientWidth;
-  const height = () => svg.node().clientHeight;
-
-  // ---- prep data ----------------------------------------------------
-  // Convert edges into d3-force-link shape (source/target reference objs).
-  const nodes = data.nodes.map(n => ({...n}));
-  const idx = new Map(nodes.map(n => [n.id, n]));
-  const edges = data.edges.map(e => ({
-    source: idx.get(e.from),
-    target: idx.get(e.to),
-    action: e.action, type: e.type,
+  // ---- prep -------------------------------------------------------
+  const nodes = data.nodes.map(n => ({
+    ...n,
+    px: n.x * X_SCALE,
+    py: n.y * Y_SCALE,
   }));
-  const maxGen = d3.max(nodes, n => n.generation);
-  const rowGap = 80;
+  const edges = data.edges.map(e => ({ ...e, src: null, dst: null }));
+  const nodesById = new Map(nodes.map(n => [n.id, n]));
+  edges.forEach(e => { e.src = nodesById.get(e.from); e.dst = nodesById.get(e.to); });
 
-  // Stats line.
-  document.getElementById("stats").textContent =
-    `nodes=${data.meta.n_nodes} edges=${data.meta.n_edges} ` +
-    `terminal=${data.meta.n_terminal} converge=${data.meta.n_convergence}`;
+  const agg = data.aggregation || { nodes: [], edges: [] };
+  const supers = agg.nodes.map(s => ({ ...s, px: s.x * X_SCALE, py: s.y * Y_SCALE }));
+  const supersById = new Map(supers.map(s => [s.id, s]));
+  const superEdges = agg.edges.map(e => ({ ...e, src: supersById.get(e.from), dst: supersById.get(e.to) }));
 
-  // ---- svg structure ------------------------------------------------
-  svg.selectAll("*").remove();
-  const g_root = svg.append("g").attr("class", "root");
-  const g_edges = g_root.append("g").attr("class", "edges");
-  const g_nodes = g_root.append("g").attr("class", "nodes");
-  const g_labels = g_root.append("g").attr("class", "labels");
-
-  // Zoom/pan.
-  const zoom = d3.zoom()
-    .scaleExtent([0.1, 8])
-    .on("zoom", (e) => g_root.attr("transform", e.transform));
-  svg.call(zoom);
-
-  // ---- force sim ----------------------------------------------------
-  // y is softly pinned to generation * rowGap. x floats.
-  const sim = d3.forceSimulation(nodes)
-    .force("link", d3.forceLink(edges).distance(36).strength(0.25))
-    .force("charge", d3.forceManyBody().strength(-120))
-    .force("x", d3.forceX(() => width() / 2).strength(0.02))
-    .force("y", d3.forceY(d => (d.generation / Math.max(1, maxGen)) * (height() - 80) + 40).strength(0.9))
-    .force("collide", d3.forceCollide().radius(8))
-    .alpha(1).alphaDecay(0.035);
-
-  // ---- render nodes -------------------------------------------------
-  // State that classFor reads must exist BEFORE the d3 join runs.
-  let showConv = true;
-  let activeTemplate = null;
-  function classFor(d) {
-    const cls = ["node-circle"];
-    if (showConv && d.strong_converge) cls.push("strong-converge");
-    else if (showConv && d.in_degree >= 3) cls.push("converge");
-    if (activeTemplate && (d.template_starts || []).includes(activeTemplate)) cls.push("tpl-match");
-    if (d.pinned) cls.push("pinned");
-    return cls.join(" ");
-  }
-
-  const colorFor = d => {
-    if (d.terminal && !/dead/.test(d.expr)) return "var(--node-terminal)";
-    if (/dead/.test(d.expr)) return "var(--node-dead)";
-    return "var(--node-alive)";
-  };
-  const sizeFor = d => 4 + Math.min(6, Math.log2(1 + d.in_degree));
-
-  const node = g_nodes.selectAll("circle")
-    .data(nodes, d => d.id)
-    .join("circle")
-    .attr("class", d => classFor(d))
-    .attr("r", sizeFor)
-    .attr("fill", colorFor)
-    .on("mouseover", (ev, d) => showTip(ev, d))
-    .on("mousemove", (ev, _) => moveTip(ev))
-    .on("mouseout", hideTip)
-    .on("click", (ev, d) => selectNode(d))
-    .call(d3.drag()
-      .on("start", (ev, d) => { if (!ev.active) sim.alphaTarget(0.3).restart(); d.fx = d.x; d.fy = d.y; })
-      .on("drag", (ev, d) => { d.fx = ev.x; d.fy = ev.y; })
-      .on("end", (ev, d) => { if (!ev.active) sim.alphaTarget(0); d.fx = null; d.fy = null; }));
-
-  // ---- render edges -------------------------------------------------
-  const edge = g_edges.selectAll("line")
-    .data(edges)
-    .join("line")
-    .attr("class", "edge-line");
-
-  // ---- render labels (hidden by default for large graphs) -----------
-  const label = g_labels.selectAll("text")
-    .data(nodes, d => d.id)
-    .join("text")
-    .attr("class", "node-label")
-    .attr("dy", 14)
-    .text(d => `#${d.id}`)
-    .style("display", nodes.length > 120 ? "none" : "block");
-
-  // ---- tick ---------------------------------------------------------
-  sim.on("tick", () => {
-    edge
-      .attr("x1", d => d.source.x).attr("y1", d => d.source.y)
-      .attr("x2", d => d.target.x).attr("y2", d => d.target.y);
-    node.attr("cx", d => d.x).attr("cy", d => d.y);
-    label.attr("x", d => d.x).attr("y", d => d.y);
+  // Adjacency for focus-mode BFS.
+  const adjOut = new Map(nodes.map(n => [n.id, []]));
+  const adjIn  = new Map(nodes.map(n => [n.id, []]));
+  edges.forEach(e => {
+    adjOut.get(e.from).push(e.to);
+    adjIn.get(e.to).push(e.from);
   });
 
-  // ---- interactions -------------------------------------------------
-  let selected = null;
-  function selectNode(d) {
-    selected = d;
-    node.classed("selected", n => n.id === d.id);
-    // highlight incident edges
-    const incident = new Set();
-    edges.forEach((e, i) => { if (e.source.id === d.id || e.target.id === d.id) incident.add(i); });
-    edge.classed("highlight", (_, i) => incident.has(i));
-    renderInspector(d, edges);
+  // Quadtrees (in world px) for fast hit-testing.
+  const nodeTree  = d3.quadtree().x(n => n.px).y(n => n.py).addAll(nodes);
+  const superTree = d3.quadtree().x(s => s.px).y(s => s.py).addAll(supers);
+
+  // Salient-only label set (computed once).
+  const salient = new Set(
+    nodes.filter(n => n.in_degree >= 3 || n.terminal || n.pinned
+                   || (n.labels && n.labels.length > 0))
+         .map(n => n.id)
+  );
+
+  // ---- stats line -------------------------------------------------
+  document.getElementById("stats").textContent =
+    `nodes=${data.meta.n_nodes} edges=${data.meta.n_edges} ` +
+    `terminal=${data.meta.n_terminal} converge=${data.meta.n_convergence} ` +
+    `super=${supers.length}/${superEdges.length}`;
+
+  // ---- canvas setup ----------------------------------------------
+  const canvas = document.querySelector("canvas");
+  const ctx = canvas.getContext("2d");
+  function resize() {
+    const dpr = window.devicePixelRatio || 1;
+    const rect = canvas.getBoundingClientRect();
+    canvas.width = Math.round(rect.width * dpr);
+    canvas.height = Math.round(rect.height * dpr);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    render();
+  }
+  window.addEventListener("resize", resize);
+
+  // ---- state ------------------------------------------------------
+  let mode = "summary";           // "summary" | "full"
+  let transform = d3.zoomIdentity;
+  let selected = null;            // node id or supernode ref
+  let selectedKind = null;        // "node" | "super"
+  let focusSet = null;            // Set<node.id> or null
+  let hovered = null;
+  let hoveredKind = null;
+
+  // d3.zoom on canvas. d3 wires wheel + drag pan + pinch naturally.
+  const d3c = d3.select(canvas);
+  const zoom = d3.zoom()
+    .scaleExtent([0.03, 8])
+    .on("start", () => canvas.classList.add("grabbing"))
+    .on("end",   () => canvas.classList.remove("grabbing"))
+    .on("zoom",  (e) => { transform = e.transform; render(); });
+  d3c.call(zoom);
+
+  // ---- world<->screen helpers ------------------------------------
+  const tx = (wx) => transform.x + wx * transform.k;
+  const ty = (wy) => transform.y + wy * transform.k;
+  const wx = (sx) => (sx - transform.x) / transform.k;
+  const wy = (sy) => (sy - transform.y) / transform.k;
+
+  // ---- render dispatch -------------------------------------------
+  function render() {
+    const rect = canvas.getBoundingClientRect();
+    ctx.clearRect(0, 0, rect.width, rect.height);
+    const useSuper = (mode === "summary") || (mode === "full" && transform.k < LOD_SUPERNODES);
+    if (useSuper) drawSuper(rect);
+    else          drawFull(rect);
   }
 
-  function renderInspector(d, allEdges) {
-    const preds = allEdges.filter(e => e.target.id === d.id);
-    const succs = allEdges.filter(e => e.source.id === d.id);
-    const labels = d.labels && d.labels.length ? d.labels.join(", ") : "-";
-    const body = `
-      <div class="kv">
-        <div class="k">id</div><div>#${d.id}</div>
-        <div class="k">expr</div><div>${escapeHtml(d.expr)}</div>
-        <div class="k">generation</div><div>${d.generation}</div>
-        <div class="k">in / out</div><div>${d.in_degree} / ${d.out_degree}</div>
-        <div class="k">terminal</div><div>${d.terminal}</div>
-        <div class="k">pinned</div><div>${d.pinned}</div>
-        <div class="k">labels</div><div>${escapeHtml(labels)}</div>
-      </div>
-      <h2>Predecessors (${preds.length})</h2>
-      <ul>${preds.map(e => `<li><a href="#" data-goto="${e.source.id}">#${e.source.id}</a> <span style="color: var(--text-dim)">via ${escapeHtml(e.action)}</span></li>`).join("") || '<li style="color: var(--text-dim)">none</li>'}</ul>
-      <h2>Successors (${succs.length})</h2>
-      <ul>${succs.map(e => `<li><a href="#" data-goto="${e.target.id}">#${e.target.id}</a> <span style="color: var(--text-dim)">via ${escapeHtml(e.action)}</span></li>`).join("") || '<li style="color: var(--text-dim)">none</li>'}</ul>
-    `;
-    const container = document.getElementById("inspector-body");
-    container.innerHTML = body;
-    container.querySelectorAll("a[data-goto]").forEach(a => {
+  // ---- summary-mode draw -----------------------------------------
+  function superRadius(s) { return 7 + Math.sqrt(s.count) * 1.6; }
+
+  function drawSuper(rect) {
+    // edges
+    ctx.lineCap = "round";
+    for (const se of superEdges) {
+      const a = se.src, b = se.dst;
+      const ax = tx(a.px), ay = ty(a.py);
+      const bx = tx(b.px), by = ty(b.py);
+      const dx = bx - ax, dy = by - ay;
+      const d = Math.hypot(dx, dy) || 1;
+      const ux = dx / d, uy = dy / d;
+      const rA = superRadius(a), rB = superRadius(b);
+      const sx0 = ax + ux * rA, sy0 = ay + uy * rA;
+      const ex0 = bx - ux * (rB + 3), ey0 = by - uy * (rB + 3);
+
+      const w = Math.max(0.6, Math.min(6, Math.log2(1 + se.count)));
+      ctx.strokeStyle = "rgba(130,145,170,0.55)";
+      ctx.lineWidth = w;
+      ctx.beginPath();
+      ctx.moveTo(sx0, sy0);
+      ctx.lineTo(ex0, ey0);
+      ctx.stroke();
+      drawArrow(ex0, ey0, ux, uy, Math.max(4, w * 1.6));
+    }
+
+    // nodes
+    for (const s of supers) {
+      const cx = tx(s.px), cy = ty(s.py);
+      const r = superRadius(s);
+      ctx.fillStyle = KIND_COLOR[s.kind] || KIND_COLOR.alive;
+      ctx.strokeStyle = (selectedKind === "super" && selected === s) ? "#fff"
+                      : (hoveredKind === "super" && hovered === s)   ? "#eee"
+                      : "#0c0f14";
+      ctx.lineWidth = (selectedKind === "super" && selected === s) ? 2.4 : 1.4;
+      ctx.beginPath();
+      ctx.arc(cx, cy, r, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+
+      // count inside
+      ctx.fillStyle = "#0c0f14";
+      ctx.font = "bold 11px ui-monospace, Menlo, monospace";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText(String(s.count), cx, cy);
+
+      // kind label above
+      ctx.fillStyle = "#8a93a0";
+      ctx.font = "10px ui-monospace, Menlo, monospace";
+      ctx.textBaseline = "alphabetic";
+      ctx.fillText(`g${s.generation} ${KIND_LABEL[s.kind] || s.kind}`, cx, cy - r - 4);
+    }
+  }
+
+  // ---- full-mode draw (with LOD) ---------------------------------
+  function nodeRadius(n) { return 3.5 + Math.min(5, Math.log2(1 + n.in_degree)); }
+
+  function drawFull(rect) {
+    const k = transform.k;
+    const showLabels = k >= LOD_SHOW_LABELS;
+    // At low k, draw every Nth edge -- cheap LOD that thins the mesh
+    // without dropping structural info, since high-degree nodes are
+    // still sampled heavily.
+    const edgeStride = k < 0.6 ? Math.max(1, Math.round(0.6 / k)) : 1;
+
+    // viewport in world coords (+ pad for off-screen edges that
+    // terminate on-screen nodes)
+    const vx0 = wx(-40), vy0 = wy(-40);
+    const vx1 = wx(rect.width + 40), vy1 = wy(rect.height + 40);
+
+    // ---- edges ----
+    if (k >= LOD_SHOW_EDGES || focusSet) {
+      ctx.lineWidth = 1;
+      for (let i = 0; i < edges.length; i += edgeStride) {
+        const e = edges[i];
+        if (focusSet && (!focusSet.has(e.from) || !focusSet.has(e.to))) continue;
+        const a = e.src, b = e.dst;
+        if ((a.px < vx0 && b.px < vx0) || (a.px > vx1 && b.px > vx1)) continue;
+        if ((a.py < vy0 && b.py < vy0) || (a.py > vy1 && b.py > vy1)) continue;
+
+        const ax = tx(a.px), ay = ty(a.py);
+        const bx = tx(b.px), by = ty(b.py);
+        const dx = bx - ax, dy = by - ay;
+        const d = Math.hypot(dx, dy) || 1;
+        const ux = dx / d, uy = dy / d;
+        const rA = nodeRadius(a), rB = nodeRadius(b);
+        const sx0 = ax + ux * rA, sy0 = ay + uy * rA;
+        const ex0 = bx - ux * (rB + 5), ey0 = by - uy * (rB + 5);
+
+        const incident = selected != null && selectedKind === "node" &&
+                         (e.from === selected || e.to === selected);
+        ctx.strokeStyle = incident ? "rgba(106,166,255,1)" : "rgba(58,64,80,0.55)";
+        ctx.lineWidth = incident ? 1.8 : 1;
+        ctx.beginPath();
+        ctx.moveTo(sx0, sy0);
+        ctx.lineTo(ex0, ey0);
+        ctx.stroke();
+        if (k >= 0.55) drawArrow(ex0, ey0, ux, uy, incident ? 5 : 3.5);
+      }
+    }
+
+    // ---- nodes ----
+    for (const n of nodes) {
+      if (focusSet && !focusSet.has(n.id)) continue;
+      if (n.px < vx0 || n.px > vx1 || n.py < vy0 || n.py > vy1) continue;
+
+      const cx = tx(n.px), cy = ty(n.py);
+      const r = nodeRadius(n);
+      ctx.fillStyle = KIND_COLOR[n._kind] || KIND_COLOR.alive;
+
+      let stroke = "#0c0f14", sw = 1.2;
+      if (n.strong_converge) { stroke = "#ffc857"; sw = 2.2; }
+      else if (n.in_degree >= 3) { stroke = "#ffc857"; sw = 1.6; }
+      if (n.pinned)              { stroke = "#7dd3a5"; sw = 2.2; }
+      if (selectedKind === "node" && n.id === selected) { stroke = "#fff"; sw = 3; }
+      else if (hoveredKind === "node" && n.id === hovered) { stroke = "#eee"; sw = 2; }
+
+      ctx.strokeStyle = stroke;
+      ctx.lineWidth = sw;
+      ctx.beginPath();
+      ctx.arc(cx, cy, r, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+    }
+
+    // ---- labels ----
+    if (showLabels) {
+      ctx.fillStyle = "#d8dee6";
+      ctx.font = "10px ui-monospace, Menlo, monospace";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "bottom";
+      for (const n of nodes) {
+        if (!salient.has(n.id)) continue;
+        if (focusSet && !focusSet.has(n.id)) continue;
+        if (n.px < vx0 || n.px > vx1 || n.py < vy0 || n.py > vy1) continue;
+        const cx = tx(n.px), cy = ty(n.py);
+        ctx.fillText(shortLabel(n), cx, cy - nodeRadius(n) - 3);
+      }
+    }
+  }
+
+  function drawArrow(ex, ey, ux, uy, size) {
+    const nx = -uy, ny = ux;
+    ctx.fillStyle = ctx.strokeStyle;
+    ctx.beginPath();
+    ctx.moveTo(ex, ey);
+    ctx.lineTo(ex - ux * size + nx * size * 0.5, ey - uy * size + ny * size * 0.5);
+    ctx.lineTo(ex - ux * size - nx * size * 0.5, ey - uy * size - ny * size * 0.5);
+    ctx.closePath();
+    ctx.fill();
+  }
+
+  function shortLabel(d) {
+    const e = (d.expr || "").trim();
+    if (!e) return `#${d.id}`;
+    const parts = e.split(/\s+/);
+    const head = parts.slice(0, 3).join(" ");
+    return head.length > 28 ? head.slice(0, 27) + "..." : head;
+  }
+
+  // ---- pre-compute per-node kind (same heuristic as aggregate.py) -
+  function kindOf(d) {
+    const e = d.expr || "";
+    if (/ACCEPTED/.test(e)) return "accepted";
+    if (/WALKED/.test(e))   return "walked";
+    if (/TIMEOUT/.test(e))  return "timeout";
+    if (/^t\d+ open/.test(e)) return "open";
+    const m = e.match(/ by (a|b)$/);
+    if (m) return m[1] === "a" ? "actor_a" : "actor_b";
+    if (/^r\d+ (WIN|END)/.test(e)) return "rps_win";
+    if (/^r\d+ DRAW/.test(e))      return "rps_draw";
+    if (/^r\d+ WIPEOUT/.test(e))   return "rps_wipeout";
+    if (/^r\d+/.test(e))           return "alive";
+    if (/dead/.test(e))            return "dead";
+    if (d.terminal)                return "terminal";
+    return "alive";
+  }
+  nodes.forEach(n => { n._kind = kindOf(n); });
+  const presentKinds = new Set(nodes.map(n => n._kind).concat(supers.map(s => s.kind)));
+
+  // ---- hit testing ------------------------------------------------
+  function hitAt(clientX, clientY) {
+    const rect = canvas.getBoundingClientRect();
+    const sx = clientX - rect.left, sy = clientY - rect.top;
+    const wmx = wx(sx), wmy = wy(sy);
+    // hit radius in world units -- scales inversely with zoom so it
+    // stays ~12px on screen regardless of current k.
+    const R = 12 / transform.k;
+    const useSuper = (mode === "summary") || (mode === "full" && transform.k < LOD_SUPERNODES);
+    if (useSuper) {
+      const s = superTree.find(wmx, wmy, Math.max(R, superRadius({count:1}) * 2));
+      return s ? { kind: "super", obj: s } : null;
+    }
+    const n = nodeTree.find(wmx, wmy, R);
+    return n ? { kind: "node", obj: n } : null;
+  }
+
+  // ---- interactions ----------------------------------------------
+  const tip = document.getElementById("tooltip");
+  canvas.addEventListener("mousemove", (ev) => {
+    const h = hitAt(ev.clientX, ev.clientY);
+    const prev = hovered, prevK = hoveredKind;
+    hovered = h ? h.obj : null;
+    hoveredKind = h ? h.kind : null;
+    if (h) {
+      tip.style.opacity = 1;
+      tip.innerHTML = h.kind === "super"
+        ? `<b>gen${h.obj.generation} / ${KIND_LABEL[h.obj.kind] || h.obj.kind}</b><br/>count=${h.obj.count}`
+        : `<b>#${h.obj.id}</b> ${escapeHtml(h.obj.expr)}<br/>in=${h.obj.in_degree} out=${h.obj.out_degree}`;
+      tip.style.left = (ev.clientX + 12) + "px";
+      tip.style.top  = (ev.clientY + 12) + "px";
+    } else {
+      tip.style.opacity = 0;
+    }
+    if (prev !== hovered || prevK !== hoveredKind) render();
+  });
+  canvas.addEventListener("mouseleave", () => {
+    hovered = null; hoveredKind = null;
+    tip.style.opacity = 0;
+    render();
+  });
+  canvas.addEventListener("click", (ev) => {
+    const h = hitAt(ev.clientX, ev.clientY);
+    if (!h) return;
+    selectedKind = h.kind;
+    selected = h.kind === "node" ? h.obj.id : h.obj;
+    renderInspector();
+    render();
+  });
+  canvas.addEventListener("dblclick", (ev) => {
+    const h = hitAt(ev.clientX, ev.clientY);
+    if (!h) return;
+    if (h.kind === "super") {
+      // Drill into bucket: switch to full mode, center on the bucket
+      // and zoom to see its members.
+      setMode("full");
+      zoomToRegion(h.obj.member_ids, 1.2);
+    } else {
+      // Focus on a node in full mode.
+      selectedKind = "node"; selected = h.obj.id;
+      setFocus(true);
+    }
+    renderInspector();
+    render();
+  });
+
+  // ---- inspector --------------------------------------------------
+  function renderInspector() {
+    const c = document.getElementById("inspector-body");
+    if (!selected && selectedKind == null) {
+      c.innerHTML = `<p style="color: var(--text-dim)">Click a node to inspect.</p>`;
+      return;
+    }
+    if (selectedKind === "super") {
+      const s = selected;
+      const members = s.member_ids.slice(0, 80);
+      c.innerHTML = `
+        <div class="kv">
+          <div class="k">kind</div><div>${escapeHtml(KIND_LABEL[s.kind] || s.kind)}</div>
+          <div class="k">generation</div><div>${s.generation}</div>
+          <div class="k">count</div><div>${s.count}</div>
+        </div>
+        <h2>Members (${s.count}${s.count > members.length ? `, first ${members.length}` : ""})</h2>
+        <ul>${members.map(id => `<li><a href="#" data-goto-node="${id}">#${id}</a> <span style="color: var(--text-dim)">${escapeHtml(nodesById.get(id).expr)}</span></li>`).join("")}</ul>
+      `;
+    } else {
+      const d = nodesById.get(selected);
+      const preds = edges.filter(e => e.to === d.id);
+      const succs = edges.filter(e => e.from === d.id);
+      const labels = d.labels && d.labels.length ? d.labels.join(", ") : "-";
+      c.innerHTML = `
+        <div class="kv">
+          <div class="k">id</div><div>#${d.id}</div>
+          <div class="k">expr</div><div>${escapeHtml(d.expr)}</div>
+          <div class="k">generation</div><div>${d.generation}</div>
+          <div class="k">in / out</div><div>${d.in_degree} / ${d.out_degree}</div>
+          <div class="k">terminal</div><div>${d.terminal}</div>
+          <div class="k">pinned</div><div>${d.pinned}</div>
+          <div class="k">labels</div><div>${escapeHtml(labels)}</div>
+        </div>
+        <h2>Predecessors (${preds.length})</h2>
+        <ul>${preds.slice(0,60).map(e => `<li><a href="#" data-goto-node="${e.from}">#${e.from}</a> <span style="color: var(--text-dim)">via ${escapeHtml(e.action)}</span></li>`).join("") || '<li style="color: var(--text-dim)">none</li>'}</ul>
+        <h2>Successors (${succs.length})</h2>
+        <ul>${succs.slice(0,60).map(e => `<li><a href="#" data-goto-node="${e.to}">#${e.to}</a> <span style="color: var(--text-dim)">via ${escapeHtml(e.action)}</span></li>`).join("") || '<li style="color: var(--text-dim)">none</li>'}</ul>
+      `;
+    }
+    c.querySelectorAll("a[data-goto-node]").forEach(a => {
       a.addEventListener("click", (ev) => {
         ev.preventDefault();
-        const target = idx.get(parseInt(a.dataset.goto, 10));
-        if (target) selectNode(target);
+        const id = parseInt(a.dataset.gotoNode, 10);
+        const n = nodesById.get(id);
+        if (!n) return;
+        setMode("full");
+        selectedKind = "node"; selected = id;
+        zoomToRegion([id], 1.6);
+        renderInspector();
+        render();
       });
     });
   }
 
-  // ---- tooltip ------------------------------------------------------
-  const tip = document.getElementById("tooltip");
-  function showTip(ev, d) {
-    tip.style.opacity = 1;
-    tip.innerHTML = `<b>#${d.id}</b> ${escapeHtml(d.expr)}<br/>in=${d.in_degree} out=${d.out_degree}`;
-    moveTip(ev);
-  }
-  function moveTip(ev) {
-    tip.style.left = (ev.clientX + 12) + "px";
-    tip.style.top = (ev.clientY + 12) + "px";
-  }
-  function hideTip() { tip.style.opacity = 0; }
-
-  // ---- toolbar buttons ----------------------------------------------
-  document.getElementById("btn-fit").onclick = fit;
-  function fit() {
-    const xs = nodes.map(n => n.x), ys = nodes.map(n => n.y);
-    const x0 = d3.min(xs), x1 = d3.max(xs), y0 = d3.min(ys), y1 = d3.max(ys);
-    const pad = 40;
-    const w = width(), h = height();
-    const scale = Math.min((w - 2*pad) / (x1 - x0 + 1), (h - 2*pad) / (y1 - y0 + 1), 3);
-    const tx = w/2 - scale * (x0 + x1) / 2;
-    const ty = h/2 - scale * (y0 + y1) / 2;
-    svg.transition().duration(500).call(zoom.transform, d3.zoomIdentity.translate(tx, ty).scale(scale));
-  }
-
-  let bloomActive = false;
-  document.getElementById("btn-bloom").onclick = () => {
-    if (bloomActive) return;
-    bloomActive = true;
-    node.transition().duration(0).attr("opacity", 0);
-    edge.transition().duration(0).attr("opacity", 0);
-    for (let g = 0; g <= maxGen; g++) {
-      setTimeout(() => {
-        node.filter(d => d.generation === g).transition().duration(400).attr("opacity", 1);
-        edge.filter(d => d.source.generation === g || d.target.generation === g).transition().duration(400).attr("opacity", 0.55);
-      }, g * 220);
+  // ---- focus -----------------------------------------------------
+  function setFocus(on) {
+    if (!on || selectedKind !== "node" || selected == null) {
+      focusSet = null;
+    } else {
+      focusSet = bfsNeighborhood(selected, FOCUS_HOPS);
     }
-    setTimeout(() => { bloomActive = false; }, (maxGen + 1) * 220);
-  };
-
-  const btnConverge = document.getElementById("btn-toggle-converge");
-  btnConverge.onclick = () => {
-    btnConverge.classList.toggle("active");
-    showConv = btnConverge.classList.contains("active");
-    node.attr("class", d => classFor(d));
-  };
-
-  // --- template picker (dynamic, from data.meta.templates) ---
-  const tplBar = document.getElementById("template-bar");
-  if (data.meta.templates && data.meta.templates.length) {
-    const label = document.createElement("span");
-    label.textContent = "templates:";
-    label.style.color = "var(--text-dim)";
-    tplBar.appendChild(label);
-    data.meta.templates.forEach(t => {
-      const btn = document.createElement("button");
-      btn.textContent = `${t.key} (x${t.count})`;
-      btn.onclick = () => {
-        activeTemplate = (activeTemplate === t.key) ? null : t.key;
-        tplBar.querySelectorAll("button").forEach(b => b.classList.remove("active"));
-        if (activeTemplate) btn.classList.add("active");
-        node.attr("class", d => classFor(d));
-      };
-      tplBar.appendChild(btn);
-    });
+    document.getElementById("btn-focus").classList.toggle("active", !!focusSet);
+    render();
+  }
+  function bfsNeighborhood(startId, hops) {
+    const seen = new Set([startId]);
+    let frontier = [startId];
+    for (let h = 0; h < hops; h++) {
+      const next = [];
+      for (const id of frontier) {
+        for (const to of (adjOut.get(id) || [])) {
+          if (!seen.has(to)) { seen.add(to); next.push(to); }
+        }
+        for (const from of (adjIn.get(id) || [])) {
+          if (!seen.has(from)) { seen.add(from); next.push(from); }
+        }
+      }
+      frontier = next;
+      if (!frontier.length) break;
+    }
+    return seen;
   }
 
-  const btnLabels = document.getElementById("btn-toggle-labels");
-  btnLabels.onclick = () => {
-    btnLabels.classList.toggle("active");
-    const on = btnLabels.classList.contains("active");
-    label.style("display", on ? "block" : "none");
+  // ---- mode toggle ------------------------------------------------
+  const btnSummary = document.getElementById("btn-mode-summary");
+  const btnFull = document.getElementById("btn-mode-full");
+  function setMode(m) {
+    mode = m;
+    btnSummary.classList.toggle("active", m === "summary");
+    btnFull.classList.toggle("active", m === "full");
+    render();
+  }
+  btnSummary.onclick = () => { setMode("summary"); fit(); };
+  btnFull.onclick    = () => { setMode("full"); fit(); };
+
+  // ---- fit / zoom to region --------------------------------------
+  function fit() {
+    const pts = (mode === "summary") ? supers : nodes;
+    if (!pts.length) return;
+    let x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity;
+    for (const p of pts) {
+      if (p.px < x0) x0 = p.px;
+      if (p.px > x1) x1 = p.px;
+      if (p.py < y0) y0 = p.py;
+      if (p.py > y1) y1 = p.py;
+    }
+    applyFit(x0, y0, x1, y1, 0.95);
+  }
+  function zoomToRegion(ids, maxScale) {
+    const ns = ids.map(id => nodesById.get(id)).filter(Boolean);
+    if (!ns.length) return;
+    let x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity;
+    for (const n of ns) {
+      if (n.px < x0) x0 = n.px;
+      if (n.px > x1) x1 = n.px;
+      if (n.py < y0) y0 = n.py;
+      if (n.py > y1) y1 = n.py;
+    }
+    // Pad so a single node isn't slammed to full zoom.
+    if (x1 - x0 < 200) { const c = (x0+x1)/2; x0 = c - 100; x1 = c + 100; }
+    if (y1 - y0 < 200) { const c = (y0+y1)/2; y0 = c - 100; y1 = c + 100; }
+    applyFit(x0, y0, x1, y1, 0.8, maxScale);
+  }
+  function applyFit(x0, y0, x1, y1, fill, maxScale) {
+    const rect = canvas.getBoundingClientRect();
+    const pad = 60;
+    const spanX = Math.max(1, x1 - x0);
+    const spanY = Math.max(1, y1 - y0);
+    const scale = Math.min(
+      (rect.width - 2*pad)  / spanX,
+      (rect.height - 2*pad) / spanY,
+      maxScale || 2
+    ) * fill;
+    const txv = rect.width  / 2 - scale * (x0 + x1) / 2;
+    const tyv = rect.height / 2 - scale * (y0 + y1) / 2;
+    d3c.transition().duration(350).call(
+      zoom.transform, d3.zoomIdentity.translate(txv, tyv).scale(scale)
+    );
+  }
+
+  // ---- toolbar ----------------------------------------------------
+  document.getElementById("btn-fit").onclick = fit;
+  document.getElementById("btn-focus").onclick = () => {
+    setFocus(!focusSet);
+  };
+  document.getElementById("btn-clear").onclick = () => {
+    selected = null; selectedKind = null; focusSet = null;
+    document.getElementById("btn-focus").classList.remove("active");
+    renderInspector();
+    render();
   };
 
-  // auto-fit after sim warms up
-  setTimeout(fit, 1200);
+  // ---- legend -----------------------------------------------------
+  const legend = document.getElementById("legend");
+  legend.innerHTML = "";
+  KIND_ORDER.filter(k => presentKinds.has(k)).forEach(k => {
+    const dot = document.createElement("span");
+    dot.className = "sw";
+    dot.style.background = KIND_COLOR[k];
+    legend.appendChild(dot);
+    legend.appendChild(document.createTextNode(KIND_LABEL[k] || k));
+  });
+  [
+    ["converge",        "#ffc857"],
+    ["pinned",          "#7dd3a5"],
+    ["selected",        "#ffffff"],
+  ].forEach(([txt, col]) => {
+    const dot = document.createElement("span");
+    dot.className = "sw";
+    dot.style.background = "transparent";
+    dot.style.border = `2px solid ${col}`;
+    legend.appendChild(dot);
+    legend.appendChild(document.createTextNode(txt));
+  });
+
+  // ---- boot -------------------------------------------------------
+  resize();
+  fit();
 }
 
 function escapeHtml(s) {

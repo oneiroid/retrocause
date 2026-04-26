@@ -27,8 +27,10 @@ import json
 from pathlib import Path
 from typing import Any, Dict
 
+from builder.aggregate import aggregate
 from builder.dag import DAG
 from builder.detect import convergence_set, templates
+from builder.layout import compute_layout
 
 
 def dag_to_dict(dag: DAG, rules, include_detectors: bool = True) -> Dict[str, Any]:
@@ -49,6 +51,9 @@ def dag_to_dict(dag: DAG, rules, include_detectors: bool = True) -> Dict[str, An
         for inst in t.instances[:200]:
             node_templates.setdefault(inst[0], []).append(key_str)
 
+    coords = compute_layout(dag)
+    super_nodes, super_edges, _ = aggregate(dag, rules, coords=coords)
+
     nodes = []
     n_terminal = 0
     n_convergence = 0
@@ -60,6 +65,7 @@ def dag_to_dict(dag: DAG, rules, include_detectors: bool = True) -> Dict[str, An
             n_terminal += 1
         if in_deg >= 3:
             n_convergence += 1
+        x, y = coords.get(nid, (0.0, 0.0))
         nodes.append(
             {
                 "id": nid,
@@ -72,6 +78,8 @@ def dag_to_dict(dag: DAG, rules, include_detectors: bool = True) -> Dict[str, An
                 "terminal": is_terminal,
                 "strong_converge": nid in strong_conv,
                 "template_starts": node_templates.get(nid, []),
+                "x": x,
+                "y": y,
             }
         )
 
@@ -88,12 +96,18 @@ def dag_to_dict(dag: DAG, rules, include_detectors: bool = True) -> Dict[str, An
     return {
         "nodes": nodes,
         "edges": edges,
+        "aggregation": {
+            "nodes": super_nodes,
+            "edges": super_edges,
+        },
         "meta": {
             "n_nodes": len(nodes),
             "n_edges": len(edges),
             "n_terminal": n_terminal,
             "n_convergence": n_convergence,
             "n_strong_convergence": len(strong_conv),
+            "n_super_nodes": len(super_nodes),
+            "n_super_edges": len(super_edges),
             "templates": [
                 {"key": " -> ".join(t.key), "count": t.count}
                 for t in top_templates

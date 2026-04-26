@@ -11,6 +11,9 @@ Domains:
                      paths. §10.3 of FORMAL_MODEL_v3.
     negotiation   -- 4 action types (propose, counter, accept, walk). The
                      counter-example domain for §10.3.
+    rps           -- Rock-Paper-Scissors with N simultaneous players.
+                     Each round-action is a joint profile; many profiles
+                     collapse onto the same score-delta at round boundaries.
 
 Commands inside the REPL:
     help                         -- list commands
@@ -42,6 +45,8 @@ from builder.expand import expand_depth, expand_frontier, expand_one, seed_dag
 from builder.export import write_json
 from domains.lineage import LineageRules
 from domains.negotiation import NegotiationRules
+from domains.rps import RpsRules
+from domains.rps import RpsRules
 
 
 # -------------------------- command handlers ---------------------------
@@ -241,9 +246,18 @@ def build_negotiation_rules(args: argparse.Namespace) -> NegotiationRules:
     )
 
 
+def build_rps_rules(args: argparse.Namespace) -> RpsRules:
+    return RpsRules(
+        n_players=args.rps_n_players,
+        max_round=args.rps_max_round,
+        min_score=args.rps_min_score,
+    )
+
+
 DOMAIN_BUILDERS = {
     "lineage": build_lineage_rules,
     "negotiation": build_negotiation_rules,
+    "rps": build_rps_rules,
 }
 
 
@@ -264,6 +278,12 @@ def main(argv: list[str] | None = None) -> int:
                    help="offers range over 0..value_max inclusive")
     p.add_argument("--neg-max-turn", type=int, default=8)
     p.add_argument("--neg-opener", choices=("a", "b"), default="a")
+
+    # rps knobs
+    p.add_argument("--rps-n-players", type=int, default=3)
+    p.add_argument("--rps-max-round", type=int, default=5)
+    p.add_argument("--rps-min-score", type=int, default=-3,
+                   help="a player is eliminated when score drops below this")
 
     p.add_argument("--script", type=str, default=None,
                    help="file of commands to run then exit")
