@@ -1,17 +1,25 @@
-"""RPS domain tests: simultaneous joint-profile moves with elimination.
+"""RPS domain tests: simultaneous joint-profile moves, elimination,
+strategies, and DAG-level convergence.
 
-Covers:
-- seed shape and determinism
-- branching factor (3^n_alive) including after elimination
-- per-round score deltas match beats - beaten_by
-- elimination happens at round boundary when score dips below min_score
-- max_round terminates the game
-- <=1 alive terminates the game
-- DAG dedup: two different round-1 profiles yielding the same (scores,
-  alive) tuple must land on the same state.
+State shape is (DOMAIN_TAG, round, scores, alive, last_profile);
+last_profile is None on round 0 and a per-seat tuple after each step.
 """
 from builder.lex import Action
-from domains.rps import DOMAIN_TAG, CHOICES, DEAD_SLOT, RpsRules, _round_schema
+from domains.rps import (
+    DOMAIN_TAG,
+    CHOICES,
+    DEAD_SLOT,
+    RpsRules,
+    STRATEGIES,
+    _round_schema,
+)
+
+
+def _all_free():
+    """Helper: 3 players with avoid_self_last produces wide branching
+    after round 0 (2 choices per player) -- useful baseline for tests
+    that don't want strategy-driven collapse."""
+    return RpsRules(n_players=3, strategies=("avoid_self_last",) * 3)
 
 
 def test_seed_shape():
@@ -21,42 +29,41 @@ def test_seed_shape():
     assert s[1] == 0
     assert s[2] == (0, 0, 0)
     assert s[3] == (True, True, True)
+    assert s[4] is None
     assert not r.is_terminal(s)
 
 
-def test_branching_is_three_to_the_n_alive():
-    r = RpsRules(n_players=3)
-    acts = r.valid_actions(r.seed())
-    assert len(acts) == 27                 # 3 players, 3 choices each
-    # All are "round" actions with length-n_players args.
-    for a in acts:
-        assert a.schema.name == "round"
-        assert len(a.args) == 3
-        assert all(c in CHOICES for c in a.args)
+def test_branching_from_seed_is_three_to_n():
+    """Round 0 has no history, so every strategy returns CHOICES and
+    branching is the full 3^n joint-profile space."""
+    for strat in STRATEGIES:
+        r = RpsRules(n_players=3, strategies=(strat,) * 3)
+        acts = r.valid_actions(r.seed())
+        assert len(acts) == 27, f"strat={strat}"
+        for a in acts:
+            assert a.schema.name == "round"
+            assert all(c in CHOICES for c in a.args)
 
 
 def test_all_same_profile_yields_zero_deltas():
     r = RpsRules(n_players=3)
-    s = r.seed()
     sch = _round_schema(3)
-    s1 = r.step(s, Action(sch, ("R", "R", "R")))
+    s1 = r.step(r.seed(), Action(sch, ("R", "R", "R")))
     assert s1[1] == 1
     assert s1[2] == (0, 0, 0)
     assert s1[3] == (True, True, True)
+    assert s1[4] == ("R", "R", "R")
 
 
 def test_all_different_profile_yields_zero_deltas():
-    # R beats S, P beats R, S beats P -- each player wins once and loses once.
     r = RpsRules(n_players=3)
     sch = _round_schema(3)
     s1 = r.step(r.seed(), Action(sch, ("R", "P", "S")))
     assert s1[2] == (0, 0, 0)
+    assert s1[4] == ("R", "P", "S")
 
 
 def test_two_vs_one_deltas():
-    # Profile (R, R, P): the two R players each face one R (tie) and
-    # one P (lose) -> delta -1 each. The P player faces two Rs (beats
-    # both) -> delta +2.
     r = RpsRules(n_players=3)
     sch = _round_schema(3)
     s1 = r.step(r.seed(), Action(sch, ("R", "R", "P")))
@@ -66,73 +73,33 @@ def test_two_vs_one_deltas():
 def test_elimination_when_score_drops_below_min():
     r = RpsRules(n_players=3, max_round=10, min_score=-1)
     sch = _round_schema(3)
-    # Round 1: (R, R, P) -> scores (-1, -1, 2). min_score=-1, so
-    # elimination is "below -1", i.e. strictly < -1. Neither p0 nor p1
-    # is out yet (both at -1 exactly).
     s1 = r.step(r.seed(), Action(sch, ("R", "R", "P")))
     assert s1[2] == (-1, -1, 2)
     assert s1[3] == (True, True, True)
-    # Round 2: same profile. scores -> (-2, -2, 4). Now p0, p1 are out.
     s2 = r.step(s1, Action(sch, ("R", "R", "P")))
     assert s2[2] == (-2, -2, 4)
     assert s2[3] == (False, False, True)
-    # <=1 alive -> terminal.
     assert r.is_terminal(s2)
 
 
 def test_dead_seat_excluded_from_branching():
-    r = RpsRules(n_players=3, max_round=10, min_score=-1)
-    sch = _round_schema(3)
-    # Force p0 and p1 dead by repeating (R, R, P) twice.
-    s = r.seed()
-    s1 = r.step(s, Action(sch, ("R", "R", "P")))
-    # Manually construct a state where only p2 is alive but we aren't
-    # terminal yet -- use a 4-player game so something is left to branch.
-    r4 = RpsRules(n_players=4, max_round=10, min_score=-1)
-    sch4 = _round_schema(4)
-    # Profile (R, R, R, P): Rs get -1 each (tie among themselves, each
-    # loses to P), P gets +3. Run twice; Rs hit -2 -> out.
-    s = r4.seed()
-    s = r4.step(s, Action(sch4, ("R", "R", "R", "P")))
-    s = r4.step(s, Action(sch4, ("R", "R", "R", "P")))
-    assert s[3] == (False, False, False, True)
-    # 1 alive -> terminal, zero actions.
-    assert r4.is_terminal(s)
-    assert r4.valid_actions(s) == []
-
-
-def test_branching_after_partial_elimination():
-    # 4 players, eliminate two -> branching = 3^2 = 9.
     r = RpsRules(n_players=4, max_round=10, min_score=-1)
     sch = _round_schema(4)
-    s = r.seed()
-    # (R, R, P, P): Rs face 1R (tie) + 2P (lose twice) -> -2 each.
-    # Ps face 2R (beat twice) + 1P (tie) -> +2 each. min_score=-1, so
-    # Rs' -2 is below -> both out after this one round.
-    s1 = r.step(s, Action(sch, ("R", "R", "P", "P")))
-    assert s1[2] == (-2, -2, 2, 2)
-    assert s1[3] == (False, False, True, True)
-    # Not terminal (2 alive, round 1 < max 10).
-    assert not r.is_terminal(s1)
-    acts = r.valid_actions(s1)
-    assert len(acts) == 9
-    # Dead seats must be DEAD_SLOT in every action.
-    for a in acts:
-        assert a.args[0] == DEAD_SLOT
-        assert a.args[1] == DEAD_SLOT
-        assert a.args[2] in CHOICES
-        assert a.args[3] in CHOICES
+    s = r.step(r.seed(), Action(sch, ("R", "R", "R", "P")))
+    s = r.step(s,        Action(sch, ("R", "R", "R", "P")))
+    assert s[3] == (False, False, False, True)
+    assert r.is_terminal(s)
+    assert r.valid_actions(s) == []
 
 
 def test_max_round_terminates():
     r = RpsRules(n_players=3, max_round=2, min_score=-99)
     sch = _round_schema(3)
-    s = r.seed()
-    s1 = r.step(s, Action(sch, ("R", "R", "R")))
-    s2 = r.step(s1, Action(sch, ("R", "R", "R")))
-    assert s2[1] == 2
-    assert r.is_terminal(s2)
-    assert r.valid_actions(s2) == []
+    s = r.step(r.seed(), Action(sch, ("R", "R", "R")))
+    s = r.step(s,        Action(sch, ("R", "R", "R")))
+    assert s[1] == 2
+    assert r.is_terminal(s)
+    assert r.valid_actions(s) == []
 
 
 def test_step_on_terminal_raises():
@@ -163,7 +130,6 @@ def test_dead_seat_cannot_play_a_choice():
     r = RpsRules(n_players=4, max_round=10, min_score=-1)
     sch = _round_schema(4)
     s = r.step(r.seed(), Action(sch, ("R", "R", "P", "P")))
-    # p0 and p1 are now dead.
     try:
         r.step(s, Action(sch, ("R", "R", "P", "S")))
     except ValueError:
@@ -172,32 +138,120 @@ def test_dead_seat_cannot_play_a_choice():
         raise AssertionError("dead seat with a real choice must raise")
 
 
-def test_dedup_distinct_profiles_same_next_state():
-    """All-same and all-different profiles both yield (0,0,0) deltas
-    -- the resulting next-states must be equal tuples so the DAG merges
-    them. This is the convergence property RPS demonstrates."""
-    r = RpsRules(n_players=3)
+# ---- strategy unit tests --------------------------------------------
+
+
+def _step_with(rules, sch, profile):
+    return rules.step(rules.seed(), Action(sch, profile))
+
+
+def test_beat_plurality_unique_when_modal_is_unique():
+    r = RpsRules(n_players=3, strategies=("beat_plurality",) * 3)
     sch = _round_schema(3)
-    sA = r.step(r.seed(), Action(sch, ("R", "R", "R")))
-    sB = r.step(r.seed(), Action(sch, ("R", "P", "S")))
-    sC = r.step(r.seed(), Action(sch, ("P", "S", "R")))
-    assert sA == sB == sC
-    assert hash(sA) == hash(sB) == hash(sC)
+    # last profile (R,R,P): plurality = R; each player should play P.
+    s1 = _step_with(r, sch, ("R", "R", "P"))
+    acts = r.valid_actions(s1)
+    assert len(acts) == 1
+    assert acts[0].args == ("P", "P", "P")
 
 
-def test_dag_expansion_shows_convergence():
-    """End-to-end: run the DAG expander on a tiny RPS game and confirm
-    real merges (in_degree >= 2) happen at round boundaries."""
-    from builder.dag import DAG
+def test_beat_plurality_tied_branches_per_tied_symbol():
+    r = RpsRules(n_players=3, strategies=("beat_plurality",) * 3)
+    sch = _round_schema(3)
+    # last profile (R,P,S): all three tied; plurality_set = {R,P,S};
+    # beats = {P,S,R} = all 3. So branching = 3^3 = 27 again.
+    s1 = _step_with(r, sch, ("R", "P", "S"))
+    assert len(r.valid_actions(s1)) == 27
+
+
+def test_copy_self_last_collapses_to_one():
+    r = RpsRules(n_players=3, strategies=("copy_self_last",) * 3)
+    sch = _round_schema(3)
+    s1 = _step_with(r, sch, ("R", "P", "S"))
+    acts = r.valid_actions(s1)
+    assert len(acts) == 1
+    assert acts[0].args == ("R", "P", "S")
+
+
+def test_avoid_self_last_branches_2_per_player():
+    r = RpsRules(n_players=3, strategies=("avoid_self_last",) * 3)
+    sch = _round_schema(3)
+    s1 = _step_with(r, sch, ("R", "P", "S"))
+    acts = r.valid_actions(s1)
+    assert len(acts) == 8           # 2^3
+    for a in acts:
+        assert a.args[0] != "R"
+        assert a.args[1] != "P"
+        assert a.args[2] != "S"
+
+
+def test_mixed_strategies_compose():
+    r = RpsRules(
+        n_players=3,
+        strategies=("copy_self_last", "avoid_self_last", "beat_self_last"),
+    )
+    sch = _round_schema(3)
+    s1 = _step_with(r, sch, ("R", "P", "S"))
+    acts = r.valid_actions(s1)
+    # p0 copy_self_last -> {R}, p1 avoid_self_last -> {R, S},
+    # p2 beat_self_last -> {R}. Joint = 1 * 2 * 1 = 2.
+    assert len(acts) == 2
+    p1_choices = {a.args[1] for a in acts}
+    assert p1_choices == {"R", "S"}
+
+
+def test_invalid_strategy_name_raises():
+    try:
+        RpsRules(n_players=3, strategies=("nonsense",) * 3)
+    except ValueError:
+        pass
+    else:
+        raise AssertionError("unknown strategy should raise")
+
+
+def test_strategies_length_must_match_n_players():
+    try:
+        RpsRules(n_players=3, strategies=("beat_plurality",) * 2)
+    except ValueError:
+        pass
+    else:
+        raise AssertionError("strategies length mismatch should raise")
+
+
+# ---- DAG-level: convergence / branching at scale ---------------------
+
+
+def test_dag_expansion_shows_convergence_with_branching_strategy():
+    """avoid_self_last branches 2/player after round 0, so multiple
+    round-1 paths still merge on round-2 states with equal scores."""
     from builder.expand import expand_depth, seed_dag
 
-    r = RpsRules(n_players=3, max_round=2, min_score=-99)
+    r = RpsRules(n_players=3, max_round=3, min_score=-99,
+                 strategies=("avoid_self_last",) * 3)
     dag = seed_dag(r)
-    expand_depth(dag, r, levels=2)
-    # At least some node should have in_degree >= 2 (the round-2 states
-    # reachable from multiple round-1 profiles).
+    expand_depth(dag, r, levels=3)
     max_in = max(dag.in_degree(nid) for nid in dag.nodes)
     assert max_in >= 2, (
-        f"expected some merging, got max in_degree = {max_in} "
+        f"expected merging, got max in_degree={max_in} "
         f"over {len(dag.nodes)} nodes"
     )
+
+
+def test_deterministic_strategy_yields_chain():
+    """copy_self_last is fully deterministic after round 0, so each
+    round-0 profile produces a single chain. With 3 players we get
+    27 distinct chains (one per round-0 profile)."""
+    from builder.expand import expand_all, seed_dag
+
+    r = RpsRules(n_players=3, max_round=4, min_score=-99,
+                 strategies=("copy_self_last",) * 3)
+    dag = seed_dag(r)
+    expand_all(dag, r)
+    # Round 0 -> 27 round-1 nodes. Each then steps deterministically
+    # to round 2, 3, 4. Some of these chains will land on identical
+    # (scores, alive, last_profile) tuples and merge.
+    assert len(dag.nodes) >= 27
+    # Any node past round 0 has at most 1 successor (deterministic).
+    for nid, node in dag.nodes.items():
+        if node.generation >= 1:
+            assert dag.out_degree(nid) <= 1

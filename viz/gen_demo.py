@@ -26,7 +26,7 @@ from domains.rps import RpsRules
 def main() -> None:
     # value_max=3, max_turn=5 -> ~50 nodes with real (in_degree >= 3)
     # convergence on the counter-result nodes.
-    rules = RpsRules(n_players=3, min_score=-2, max_round=5)
+    rules = RpsRules(n_players=3, min_score=-3, max_round=15)
     dag = seed_dag(rules)
     expand_all(dag, rules)
 

@@ -247,10 +247,14 @@ def build_negotiation_rules(args: argparse.Namespace) -> NegotiationRules:
 
 
 def build_rps_rules(args: argparse.Namespace) -> RpsRules:
+    strategies: tuple[str, ...] = ()
+    if args.rps_strategies:
+        strategies = tuple(args.rps_strategies.split(","))
     return RpsRules(
         n_players=args.rps_n_players,
         max_round=args.rps_max_round,
         min_score=args.rps_min_score,
+        strategies=strategies,
     )
 
 
@@ -284,6 +288,12 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--rps-max-round", type=int, default=5)
     p.add_argument("--rps-min-score", type=int, default=-3,
                    help="a player is eliminated when score drops below this")
+    p.add_argument("--rps-strategies", type=str, default="",
+                   help="comma-separated per-player strategy names "
+                        "(default: all beat_plurality). "
+                        "Available: beat_plurality, copy_plurality, "
+                        "lose_to_plurality, beat_self_last, copy_self_last, "
+                        "avoid_self_last, beat_winner, copy_loser.")
 
     p.add_argument("--script", type=str, default=None,
                    help="file of commands to run then exit")
