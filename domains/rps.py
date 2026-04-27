@@ -278,26 +278,35 @@ class RpsRules:
         return False
 
     def expr(self, s: State) -> str:
-        _, rnd, scores, alive, _ = s
+        _, rnd, scores, alive, last_profile = s
+        # Per-player block: "p0=R/2"  ->  player 0 played R last round,
+        # current score 2. "p1x=P/-3" -> player 1 is eliminated, last
+        # threw P, frozen at -3. Round 0 has no last_profile, so we
+        # omit the "/symbol" half.
         parts = []
         for i, (sc, al) in enumerate(zip(scores, alive)):
             tag = "" if al else "x"
-            parts.append(f"p{i}{tag}={sc}")
-        score_str = " ".join(parts)
+            if last_profile is None:
+                parts.append(f"p{i}{tag}={sc}")
+            else:
+                sym = last_profile[i]
+                parts.append(f"p{i}{tag}={sym}/{sc}")
+        body = " ".join(parts)
+
         n_alive = sum(alive)
         if rnd >= self.max_round or n_alive <= 1:
             if n_alive == 1:
                 winner = alive.index(True)
-                return f"r{rnd} WIN p{winner}  {score_str}"
+                return f"r{rnd} WIN p{winner}  {body}"
             if n_alive == 0:
-                return f"r{rnd} WIPEOUT  {score_str}"
+                return f"r{rnd} WIPEOUT  {body}"
             top = max(sc for sc, al in zip(scores, alive) if al)
             tied = [i for i, (sc, al) in enumerate(zip(scores, alive))
                     if al and sc == top]
             if len(tied) == 1:
-                return f"r{rnd} END p{tied[0]}  {score_str}"
-            return f"r{rnd} DRAW {tied}  {score_str}"
-        return f"r{rnd}  {score_str}"
+                return f"r{rnd} END p{tied[0]}  {body}"
+            return f"r{rnd} DRAW {tied}  {body}"
+        return f"r{rnd}  {body}"
 
     def seed(self) -> State:
         scores = tuple(0 for _ in range(self.n_players))
