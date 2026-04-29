@@ -36,6 +36,7 @@ class Edge:
     to_id: NodeId
     action_label: str
     action_type: str
+    action_args: Tuple[Any, ...] = ()
 
 
 class DAG:
@@ -73,6 +74,7 @@ class DAG:
         to_id: NodeId,
         action_label: str,
         action_type: str,
+        action_args: Tuple[Any, ...] = (),
     ) -> int:
         idx = len(self.edges)
         self.edges.append(
@@ -81,6 +83,7 @@ class DAG:
                 to_id=to_id,
                 action_label=action_label,
                 action_type=action_type,
+                action_args=action_args,
             )
         )
         self.out_edges[from_id].append(idx)

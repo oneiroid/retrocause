@@ -4,6 +4,7 @@ from builder.expand import expand_all, expand_depth, seed_dag
 from builder.detect import (
     convergence,
     templates,
+    templates_linear_placeholder,
     template_parameter_contrast,
     report,
 )
@@ -44,19 +45,33 @@ def test_convergence_on_real_lineage_dag():
     assert len(hits) >= 5, f"expected >=5, got {len(hits)}"
 
 
-def test_templates_find_replicate_chains():
+def test_templates_linear_placeholder_finds_replicate_chains():
+    """The pre-anti-unification detector groups by action-type sequence
+    only, so the all-replicate path should appear under the bare type
+    tuple."""
     r = LineageRules(max_generation=4)
     dag = seed_dag(r)
     expand_depth(dag, r, levels=4)
-    hits = templates(dag, size=3, top_k=10)
-    # The replicate-only chain should appear and have many instances
-    # (at least one starting from each alive gen-0..gen-1 node).
+    hits = templates_linear_placeholder(dag, size=3, top_k=10)
     repl3 = next(
         (h for h in hits if h.key == ("replicate", "replicate", "replicate")),
         None,
     )
     assert repl3 is not None
     assert repl3.count >= 1
+
+
+def test_templates_antiunify_returns_signatures():
+    """The anti-unified detector yields AntiUnifiedHits whose template
+    signatures replace varying args with typed slots. The
+    all-replicate template has zero args, so it should appear with a
+    bare signature 'replicate -> replicate -> replicate'."""
+    r = LineageRules(max_generation=4)
+    dag = seed_dag(r)
+    expand_depth(dag, r, levels=4)
+    hits = templates(dag, size=3, top_k=10)
+    sigs = [h.template.signature() for h in hits]
+    assert "replicate -> replicate -> replicate" in sigs
 
 
 def test_template_parameter_contrast_returns_labels():

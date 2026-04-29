@@ -36,6 +36,7 @@ def expand_one(dag: DAG, frontier_id: NodeId, rules) -> List[int]:
             to_id=to_id,
             action_label=a.label(),
             action_type=a.action_type(),
+            action_args=a.args,
         )
         new_edge_ids.append(eidx)
 

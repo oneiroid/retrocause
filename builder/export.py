@@ -42,13 +42,15 @@ def dag_to_dict(dag: DAG, rules, include_detectors: bool = True) -> Dict[str, An
     top_templates = (
         templates(dag, size=3, top_k=5) if include_detectors else []
     )
-    # Map node_id -> list of template_keys it participates in (as the
-    # starting node of an instance). Lets the viewer colour by template.
+    # Map node_id -> list of template signatures it participates in (as
+    # the starting node of an instance). Lets the viewer colour by
+    # template. Signatures come from the anti-unified template, so they
+    # carry slot/constant information rather than a bare type sequence.
     node_templates: Dict[int, list] = {}
     for t in top_templates:
-        key_str = " -> ".join(t.key)
+        sig = t.template.signature()
         for inst in t.instances[:200]:
-            node_templates.setdefault(inst[0], []).append(key_str)
+            node_templates.setdefault(inst[0], []).append(sig)
 
     coords = compute_layout(dag)
 
@@ -101,7 +103,13 @@ def dag_to_dict(dag: DAG, rules, include_detectors: bool = True) -> Dict[str, An
             "n_convergence": n_convergence,
             "n_strong_convergence": len(strong_conv),
             "templates": [
-                {"key": " -> ".join(t.key), "count": t.count}
+                {
+                    "key": t.template.signature(),
+                    "count": t.count,
+                    "bits_saved": t.bits_saved,
+                    "n_slots": t.template.n_slots,
+                    "n_const": t.template.n_const(),
+                }
                 for t in top_templates
             ],
         },

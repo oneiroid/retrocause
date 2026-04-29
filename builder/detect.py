@@ -1,6 +1,6 @@
 """Convergence nodes and recurring-template detectors.
 
-Two detectors per DAG_BUILDER_PLAN.md §4:
+Per DAG_BUILDER_PLAN.md §4:
 
   1. convergence(dag, min_in=3, depth=2, min_distinct=3)
      Nodes whose in-degree >= min_in AND whose depth-`depth` ancestors
@@ -9,22 +9,30 @@ Two detectors per DAG_BUILDER_PLAN.md §4:
      shared recent ancestor.
 
   2. templates(dag, size=3, top_k=10)
-     Enumerate connected linear paths of `size` edges, canonicalize on
-     (action_type_sequence), count occurrences, return the top_k by
-     instance count.
+     Anti-unified linear templates of `size` edges. See
+     builder/antiunify.py for the operator (FORMAL_MODEL_v3 §8.3).
+     Returns AntiUnifiedHits ranked by MDL bits_saved.
 
-  3. template_parameter_contrast(dag, template_key, max_instances=5)
-     §7.2 contrast: for each instance of a template, list the parameter
-     values that vary across instances. Cheap surrogate for the full
-     parallel-DAG contrast operator.
+  3. templates_linear_placeholder(dag, size=3, top_k=10)
+     Pre-anti-unification detector: groups linear paths by
+     action-type sequence only. Kept for regression comparison
+     against `templates`; output is dominated by combinatorial noise
+     in small-alphabet domains.
+
+  4. template_parameter_contrast(dag, template_key, max_instances=5)
+     Companion to templates_linear_placeholder. Returns concrete
+     action labels along each instance of an action-type-sequence
+     key. Anti-unified templates (1) carry their own bindings, so
+     this function is only used with (3).
 """
 from __future__ import annotations
 
-from collections import Counter, defaultdict
+from collections import defaultdict
 from dataclasses import dataclass, field
 from typing import Dict, List, Tuple
 
 from builder.dag import DAG, NodeId
+from builder.antiunify import AntiUnifiedHit, antiunify_templates
 
 
 @dataclass
@@ -73,12 +81,31 @@ def convergence(
     return hits
 
 
-# ---------------- templates (linear size-k paths) ----------------
+# ---------------- templates (anti-unified, FORMAL_MODEL_v3 §8.3) -----
 
-def templates(dag: DAG, size: int = 3, top_k: int = 10) -> List[TemplateHit]:
+def templates(
+    dag: DAG, size: int = 3, top_k: int = 10, min_instances: int = 2
+) -> List[AntiUnifiedHit]:
+    """Anti-unified linear templates of `size` edges, ranked by MDL
+    bits_saved. Thin wrapper over builder.antiunify.antiunify_templates;
+    kept here so callers have one entry point for "the detector."""
+    return antiunify_templates(
+        dag, size=size, top_k=top_k, min_instances=min_instances
+    )
+
+
+# ---------------- templates (linear placeholder, pre-§8.3) -----------
+
+def templates_linear_placeholder(
+    dag: DAG, size: int = 3, top_k: int = 10
+) -> List[TemplateHit]:
     """Enumerate all linear paths of exactly `size` edges, canonicalize
     by action_type sequence, count occurrences. Returns the top_k by
-    count (min 2 instances, otherwise it's not a recurrence)."""
+    count (min 2 instances, otherwise it's not a recurrence).
+
+    Retained for regression comparison against `templates` -- in
+    small-alphabet domains this detector and the anti-unifier should
+    diverge sharply once linking constraints kick in."""
     if size < 1:
         raise ValueError("template size must be >= 1")
 
@@ -147,6 +174,9 @@ def report(dag: DAG, rules, min_in: int = 3, depth: int = 2,
            template_size: int = 3, top_k: int = 5) -> str:
     conv = convergence(dag, min_in=min_in, depth=depth, min_distinct=min_in)
     tpl = templates(dag, size=template_size, top_k=top_k)
+    placeholder = templates_linear_placeholder(
+        dag, size=template_size, top_k=top_k
+    )
 
     lines = [
         f"-- detectors --  (DAG: nodes={len(dag.nodes)}, edges={len(dag.edges)})",
@@ -162,10 +192,26 @@ def report(dag: DAG, rules, min_in: int = 3, depth: int = 2,
     if len(conv) > 8:
         lines.append(f"  ... and {len(conv) - 8} more")
 
-    lines.append(f"top-{top_k} recurring templates (size={template_size}):")
+    lines.append(
+        f"top-{top_k} anti-unified templates (size={template_size}, "
+        f"by bits_saved):"
+    )
     for h in tpl:
-        lines.append(f"  x{h.count:<4}  {' -> '.join(h.key)}")
+        t = h.template
+        lines.append(
+            f"  x{h.count:<4}  bits={h.bits_saved:+.0f}  "
+            f"slots={t.n_slots} const={t.n_const()}  {t.signature()}"
+        )
     if not tpl:
+        lines.append("  (none)")
+
+    lines.append(
+        f"top-{top_k} placeholder templates (size={template_size}, "
+        f"by raw count -- pre-anti-unification):"
+    )
+    for h in placeholder:
+        lines.append(f"  x{h.count:<4}  {' -> '.join(h.key)}")
+    if not placeholder:
         lines.append("  (none)")
 
     return "\n".join(lines)
