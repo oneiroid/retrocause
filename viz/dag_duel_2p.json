@@ -1,0 +1,6598 @@
+{
+  "nodes": [
+    {
+      "id": 0,
+      "expr": "r0  p0=0 p1=0",
+      "generation": 0,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 0,
+      "out_degree": 9,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round"
+      ],
+      "x": 0.0,
+      "y": 0.0
+    },
+    {
+      "id": 1,
+      "expr": "r1  p0=R/0 p1=R/0",
+      "generation": 1,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round"
+      ],
+      "x": -3.0,
+      "y": 1.0
+    },
+    {
+      "id": 2,
+      "expr": "r1  p0=R/-1 p1=P/1",
+      "generation": 1,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 2,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round"
+      ],
+      "x": -4.0,
+      "y": 1.0
+    },
+    {
+      "id": 3,
+      "expr": "r1  p0=R/1 p1=S/-1",
+      "generation": 1,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 2,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round"
+      ],
+      "x": -2.0,
+      "y": 1.0
+    },
+    {
+      "id": 4,
+      "expr": "r1  p0=P/1 p1=R/-1",
+      "generation": 1,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 2,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round"
+      ],
+      "x": 0.0,
+      "y": 1.0
+    },
+    {
+      "id": 5,
+      "expr": "r1  p0=P/0 p1=P/0",
+      "generation": 1,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round"
+      ],
+      "x": -1.0,
+      "y": 1.0
+    },
+    {
+      "id": 6,
+      "expr": "r1  p0=P/-1 p1=S/1",
+      "generation": 1,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 2,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round"
+      ],
+      "x": 1.0,
+      "y": 1.0
+    },
+    {
+      "id": 7,
+      "expr": "r1  p0=S/-1 p1=R/1",
+      "generation": 1,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 2,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round"
+      ],
+      "x": 3.0,
+      "y": 1.0
+    },
+    {
+      "id": 8,
+      "expr": "r1  p0=S/1 p1=P/-1",
+      "generation": 1,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 2,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round"
+      ],
+      "x": 2.0,
+      "y": 1.0
+    },
+    {
+      "id": 9,
+      "expr": "r1  p0=S/0 p1=S/0",
+      "generation": 1,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round"
+      ],
+      "x": 4.0,
+      "y": 1.0
+    },
+    {
+      "id": 10,
+      "expr": "r2  p0=P/-1 p1=S/1",
+      "generation": 2,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 2,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round"
+      ],
+      "x": -5.0,
+      "y": 2.0
+    },
+    {
+      "id": 11,
+      "expr": "r2  p0=S/-2 p1=R/2",
+      "generation": 2,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 2,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round"
+      ],
+      "x": -7.0,
+      "y": 2.0
+    },
+    {
+      "id": 12,
+      "expr": "r2  p0=S/-1 p1=S/1",
+      "generation": 2,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round"
+      ],
+      "x": -6.0,
+      "y": 2.0
+    },
+    {
+      "id": 13,
+      "expr": "r2  p0=P/1 p1=P/-1",
+      "generation": 2,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round"
+      ],
+      "x": -4.0,
+      "y": 2.0
+    },
+    {
+      "id": 14,
+      "expr": "r2  p0=P/0 p1=S/0",
+      "generation": 2,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 4,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round"
+      ],
+      "x": -3.0,
+      "y": 2.0
+    },
+    {
+      "id": 15,
+      "expr": "r2  p0=S/0 p1=R/0",
+      "generation": 2,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 4,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round"
+      ],
+      "x": 1.0,
+      "y": 2.0
+    },
+    {
+      "id": 16,
+      "expr": "r2  p0=S/1 p1=S/-1",
+      "generation": 2,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round"
+      ],
+      "x": -1.0,
+      "y": 2.0
+    },
+    {
+      "id": 17,
+      "expr": "r2  p0=S/-1 p1=R/1",
+      "generation": 2,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 2,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round"
+      ],
+      "x": -2.0,
+      "y": 2.0
+    },
+    {
+      "id": 18,
+      "expr": "r2  p0=R/-2 p1=P/2",
+      "generation": 2,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 2,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round"
+      ],
+      "x": 2.0,
+      "y": 2.0
+    },
+    {
+      "id": 19,
+      "expr": "r2  p0=R/-1 p1=R/1",
+      "generation": 2,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round"
+      ],
+      "x": 0.0,
+      "y": 2.0
+    },
+    {
+      "id": 20,
+      "expr": "r2  p0=P/-1 p1=P/1",
+      "generation": 2,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round"
+      ],
+      "x": 6.0,
+      "y": 2.0
+    },
+    {
+      "id": 21,
+      "expr": "r2  p0=P/-2 p1=S/2",
+      "generation": 2,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 2,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round"
+      ],
+      "x": 5.0,
+      "y": 2.0
+    },
+    {
+      "id": 22,
+      "expr": "r2  p0=R/0 p1=P/0",
+      "generation": 2,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 4,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round"
+      ],
+      "x": 3.0,
+      "y": 2.0
+    },
+    {
+      "id": 23,
+      "expr": "r2  p0=R/1 p1=R/-1",
+      "generation": 2,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round"
+      ],
+      "x": 4.0,
+      "y": 2.0
+    },
+    {
+      "id": 24,
+      "expr": "r2  p0=R/-1 p1=P/1",
+      "generation": 2,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 2,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round"
+      ],
+      "x": 7.0,
+      "y": 2.0
+    },
+    {
+      "id": 25,
+      "expr": "r3  p0=R/-2 p1=P/2",
+      "generation": 3,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 2,
+      "out_degree": 2,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round"
+      ],
+      "x": -10.5,
+      "y": 3.0
+    },
+    {
+      "id": 26,
+      "expr": "r3  p0=R/-1 p1=R/1",
+      "generation": 3,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round"
+      ],
+      "x": -8.5,
+      "y": 3.0
+    },
+    {
+      "id": 27,
+      "expr": "r3  p0=P/-2 p1=P/2",
+      "generation": 3,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [
+        "round -> round -> round"
+      ],
+      "x": -11.5,
+      "y": 3.0
+    },
+    {
+      "id": 28,
+      "expr": "r3  p0=P/-3 p1=S/3",
+      "generation": 3,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 2,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": -9.5,
+      "y": 3.0
+    },
+    {
+      "id": 29,
+      "expr": "r3  p0=S/0 p1=R/0",
+      "generation": 3,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 4,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round"
+      ],
+      "x": -5.5,
+      "y": 3.0
+    },
+    {
+      "id": 30,
+      "expr": "r3  p0=R/-1 p1=P/1",
+      "generation": 3,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 2,
+      "out_degree": 2,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": -4.5,
+      "y": 3.0
+    },
+    {
+      "id": 31,
+      "expr": "r3  p0=R/0 p1=R/0",
+      "generation": 3,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": -7.5,
+      "y": 3.0
+    },
+    {
+      "id": 32,
+      "expr": "r3  p0=S/1 p1=P/-1",
+      "generation": 3,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 2,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": -3.5,
+      "y": 3.0
+    },
+    {
+      "id": 33,
+      "expr": "r3  p0=S/-1 p1=R/1",
+      "generation": 3,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 2,
+      "out_degree": 2,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": -6.5,
+      "y": 3.0
+    },
+    {
+      "id": 34,
+      "expr": "r3  p0=P/0 p1=P/0",
+      "generation": 3,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": 4.5,
+      "y": 3.0
+    },
+    {
+      "id": 35,
+      "expr": "r3  p0=P/-1 p1=S/1",
+      "generation": 3,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 2,
+      "out_degree": 2,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": 7.5,
+      "y": 3.0
+    },
+    {
+      "id": 36,
+      "expr": "r3  p0=R/1 p1=S/-1",
+      "generation": 3,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 2,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": -1.5,
+      "y": 3.0
+    },
+    {
+      "id": 37,
+      "expr": "r3  p0=R/0 p1=P/0",
+      "generation": 3,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 4,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": -0.5,
+      "y": 3.0
+    },
+    {
+      "id": 38,
+      "expr": "r3  p0=P/-1 p1=P/1",
+      "generation": 3,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": -2.5,
+      "y": 3.0
+    },
+    {
+      "id": 39,
+      "expr": "r3  p0=P/-2 p1=S/2",
+      "generation": 3,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 2,
+      "out_degree": 2,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": 0.5,
+      "y": 3.0
+    },
+    {
+      "id": 40,
+      "expr": "r3  p0=S/-3 p1=R/3",
+      "generation": 3,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 2,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": 3.5,
+      "y": 3.0
+    },
+    {
+      "id": 41,
+      "expr": "r3  p0=S/-2 p1=S/2",
+      "generation": 3,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": 1.5,
+      "y": 3.0
+    },
+    {
+      "id": 42,
+      "expr": "r3  p0=S/-2 p1=R/2",
+      "generation": 3,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 2,
+      "out_degree": 2,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": 10.5,
+      "y": 3.0
+    },
+    {
+      "id": 43,
+      "expr": "r3  p0=R/-3 p1=P/3",
+      "generation": 3,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 2,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": 6.5,
+      "y": 3.0
+    },
+    {
+      "id": 44,
+      "expr": "r3  p0=R/-2 p1=R/2",
+      "generation": 3,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": 9.5,
+      "y": 3.0
+    },
+    {
+      "id": 45,
+      "expr": "r3  p0=P/1 p1=R/-1",
+      "generation": 3,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 2,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": 8.5,
+      "y": 3.0
+    },
+    {
+      "id": 46,
+      "expr": "r3  p0=S/0 p1=S/0",
+      "generation": 3,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": 2.5,
+      "y": 3.0
+    },
+    {
+      "id": 47,
+      "expr": "r3  p0=P/0 p1=S/0",
+      "generation": 3,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 4,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": 5.5,
+      "y": 3.0
+    },
+    {
+      "id": 48,
+      "expr": "r3  p0=S/-1 p1=S/1",
+      "generation": 3,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": 11.5,
+      "y": 3.0
+    },
+    {
+      "id": 49,
+      "expr": "r4  p0=S/-3 p1=R/3",
+      "generation": 4,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 2,
+      "out_degree": 2,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": -16.0,
+      "y": 4.0
+    },
+    {
+      "id": 50,
+      "expr": "r4  p0=S/-2 p1=S/2",
+      "generation": 4,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": -15.0,
+      "y": 4.0
+    },
+    {
+      "id": 51,
+      "expr": "r4  p0=P/-2 p1=S/2",
+      "generation": 4,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 2,
+      "out_degree": 2,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": -12.0,
+      "y": 4.0
+    },
+    {
+      "id": 52,
+      "expr": "r4 WIN p1  p0x=R/-4 p1=P/4",
+      "generation": 4,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 0,
+      "terminal": true,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": -14.0,
+      "y": 4.0
+    },
+    {
+      "id": 53,
+      "expr": "r4  p0=R/-3 p1=R/3",
+      "generation": 4,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": -13.0,
+      "y": 4.0
+    },
+    {
+      "id": 54,
+      "expr": "r4  p0=P/0 p1=P/0",
+      "generation": 4,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": -11.0,
+      "y": 4.0
+    },
+    {
+      "id": 55,
+      "expr": "r4  p0=P/-1 p1=S/1",
+      "generation": 4,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 3,
+      "out_degree": 2,
+      "terminal": false,
+      "strong_converge": true,
+      "template_starts": [],
+      "x": -10.0,
+      "y": 4.0
+    },
+    {
+      "id": 56,
+      "expr": "r4  p0=R/-1 p1=P/1",
+      "generation": 4,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 3,
+      "out_degree": 2,
+      "terminal": false,
+      "strong_converge": true,
+      "template_starts": [],
+      "x": 3.0,
+      "y": 4.0
+    },
+    {
+      "id": 57,
+      "expr": "r4  p0=R/1 p1=S/-1",
+      "generation": 4,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 2,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": -8.0,
+      "y": 4.0
+    },
+    {
+      "id": 58,
+      "expr": "r4  p0=S/-2 p1=R/2",
+      "generation": 4,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 2,
+      "out_degree": 2,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": -4.0,
+      "y": 4.0
+    },
+    {
+      "id": 59,
+      "expr": "r4  p0=S/-1 p1=S/1",
+      "generation": 4,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": -9.0,
+      "y": 4.0
+    },
+    {
+      "id": 60,
+      "expr": "r4  p0=R/0 p1=P/0",
+      "generation": 4,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 4,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": -6.0,
+      "y": 4.0
+    },
+    {
+      "id": 61,
+      "expr": "r4  p0=R/1 p1=R/-1",
+      "generation": 4,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": -7.0,
+      "y": 4.0
+    },
+    {
+      "id": 62,
+      "expr": "r4  p0=P/-1 p1=P/1",
+      "generation": 4,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": -3.0,
+      "y": 4.0
+    },
+    {
+      "id": 63,
+      "expr": "r4  p0=S/-1 p1=R/1",
+      "generation": 4,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 3,
+      "out_degree": 2,
+      "terminal": false,
+      "strong_converge": true,
+      "template_starts": [],
+      "x": 6.0,
+      "y": 4.0
+    },
+    {
+      "id": 64,
+      "expr": "r4  p0=R/-2 p1=P/2",
+      "generation": 4,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 2,
+      "out_degree": 2,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": 14.0,
+      "y": 4.0
+    },
+    {
+      "id": 65,
+      "expr": "r4  p0=R/-1 p1=R/1",
+      "generation": 4,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": 7.0,
+      "y": 4.0
+    },
+    {
+      "id": 66,
+      "expr": "r4  p0=P/1 p1=P/-1",
+      "generation": 4,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": -5.0,
+      "y": 4.0
+    },
+    {
+      "id": 67,
+      "expr": "r4  p0=P/0 p1=S/0",
+      "generation": 4,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 4,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": -1.0,
+      "y": 4.0
+    },
+    {
+      "id": 68,
+      "expr": "r4  p0=P/1 p1=R/-1",
+      "generation": 4,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 2,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": -2.0,
+      "y": 4.0
+    },
+    {
+      "id": 69,
+      "expr": "r4  p0=S/0 p1=S/0",
+      "generation": 4,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": 1.0,
+      "y": 4.0
+    },
+    {
+      "id": 70,
+      "expr": "r4  p0=R/-3 p1=P/3",
+      "generation": 4,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 2,
+      "out_degree": 2,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": 2.0,
+      "y": 4.0
+    },
+    {
+      "id": 71,
+      "expr": "r4  p0=R/-2 p1=R/2",
+      "generation": 4,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": 0.0,
+      "y": 4.0
+    },
+    {
+      "id": 72,
+      "expr": "r4  p0=P/-3 p1=P/3",
+      "generation": 4,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": 4.0,
+      "y": 4.0
+    },
+    {
+      "id": 73,
+      "expr": "r4 WIN p1  p0x=P/-4 p1=S/4",
+      "generation": 4,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 0,
+      "terminal": true,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": 5.0,
+      "y": 4.0
+    },
+    {
+      "id": 74,
+      "expr": "r4  p0=P/-2 p1=P/2",
+      "generation": 4,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": 15.0,
+      "y": 4.0
+    },
+    {
+      "id": 75,
+      "expr": "r4  p0=P/-3 p1=S/3",
+      "generation": 4,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 2,
+      "out_degree": 2,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": 13.0,
+      "y": 4.0
+    },
+    {
+      "id": 76,
+      "expr": "r4 WIN p1  p0x=S/-4 p1=R/4",
+      "generation": 4,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 0,
+      "terminal": true,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": 8.0,
+      "y": 4.0
+    },
+    {
+      "id": 77,
+      "expr": "r4  p0=S/-3 p1=S/3",
+      "generation": 4,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": 10.0,
+      "y": 4.0
+    },
+    {
+      "id": 78,
+      "expr": "r4  p0=S/0 p1=R/0",
+      "generation": 4,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 4,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": 12.0,
+      "y": 4.0
+    },
+    {
+      "id": 79,
+      "expr": "r4  p0=S/1 p1=S/-1",
+      "generation": 4,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": 11.0,
+      "y": 4.0
+    },
+    {
+      "id": 80,
+      "expr": "r4  p0=R/0 p1=R/0",
+      "generation": 4,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": 16.0,
+      "y": 4.0
+    },
+    {
+      "id": 81,
+      "expr": "r4  p0=S/1 p1=P/-1",
+      "generation": 4,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 2,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": 9.0,
+      "y": 4.0
+    },
+    {
+      "id": 82,
+      "expr": "r5  p0=P/-3 p1=P/3",
+      "generation": 5,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": -16.0,
+      "y": 5.0
+    },
+    {
+      "id": 83,
+      "expr": "r5 WIN p1  p0x=P/-4 p1=S/4",
+      "generation": 5,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 2,
+      "out_degree": 0,
+      "terminal": true,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": -14.0,
+      "y": 5.0
+    },
+    {
+      "id": 84,
+      "expr": "r5  p0=R/-3 p1=P/3",
+      "generation": 5,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 2,
+      "out_degree": 2,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": -15.0,
+      "y": 5.0
+    },
+    {
+      "id": 85,
+      "expr": "r5  p0=R/-2 p1=R/2",
+      "generation": 5,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": -11.0,
+      "y": 5.0
+    },
+    {
+      "id": 86,
+      "expr": "r5  p0=S/-1 p1=R/1",
+      "generation": 5,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 3,
+      "out_degree": 2,
+      "terminal": false,
+      "strong_converge": true,
+      "template_starts": [],
+      "x": -12.0,
+      "y": 5.0
+    },
+    {
+      "id": 87,
+      "expr": "r5  p0=R/-2 p1=P/2",
+      "generation": 5,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 2,
+      "out_degree": 2,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": -8.0,
+      "y": 5.0
+    },
+    {
+      "id": 88,
+      "expr": "r5  p0=R/-1 p1=R/1",
+      "generation": 5,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": -9.0,
+      "y": 5.0
+    },
+    {
+      "id": 89,
+      "expr": "r5  p0=S/-2 p1=R/2",
+      "generation": 5,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 2,
+      "out_degree": 2,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": -3.0,
+      "y": 5.0
+    },
+    {
+      "id": 90,
+      "expr": "r5  p0=S/-1 p1=S/1",
+      "generation": 5,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": 11.0,
+      "y": 5.0
+    },
+    {
+      "id": 91,
+      "expr": "r5  p0=P/1 p1=P/-1",
+      "generation": 5,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": -7.0,
+      "y": 5.0
+    },
+    {
+      "id": 92,
+      "expr": "r5  p0=P/0 p1=S/0",
+      "generation": 5,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 2,
+      "out_degree": 4,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": -6.0,
+      "y": 5.0
+    },
+    {
+      "id": 93,
+      "expr": "r5  p0=P/-2 p1=P/2",
+      "generation": 5,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": -5.0,
+      "y": 5.0
+    },
+    {
+      "id": 94,
+      "expr": "r5  p0=P/-3 p1=S/3",
+      "generation": 5,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 2,
+      "out_degree": 2,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": -1.0,
+      "y": 5.0
+    },
+    {
+      "id": 95,
+      "expr": "r5  p0=P/1 p1=R/-1",
+      "generation": 5,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 2,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": -10.0,
+      "y": 5.0
+    },
+    {
+      "id": 96,
+      "expr": "r5  p0=P/-1 p1=S/1",
+      "generation": 5,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 3,
+      "out_degree": 2,
+      "terminal": false,
+      "strong_converge": true,
+      "template_starts": [],
+      "x": 15.0,
+      "y": 5.0
+    },
+    {
+      "id": 97,
+      "expr": "r5  p0=S/0 p1=S/0",
+      "generation": 5,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": -13.0,
+      "y": 5.0
+    },
+    {
+      "id": 98,
+      "expr": "r5  p0=P/-1 p1=P/1",
+      "generation": 5,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": 4.0,
+      "y": 5.0
+    },
+    {
+      "id": 99,
+      "expr": "r5  p0=P/-2 p1=S/2",
+      "generation": 5,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 2,
+      "out_degree": 2,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": 8.0,
+      "y": 5.0
+    },
+    {
+      "id": 100,
+      "expr": "r5  p0=S/-3 p1=R/3",
+      "generation": 5,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 2,
+      "out_degree": 2,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": 14.0,
+      "y": 5.0
+    },
+    {
+      "id": 101,
+      "expr": "r5  p0=S/-2 p1=S/2",
+      "generation": 5,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": 13.0,
+      "y": 5.0
+    },
+    {
+      "id": 102,
+      "expr": "r5  p0=S/0 p1=R/0",
+      "generation": 5,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 2,
+      "out_degree": 4,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": -4.0,
+      "y": 5.0
+    },
+    {
+      "id": 103,
+      "expr": "r5  p0=R/-1 p1=P/1",
+      "generation": 5,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 3,
+      "out_degree": 2,
+      "terminal": false,
+      "strong_converge": true,
+      "template_starts": [],
+      "x": 3.0,
+      "y": 5.0
+    },
+    {
+      "id": 104,
+      "expr": "r5  p0=R/0 p1=R/0",
+      "generation": 5,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": 2.0,
+      "y": 5.0
+    },
+    {
+      "id": 105,
+      "expr": "r5  p0=S/1 p1=P/-1",
+      "generation": 5,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 2,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": 0.0,
+      "y": 5.0
+    },
+    {
+      "id": 106,
+      "expr": "r5  p0=S/1 p1=S/-1",
+      "generation": 5,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": -2.0,
+      "y": 5.0
+    },
+    {
+      "id": 107,
+      "expr": "r5 WIN p1  p0x=S/-4 p1=R/4",
+      "generation": 5,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 2,
+      "out_degree": 0,
+      "terminal": true,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": 5.0,
+      "y": 5.0
+    },
+    {
+      "id": 108,
+      "expr": "r5  p0=S/-3 p1=S/3",
+      "generation": 5,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": 1.0,
+      "y": 5.0
+    },
+    {
+      "id": 109,
+      "expr": "r5 WIN p1  p0x=R/-4 p1=P/4",
+      "generation": 5,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 2,
+      "out_degree": 0,
+      "terminal": true,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": 9.0,
+      "y": 5.0
+    },
+    {
+      "id": 110,
+      "expr": "r5  p0=R/-3 p1=R/3",
+      "generation": 5,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": 12.0,
+      "y": 5.0
+    },
+    {
+      "id": 111,
+      "expr": "r5  p0=P/0 p1=P/0",
+      "generation": 5,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": 16.0,
+      "y": 5.0
+    },
+    {
+      "id": 112,
+      "expr": "r5  p0=R/1 p1=S/-1",
+      "generation": 5,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 2,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": 7.0,
+      "y": 5.0
+    },
+    {
+      "id": 113,
+      "expr": "r5  p0=R/0 p1=P/0",
+      "generation": 5,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 2,
+      "out_degree": 4,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": 10.0,
+      "y": 5.0
+    },
+    {
+      "id": 114,
+      "expr": "r5  p0=R/1 p1=R/-1",
+      "generation": 5,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": 6.0,
+      "y": 5.0
+    },
+    {
+      "id": 115,
+      "expr": "r6 WIN p1  p0x=S/-4 p1=R/4",
+      "generation": 6,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 2,
+      "out_degree": 0,
+      "terminal": true,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": -16.0,
+      "y": 6.0
+    },
+    {
+      "id": 116,
+      "expr": "r6  p0=S/-3 p1=S/3",
+      "generation": 6,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": -15.0,
+      "y": 6.0
+    },
+    {
+      "id": 117,
+      "expr": "r6  p0=P/-3 p1=S/3",
+      "generation": 6,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 2,
+      "out_degree": 2,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": -9.0,
+      "y": 6.0
+    },
+    {
+      "id": 118,
+      "expr": "r6  p0=P/-1 p1=P/1",
+      "generation": 6,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": -14.0,
+      "y": 6.0
+    },
+    {
+      "id": 119,
+      "expr": "r6  p0=P/-2 p1=S/2",
+      "generation": 6,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 2,
+      "out_degree": 2,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": -7.0,
+      "y": 6.0
+    },
+    {
+      "id": 120,
+      "expr": "r6  p0=S/-3 p1=R/3",
+      "generation": 6,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 2,
+      "out_degree": 2,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": -5.0,
+      "y": 6.0
+    },
+    {
+      "id": 121,
+      "expr": "r6  p0=S/-2 p1=S/2",
+      "generation": 6,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": -8.0,
+      "y": 6.0
+    },
+    {
+      "id": 122,
+      "expr": "r6  p0=P/-2 p1=P/2",
+      "generation": 6,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": 4.0,
+      "y": 6.0
+    },
+    {
+      "id": 123,
+      "expr": "r6  p0=R/-2 p1=P/2",
+      "generation": 6,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 2,
+      "out_degree": 2,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": 10.0,
+      "y": 6.0
+    },
+    {
+      "id": 124,
+      "expr": "r6  p0=S/0 p1=R/0",
+      "generation": 6,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 2,
+      "out_degree": 4,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": -6.0,
+      "y": 6.0
+    },
+    {
+      "id": 125,
+      "expr": "r6  p0=R/-1 p1=P/1",
+      "generation": 6,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 3,
+      "out_degree": 2,
+      "terminal": false,
+      "strong_converge": true,
+      "template_starts": [],
+      "x": -11.0,
+      "y": 6.0
+    },
+    {
+      "id": 126,
+      "expr": "r6  p0=R/0 p1=R/0",
+      "generation": 6,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": -12.0,
+      "y": 6.0
+    },
+    {
+      "id": 127,
+      "expr": "r6  p0=S/1 p1=P/-1",
+      "generation": 6,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 2,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": -13.0,
+      "y": 6.0
+    },
+    {
+      "id": 128,
+      "expr": "r6  p0=S/-1 p1=R/1",
+      "generation": 6,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 3,
+      "out_degree": 2,
+      "terminal": false,
+      "strong_converge": true,
+      "template_starts": [],
+      "x": 15.0,
+      "y": 6.0
+    },
+    {
+      "id": 129,
+      "expr": "r6 WIN p1  p0x=R/-4 p1=P/4",
+      "generation": 6,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 2,
+      "out_degree": 0,
+      "terminal": true,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": 1.0,
+      "y": 6.0
+    },
+    {
+      "id": 130,
+      "expr": "r6  p0=R/-3 p1=R/3",
+      "generation": 6,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": -4.0,
+      "y": 6.0
+    },
+    {
+      "id": 131,
+      "expr": "r6  p0=S/1 p1=S/-1",
+      "generation": 6,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": -10.0,
+      "y": 6.0
+    },
+    {
+      "id": 132,
+      "expr": "r6  p0=R/-1 p1=R/1",
+      "generation": 6,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": 16.0,
+      "y": 6.0
+    },
+    {
+      "id": 133,
+      "expr": "r6  p0=S/-2 p1=R/2",
+      "generation": 6,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 2,
+      "out_degree": 2,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": 5.0,
+      "y": 6.0
+    },
+    {
+      "id": 134,
+      "expr": "r6  p0=R/-3 p1=P/3",
+      "generation": 6,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 2,
+      "out_degree": 2,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": 12.0,
+      "y": 6.0
+    },
+    {
+      "id": 135,
+      "expr": "r6  p0=R/-2 p1=R/2",
+      "generation": 6,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": 6.0,
+      "y": 6.0
+    },
+    {
+      "id": 136,
+      "expr": "r6  p0=P/-3 p1=P/3",
+      "generation": 6,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": 14.0,
+      "y": 6.0
+    },
+    {
+      "id": 137,
+      "expr": "r6 WIN p1  p0x=P/-4 p1=S/4",
+      "generation": 6,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 2,
+      "out_degree": 0,
+      "terminal": true,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": 11.0,
+      "y": 6.0
+    },
+    {
+      "id": 138,
+      "expr": "r6  p0=P/0 p1=P/0",
+      "generation": 6,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": 0.0,
+      "y": 6.0
+    },
+    {
+      "id": 139,
+      "expr": "r6  p0=P/-1 p1=S/1",
+      "generation": 6,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 3,
+      "out_degree": 2,
+      "terminal": false,
+      "strong_converge": true,
+      "template_starts": [],
+      "x": 2.0,
+      "y": 6.0
+    },
+    {
+      "id": 140,
+      "expr": "r6  p0=R/1 p1=S/-1",
+      "generation": 6,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 2,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": -3.0,
+      "y": 6.0
+    },
+    {
+      "id": 141,
+      "expr": "r6  p0=S/-1 p1=S/1",
+      "generation": 6,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": 3.0,
+      "y": 6.0
+    },
+    {
+      "id": 142,
+      "expr": "r6  p0=R/0 p1=P/0",
+      "generation": 6,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 2,
+      "out_degree": 4,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": -2.0,
+      "y": 6.0
+    },
+    {
+      "id": 143,
+      "expr": "r6  p0=R/1 p1=R/-1",
+      "generation": 6,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": -1.0,
+      "y": 6.0
+    },
+    {
+      "id": 144,
+      "expr": "r6  p0=P/1 p1=P/-1",
+      "generation": 6,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": 9.0,
+      "y": 6.0
+    },
+    {
+      "id": 145,
+      "expr": "r6  p0=P/0 p1=S/0",
+      "generation": 6,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 2,
+      "out_degree": 4,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": 8.0,
+      "y": 6.0
+    },
+    {
+      "id": 146,
+      "expr": "r6  p0=P/1 p1=R/-1",
+      "generation": 6,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 2,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": 7.0,
+      "y": 6.0
+    },
+    {
+      "id": 147,
+      "expr": "r6  p0=S/0 p1=S/0",
+      "generation": 6,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": 13.0,
+      "y": 6.0
+    },
+    {
+      "id": 148,
+      "expr": "r7 WIN p1  p0x=R/-4 p1=P/4",
+      "generation": 7,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 2,
+      "out_degree": 0,
+      "terminal": true,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": -15.0,
+      "y": 7.0
+    },
+    {
+      "id": 149,
+      "expr": "r7  p0=R/-3 p1=R/3",
+      "generation": 7,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": -1.0,
+      "y": 7.0
+    },
+    {
+      "id": 150,
+      "expr": "r7  p0=S/-2 p1=R/2",
+      "generation": 7,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 2,
+      "out_degree": 2,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": -12.0,
+      "y": 7.0
+    },
+    {
+      "id": 151,
+      "expr": "r7  p0=R/-3 p1=P/3",
+      "generation": 7,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 2,
+      "out_degree": 2,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": -8.0,
+      "y": 7.0
+    },
+    {
+      "id": 152,
+      "expr": "r7  p0=R/-2 p1=R/2",
+      "generation": 7,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": -7.0,
+      "y": 7.0
+    },
+    {
+      "id": 153,
+      "expr": "r7  p0=P/-3 p1=P/3",
+      "generation": 7,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": -6.0,
+      "y": 7.0
+    },
+    {
+      "id": 154,
+      "expr": "r7 WIN p1  p0x=P/-4 p1=S/4",
+      "generation": 7,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 2,
+      "out_degree": 0,
+      "terminal": true,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": -5.0,
+      "y": 7.0
+    },
+    {
+      "id": 155,
+      "expr": "r7  p0=S/-3 p1=R/3",
+      "generation": 7,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 2,
+      "out_degree": 2,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": 5.0,
+      "y": 7.0
+    },
+    {
+      "id": 156,
+      "expr": "r7  p0=S/-2 p1=S/2",
+      "generation": 7,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": 14.0,
+      "y": 7.0
+    },
+    {
+      "id": 157,
+      "expr": "r7  p0=P/0 p1=P/0",
+      "generation": 7,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": -16.0,
+      "y": 7.0
+    },
+    {
+      "id": 158,
+      "expr": "r7  p0=P/-1 p1=S/1",
+      "generation": 7,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 3,
+      "out_degree": 2,
+      "terminal": false,
+      "strong_converge": true,
+      "template_starts": [],
+      "x": -11.0,
+      "y": 7.0
+    },
+    {
+      "id": 159,
+      "expr": "r7  p0=R/-1 p1=P/1",
+      "generation": 7,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 3,
+      "out_degree": 2,
+      "terminal": false,
+      "strong_converge": true,
+      "template_starts": [],
+      "x": 12.0,
+      "y": 7.0
+    },
+    {
+      "id": 160,
+      "expr": "r7  p0=R/1 p1=S/-1",
+      "generation": 7,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 2,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": -14.0,
+      "y": 7.0
+    },
+    {
+      "id": 161,
+      "expr": "r7  p0=S/-1 p1=S/1",
+      "generation": 7,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": -9.0,
+      "y": 7.0
+    },
+    {
+      "id": 162,
+      "expr": "r7  p0=R/0 p1=P/0",
+      "generation": 7,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 2,
+      "out_degree": 4,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": -10.0,
+      "y": 7.0
+    },
+    {
+      "id": 163,
+      "expr": "r7  p0=R/1 p1=R/-1",
+      "generation": 7,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": -13.0,
+      "y": 7.0
+    },
+    {
+      "id": 164,
+      "expr": "r7  p0=P/-1 p1=P/1",
+      "generation": 7,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": 15.0,
+      "y": 7.0
+    },
+    {
+      "id": 165,
+      "expr": "r7  p0=P/-2 p1=S/2",
+      "generation": 7,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 2,
+      "out_degree": 2,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": 16.0,
+      "y": 7.0
+    },
+    {
+      "id": 166,
+      "expr": "r7  p0=P/-2 p1=P/2",
+      "generation": 7,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": 4.0,
+      "y": 7.0
+    },
+    {
+      "id": 167,
+      "expr": "r7  p0=P/-3 p1=S/3",
+      "generation": 7,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 2,
+      "out_degree": 2,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": 7.0,
+      "y": 7.0
+    },
+    {
+      "id": 168,
+      "expr": "r7 WIN p1  p0x=S/-4 p1=R/4",
+      "generation": 7,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 2,
+      "out_degree": 0,
+      "terminal": true,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": 13.0,
+      "y": 7.0
+    },
+    {
+      "id": 169,
+      "expr": "r7  p0=S/-3 p1=S/3",
+      "generation": 7,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": 11.0,
+      "y": 7.0
+    },
+    {
+      "id": 170,
+      "expr": "r7  p0=S/-1 p1=R/1",
+      "generation": 7,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 3,
+      "out_degree": 2,
+      "terminal": false,
+      "strong_converge": true,
+      "template_starts": [],
+      "x": 0.0,
+      "y": 7.0
+    },
+    {
+      "id": 171,
+      "expr": "r7  p0=R/-2 p1=P/2",
+      "generation": 7,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 2,
+      "out_degree": 2,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": 2.0,
+      "y": 7.0
+    },
+    {
+      "id": 172,
+      "expr": "r7  p0=R/-1 p1=R/1",
+      "generation": 7,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": 1.0,
+      "y": 7.0
+    },
+    {
+      "id": 173,
+      "expr": "r7  p0=P/1 p1=P/-1",
+      "generation": 7,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": -4.0,
+      "y": 7.0
+    },
+    {
+      "id": 174,
+      "expr": "r7  p0=P/0 p1=S/0",
+      "generation": 7,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 2,
+      "out_degree": 4,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": -2.0,
+      "y": 7.0
+    },
+    {
+      "id": 175,
+      "expr": "r7  p0=P/1 p1=R/-1",
+      "generation": 7,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 2,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": -3.0,
+      "y": 7.0
+    },
+    {
+      "id": 176,
+      "expr": "r7  p0=S/0 p1=S/0",
+      "generation": 7,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": 3.0,
+      "y": 7.0
+    },
+    {
+      "id": 177,
+      "expr": "r7  p0=S/0 p1=R/0",
+      "generation": 7,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 2,
+      "out_degree": 4,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": 8.0,
+      "y": 7.0
+    },
+    {
+      "id": 178,
+      "expr": "r7  p0=R/0 p1=R/0",
+      "generation": 7,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": 9.0,
+      "y": 7.0
+    },
+    {
+      "id": 179,
+      "expr": "r7  p0=S/1 p1=P/-1",
+      "generation": 7,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 2,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": 10.0,
+      "y": 7.0
+    },
+    {
+      "id": 180,
+      "expr": "r7  p0=S/1 p1=S/-1",
+      "generation": 7,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": 6.0,
+      "y": 7.0
+    },
+    {
+      "id": 181,
+      "expr": "r8 WIN p1  p0x=P/-4 p1=S/4",
+      "generation": 8,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 2,
+      "out_degree": 0,
+      "terminal": true,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": -1.0,
+      "y": 8.0
+    },
+    {
+      "id": 182,
+      "expr": "r8  p0=P/-2 p1=P/2",
+      "generation": 8,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": -12.0,
+      "y": 8.0
+    },
+    {
+      "id": 183,
+      "expr": "r8  p0=P/-3 p1=S/3",
+      "generation": 8,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 2,
+      "out_degree": 2,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": -7.0,
+      "y": 8.0
+    },
+    {
+      "id": 184,
+      "expr": "r8 WIN p1  p0x=S/-4 p1=R/4",
+      "generation": 8,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 2,
+      "out_degree": 0,
+      "terminal": true,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": -6.0,
+      "y": 8.0
+    },
+    {
+      "id": 185,
+      "expr": "r8  p0=S/-3 p1=S/3",
+      "generation": 8,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": -9.0,
+      "y": 8.0
+    },
+    {
+      "id": 186,
+      "expr": "r8  p0=P/-3 p1=P/3",
+      "generation": 8,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": 8.0,
+      "y": 8.0
+    },
+    {
+      "id": 187,
+      "expr": "r8  p0=R/-3 p1=P/3",
+      "generation": 8,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 2,
+      "out_degree": 2,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": 13.0,
+      "y": 8.0
+    },
+    {
+      "id": 188,
+      "expr": "r8  p0=S/-1 p1=R/1",
+      "generation": 8,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 3,
+      "out_degree": 2,
+      "terminal": false,
+      "strong_converge": true,
+      "template_starts": [],
+      "x": -14.0,
+      "y": 8.0
+    },
+    {
+      "id": 189,
+      "expr": "r8  p0=R/-2 p1=P/2",
+      "generation": 8,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 2,
+      "out_degree": 2,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": -8.0,
+      "y": 8.0
+    },
+    {
+      "id": 190,
+      "expr": "r8  p0=R/-1 p1=R/1",
+      "generation": 8,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": -11.0,
+      "y": 8.0
+    },
+    {
+      "id": 191,
+      "expr": "r8  p0=S/-2 p1=R/2",
+      "generation": 8,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 2,
+      "out_degree": 2,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": 14.0,
+      "y": 8.0
+    },
+    {
+      "id": 192,
+      "expr": "r8  p0=S/-1 p1=S/1",
+      "generation": 8,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": 10.0,
+      "y": 8.0
+    },
+    {
+      "id": 193,
+      "expr": "r8  p0=P/1 p1=P/-1",
+      "generation": 8,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": -13.0,
+      "y": 8.0
+    },
+    {
+      "id": 194,
+      "expr": "r8  p0=P/0 p1=S/0",
+      "generation": 8,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 2,
+      "out_degree": 4,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": -10.0,
+      "y": 8.0
+    },
+    {
+      "id": 195,
+      "expr": "r8  p0=P/1 p1=R/-1",
+      "generation": 8,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 2,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": -16.0,
+      "y": 8.0
+    },
+    {
+      "id": 196,
+      "expr": "r8  p0=P/-1 p1=S/1",
+      "generation": 8,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 3,
+      "out_degree": 2,
+      "terminal": false,
+      "strong_converge": true,
+      "template_starts": [],
+      "x": 9.0,
+      "y": 8.0
+    },
+    {
+      "id": 197,
+      "expr": "r8  p0=S/0 p1=S/0",
+      "generation": 8,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": -15.0,
+      "y": 8.0
+    },
+    {
+      "id": 198,
+      "expr": "r8  p0=R/-2 p1=R/2",
+      "generation": 8,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": 15.0,
+      "y": 8.0
+    },
+    {
+      "id": 199,
+      "expr": "r8  p0=S/-3 p1=R/3",
+      "generation": 8,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 2,
+      "out_degree": 2,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": 3.0,
+      "y": 8.0
+    },
+    {
+      "id": 200,
+      "expr": "r8 WIN p1  p0x=R/-4 p1=P/4",
+      "generation": 8,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 2,
+      "out_degree": 0,
+      "terminal": true,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": 11.0,
+      "y": 8.0
+    },
+    {
+      "id": 201,
+      "expr": "r8  p0=R/-3 p1=R/3",
+      "generation": 8,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": 5.0,
+      "y": 8.0
+    },
+    {
+      "id": 202,
+      "expr": "r8  p0=P/-1 p1=P/1",
+      "generation": 8,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": -2.0,
+      "y": 8.0
+    },
+    {
+      "id": 203,
+      "expr": "r8  p0=P/-2 p1=S/2",
+      "generation": 8,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 2,
+      "out_degree": 2,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": 0.0,
+      "y": 8.0
+    },
+    {
+      "id": 204,
+      "expr": "r8  p0=S/-2 p1=S/2",
+      "generation": 8,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": 1.0,
+      "y": 8.0
+    },
+    {
+      "id": 205,
+      "expr": "r8  p0=S/0 p1=R/0",
+      "generation": 8,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 2,
+      "out_degree": 4,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": -4.0,
+      "y": 8.0
+    },
+    {
+      "id": 206,
+      "expr": "r8  p0=R/-1 p1=P/1",
+      "generation": 8,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 3,
+      "out_degree": 2,
+      "terminal": false,
+      "strong_converge": true,
+      "template_starts": [],
+      "x": 2.0,
+      "y": 8.0
+    },
+    {
+      "id": 207,
+      "expr": "r8  p0=R/0 p1=R/0",
+      "generation": 8,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": 4.0,
+      "y": 8.0
+    },
+    {
+      "id": 208,
+      "expr": "r8  p0=S/1 p1=P/-1",
+      "generation": 8,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 2,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": -5.0,
+      "y": 8.0
+    },
+    {
+      "id": 209,
+      "expr": "r8  p0=S/1 p1=S/-1",
+      "generation": 8,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": -3.0,
+      "y": 8.0
+    },
+    {
+      "id": 210,
+      "expr": "r8  p0=P/0 p1=P/0",
+      "generation": 8,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": 6.0,
+      "y": 8.0
+    },
+    {
+      "id": 211,
+      "expr": "r8  p0=R/1 p1=S/-1",
+      "generation": 8,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 2,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": 16.0,
+      "y": 8.0
+    },
+    {
+      "id": 212,
+      "expr": "r8  p0=R/0 p1=P/0",
+      "generation": 8,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 2,
+      "out_degree": 4,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": 7.0,
+      "y": 8.0
+    },
+    {
+      "id": 213,
+      "expr": "r8  p0=R/1 p1=R/-1",
+      "generation": 8,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": 12.0,
+      "y": 8.0
+    },
+    {
+      "id": 214,
+      "expr": "r9  p0=S/-3 p1=R/3",
+      "generation": 9,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 2,
+      "out_degree": 2,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": -10.0,
+      "y": 9.0
+    },
+    {
+      "id": 215,
+      "expr": "r9 WIN p1  p0x=R/-4 p1=P/4",
+      "generation": 9,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 2,
+      "out_degree": 0,
+      "terminal": true,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": -8.0,
+      "y": 9.0
+    },
+    {
+      "id": 216,
+      "expr": "r9  p0=R/-3 p1=R/3",
+      "generation": 9,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": -7.0,
+      "y": 9.0
+    },
+    {
+      "id": 217,
+      "expr": "r9 WIN p1  p0x=S/-4 p1=R/4",
+      "generation": 9,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 2,
+      "out_degree": 0,
+      "terminal": true,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": 9.0,
+      "y": 9.0
+    },
+    {
+      "id": 218,
+      "expr": "r9  p0=S/-3 p1=S/3",
+      "generation": 9,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": 14.0,
+      "y": 9.0
+    },
+    {
+      "id": 219,
+      "expr": "r9  p0=P/-1 p1=P/1",
+      "generation": 9,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": -14.0,
+      "y": 9.0
+    },
+    {
+      "id": 220,
+      "expr": "r9  p0=P/-2 p1=S/2",
+      "generation": 9,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 2,
+      "out_degree": 2,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": -9.0,
+      "y": 9.0
+    },
+    {
+      "id": 221,
+      "expr": "r9  p0=S/-2 p1=S/2",
+      "generation": 9,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": -6.0,
+      "y": 9.0
+    },
+    {
+      "id": 222,
+      "expr": "r9  p0=P/-2 p1=P/2",
+      "generation": 9,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": 12.0,
+      "y": 9.0
+    },
+    {
+      "id": 223,
+      "expr": "r9  p0=P/-3 p1=S/3",
+      "generation": 9,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 2,
+      "out_degree": 2,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": 13.0,
+      "y": 9.0
+    },
+    {
+      "id": 224,
+      "expr": "r9  p0=R/-2 p1=P/2",
+      "generation": 9,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 2,
+      "out_degree": 2,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": 10.0,
+      "y": 9.0
+    },
+    {
+      "id": 225,
+      "expr": "r9  p0=S/0 p1=R/0",
+      "generation": 9,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 2,
+      "out_degree": 4,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": -11.0,
+      "y": 9.0
+    },
+    {
+      "id": 226,
+      "expr": "r9  p0=R/-1 p1=P/1",
+      "generation": 9,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 3,
+      "out_degree": 2,
+      "terminal": false,
+      "strong_converge": true,
+      "template_starts": [],
+      "x": -13.0,
+      "y": 9.0
+    },
+    {
+      "id": 227,
+      "expr": "r9  p0=R/0 p1=R/0",
+      "generation": 9,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": -12.0,
+      "y": 9.0
+    },
+    {
+      "id": 228,
+      "expr": "r9  p0=S/1 p1=P/-1",
+      "generation": 9,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 2,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": -16.0,
+      "y": 9.0
+    },
+    {
+      "id": 229,
+      "expr": "r9  p0=S/-1 p1=R/1",
+      "generation": 9,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 3,
+      "out_degree": 2,
+      "terminal": false,
+      "strong_converge": true,
+      "template_starts": [],
+      "x": 7.0,
+      "y": 9.0
+    },
+    {
+      "id": 230,
+      "expr": "r9  p0=S/1 p1=S/-1",
+      "generation": 9,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": -15.0,
+      "y": 9.0
+    },
+    {
+      "id": 231,
+      "expr": "r9  p0=R/-1 p1=R/1",
+      "generation": 9,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": 8.0,
+      "y": 9.0
+    },
+    {
+      "id": 232,
+      "expr": "r9  p0=P/-3 p1=P/3",
+      "generation": 9,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": 0.0,
+      "y": 9.0
+    },
+    {
+      "id": 233,
+      "expr": "r9 WIN p1  p0x=P/-4 p1=S/4",
+      "generation": 9,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 2,
+      "out_degree": 0,
+      "terminal": true,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": 4.0,
+      "y": 9.0
+    },
+    {
+      "id": 234,
+      "expr": "r9  p0=S/-2 p1=R/2",
+      "generation": 9,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 2,
+      "out_degree": 2,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": -2.0,
+      "y": 9.0
+    },
+    {
+      "id": 235,
+      "expr": "r9  p0=R/-3 p1=P/3",
+      "generation": 9,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 2,
+      "out_degree": 2,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": 1.0,
+      "y": 9.0
+    },
+    {
+      "id": 236,
+      "expr": "r9  p0=R/-2 p1=R/2",
+      "generation": 9,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": -1.0,
+      "y": 9.0
+    },
+    {
+      "id": 237,
+      "expr": "r9  p0=P/0 p1=P/0",
+      "generation": 9,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": 2.0,
+      "y": 9.0
+    },
+    {
+      "id": 238,
+      "expr": "r9  p0=P/-1 p1=S/1",
+      "generation": 9,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 3,
+      "out_degree": 2,
+      "terminal": false,
+      "strong_converge": true,
+      "template_starts": [],
+      "x": 3.0,
+      "y": 9.0
+    },
+    {
+      "id": 239,
+      "expr": "r9  p0=R/1 p1=S/-1",
+      "generation": 9,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 2,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": -5.0,
+      "y": 9.0
+    },
+    {
+      "id": 240,
+      "expr": "r9  p0=S/-1 p1=S/1",
+      "generation": 9,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": 5.0,
+      "y": 9.0
+    },
+    {
+      "id": 241,
+      "expr": "r9  p0=R/0 p1=P/0",
+      "generation": 9,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 2,
+      "out_degree": 4,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": -3.0,
+      "y": 9.0
+    },
+    {
+      "id": 242,
+      "expr": "r9  p0=R/1 p1=R/-1",
+      "generation": 9,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": -4.0,
+      "y": 9.0
+    },
+    {
+      "id": 243,
+      "expr": "r9  p0=P/1 p1=P/-1",
+      "generation": 9,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": 15.0,
+      "y": 9.0
+    },
+    {
+      "id": 244,
+      "expr": "r9  p0=P/0 p1=S/0",
+      "generation": 9,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 2,
+      "out_degree": 4,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": 11.0,
+      "y": 9.0
+    },
+    {
+      "id": 245,
+      "expr": "r9  p0=P/1 p1=R/-1",
+      "generation": 9,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 2,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": 16.0,
+      "y": 9.0
+    },
+    {
+      "id": 246,
+      "expr": "r9  p0=S/0 p1=S/0",
+      "generation": 9,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": 6.0,
+      "y": 9.0
+    },
+    {
+      "id": 247,
+      "expr": "r10 END p1  p0=P/-3 p1=P/3",
+      "generation": 10,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 0,
+      "terminal": true,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": -8.0,
+      "y": 10.0
+    },
+    {
+      "id": 248,
+      "expr": "r10 WIN p1  p0x=P/-4 p1=S/4",
+      "generation": 10,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 2,
+      "out_degree": 0,
+      "terminal": true,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": -7.0,
+      "y": 10.0
+    },
+    {
+      "id": 249,
+      "expr": "r10 WIN p1  p0x=R/-4 p1=P/4",
+      "generation": 10,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 2,
+      "out_degree": 0,
+      "terminal": true,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": 12.0,
+      "y": 10.0
+    },
+    {
+      "id": 250,
+      "expr": "r10 END p1  p0=S/-2 p1=R/2",
+      "generation": 10,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 2,
+      "out_degree": 0,
+      "terminal": true,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": -12.0,
+      "y": 10.0
+    },
+    {
+      "id": 251,
+      "expr": "r10 END p1  p0=R/-3 p1=P/3",
+      "generation": 10,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 2,
+      "out_degree": 0,
+      "terminal": true,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": -6.0,
+      "y": 10.0
+    },
+    {
+      "id": 252,
+      "expr": "r10 END p1  p0=R/-2 p1=R/2",
+      "generation": 10,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 0,
+      "terminal": true,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": -9.0,
+      "y": 10.0
+    },
+    {
+      "id": 253,
+      "expr": "r10 END p1  p0=S/-3 p1=R/3",
+      "generation": 10,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 2,
+      "out_degree": 0,
+      "terminal": true,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": 10.0,
+      "y": 10.0
+    },
+    {
+      "id": 254,
+      "expr": "r10 END p1  p0=R/-3 p1=R/3",
+      "generation": 10,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 0,
+      "terminal": true,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": 11.0,
+      "y": 10.0
+    },
+    {
+      "id": 255,
+      "expr": "r10 END p1  p0=S/-2 p1=S/2",
+      "generation": 10,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 0,
+      "terminal": true,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": 9.0,
+      "y": 10.0
+    },
+    {
+      "id": 256,
+      "expr": "r10 DRAW [0, 1]  p0=P/0 p1=P/0",
+      "generation": 10,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 0,
+      "terminal": true,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": -16.0,
+      "y": 10.0
+    },
+    {
+      "id": 257,
+      "expr": "r10 END p1  p0=P/-1 p1=S/1",
+      "generation": 10,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 3,
+      "out_degree": 0,
+      "terminal": true,
+      "strong_converge": true,
+      "template_starts": [],
+      "x": -11.0,
+      "y": 10.0
+    },
+    {
+      "id": 258,
+      "expr": "r10 END p1  p0=R/-1 p1=P/1",
+      "generation": 10,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 3,
+      "out_degree": 0,
+      "terminal": true,
+      "strong_converge": true,
+      "template_starts": [],
+      "x": 6.0,
+      "y": 10.0
+    },
+    {
+      "id": 259,
+      "expr": "r10 END p0  p0=R/1 p1=S/-1",
+      "generation": 10,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 0,
+      "terminal": true,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": -15.0,
+      "y": 10.0
+    },
+    {
+      "id": 260,
+      "expr": "r10 END p1  p0=S/-1 p1=S/1",
+      "generation": 10,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 0,
+      "terminal": true,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": -10.0,
+      "y": 10.0
+    },
+    {
+      "id": 261,
+      "expr": "r10 DRAW [0, 1]  p0=R/0 p1=P/0",
+      "generation": 10,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 2,
+      "out_degree": 0,
+      "terminal": true,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": -13.0,
+      "y": 10.0
+    },
+    {
+      "id": 262,
+      "expr": "r10 END p0  p0=R/1 p1=R/-1",
+      "generation": 10,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 0,
+      "terminal": true,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": -14.0,
+      "y": 10.0
+    },
+    {
+      "id": 263,
+      "expr": "r10 END p1  p0=P/-1 p1=P/1",
+      "generation": 10,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 0,
+      "terminal": true,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": 7.0,
+      "y": 10.0
+    },
+    {
+      "id": 264,
+      "expr": "r10 END p1  p0=P/-2 p1=S/2",
+      "generation": 10,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 2,
+      "out_degree": 0,
+      "terminal": true,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": 8.0,
+      "y": 10.0
+    },
+    {
+      "id": 265,
+      "expr": "r10 WIN p1  p0x=S/-4 p1=R/4",
+      "generation": 10,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 2,
+      "out_degree": 0,
+      "terminal": true,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": 1.0,
+      "y": 10.0
+    },
+    {
+      "id": 266,
+      "expr": "r10 END p1  p0=P/-2 p1=P/2",
+      "generation": 10,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 0,
+      "terminal": true,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": -1.0,
+      "y": 10.0
+    },
+    {
+      "id": 267,
+      "expr": "r10 END p1  p0=P/-3 p1=S/3",
+      "generation": 10,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 2,
+      "out_degree": 0,
+      "terminal": true,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": 0.0,
+      "y": 10.0
+    },
+    {
+      "id": 268,
+      "expr": "r10 END p1  p0=S/-3 p1=S/3",
+      "generation": 10,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 0,
+      "terminal": true,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": 4.0,
+      "y": 10.0
+    },
+    {
+      "id": 269,
+      "expr": "r10 END p1  p0=S/-1 p1=R/1",
+      "generation": 10,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 3,
+      "out_degree": 0,
+      "terminal": true,
+      "strong_converge": true,
+      "template_starts": [],
+      "x": 3.0,
+      "y": 10.0
+    },
+    {
+      "id": 270,
+      "expr": "r10 END p1  p0=R/-2 p1=P/2",
+      "generation": 10,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 2,
+      "out_degree": 0,
+      "terminal": true,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": 5.0,
+      "y": 10.0
+    },
+    {
+      "id": 271,
+      "expr": "r10 END p1  p0=R/-1 p1=R/1",
+      "generation": 10,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 0,
+      "terminal": true,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": 2.0,
+      "y": 10.0
+    },
+    {
+      "id": 272,
+      "expr": "r10 END p0  p0=P/1 p1=P/-1",
+      "generation": 10,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 0,
+      "terminal": true,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": -5.0,
+      "y": 10.0
+    },
+    {
+      "id": 273,
+      "expr": "r10 DRAW [0, 1]  p0=P/0 p1=S/0",
+      "generation": 10,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 2,
+      "out_degree": 0,
+      "terminal": true,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": -4.0,
+      "y": 10.0
+    },
+    {
+      "id": 274,
+      "expr": "r10 END p0  p0=P/1 p1=R/-1",
+      "generation": 10,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 0,
+      "terminal": true,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": -3.0,
+      "y": 10.0
+    },
+    {
+      "id": 275,
+      "expr": "r10 DRAW [0, 1]  p0=S/0 p1=S/0",
+      "generation": 10,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 0,
+      "terminal": true,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": -2.0,
+      "y": 10.0
+    },
+    {
+      "id": 276,
+      "expr": "r10 DRAW [0, 1]  p0=S/0 p1=R/0",
+      "generation": 10,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 2,
+      "out_degree": 0,
+      "terminal": true,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": 13.0,
+      "y": 10.0
+    },
+    {
+      "id": 277,
+      "expr": "r10 DRAW [0, 1]  p0=R/0 p1=R/0",
+      "generation": 10,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 0,
+      "terminal": true,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": 14.0,
+      "y": 10.0
+    },
+    {
+      "id": 278,
+      "expr": "r10 END p0  p0=S/1 p1=P/-1",
+      "generation": 10,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 0,
+      "terminal": true,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": 15.0,
+      "y": 10.0
+    },
+    {
+      "id": 279,
+      "expr": "r10 END p0  p0=S/1 p1=S/-1",
+      "generation": 10,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 0,
+      "terminal": true,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": 16.0,
+      "y": 10.0
+    }
+  ],
+  "edges": [
+    {
+      "from": 0,
+      "to": 1,
+      "action": "round(R,R)",
+      "type": "round"
+    },
+    {
+      "from": 0,
+      "to": 2,
+      "action": "round(R,P)",
+      "type": "round"
+    },
+    {
+      "from": 0,
+      "to": 3,
+      "action": "round(R,S)",
+      "type": "round"
+    },
+    {
+      "from": 0,
+      "to": 4,
+      "action": "round(P,R)",
+      "type": "round"
+    },
+    {
+      "from": 0,
+      "to": 5,
+      "action": "round(P,P)",
+      "type": "round"
+    },
+    {
+      "from": 0,
+      "to": 6,
+      "action": "round(P,S)",
+      "type": "round"
+    },
+    {
+      "from": 0,
+      "to": 7,
+      "action": "round(S,R)",
+      "type": "round"
+    },
+    {
+      "from": 0,
+      "to": 8,
+      "action": "round(S,P)",
+      "type": "round"
+    },
+    {
+      "from": 0,
+      "to": 9,
+      "action": "round(S,S)",
+      "type": "round"
+    },
+    {
+      "from": 1,
+      "to": 10,
+      "action": "round(P,S)",
+      "type": "round"
+    },
+    {
+      "from": 2,
+      "to": 11,
+      "action": "round(S,R)",
+      "type": "round"
+    },
+    {
+      "from": 2,
+      "to": 12,
+      "action": "round(S,S)",
+      "type": "round"
+    },
+    {
+      "from": 3,
+      "to": 13,
+      "action": "round(P,P)",
+      "type": "round"
+    },
+    {
+      "from": 3,
+      "to": 14,
+      "action": "round(P,S)",
+      "type": "round"
+    },
+    {
+      "from": 4,
+      "to": 15,
+      "action": "round(S,R)",
+      "type": "round"
+    },
+    {
+      "from": 4,
+      "to": 16,
+      "action": "round(S,S)",
+      "type": "round"
+    },
+    {
+      "from": 5,
+      "to": 17,
+      "action": "round(S,R)",
+      "type": "round"
+    },
+    {
+      "from": 6,
+      "to": 18,
+      "action": "round(R,P)",
+      "type": "round"
+    },
+    {
+      "from": 6,
+      "to": 19,
+      "action": "round(R,R)",
+      "type": "round"
+    },
+    {
+      "from": 7,
+      "to": 20,
+      "action": "round(P,P)",
+      "type": "round"
+    },
+    {
+      "from": 7,
+      "to": 21,
+      "action": "round(P,S)",
+      "type": "round"
+    },
+    {
+      "from": 8,
+      "to": 22,
+      "action": "round(R,P)",
+      "type": "round"
+    },
+    {
+      "from": 8,
+      "to": 23,
+      "action": "round(R,R)",
+      "type": "round"
+    },
+    {
+      "from": 9,
+      "to": 24,
+      "action": "round(R,P)",
+      "type": "round"
+    },
+    {
+      "from": 10,
+      "to": 25,
+      "action": "round(R,P)",
+      "type": "round"
+    },
+    {
+      "from": 10,
+      "to": 26,
+      "action": "round(R,R)",
+      "type": "round"
+    },
+    {
+      "from": 11,
+      "to": 27,
+      "action": "round(P,P)",
+      "type": "round"
+    },
+    {
+      "from": 11,
+      "to": 28,
+      "action": "round(P,S)",
+      "type": "round"
+    },
+    {
+      "from": 12,
+      "to": 25,
+      "action": "round(R,P)",
+      "type": "round"
+    },
+    {
+      "from": 13,
+      "to": 29,
+      "action": "round(S,R)",
+      "type": "round"
+    },
+    {
+      "from": 14,
+      "to": 30,
+      "action": "round(R,P)",
+      "type": "round"
+    },
+    {
+      "from": 14,
+      "to": 31,
+      "action": "round(R,R)",
+      "type": "round"
+    },
+    {
+      "from": 14,
+      "to": 32,
+      "action": "round(S,P)",
+      "type": "round"
+    },
+    {
+      "from": 14,
+      "to": 33,
+      "action": "round(S,R)",
+      "type": "round"
+    },
+    {
+      "from": 15,
+      "to": 34,
+      "action": "round(P,P)",
+      "type": "round"
+    },
+    {
+      "from": 15,
+      "to": 35,
+      "action": "round(P,S)",
+      "type": "round"
+    },
+    {
+      "from": 15,
+      "to": 30,
+      "action": "round(R,P)",
+      "type": "round"
+    },
+    {
+      "from": 15,
+      "to": 36,
+      "action": "round(R,S)",
+      "type": "round"
+    },
+    {
+      "from": 16,
+      "to": 37,
+      "action": "round(R,P)",
+      "type": "round"
+    },
+    {
+      "from": 17,
+      "to": 38,
+      "action": "round(P,P)",
+      "type": "round"
+    },
+    {
+      "from": 17,
+      "to": 39,
+      "action": "round(P,S)",
+      "type": "round"
+    },
+    {
+      "from": 18,
+      "to": 40,
+      "action": "round(S,R)",
+      "type": "round"
+    },
+    {
+      "from": 18,
+      "to": 41,
+      "action": "round(S,S)",
+      "type": "round"
+    },
+    {
+      "from": 19,
+      "to": 39,
+      "action": "round(P,S)",
+      "type": "round"
+    },
+    {
+      "from": 20,
+      "to": 42,
+      "action": "round(S,R)",
+      "type": "round"
+    },
+    {
+      "from": 21,
+      "to": 43,
+      "action": "round(R,P)",
+      "type": "round"
+    },
+    {
+      "from": 21,
+      "to": 44,
+      "action": "round(R,R)",
+      "type": "round"
+    },
+    {
+      "from": 22,
+      "to": 45,
+      "action": "round(P,R)",
+      "type": "round"
+    },
+    {
+      "from": 22,
+      "to": 35,
+      "action": "round(P,S)",
+      "type": "round"
+    },
+    {
+      "from": 22,
+      "to": 33,
+      "action": "round(S,R)",
+      "type": "round"
+    },
+    {
+      "from": 22,
+      "to": 46,
+      "action": "round(S,S)",
+      "type": "round"
+    },
+    {
+      "from": 23,
+      "to": 47,
+      "action": "round(P,S)",
+      "type": "round"
+    },
+    {
+      "from": 24,
+      "to": 42,
+      "action": "round(S,R)",
+      "type": "round"
+    },
+    {
+      "from": 24,
+      "to": 48,
+      "action": "round(S,S)",
+      "type": "round"
+    },
+    {
+      "from": 25,
+      "to": 49,
+      "action": "round(S,R)",
+      "type": "round"
+    },
+    {
+      "from": 25,
+      "to": 50,
+      "action": "round(S,S)",
+      "type": "round"
+    },
+    {
+      "from": 26,
+      "to": 51,
+      "action": "round(P,S)",
+      "type": "round"
+    },
+    {
+      "from": 27,
+      "to": 49,
+      "action": "round(S,R)",
+      "type": "round"
+    },
+    {
+      "from": 28,
+      "to": 52,
+      "action": "round(R,P)",
+      "type": "round"
+    },
+    {
+      "from": 28,
+      "to": 53,
+      "action": "round(R,R)",
+      "type": "round"
+    },
+    {
+      "from": 29,
+      "to": 54,
+      "action": "round(P,P)",
+      "type": "round"
+    },
+    {
+      "from": 29,
+      "to": 55,
+      "action": "round(P,S)",
+      "type": "round"
+    },
+    {
+      "from": 29,
+      "to": 56,
+      "action": "round(R,P)",
+      "type": "round"
+    },
+    {
+      "from": 29,
+      "to": 57,
+      "action": "round(R,S)",
+      "type": "round"
+    },
+    {
+      "from": 30,
+      "to": 58,
+      "action": "round(S,R)",
+      "type": "round"
+    },
+    {
+      "from": 30,
+      "to": 59,
+      "action": "round(S,S)",
+      "type": "round"
+    },
+    {
+      "from": 31,
+      "to": 55,
+      "action": "round(P,S)",
+      "type": "round"
+    },
+    {
+      "from": 32,
+      "to": 60,
+      "action": "round(R,P)",
+      "type": "round"
+    },
+    {
+      "from": 32,
+      "to": 61,
+      "action": "round(R,R)",
+      "type": "round"
+    },
+    {
+      "from": 33,
+      "to": 62,
+      "action": "round(P,P)",
+      "type": "round"
+    },
+    {
+      "from": 33,
+      "to": 51,
+      "action": "round(P,S)",
+      "type": "round"
+    },
+    {
+      "from": 34,
+      "to": 63,
+      "action": "round(S,R)",
+      "type": "round"
+    },
+    {
+      "from": 35,
+      "to": 64,
+      "action": "round(R,P)",
+      "type": "round"
+    },
+    {
+      "from": 35,
+      "to": 65,
+      "action": "round(R,R)",
+      "type": "round"
+    },
+    {
+      "from": 36,
+      "to": 66,
+      "action": "round(P,P)",
+      "type": "round"
+    },
+    {
+      "from": 36,
+      "to": 67,
+      "action": "round(P,S)",
+      "type": "round"
+    },
+    {
+      "from": 37,
+      "to": 68,
+      "action": "round(P,R)",
+      "type": "round"
+    },
+    {
+      "from": 37,
+      "to": 55,
+      "action": "round(P,S)",
+      "type": "round"
+    },
+    {
+      "from": 37,
+      "to": 63,
+      "action": "round(S,R)",
+      "type": "round"
+    },
+    {
+      "from": 37,
+      "to": 69,
+      "action": "round(S,S)",
+      "type": "round"
+    },
+    {
+      "from": 38,
+      "to": 58,
+      "action": "round(S,R)",
+      "type": "round"
+    },
+    {
+      "from": 39,
+      "to": 70,
+      "action": "round(R,P)",
+      "type": "round"
+    },
+    {
+      "from": 39,
+      "to": 71,
+      "action": "round(R,R)",
+      "type": "round"
+    },
+    {
+      "from": 40,
+      "to": 72,
+      "action": "round(P,P)",
+      "type": "round"
+    },
+    {
+      "from": 40,
+      "to": 73,
+      "action": "round(P,S)",
+      "type": "round"
+    },
+    {
+      "from": 41,
+      "to": 70,
+      "action": "round(R,P)",
+      "type": "round"
+    },
+    {
+      "from": 42,
+      "to": 74,
+      "action": "round(P,P)",
+      "type": "round"
+    },
+    {
+      "from": 42,
+      "to": 75,
+      "action": "round(P,S)",
+      "type": "round"
+    },
+    {
+      "from": 43,
+      "to": 76,
+      "action": "round(S,R)",
+      "type": "round"
+    },
+    {
+      "from": 43,
+      "to": 77,
+      "action": "round(S,S)",
+      "type": "round"
+    },
+    {
+      "from": 44,
+      "to": 75,
+      "action": "round(P,S)",
+      "type": "round"
+    },
+    {
+      "from": 45,
+      "to": 78,
+      "action": "round(S,R)",
+      "type": "round"
+    },
+    {
+      "from": 45,
+      "to": 79,
+      "action": "round(S,S)",
+      "type": "round"
+    },
+    {
+      "from": 46,
+      "to": 56,
+      "action": "round(R,P)",
+      "type": "round"
+    },
+    {
+      "from": 47,
+      "to": 56,
+      "action": "round(R,P)",
+      "type": "round"
+    },
+    {
+      "from": 47,
+      "to": 80,
+      "action": "round(R,R)",
+      "type": "round"
+    },
+    {
+      "from": 47,
+      "to": 81,
+      "action": "round(S,P)",
+      "type": "round"
+    },
+    {
+      "from": 47,
+      "to": 63,
+      "action": "round(S,R)",
+      "type": "round"
+    },
+    {
+      "from": 48,
+      "to": 64,
+      "action": "round(R,P)",
+      "type": "round"
+    },
+    {
+      "from": 49,
+      "to": 82,
+      "action": "round(P,P)",
+      "type": "round"
+    },
+    {
+      "from": 49,
+      "to": 83,
+      "action": "round(P,S)",
+      "type": "round"
+    },
+    {
+      "from": 50,
+      "to": 84,
+      "action": "round(R,P)",
+      "type": "round"
+    },
+    {
+      "from": 51,
+      "to": 84,
+      "action": "round(R,P)",
+      "type": "round"
+    },
+    {
+      "from": 51,
+      "to": 85,
+      "action": "round(R,R)",
+      "type": "round"
+    },
+    {
+      "from": 53,
+      "to": 83,
+      "action": "round(P,S)",
+      "type": "round"
+    },
+    {
+      "from": 54,
+      "to": 86,
+      "action": "round(S,R)",
+      "type": "round"
+    },
+    {
+      "from": 55,
+      "to": 87,
+      "action": "round(R,P)",
+      "type": "round"
+    },
+    {
+      "from": 55,
+      "to": 88,
+      "action": "round(R,R)",
+      "type": "round"
+    },
+    {
+      "from": 56,
+      "to": 89,
+      "action": "round(S,R)",
+      "type": "round"
+    },
+    {
+      "from": 56,
+      "to": 90,
+      "action": "round(S,S)",
+      "type": "round"
+    },
+    {
+      "from": 57,
+      "to": 91,
+      "action": "round(P,P)",
+      "type": "round"
+    },
+    {
+      "from": 57,
+      "to": 92,
+      "action": "round(P,S)",
+      "type": "round"
+    },
+    {
+      "from": 58,
+      "to": 93,
+      "action": "round(P,P)",
+      "type": "round"
+    },
+    {
+      "from": 58,
+      "to": 94,
+      "action": "round(P,S)",
+      "type": "round"
+    },
+    {
+      "from": 59,
+      "to": 87,
+      "action": "round(R,P)",
+      "type": "round"
+    },
+    {
+      "from": 60,
+      "to": 95,
+      "action": "round(P,R)",
+      "type": "round"
+    },
+    {
+      "from": 60,
+      "to": 96,
+      "action": "round(P,S)",
+      "type": "round"
+    },
+    {
+      "from": 60,
+      "to": 86,
+      "action": "round(S,R)",
+      "type": "round"
+    },
+    {
+      "from": 60,
+      "to": 97,
+      "action": "round(S,S)",
+      "type": "round"
+    },
+    {
+      "from": 61,
+      "to": 92,
+      "action": "round(P,S)",
+      "type": "round"
+    },
+    {
+      "from": 62,
+      "to": 89,
+      "action": "round(S,R)",
+      "type": "round"
+    },
+    {
+      "from": 63,
+      "to": 98,
+      "action": "round(P,P)",
+      "type": "round"
+    },
+    {
+      "from": 63,
+      "to": 99,
+      "action": "round(P,S)",
+      "type": "round"
+    },
+    {
+      "from": 64,
+      "to": 100,
+      "action": "round(S,R)",
+      "type": "round"
+    },
+    {
+      "from": 64,
+      "to": 101,
+      "action": "round(S,S)",
+      "type": "round"
+    },
+    {
+      "from": 65,
+      "to": 99,
+      "action": "round(P,S)",
+      "type": "round"
+    },
+    {
+      "from": 66,
+      "to": 102,
+      "action": "round(S,R)",
+      "type": "round"
+    },
+    {
+      "from": 67,
+      "to": 103,
+      "action": "round(R,P)",
+      "type": "round"
+    },
+    {
+      "from": 67,
+      "to": 104,
+      "action": "round(R,R)",
+      "type": "round"
+    },
+    {
+      "from": 67,
+      "to": 105,
+      "action": "round(S,P)",
+      "type": "round"
+    },
+    {
+      "from": 67,
+      "to": 86,
+      "action": "round(S,R)",
+      "type": "round"
+    },
+    {
+      "from": 68,
+      "to": 102,
+      "action": "round(S,R)",
+      "type": "round"
+    },
+    {
+      "from": 68,
+      "to": 106,
+      "action": "round(S,S)",
+      "type": "round"
+    },
+    {
+      "from": 69,
+      "to": 103,
+      "action": "round(R,P)",
+      "type": "round"
+    },
+    {
+      "from": 70,
+      "to": 107,
+      "action": "round(S,R)",
+      "type": "round"
+    },
+    {
+      "from": 70,
+      "to": 108,
+      "action": "round(S,S)",
+      "type": "round"
+    },
+    {
+      "from": 71,
+      "to": 94,
+      "action": "round(P,S)",
+      "type": "round"
+    },
+    {
+      "from": 72,
+      "to": 107,
+      "action": "round(S,R)",
+      "type": "round"
+    },
+    {
+      "from": 74,
+      "to": 100,
+      "action": "round(S,R)",
+      "type": "round"
+    },
+    {
+      "from": 75,
+      "to": 109,
+      "action": "round(R,P)",
+      "type": "round"
+    },
+    {
+      "from": 75,
+      "to": 110,
+      "action": "round(R,R)",
+      "type": "round"
+    },
+    {
+      "from": 77,
+      "to": 109,
+      "action": "round(R,P)",
+      "type": "round"
+    },
+    {
+      "from": 78,
+      "to": 111,
+      "action": "round(P,P)",
+      "type": "round"
+    },
+    {
+      "from": 78,
+      "to": 96,
+      "action": "round(P,S)",
+      "type": "round"
+    },
+    {
+      "from": 78,
+      "to": 103,
+      "action": "round(R,P)",
+      "type": "round"
+    },
+    {
+      "from": 78,
+      "to": 112,
+      "action": "round(R,S)",
+      "type": "round"
+    },
+    {
+      "from": 79,
+      "to": 113,
+      "action": "round(R,P)",
+      "type": "round"
+    },
+    {
+      "from": 80,
+      "to": 96,
+      "action": "round(P,S)",
+      "type": "round"
+    },
+    {
+      "from": 81,
+      "to": 113,
+      "action": "round(R,P)",
+      "type": "round"
+    },
+    {
+      "from": 81,
+      "to": 114,
+      "action": "round(R,R)",
+      "type": "round"
+    },
+    {
+      "from": 82,
+      "to": 115,
+      "action": "round(S,R)",
+      "type": "round"
+    },
+    {
+      "from": 84,
+      "to": 115,
+      "action": "round(S,R)",
+      "type": "round"
+    },
+    {
+      "from": 84,
+      "to": 116,
+      "action": "round(S,S)",
+      "type": "round"
+    },
+    {
+      "from": 85,
+      "to": 117,
+      "action": "round(P,S)",
+      "type": "round"
+    },
+    {
+      "from": 86,
+      "to": 118,
+      "action": "round(P,P)",
+      "type": "round"
+    },
+    {
+      "from": 86,
+      "to": 119,
+      "action": "round(P,S)",
+      "type": "round"
+    },
+    {
+      "from": 87,
+      "to": 120,
+      "action": "round(S,R)",
+      "type": "round"
+    },
+    {
+      "from": 87,
+      "to": 121,
+      "action": "round(S,S)",
+      "type": "round"
+    },
+    {
+      "from": 88,
+      "to": 119,
+      "action": "round(P,S)",
+      "type": "round"
+    },
+    {
+      "from": 89,
+      "to": 122,
+      "action": "round(P,P)",
+      "type": "round"
+    },
+    {
+      "from": 89,
+      "to": 117,
+      "action": "round(P,S)",
+      "type": "round"
+    },
+    {
+      "from": 90,
+      "to": 123,
+      "action": "round(R,P)",
+      "type": "round"
+    },
+    {
+      "from": 91,
+      "to": 124,
+      "action": "round(S,R)",
+      "type": "round"
+    },
+    {
+      "from": 92,
+      "to": 125,
+      "action": "round(R,P)",
+      "type": "round"
+    },
+    {
+      "from": 92,
+      "to": 126,
+      "action": "round(R,R)",
+      "type": "round"
+    },
+    {
+      "from": 92,
+      "to": 127,
+      "action": "round(S,P)",
+      "type": "round"
+    },
+    {
+      "from": 92,
+      "to": 128,
+      "action": "round(S,R)",
+      "type": "round"
+    },
+    {
+      "from": 93,
+      "to": 120,
+      "action": "round(S,R)",
+      "type": "round"
+    },
+    {
+      "from": 94,
+      "to": 129,
+      "action": "round(R,P)",
+      "type": "round"
+    },
+    {
+      "from": 94,
+      "to": 130,
+      "action": "round(R,R)",
+      "type": "round"
+    },
+    {
+      "from": 95,
+      "to": 124,
+      "action": "round(S,R)",
+      "type": "round"
+    },
+    {
+      "from": 95,
+      "to": 131,
+      "action": "round(S,S)",
+      "type": "round"
+    },
+    {
+      "from": 96,
+      "to": 123,
+      "action": "round(R,P)",
+      "type": "round"
+    },
+    {
+      "from": 96,
+      "to": 132,
+      "action": "round(R,R)",
+      "type": "round"
+    },
+    {
+      "from": 97,
+      "to": 125,
+      "action": "round(R,P)",
+      "type": "round"
+    },
+    {
+      "from": 98,
+      "to": 133,
+      "action": "round(S,R)",
+      "type": "round"
+    },
+    {
+      "from": 99,
+      "to": 134,
+      "action": "round(R,P)",
+      "type": "round"
+    },
+    {
+      "from": 99,
+      "to": 135,
+      "action": "round(R,R)",
+      "type": "round"
+    },
+    {
+      "from": 100,
+      "to": 136,
+      "action": "round(P,P)",
+      "type": "round"
+    },
+    {
+      "from": 100,
+      "to": 137,
+      "action": "round(P,S)",
+      "type": "round"
+    },
+    {
+      "from": 101,
+      "to": 134,
+      "action": "round(R,P)",
+      "type": "round"
+    },
+    {
+      "from": 102,
+      "to": 138,
+      "action": "round(P,P)",
+      "type": "round"
+    },
+    {
+      "from": 102,
+      "to": 139,
+      "action": "round(P,S)",
+      "type": "round"
+    },
+    {
+      "from": 102,
+      "to": 125,
+      "action": "round(R,P)",
+      "type": "round"
+    },
+    {
+      "from": 102,
+      "to": 140,
+      "action": "round(R,S)",
+      "type": "round"
+    },
+    {
+      "from": 103,
+      "to": 133,
+      "action": "round(S,R)",
+      "type": "round"
+    },
+    {
+      "from": 103,
+      "to": 141,
+      "action": "round(S,S)",
+      "type": "round"
+    },
+    {
+      "from": 104,
+      "to": 139,
+      "action": "round(P,S)",
+      "type": "round"
+    },
+    {
+      "from": 105,
+      "to": 142,
+      "action": "round(R,P)",
+      "type": "round"
+    },
+    {
+      "from": 105,
+      "to": 143,
+      "action": "round(R,R)",
+      "type": "round"
+    },
+    {
+      "from": 106,
+      "to": 142,
+      "action": "round(R,P)",
+      "type": "round"
+    },
+    {
+      "from": 108,
+      "to": 129,
+      "action": "round(R,P)",
+      "type": "round"
+    },
+    {
+      "from": 110,
+      "to": 137,
+      "action": "round(P,S)",
+      "type": "round"
+    },
+    {
+      "from": 111,
+      "to": 128,
+      "action": "round(S,R)",
+      "type": "round"
+    },
+    {
+      "from": 112,
+      "to": 144,
+      "action": "round(P,P)",
+      "type": "round"
+    },
+    {
+      "from": 112,
+      "to": 145,
+      "action": "round(P,S)",
+      "type": "round"
+    },
+    {
+      "from": 113,
+      "to": 146,
+      "action": "round(P,R)",
+      "type": "round"
+    },
+    {
+      "from": 113,
+      "to": 139,
+      "action": "round(P,S)",
+      "type": "round"
+    },
+    {
+      "from": 113,
+      "to": 128,
+      "action": "round(S,R)",
+      "type": "round"
+    },
+    {
+      "from": 113,
+      "to": 147,
+      "action": "round(S,S)",
+      "type": "round"
+    },
+    {
+      "from": 114,
+      "to": 145,
+      "action": "round(P,S)",
+      "type": "round"
+    },
+    {
+      "from": 116,
+      "to": 148,
+      "action": "round(R,P)",
+      "type": "round"
+    },
+    {
+      "from": 117,
+      "to": 148,
+      "action": "round(R,P)",
+      "type": "round"
+    },
+    {
+      "from": 117,
+      "to": 149,
+      "action": "round(R,R)",
+      "type": "round"
+    },
+    {
+      "from": 118,
+      "to": 150,
+      "action": "round(S,R)",
+      "type": "round"
+    },
+    {
+      "from": 119,
+      "to": 151,
+      "action": "round(R,P)",
+      "type": "round"
+    },
+    {
+      "from": 119,
+      "to": 152,
+      "action": "round(R,R)",
+      "type": "round"
+    },
+    {
+      "from": 120,
+      "to": 153,
+      "action": "round(P,P)",
+      "type": "round"
+    },
+    {
+      "from": 120,
+      "to": 154,
+      "action": "round(P,S)",
+      "type": "round"
+    },
+    {
+      "from": 121,
+      "to": 151,
+      "action": "round(R,P)",
+      "type": "round"
+    },
+    {
+      "from": 122,
+      "to": 155,
+      "action": "round(S,R)",
+      "type": "round"
+    },
+    {
+      "from": 123,
+      "to": 155,
+      "action": "round(S,R)",
+      "type": "round"
+    },
+    {
+      "from": 123,
+      "to": 156,
+      "action": "round(S,S)",
+      "type": "round"
+    },
+    {
+      "from": 124,
+      "to": 157,
+      "action": "round(P,P)",
+      "type": "round"
+    },
+    {
+      "from": 124,
+      "to": 158,
+      "action": "round(P,S)",
+      "type": "round"
+    },
+    {
+      "from": 124,
+      "to": 159,
+      "action": "round(R,P)",
+      "type": "round"
+    },
+    {
+      "from": 124,
+      "to": 160,
+      "action": "round(R,S)",
+      "type": "round"
+    },
+    {
+      "from": 125,
+      "to": 150,
+      "action": "round(S,R)",
+      "type": "round"
+    },
+    {
+      "from": 125,
+      "to": 161,
+      "action": "round(S,S)",
+      "type": "round"
+    },
+    {
+      "from": 126,
+      "to": 158,
+      "action": "round(P,S)",
+      "type": "round"
+    },
+    {
+      "from": 127,
+      "to": 162,
+      "action": "round(R,P)",
+      "type": "round"
+    },
+    {
+      "from": 127,
+      "to": 163,
+      "action": "round(R,R)",
+      "type": "round"
+    },
+    {
+      "from": 128,
+      "to": 164,
+      "action": "round(P,P)",
+      "type": "round"
+    },
+    {
+      "from": 128,
+      "to": 165,
+      "action": "round(P,S)",
+      "type": "round"
+    },
+    {
+      "from": 130,
+      "to": 154,
+      "action": "round(P,S)",
+      "type": "round"
+    },
+    {
+      "from": 131,
+      "to": 162,
+      "action": "round(R,P)",
+      "type": "round"
+    },
+    {
+      "from": 132,
+      "to": 165,
+      "action": "round(P,S)",
+      "type": "round"
+    },
+    {
+      "from": 133,
+      "to": 166,
+      "action": "round(P,P)",
+      "type": "round"
+    },
+    {
+      "from": 133,
+      "to": 167,
+      "action": "round(P,S)",
+      "type": "round"
+    },
+    {
+      "from": 134,
+      "to": 168,
+      "action": "round(S,R)",
+      "type": "round"
+    },
+    {
+      "from": 134,
+      "to": 169,
+      "action": "round(S,S)",
+      "type": "round"
+    },
+    {
+      "from": 135,
+      "to": 167,
+      "action": "round(P,S)",
+      "type": "round"
+    },
+    {
+      "from": 136,
+      "to": 168,
+      "action": "round(S,R)",
+      "type": "round"
+    },
+    {
+      "from": 138,
+      "to": 170,
+      "action": "round(S,R)",
+      "type": "round"
+    },
+    {
+      "from": 139,
+      "to": 171,
+      "action": "round(R,P)",
+      "type": "round"
+    },
+    {
+      "from": 139,
+      "to": 172,
+      "action": "round(R,R)",
+      "type": "round"
+    },
+    {
+      "from": 140,
+      "to": 173,
+      "action": "round(P,P)",
+      "type": "round"
+    },
+    {
+      "from": 140,
+      "to": 174,
+      "action": "round(P,S)",
+      "type": "round"
+    },
+    {
+      "from": 141,
+      "to": 171,
+      "action": "round(R,P)",
+      "type": "round"
+    },
+    {
+      "from": 142,
+      "to": 175,
+      "action": "round(P,R)",
+      "type": "round"
+    },
+    {
+      "from": 142,
+      "to": 158,
+      "action": "round(P,S)",
+      "type": "round"
+    },
+    {
+      "from": 142,
+      "to": 170,
+      "action": "round(S,R)",
+      "type": "round"
+    },
+    {
+      "from": 142,
+      "to": 176,
+      "action": "round(S,S)",
+      "type": "round"
+    },
+    {
+      "from": 143,
+      "to": 174,
+      "action": "round(P,S)",
+      "type": "round"
+    },
+    {
+      "from": 144,
+      "to": 177,
+      "action": "round(S,R)",
+      "type": "round"
+    },
+    {
+      "from": 145,
+      "to": 159,
+      "action": "round(R,P)",
+      "type": "round"
+    },
+    {
+      "from": 145,
+      "to": 178,
+      "action": "round(R,R)",
+      "type": "round"
+    },
+    {
+      "from": 145,
+      "to": 179,
+      "action": "round(S,P)",
+      "type": "round"
+    },
+    {
+      "from": 145,
+      "to": 170,
+      "action": "round(S,R)",
+      "type": "round"
+    },
+    {
+      "from": 146,
+      "to": 177,
+      "action": "round(S,R)",
+      "type": "round"
+    },
+    {
+      "from": 146,
+      "to": 180,
+      "action": "round(S,S)",
+      "type": "round"
+    },
+    {
+      "from": 147,
+      "to": 159,
+      "action": "round(R,P)",
+      "type": "round"
+    },
+    {
+      "from": 149,
+      "to": 181,
+      "action": "round(P,S)",
+      "type": "round"
+    },
+    {
+      "from": 150,
+      "to": 182,
+      "action": "round(P,P)",
+      "type": "round"
+    },
+    {
+      "from": 150,
+      "to": 183,
+      "action": "round(P,S)",
+      "type": "round"
+    },
+    {
+      "from": 151,
+      "to": 184,
+      "action": "round(S,R)",
+      "type": "round"
+    },
+    {
+      "from": 151,
+      "to": 185,
+      "action": "round(S,S)",
+      "type": "round"
+    },
+    {
+      "from": 152,
+      "to": 183,
+      "action": "round(P,S)",
+      "type": "round"
+    },
+    {
+      "from": 153,
+      "to": 184,
+      "action": "round(S,R)",
+      "type": "round"
+    },
+    {
+      "from": 155,
+      "to": 186,
+      "action": "round(P,P)",
+      "type": "round"
+    },
+    {
+      "from": 155,
+      "to": 181,
+      "action": "round(P,S)",
+      "type": "round"
+    },
+    {
+      "from": 156,
+      "to": 187,
+      "action": "round(R,P)",
+      "type": "round"
+    },
+    {
+      "from": 157,
+      "to": 188,
+      "action": "round(S,R)",
+      "type": "round"
+    },
+    {
+      "from": 158,
+      "to": 189,
+      "action": "round(R,P)",
+      "type": "round"
+    },
+    {
+      "from": 158,
+      "to": 190,
+      "action": "round(R,R)",
+      "type": "round"
+    },
+    {
+      "from": 159,
+      "to": 191,
+      "action": "round(S,R)",
+      "type": "round"
+    },
+    {
+      "from": 159,
+      "to": 192,
+      "action": "round(S,S)",
+      "type": "round"
+    },
+    {
+      "from": 160,
+      "to": 193,
+      "action": "round(P,P)",
+      "type": "round"
+    },
+    {
+      "from": 160,
+      "to": 194,
+      "action": "round(P,S)",
+      "type": "round"
+    },
+    {
+      "from": 161,
+      "to": 189,
+      "action": "round(R,P)",
+      "type": "round"
+    },
+    {
+      "from": 162,
+      "to": 195,
+      "action": "round(P,R)",
+      "type": "round"
+    },
+    {
+      "from": 162,
+      "to": 196,
+      "action": "round(P,S)",
+      "type": "round"
+    },
+    {
+      "from": 162,
+      "to": 188,
+      "action": "round(S,R)",
+      "type": "round"
+    },
+    {
+      "from": 162,
+      "to": 197,
+      "action": "round(S,S)",
+      "type": "round"
+    },
+    {
+      "from": 163,
+      "to": 194,
+      "action": "round(P,S)",
+      "type": "round"
+    },
+    {
+      "from": 164,
+      "to": 191,
+      "action": "round(S,R)",
+      "type": "round"
+    },
+    {
+      "from": 165,
+      "to": 187,
+      "action": "round(R,P)",
+      "type": "round"
+    },
+    {
+      "from": 165,
+      "to": 198,
+      "action": "round(R,R)",
+      "type": "round"
+    },
+    {
+      "from": 166,
+      "to": 199,
+      "action": "round(S,R)",
+      "type": "round"
+    },
+    {
+      "from": 167,
+      "to": 200,
+      "action": "round(R,P)",
+      "type": "round"
+    },
+    {
+      "from": 167,
+      "to": 201,
+      "action": "round(R,R)",
+      "type": "round"
+    },
+    {
+      "from": 169,
+      "to": 200,
+      "action": "round(R,P)",
+      "type": "round"
+    },
+    {
+      "from": 170,
+      "to": 202,
+      "action": "round(P,P)",
+      "type": "round"
+    },
+    {
+      "from": 170,
+      "to": 203,
+      "action": "round(P,S)",
+      "type": "round"
+    },
+    {
+      "from": 171,
+      "to": 199,
+      "action": "round(S,R)",
+      "type": "round"
+    },
+    {
+      "from": 171,
+      "to": 204,
+      "action": "round(S,S)",
+      "type": "round"
+    },
+    {
+      "from": 172,
+      "to": 203,
+      "action": "round(P,S)",
+      "type": "round"
+    },
+    {
+      "from": 173,
+      "to": 205,
+      "action": "round(S,R)",
+      "type": "round"
+    },
+    {
+      "from": 174,
+      "to": 206,
+      "action": "round(R,P)",
+      "type": "round"
+    },
+    {
+      "from": 174,
+      "to": 207,
+      "action": "round(R,R)",
+      "type": "round"
+    },
+    {
+      "from": 174,
+      "to": 208,
+      "action": "round(S,P)",
+      "type": "round"
+    },
+    {
+      "from": 174,
+      "to": 188,
+      "action": "round(S,R)",
+      "type": "round"
+    },
+    {
+      "from": 175,
+      "to": 205,
+      "action": "round(S,R)",
+      "type": "round"
+    },
+    {
+      "from": 175,
+      "to": 209,
+      "action": "round(S,S)",
+      "type": "round"
+    },
+    {
+      "from": 176,
+      "to": 206,
+      "action": "round(R,P)",
+      "type": "round"
+    },
+    {
+      "from": 177,
+      "to": 210,
+      "action": "round(P,P)",
+      "type": "round"
+    },
+    {
+      "from": 177,
+      "to": 196,
+      "action": "round(P,S)",
+      "type": "round"
+    },
+    {
+      "from": 177,
+      "to": 206,
+      "action": "round(R,P)",
+      "type": "round"
+    },
+    {
+      "from": 177,
+      "to": 211,
+      "action": "round(R,S)",
+      "type": "round"
+    },
+    {
+      "from": 178,
+      "to": 196,
+      "action": "round(P,S)",
+      "type": "round"
+    },
+    {
+      "from": 179,
+      "to": 212,
+      "action": "round(R,P)",
+      "type": "round"
+    },
+    {
+      "from": 179,
+      "to": 213,
+      "action": "round(R,R)",
+      "type": "round"
+    },
+    {
+      "from": 180,
+      "to": 212,
+      "action": "round(R,P)",
+      "type": "round"
+    },
+    {
+      "from": 182,
+      "to": 214,
+      "action": "round(S,R)",
+      "type": "round"
+    },
+    {
+      "from": 183,
+      "to": 215,
+      "action": "round(R,P)",
+      "type": "round"
+    },
+    {
+      "from": 183,
+      "to": 216,
+      "action": "round(R,R)",
+      "type": "round"
+    },
+    {
+      "from": 185,
+      "to": 215,
+      "action": "round(R,P)",
+      "type": "round"
+    },
+    {
+      "from": 186,
+      "to": 217,
+      "action": "round(S,R)",
+      "type": "round"
+    },
+    {
+      "from": 187,
+      "to": 217,
+      "action": "round(S,R)",
+      "type": "round"
+    },
+    {
+      "from": 187,
+      "to": 218,
+      "action": "round(S,S)",
+      "type": "round"
+    },
+    {
+      "from": 188,
+      "to": 219,
+      "action": "round(P,P)",
+      "type": "round"
+    },
+    {
+      "from": 188,
+      "to": 220,
+      "action": "round(P,S)",
+      "type": "round"
+    },
+    {
+      "from": 189,
+      "to": 214,
+      "action": "round(S,R)",
+      "type": "round"
+    },
+    {
+      "from": 189,
+      "to": 221,
+      "action": "round(S,S)",
+      "type": "round"
+    },
+    {
+      "from": 190,
+      "to": 220,
+      "action": "round(P,S)",
+      "type": "round"
+    },
+    {
+      "from": 191,
+      "to": 222,
+      "action": "round(P,P)",
+      "type": "round"
+    },
+    {
+      "from": 191,
+      "to": 223,
+      "action": "round(P,S)",
+      "type": "round"
+    },
+    {
+      "from": 192,
+      "to": 224,
+      "action": "round(R,P)",
+      "type": "round"
+    },
+    {
+      "from": 193,
+      "to": 225,
+      "action": "round(S,R)",
+      "type": "round"
+    },
+    {
+      "from": 194,
+      "to": 226,
+      "action": "round(R,P)",
+      "type": "round"
+    },
+    {
+      "from": 194,
+      "to": 227,
+      "action": "round(R,R)",
+      "type": "round"
+    },
+    {
+      "from": 194,
+      "to": 228,
+      "action": "round(S,P)",
+      "type": "round"
+    },
+    {
+      "from": 194,
+      "to": 229,
+      "action": "round(S,R)",
+      "type": "round"
+    },
+    {
+      "from": 195,
+      "to": 225,
+      "action": "round(S,R)",
+      "type": "round"
+    },
+    {
+      "from": 195,
+      "to": 230,
+      "action": "round(S,S)",
+      "type": "round"
+    },
+    {
+      "from": 196,
+      "to": 224,
+      "action": "round(R,P)",
+      "type": "round"
+    },
+    {
+      "from": 196,
+      "to": 231,
+      "action": "round(R,R)",
+      "type": "round"
+    },
+    {
+      "from": 197,
+      "to": 226,
+      "action": "round(R,P)",
+      "type": "round"
+    },
+    {
+      "from": 198,
+      "to": 223,
+      "action": "round(P,S)",
+      "type": "round"
+    },
+    {
+      "from": 199,
+      "to": 232,
+      "action": "round(P,P)",
+      "type": "round"
+    },
+    {
+      "from": 199,
+      "to": 233,
+      "action": "round(P,S)",
+      "type": "round"
+    },
+    {
+      "from": 201,
+      "to": 233,
+      "action": "round(P,S)",
+      "type": "round"
+    },
+    {
+      "from": 202,
+      "to": 234,
+      "action": "round(S,R)",
+      "type": "round"
+    },
+    {
+      "from": 203,
+      "to": 235,
+      "action": "round(R,P)",
+      "type": "round"
+    },
+    {
+      "from": 203,
+      "to": 236,
+      "action": "round(R,R)",
+      "type": "round"
+    },
+    {
+      "from": 204,
+      "to": 235,
+      "action": "round(R,P)",
+      "type": "round"
+    },
+    {
+      "from": 205,
+      "to": 237,
+      "action": "round(P,P)",
+      "type": "round"
+    },
+    {
+      "from": 205,
+      "to": 238,
+      "action": "round(P,S)",
+      "type": "round"
+    },
+    {
+      "from": 205,
+      "to": 226,
+      "action": "round(R,P)",
+      "type": "round"
+    },
+    {
+      "from": 205,
+      "to": 239,
+      "action": "round(R,S)",
+      "type": "round"
+    },
+    {
+      "from": 206,
+      "to": 234,
+      "action": "round(S,R)",
+      "type": "round"
+    },
+    {
+      "from": 206,
+      "to": 240,
+      "action": "round(S,S)",
+      "type": "round"
+    },
+    {
+      "from": 207,
+      "to": 238,
+      "action": "round(P,S)",
+      "type": "round"
+    },
+    {
+      "from": 208,
+      "to": 241,
+      "action": "round(R,P)",
+      "type": "round"
+    },
+    {
+      "from": 208,
+      "to": 242,
+      "action": "round(R,R)",
+      "type": "round"
+    },
+    {
+      "from": 209,
+      "to": 241,
+      "action": "round(R,P)",
+      "type": "round"
+    },
+    {
+      "from": 210,
+      "to": 229,
+      "action": "round(S,R)",
+      "type": "round"
+    },
+    {
+      "from": 211,
+      "to": 243,
+      "action": "round(P,P)",
+      "type": "round"
+    },
+    {
+      "from": 211,
+      "to": 244,
+      "action": "round(P,S)",
+      "type": "round"
+    },
+    {
+      "from": 212,
+      "to": 245,
+      "action": "round(P,R)",
+      "type": "round"
+    },
+    {
+      "from": 212,
+      "to": 238,
+      "action": "round(P,S)",
+      "type": "round"
+    },
+    {
+      "from": 212,
+      "to": 229,
+      "action": "round(S,R)",
+      "type": "round"
+    },
+    {
+      "from": 212,
+      "to": 246,
+      "action": "round(S,S)",
+      "type": "round"
+    },
+    {
+      "from": 213,
+      "to": 244,
+      "action": "round(P,S)",
+      "type": "round"
+    },
+    {
+      "from": 214,
+      "to": 247,
+      "action": "round(P,P)",
+      "type": "round"
+    },
+    {
+      "from": 214,
+      "to": 248,
+      "action": "round(P,S)",
+      "type": "round"
+    },
+    {
+      "from": 216,
+      "to": 248,
+      "action": "round(P,S)",
+      "type": "round"
+    },
+    {
+      "from": 218,
+      "to": 249,
+      "action": "round(R,P)",
+      "type": "round"
+    },
+    {
+      "from": 219,
+      "to": 250,
+      "action": "round(S,R)",
+      "type": "round"
+    },
+    {
+      "from": 220,
+      "to": 251,
+      "action": "round(R,P)",
+      "type": "round"
+    },
+    {
+      "from": 220,
+      "to": 252,
+      "action": "round(R,R)",
+      "type": "round"
+    },
+    {
+      "from": 221,
+      "to": 251,
+      "action": "round(R,P)",
+      "type": "round"
+    },
+    {
+      "from": 222,
+      "to": 253,
+      "action": "round(S,R)",
+      "type": "round"
+    },
+    {
+      "from": 223,
+      "to": 249,
+      "action": "round(R,P)",
+      "type": "round"
+    },
+    {
+      "from": 223,
+      "to": 254,
+      "action": "round(R,R)",
+      "type": "round"
+    },
+    {
+      "from": 224,
+      "to": 253,
+      "action": "round(S,R)",
+      "type": "round"
+    },
+    {
+      "from": 224,
+      "to": 255,
+      "action": "round(S,S)",
+      "type": "round"
+    },
+    {
+      "from": 225,
+      "to": 256,
+      "action": "round(P,P)",
+      "type": "round"
+    },
+    {
+      "from": 225,
+      "to": 257,
+      "action": "round(P,S)",
+      "type": "round"
+    },
+    {
+      "from": 225,
+      "to": 258,
+      "action": "round(R,P)",
+      "type": "round"
+    },
+    {
+      "from": 225,
+      "to": 259,
+      "action": "round(R,S)",
+      "type": "round"
+    },
+    {
+      "from": 226,
+      "to": 250,
+      "action": "round(S,R)",
+      "type": "round"
+    },
+    {
+      "from": 226,
+      "to": 260,
+      "action": "round(S,S)",
+      "type": "round"
+    },
+    {
+      "from": 227,
+      "to": 257,
+      "action": "round(P,S)",
+      "type": "round"
+    },
+    {
+      "from": 228,
+      "to": 261,
+      "action": "round(R,P)",
+      "type": "round"
+    },
+    {
+      "from": 228,
+      "to": 262,
+      "action": "round(R,R)",
+      "type": "round"
+    },
+    {
+      "from": 229,
+      "to": 263,
+      "action": "round(P,P)",
+      "type": "round"
+    },
+    {
+      "from": 229,
+      "to": 264,
+      "action": "round(P,S)",
+      "type": "round"
+    },
+    {
+      "from": 230,
+      "to": 261,
+      "action": "round(R,P)",
+      "type": "round"
+    },
+    {
+      "from": 231,
+      "to": 264,
+      "action": "round(P,S)",
+      "type": "round"
+    },
+    {
+      "from": 232,
+      "to": 265,
+      "action": "round(S,R)",
+      "type": "round"
+    },
+    {
+      "from": 234,
+      "to": 266,
+      "action": "round(P,P)",
+      "type": "round"
+    },
+    {
+      "from": 234,
+      "to": 267,
+      "action": "round(P,S)",
+      "type": "round"
+    },
+    {
+      "from": 235,
+      "to": 265,
+      "action": "round(S,R)",
+      "type": "round"
+    },
+    {
+      "from": 235,
+      "to": 268,
+      "action": "round(S,S)",
+      "type": "round"
+    },
+    {
+      "from": 236,
+      "to": 267,
+      "action": "round(P,S)",
+      "type": "round"
+    },
+    {
+      "from": 237,
+      "to": 269,
+      "action": "round(S,R)",
+      "type": "round"
+    },
+    {
+      "from": 238,
+      "to": 270,
+      "action": "round(R,P)",
+      "type": "round"
+    },
+    {
+      "from": 238,
+      "to": 271,
+      "action": "round(R,R)",
+      "type": "round"
+    },
+    {
+      "from": 239,
+      "to": 272,
+      "action": "round(P,P)",
+      "type": "round"
+    },
+    {
+      "from": 239,
+      "to": 273,
+      "action": "round(P,S)",
+      "type": "round"
+    },
+    {
+      "from": 240,
+      "to": 270,
+      "action": "round(R,P)",
+      "type": "round"
+    },
+    {
+      "from": 241,
+      "to": 274,
+      "action": "round(P,R)",
+      "type": "round"
+    },
+    {
+      "from": 241,
+      "to": 257,
+      "action": "round(P,S)",
+      "type": "round"
+    },
+    {
+      "from": 241,
+      "to": 269,
+      "action": "round(S,R)",
+      "type": "round"
+    },
+    {
+      "from": 241,
+      "to": 275,
+      "action": "round(S,S)",
+      "type": "round"
+    },
+    {
+      "from": 242,
+      "to": 273,
+      "action": "round(P,S)",
+      "type": "round"
+    },
+    {
+      "from": 243,
+      "to": 276,
+      "action": "round(S,R)",
+      "type": "round"
+    },
+    {
+      "from": 244,
+      "to": 258,
+      "action": "round(R,P)",
+      "type": "round"
+    },
+    {
+      "from": 244,
+      "to": 277,
+      "action": "round(R,R)",
+      "type": "round"
+    },
+    {
+      "from": 244,
+      "to": 278,
+      "action": "round(S,P)",
+      "type": "round"
+    },
+    {
+      "from": 244,
+      "to": 269,
+      "action": "round(S,R)",
+      "type": "round"
+    },
+    {
+      "from": 245,
+      "to": 276,
+      "action": "round(S,R)",
+      "type": "round"
+    },
+    {
+      "from": 245,
+      "to": 279,
+      "action": "round(S,S)",
+      "type": "round"
+    },
+    {
+      "from": 246,
+      "to": 258,
+      "action": "round(R,P)",
+      "type": "round"
+    }
+  ],
+  "meta": {
+    "n_nodes": 280,
+    "n_edges": 405,
+    "n_terminal": 51,
+    "n_convergence": 21,
+    "n_strong_convergence": 21,
+    "templates": [
+      {
+        "key": "round -> round -> round",
+        "count": 849
+      }
+    ]
+  }
+}

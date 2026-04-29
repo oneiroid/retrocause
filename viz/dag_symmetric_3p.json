@@ -1,0 +1,9846 @@
+{
+  "nodes": [
+    {
+      "id": 0,
+      "expr": "r0  p0=0 p1=0 p2=0",
+      "generation": 0,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 0,
+      "out_degree": 27,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round",
+        "round -> round -> round"
+      ],
+      "x": 0.0,
+      "y": 0.0
+    },
+    {
+      "id": 1,
+      "expr": "r1  p0=R/0 p1=R/0 p2=R/0",
+      "generation": 1,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": -4.0,
+      "y": 1.0
+    },
+    {
+      "id": 2,
+      "expr": "r1  p0=R/-1 p1=R/-1 p2=P/2",
+      "generation": 1,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": -13.0,
+      "y": 1.0
+    },
+    {
+      "id": 3,
+      "expr": "r1  p0=R/1 p1=R/1 p2=S/-2",
+      "generation": 1,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": -11.0,
+      "y": 1.0
+    },
+    {
+      "id": 4,
+      "expr": "r1  p0=R/-1 p1=P/2 p2=R/-1",
+      "generation": 1,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": -10.0,
+      "y": 1.0
+    },
+    {
+      "id": 5,
+      "expr": "r1  p0=R/-2 p1=P/1 p2=P/1",
+      "generation": 1,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": -8.0,
+      "y": 1.0
+    },
+    {
+      "id": 6,
+      "expr": "r1  p0=R/0 p1=P/0 p2=S/0",
+      "generation": 1,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 27,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": -3.0,
+      "y": 1.0
+    },
+    {
+      "id": 7,
+      "expr": "r1  p0=R/1 p1=S/-2 p2=R/1",
+      "generation": 1,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": -12.0,
+      "y": 1.0
+    },
+    {
+      "id": 8,
+      "expr": "r1  p0=R/0 p1=S/0 p2=P/0",
+      "generation": 1,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 27,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": -2.0,
+      "y": 1.0
+    },
+    {
+      "id": 9,
+      "expr": "r1  p0=R/2 p1=S/-1 p2=S/-1",
+      "generation": 1,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": -9.0,
+      "y": 1.0
+    },
+    {
+      "id": 10,
+      "expr": "r1  p0=P/2 p1=R/-1 p2=R/-1",
+      "generation": 1,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": -7.0,
+      "y": 1.0
+    },
+    {
+      "id": 11,
+      "expr": "r1  p0=P/1 p1=R/-2 p2=P/1",
+      "generation": 1,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": -6.0,
+      "y": 1.0
+    },
+    {
+      "id": 12,
+      "expr": "r1  p0=P/0 p1=R/0 p2=S/0",
+      "generation": 1,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 27,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": -1.0,
+      "y": 1.0
+    },
+    {
+      "id": 13,
+      "expr": "r1  p0=P/1 p1=P/1 p2=R/-2",
+      "generation": 1,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": -5.0,
+      "y": 1.0
+    },
+    {
+      "id": 14,
+      "expr": "r1  p0=P/0 p1=P/0 p2=P/0",
+      "generation": 1,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": 3.0,
+      "y": 1.0
+    },
+    {
+      "id": 15,
+      "expr": "r1  p0=P/-1 p1=P/-1 p2=S/2",
+      "generation": 1,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": 13.0,
+      "y": 1.0
+    },
+    {
+      "id": 16,
+      "expr": "r1  p0=P/0 p1=S/0 p2=R/0",
+      "generation": 1,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 27,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": 0.0,
+      "y": 1.0
+    },
+    {
+      "id": 17,
+      "expr": "r1  p0=P/-1 p1=S/2 p2=P/-1",
+      "generation": 1,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": 12.0,
+      "y": 1.0
+    },
+    {
+      "id": 18,
+      "expr": "r1  p0=P/-2 p1=S/1 p2=S/1",
+      "generation": 1,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": 11.0,
+      "y": 1.0
+    },
+    {
+      "id": 19,
+      "expr": "r1  p0=S/-2 p1=R/1 p2=R/1",
+      "generation": 1,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": 5.0,
+      "y": 1.0
+    },
+    {
+      "id": 20,
+      "expr": "r1  p0=S/0 p1=R/0 p2=P/0",
+      "generation": 1,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 27,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": 1.0,
+      "y": 1.0
+    },
+    {
+      "id": 21,
+      "expr": "r1  p0=S/-1 p1=R/2 p2=S/-1",
+      "generation": 1,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": 9.0,
+      "y": 1.0
+    },
+    {
+      "id": 22,
+      "expr": "r1  p0=S/0 p1=P/0 p2=R/0",
+      "generation": 1,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 27,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": 2.0,
+      "y": 1.0
+    },
+    {
+      "id": 23,
+      "expr": "r1  p0=S/2 p1=P/-1 p2=P/-1",
+      "generation": 1,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": 10.0,
+      "y": 1.0
+    },
+    {
+      "id": 24,
+      "expr": "r1  p0=S/1 p1=P/-2 p2=S/1",
+      "generation": 1,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": 8.0,
+      "y": 1.0
+    },
+    {
+      "id": 25,
+      "expr": "r1  p0=S/-1 p1=S/-1 p2=R/2",
+      "generation": 1,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": 7.0,
+      "y": 1.0
+    },
+    {
+      "id": 26,
+      "expr": "r1  p0=S/1 p1=S/1 p2=P/-2",
+      "generation": 1,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": 6.0,
+      "y": 1.0
+    },
+    {
+      "id": 27,
+      "expr": "r1  p0=S/0 p1=S/0 p2=S/0",
+      "generation": 1,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": 4.0,
+      "y": 1.0
+    },
+    {
+      "id": 28,
+      "expr": "r2  p0=P/0 p1=P/0 p2=P/0",
+      "generation": 2,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 7,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": -4.0,
+      "y": 2.0
+    },
+    {
+      "id": 29,
+      "expr": "r2  p0=P/-1 p1=P/-1 p2=P/2",
+      "generation": 2,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": -22.0,
+      "y": 2.0
+    },
+    {
+      "id": 30,
+      "expr": "r2  p0=P/1 p1=P/1 p2=P/-2",
+      "generation": 2,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": -18.0,
+      "y": 2.0
+    },
+    {
+      "id": 31,
+      "expr": "r2  p0=P/-1 p1=P/2 p2=P/-1",
+      "generation": 2,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": -16.0,
+      "y": 2.0
+    },
+    {
+      "id": 32,
+      "expr": "r2  p0=S/-2 p1=S/1 p2=S/1",
+      "generation": 2,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": -12.0,
+      "y": 2.0
+    },
+    {
+      "id": 33,
+      "expr": "r2  p0=P/1 p1=P/1 p2=R/-2",
+      "generation": 2,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 6,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": -17.0,
+      "y": 2.0
+    },
+    {
+      "id": 34,
+      "expr": "r2  p0=P/-1 p1=P/-1 p2=S/2",
+      "generation": 2,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 6,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": -21.0,
+      "y": 2.0
+    },
+    {
+      "id": 35,
+      "expr": "r2  p0=P/1 p1=R/-2 p2=P/1",
+      "generation": 2,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 6,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": -20.0,
+      "y": 2.0
+    },
+    {
+      "id": 36,
+      "expr": "r2  p0=P/2 p1=R/-1 p2=R/-1",
+      "generation": 2,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 6,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": -14.0,
+      "y": 2.0
+    },
+    {
+      "id": 37,
+      "expr": "r2  p0=P/0 p1=R/0 p2=S/0",
+      "generation": 2,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 6,
+      "out_degree": 27,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": -3.0,
+      "y": 2.0
+    },
+    {
+      "id": 38,
+      "expr": "r2  p0=P/-1 p1=S/2 p2=P/-1",
+      "generation": 2,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 6,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": -15.0,
+      "y": 2.0
+    },
+    {
+      "id": 39,
+      "expr": "r2  p0=P/0 p1=S/0 p2=R/0",
+      "generation": 2,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 6,
+      "out_degree": 27,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": -2.0,
+      "y": 2.0
+    },
+    {
+      "id": 40,
+      "expr": "r2  p0=P/-2 p1=S/1 p2=S/1",
+      "generation": 2,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 6,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": -11.0,
+      "y": 2.0
+    },
+    {
+      "id": 41,
+      "expr": "r2  p0=R/-2 p1=P/1 p2=P/1",
+      "generation": 2,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 6,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": 5.0,
+      "y": 2.0
+    },
+    {
+      "id": 42,
+      "expr": "r2  p0=R/-1 p1=P/2 p2=R/-1",
+      "generation": 2,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 6,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": 13.0,
+      "y": 2.0
+    },
+    {
+      "id": 43,
+      "expr": "r2  p0=R/0 p1=P/0 p2=S/0",
+      "generation": 2,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 6,
+      "out_degree": 27,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": -1.0,
+      "y": 2.0
+    },
+    {
+      "id": 44,
+      "expr": "r2  p0=R/-1 p1=R/-1 p2=P/2",
+      "generation": 2,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 6,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": 9.0,
+      "y": 2.0
+    },
+    {
+      "id": 45,
+      "expr": "r2  p0=R/0 p1=R/0 p2=R/0",
+      "generation": 2,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 7,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": 4.0,
+      "y": 2.0
+    },
+    {
+      "id": 46,
+      "expr": "r2  p0=R/1 p1=R/1 p2=S/-2",
+      "generation": 2,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 6,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": 7.0,
+      "y": 2.0
+    },
+    {
+      "id": 47,
+      "expr": "r2  p0=R/0 p1=S/0 p2=P/0",
+      "generation": 2,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 6,
+      "out_degree": 27,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": 0.0,
+      "y": 2.0
+    },
+    {
+      "id": 48,
+      "expr": "r2  p0=R/1 p1=S/-2 p2=R/1",
+      "generation": 2,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 6,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": 11.0,
+      "y": 2.0
+    },
+    {
+      "id": 49,
+      "expr": "r2  p0=R/2 p1=S/-1 p2=S/-1",
+      "generation": 2,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 6,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": 15.0,
+      "y": 2.0
+    },
+    {
+      "id": 50,
+      "expr": "r2  p0=S/2 p1=P/-1 p2=P/-1",
+      "generation": 2,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 6,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": -10.0,
+      "y": 2.0
+    },
+    {
+      "id": 51,
+      "expr": "r2  p0=S/0 p1=P/0 p2=R/0",
+      "generation": 2,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 6,
+      "out_degree": 27,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": 1.0,
+      "y": 2.0
+    },
+    {
+      "id": 52,
+      "expr": "r2  p0=S/1 p1=P/-2 p2=S/1",
+      "generation": 2,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 6,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": -8.0,
+      "y": 2.0
+    },
+    {
+      "id": 53,
+      "expr": "r2  p0=S/0 p1=R/0 p2=P/0",
+      "generation": 2,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 6,
+      "out_degree": 27,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": 2.0,
+      "y": 2.0
+    },
+    {
+      "id": 54,
+      "expr": "r2  p0=S/-2 p1=R/1 p2=R/1",
+      "generation": 2,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 6,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": 17.0,
+      "y": 2.0
+    },
+    {
+      "id": 55,
+      "expr": "r2  p0=S/-1 p1=R/2 p2=S/-1",
+      "generation": 2,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 6,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": 19.0,
+      "y": 2.0
+    },
+    {
+      "id": 56,
+      "expr": "r2  p0=S/1 p1=S/1 p2=P/-2",
+      "generation": 2,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 6,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": -6.0,
+      "y": 2.0
+    },
+    {
+      "id": 57,
+      "expr": "r2  p0=S/-1 p1=S/-1 p2=R/2",
+      "generation": 2,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 6,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": 21.0,
+      "y": 2.0
+    },
+    {
+      "id": 58,
+      "expr": "r2  p0=S/0 p1=S/0 p2=S/0",
+      "generation": 2,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 7,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": 3.0,
+      "y": 2.0
+    },
+    {
+      "id": 59,
+      "expr": "r2  p0=P/1 p1=P/-2 p2=P/1",
+      "generation": 2,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": -19.0,
+      "y": 2.0
+    },
+    {
+      "id": 60,
+      "expr": "r2  p0=R/2 p1=R/-1 p2=R/-1",
+      "generation": 2,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": -13.0,
+      "y": 2.0
+    },
+    {
+      "id": 61,
+      "expr": "r2  p0=P/2 p1=P/-1 p2=P/-1",
+      "generation": 2,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": -9.0,
+      "y": 2.0
+    },
+    {
+      "id": 62,
+      "expr": "r2  p0=S/1 p1=S/-2 p2=S/1",
+      "generation": 2,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": -7.0,
+      "y": 2.0
+    },
+    {
+      "id": 63,
+      "expr": "r2  p0=S/1 p1=S/1 p2=S/-2",
+      "generation": 2,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": -5.0,
+      "y": 2.0
+    },
+    {
+      "id": 64,
+      "expr": "r2  p0=S/-1 p1=S/-1 p2=S/2",
+      "generation": 2,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": 22.0,
+      "y": 2.0
+    },
+    {
+      "id": 65,
+      "expr": "r2  p0=S/-1 p1=S/2 p2=S/-1",
+      "generation": 2,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": 20.0,
+      "y": 2.0
+    },
+    {
+      "id": 66,
+      "expr": "r2  p0=R/-2 p1=R/1 p2=R/1",
+      "generation": 2,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": 18.0,
+      "y": 2.0
+    },
+    {
+      "id": 67,
+      "expr": "r2  p0=P/-2 p1=P/1 p2=P/1",
+      "generation": 2,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": 6.0,
+      "y": 2.0
+    },
+    {
+      "id": 68,
+      "expr": "r2  p0=R/-1 p1=R/2 p2=R/-1",
+      "generation": 2,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": 14.0,
+      "y": 2.0
+    },
+    {
+      "id": 69,
+      "expr": "r2  p0=S/2 p1=S/-1 p2=S/-1",
+      "generation": 2,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": 16.0,
+      "y": 2.0
+    },
+    {
+      "id": 70,
+      "expr": "r2  p0=R/1 p1=R/-2 p2=R/1",
+      "generation": 2,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": 12.0,
+      "y": 2.0
+    },
+    {
+      "id": 71,
+      "expr": "r2  p0=R/-1 p1=R/-1 p2=R/2",
+      "generation": 2,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": 10.0,
+      "y": 2.0
+    },
+    {
+      "id": 72,
+      "expr": "r2  p0=R/1 p1=R/1 p2=R/-2",
+      "generation": 2,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 1,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": 8.0,
+      "y": 2.0
+    },
+    {
+      "id": 73,
+      "expr": "r3  p0=S/0 p1=S/0 p2=S/0",
+      "generation": 3,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 7,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": true,
+      "template_starts": [],
+      "x": -4.0,
+      "y": 3.0
+    },
+    {
+      "id": 74,
+      "expr": "r3  p0=S/-1 p1=S/-1 p2=S/2",
+      "generation": 3,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 2,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": -22.0,
+      "y": 3.0
+    },
+    {
+      "id": 75,
+      "expr": "r3  p0=S/1 p1=S/1 p2=S/-2",
+      "generation": 3,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 2,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": -18.0,
+      "y": 3.0
+    },
+    {
+      "id": 76,
+      "expr": "r3  p0=S/-1 p1=S/2 p2=S/-1",
+      "generation": 3,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 2,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": -16.0,
+      "y": 3.0
+    },
+    {
+      "id": 77,
+      "expr": "r3  p0=R/-2 p1=R/1 p2=R/1",
+      "generation": 3,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 2,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": -12.0,
+      "y": 3.0
+    },
+    {
+      "id": 78,
+      "expr": "r3  p0=S/1 p1=S/-2 p2=S/1",
+      "generation": 3,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 2,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": -20.0,
+      "y": 3.0
+    },
+    {
+      "id": 79,
+      "expr": "r3  p0=P/2 p1=P/-1 p2=P/-1",
+      "generation": 3,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 2,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": -14.0,
+      "y": 3.0
+    },
+    {
+      "id": 80,
+      "expr": "r3  p0=P/0 p1=P/0 p2=P/0",
+      "generation": 3,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 7,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": true,
+      "template_starts": [],
+      "x": 4.0,
+      "y": 3.0
+    },
+    {
+      "id": 81,
+      "expr": "r3  p0=P/1 p1=P/1 p2=R/-2",
+      "generation": 3,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 6,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": true,
+      "template_starts": [],
+      "x": 7.0,
+      "y": 3.0
+    },
+    {
+      "id": 82,
+      "expr": "r3  p0=P/-1 p1=P/-1 p2=S/2",
+      "generation": 3,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 6,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": true,
+      "template_starts": [],
+      "x": 9.0,
+      "y": 3.0
+    },
+    {
+      "id": 83,
+      "expr": "r3  p0=P/1 p1=R/-2 p2=P/1",
+      "generation": 3,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 6,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": true,
+      "template_starts": [],
+      "x": 11.0,
+      "y": 3.0
+    },
+    {
+      "id": 84,
+      "expr": "r3  p0=P/2 p1=R/-1 p2=R/-1",
+      "generation": 3,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 6,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": true,
+      "template_starts": [],
+      "x": 15.0,
+      "y": 3.0
+    },
+    {
+      "id": 85,
+      "expr": "r3  p0=P/0 p1=R/0 p2=S/0",
+      "generation": 3,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 6,
+      "out_degree": 27,
+      "terminal": false,
+      "strong_converge": true,
+      "template_starts": [],
+      "x": -3.0,
+      "y": 3.0
+    },
+    {
+      "id": 86,
+      "expr": "r3  p0=P/-1 p1=S/2 p2=P/-1",
+      "generation": 3,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 6,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": true,
+      "template_starts": [],
+      "x": 13.0,
+      "y": 3.0
+    },
+    {
+      "id": 87,
+      "expr": "r3  p0=P/0 p1=S/0 p2=R/0",
+      "generation": 3,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 6,
+      "out_degree": 27,
+      "terminal": false,
+      "strong_converge": true,
+      "template_starts": [],
+      "x": -2.0,
+      "y": 3.0
+    },
+    {
+      "id": 88,
+      "expr": "r3  p0=P/-2 p1=S/1 p2=S/1",
+      "generation": 3,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 6,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": true,
+      "template_starts": [],
+      "x": 5.0,
+      "y": 3.0
+    },
+    {
+      "id": 89,
+      "expr": "r3  p0=R/-2 p1=P/1 p2=P/1",
+      "generation": 3,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 6,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": true,
+      "template_starts": [],
+      "x": 17.0,
+      "y": 3.0
+    },
+    {
+      "id": 90,
+      "expr": "r3  p0=R/-1 p1=P/2 p2=R/-1",
+      "generation": 3,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 6,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": true,
+      "template_starts": [],
+      "x": 19.0,
+      "y": 3.0
+    },
+    {
+      "id": 91,
+      "expr": "r3  p0=R/0 p1=P/0 p2=S/0",
+      "generation": 3,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 6,
+      "out_degree": 27,
+      "terminal": false,
+      "strong_converge": true,
+      "template_starts": [],
+      "x": -1.0,
+      "y": 3.0
+    },
+    {
+      "id": 92,
+      "expr": "r3  p0=R/-1 p1=R/-1 p2=P/2",
+      "generation": 3,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 6,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": true,
+      "template_starts": [],
+      "x": 21.0,
+      "y": 3.0
+    },
+    {
+      "id": 93,
+      "expr": "r3  p0=R/0 p1=R/0 p2=R/0",
+      "generation": 3,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 7,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": true,
+      "template_starts": [],
+      "x": 3.0,
+      "y": 3.0
+    },
+    {
+      "id": 94,
+      "expr": "r3  p0=R/1 p1=R/1 p2=S/-2",
+      "generation": 3,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 6,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": true,
+      "template_starts": [],
+      "x": -6.0,
+      "y": 3.0
+    },
+    {
+      "id": 95,
+      "expr": "r3  p0=R/0 p1=S/0 p2=P/0",
+      "generation": 3,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 6,
+      "out_degree": 27,
+      "terminal": false,
+      "strong_converge": true,
+      "template_starts": [],
+      "x": 0.0,
+      "y": 3.0
+    },
+    {
+      "id": 96,
+      "expr": "r3  p0=R/1 p1=S/-2 p2=R/1",
+      "generation": 3,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 6,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": true,
+      "template_starts": [],
+      "x": -8.0,
+      "y": 3.0
+    },
+    {
+      "id": 97,
+      "expr": "r3  p0=R/2 p1=S/-1 p2=S/-1",
+      "generation": 3,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 6,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": true,
+      "template_starts": [],
+      "x": -10.0,
+      "y": 3.0
+    },
+    {
+      "id": 98,
+      "expr": "r3  p0=S/2 p1=P/-1 p2=P/-1",
+      "generation": 3,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 6,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": true,
+      "template_starts": [],
+      "x": -13.0,
+      "y": 3.0
+    },
+    {
+      "id": 99,
+      "expr": "r3  p0=S/0 p1=P/0 p2=R/0",
+      "generation": 3,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 6,
+      "out_degree": 27,
+      "terminal": false,
+      "strong_converge": true,
+      "template_starts": [],
+      "x": 1.0,
+      "y": 3.0
+    },
+    {
+      "id": 100,
+      "expr": "r3  p0=S/1 p1=P/-2 p2=S/1",
+      "generation": 3,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 6,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": true,
+      "template_starts": [],
+      "x": -19.0,
+      "y": 3.0
+    },
+    {
+      "id": 101,
+      "expr": "r3  p0=S/0 p1=R/0 p2=P/0",
+      "generation": 3,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 6,
+      "out_degree": 27,
+      "terminal": false,
+      "strong_converge": true,
+      "template_starts": [],
+      "x": 2.0,
+      "y": 3.0
+    },
+    {
+      "id": 102,
+      "expr": "r3  p0=S/-2 p1=R/1 p2=R/1",
+      "generation": 3,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 6,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": true,
+      "template_starts": [],
+      "x": -11.0,
+      "y": 3.0
+    },
+    {
+      "id": 103,
+      "expr": "r3  p0=S/-1 p1=R/2 p2=S/-1",
+      "generation": 3,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 6,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": true,
+      "template_starts": [],
+      "x": -15.0,
+      "y": 3.0
+    },
+    {
+      "id": 104,
+      "expr": "r3  p0=S/1 p1=S/1 p2=P/-2",
+      "generation": 3,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 6,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": true,
+      "template_starts": [],
+      "x": -17.0,
+      "y": 3.0
+    },
+    {
+      "id": 105,
+      "expr": "r3  p0=S/-1 p1=S/-1 p2=R/2",
+      "generation": 3,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 6,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": true,
+      "template_starts": [],
+      "x": -21.0,
+      "y": 3.0
+    },
+    {
+      "id": 106,
+      "expr": "r3  p0=S/-2 p1=S/1 p2=S/1",
+      "generation": 3,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 2,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": 6.0,
+      "y": 3.0
+    },
+    {
+      "id": 107,
+      "expr": "r3  p0=P/-1 p1=P/2 p2=P/-1",
+      "generation": 3,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 2,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": 14.0,
+      "y": 3.0
+    },
+    {
+      "id": 108,
+      "expr": "r3  p0=P/-1 p1=P/-1 p2=P/2",
+      "generation": 3,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 2,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": 10.0,
+      "y": 3.0
+    },
+    {
+      "id": 109,
+      "expr": "r3  p0=P/1 p1=P/1 p2=P/-2",
+      "generation": 3,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 2,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": 8.0,
+      "y": 3.0
+    },
+    {
+      "id": 110,
+      "expr": "r3  p0=P/1 p1=P/-2 p2=P/1",
+      "generation": 3,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 2,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": 12.0,
+      "y": 3.0
+    },
+    {
+      "id": 111,
+      "expr": "r3  p0=R/2 p1=R/-1 p2=R/-1",
+      "generation": 3,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 2,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": 16.0,
+      "y": 3.0
+    },
+    {
+      "id": 112,
+      "expr": "r3  p0=S/2 p1=S/-1 p2=S/-1",
+      "generation": 3,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 2,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": -9.0,
+      "y": 3.0
+    },
+    {
+      "id": 113,
+      "expr": "r3  p0=R/1 p1=R/-2 p2=R/1",
+      "generation": 3,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 2,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": -7.0,
+      "y": 3.0
+    },
+    {
+      "id": 114,
+      "expr": "r3  p0=P/-2 p1=P/1 p2=P/1",
+      "generation": 3,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 2,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": 18.0,
+      "y": 3.0
+    },
+    {
+      "id": 115,
+      "expr": "r3  p0=R/-1 p1=R/2 p2=R/-1",
+      "generation": 3,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 2,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": 20.0,
+      "y": 3.0
+    },
+    {
+      "id": 116,
+      "expr": "r3  p0=R/1 p1=R/1 p2=R/-2",
+      "generation": 3,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 2,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": -5.0,
+      "y": 3.0
+    },
+    {
+      "id": 117,
+      "expr": "r3  p0=R/-1 p1=R/-1 p2=R/2",
+      "generation": 3,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 2,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": 22.0,
+      "y": 3.0
+    },
+    {
+      "id": 118,
+      "expr": "r4  p0=R/0 p1=R/0 p2=R/0",
+      "generation": 4,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 7,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": true,
+      "template_starts": [],
+      "x": -4.0,
+      "y": 4.0
+    },
+    {
+      "id": 119,
+      "expr": "r4  p0=R/-1 p1=R/-1 p2=R/2",
+      "generation": 4,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 2,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": -22.0,
+      "y": 4.0
+    },
+    {
+      "id": 120,
+      "expr": "r4  p0=R/1 p1=R/1 p2=R/-2",
+      "generation": 4,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 2,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": -18.0,
+      "y": 4.0
+    },
+    {
+      "id": 121,
+      "expr": "r4  p0=R/-1 p1=R/2 p2=R/-1",
+      "generation": 4,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 2,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": -16.0,
+      "y": 4.0
+    },
+    {
+      "id": 122,
+      "expr": "r4  p0=P/-2 p1=P/1 p2=P/1",
+      "generation": 4,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 2,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": -12.0,
+      "y": 4.0
+    },
+    {
+      "id": 123,
+      "expr": "r4  p0=R/1 p1=R/-2 p2=R/1",
+      "generation": 4,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 2,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": -20.0,
+      "y": 4.0
+    },
+    {
+      "id": 124,
+      "expr": "r4  p0=S/2 p1=S/-1 p2=S/-1",
+      "generation": 4,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 2,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": -14.0,
+      "y": 4.0
+    },
+    {
+      "id": 125,
+      "expr": "r4  p0=S/0 p1=S/0 p2=S/0",
+      "generation": 4,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 7,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": true,
+      "template_starts": [],
+      "x": 4.0,
+      "y": 4.0
+    },
+    {
+      "id": 126,
+      "expr": "r4  p0=S/1 p1=S/1 p2=S/-2",
+      "generation": 4,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 2,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": 7.0,
+      "y": 4.0
+    },
+    {
+      "id": 127,
+      "expr": "r4  p0=S/-1 p1=S/-1 p2=S/2",
+      "generation": 4,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 2,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": 9.0,
+      "y": 4.0
+    },
+    {
+      "id": 128,
+      "expr": "r4  p0=S/1 p1=S/-2 p2=S/1",
+      "generation": 4,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 2,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": 11.0,
+      "y": 4.0
+    },
+    {
+      "id": 129,
+      "expr": "r4  p0=P/2 p1=P/-1 p2=P/-1",
+      "generation": 4,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 2,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": 15.0,
+      "y": 4.0
+    },
+    {
+      "id": 130,
+      "expr": "r4  p0=P/0 p1=P/0 p2=P/0",
+      "generation": 4,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 7,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": true,
+      "template_starts": [],
+      "x": 3.0,
+      "y": 4.0
+    },
+    {
+      "id": 131,
+      "expr": "r4  p0=P/1 p1=P/1 p2=R/-2",
+      "generation": 4,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 6,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": true,
+      "template_starts": [],
+      "x": -6.0,
+      "y": 4.0
+    },
+    {
+      "id": 132,
+      "expr": "r4  p0=P/-1 p1=P/-1 p2=S/2",
+      "generation": 4,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 6,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": true,
+      "template_starts": [],
+      "x": 21.0,
+      "y": 4.0
+    },
+    {
+      "id": 133,
+      "expr": "r4  p0=P/1 p1=R/-2 p2=P/1",
+      "generation": 4,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 6,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": true,
+      "template_starts": [],
+      "x": -8.0,
+      "y": 4.0
+    },
+    {
+      "id": 134,
+      "expr": "r4  p0=P/2 p1=R/-1 p2=R/-1",
+      "generation": 4,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 6,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": true,
+      "template_starts": [],
+      "x": -10.0,
+      "y": 4.0
+    },
+    {
+      "id": 135,
+      "expr": "r4  p0=P/0 p1=R/0 p2=S/0",
+      "generation": 4,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 6,
+      "out_degree": 27,
+      "terminal": false,
+      "strong_converge": true,
+      "template_starts": [],
+      "x": -3.0,
+      "y": 4.0
+    },
+    {
+      "id": 136,
+      "expr": "r4  p0=P/-1 p1=S/2 p2=P/-1",
+      "generation": 4,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 6,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": true,
+      "template_starts": [],
+      "x": 19.0,
+      "y": 4.0
+    },
+    {
+      "id": 137,
+      "expr": "r4  p0=P/0 p1=S/0 p2=R/0",
+      "generation": 4,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 6,
+      "out_degree": 27,
+      "terminal": false,
+      "strong_converge": true,
+      "template_starts": [],
+      "x": -2.0,
+      "y": 4.0
+    },
+    {
+      "id": 138,
+      "expr": "r4  p0=P/-2 p1=S/1 p2=S/1",
+      "generation": 4,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 6,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": true,
+      "template_starts": [],
+      "x": 17.0,
+      "y": 4.0
+    },
+    {
+      "id": 139,
+      "expr": "r4  p0=R/-2 p1=P/1 p2=P/1",
+      "generation": 4,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 6,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": true,
+      "template_starts": [],
+      "x": -11.0,
+      "y": 4.0
+    },
+    {
+      "id": 140,
+      "expr": "r4  p0=R/-1 p1=P/2 p2=R/-1",
+      "generation": 4,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 6,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": true,
+      "template_starts": [],
+      "x": -15.0,
+      "y": 4.0
+    },
+    {
+      "id": 141,
+      "expr": "r4  p0=R/0 p1=P/0 p2=S/0",
+      "generation": 4,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 6,
+      "out_degree": 27,
+      "terminal": false,
+      "strong_converge": true,
+      "template_starts": [],
+      "x": -1.0,
+      "y": 4.0
+    },
+    {
+      "id": 142,
+      "expr": "r4  p0=R/-1 p1=R/-1 p2=P/2",
+      "generation": 4,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 6,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": true,
+      "template_starts": [],
+      "x": -21.0,
+      "y": 4.0
+    },
+    {
+      "id": 143,
+      "expr": "r4  p0=R/1 p1=R/1 p2=S/-2",
+      "generation": 4,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 6,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": true,
+      "template_starts": [],
+      "x": -17.0,
+      "y": 4.0
+    },
+    {
+      "id": 144,
+      "expr": "r4  p0=R/0 p1=S/0 p2=P/0",
+      "generation": 4,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 6,
+      "out_degree": 27,
+      "terminal": false,
+      "strong_converge": true,
+      "template_starts": [],
+      "x": 0.0,
+      "y": 4.0
+    },
+    {
+      "id": 145,
+      "expr": "r4  p0=R/1 p1=S/-2 p2=R/1",
+      "generation": 4,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 6,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": true,
+      "template_starts": [],
+      "x": -19.0,
+      "y": 4.0
+    },
+    {
+      "id": 146,
+      "expr": "r4  p0=R/2 p1=S/-1 p2=S/-1",
+      "generation": 4,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 6,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": true,
+      "template_starts": [],
+      "x": -13.0,
+      "y": 4.0
+    },
+    {
+      "id": 147,
+      "expr": "r4  p0=S/2 p1=P/-1 p2=P/-1",
+      "generation": 4,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 6,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": true,
+      "template_starts": [],
+      "x": 16.0,
+      "y": 4.0
+    },
+    {
+      "id": 148,
+      "expr": "r4  p0=S/0 p1=P/0 p2=R/0",
+      "generation": 4,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 6,
+      "out_degree": 27,
+      "terminal": false,
+      "strong_converge": true,
+      "template_starts": [],
+      "x": 1.0,
+      "y": 4.0
+    },
+    {
+      "id": 149,
+      "expr": "r4  p0=S/1 p1=P/-2 p2=S/1",
+      "generation": 4,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 6,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": true,
+      "template_starts": [],
+      "x": 12.0,
+      "y": 4.0
+    },
+    {
+      "id": 150,
+      "expr": "r4  p0=S/0 p1=R/0 p2=P/0",
+      "generation": 4,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 6,
+      "out_degree": 27,
+      "terminal": false,
+      "strong_converge": true,
+      "template_starts": [],
+      "x": 2.0,
+      "y": 4.0
+    },
+    {
+      "id": 151,
+      "expr": "r4  p0=S/-2 p1=R/1 p2=R/1",
+      "generation": 4,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 6,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": true,
+      "template_starts": [],
+      "x": 5.0,
+      "y": 4.0
+    },
+    {
+      "id": 152,
+      "expr": "r4  p0=S/-1 p1=R/2 p2=S/-1",
+      "generation": 4,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 6,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": true,
+      "template_starts": [],
+      "x": 13.0,
+      "y": 4.0
+    },
+    {
+      "id": 153,
+      "expr": "r4  p0=S/1 p1=S/1 p2=P/-2",
+      "generation": 4,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 6,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": true,
+      "template_starts": [],
+      "x": 8.0,
+      "y": 4.0
+    },
+    {
+      "id": 154,
+      "expr": "r4  p0=S/-1 p1=S/-1 p2=R/2",
+      "generation": 4,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 6,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": true,
+      "template_starts": [],
+      "x": 10.0,
+      "y": 4.0
+    },
+    {
+      "id": 155,
+      "expr": "r4  p0=S/-1 p1=S/2 p2=S/-1",
+      "generation": 4,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 2,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": 14.0,
+      "y": 4.0
+    },
+    {
+      "id": 156,
+      "expr": "r4  p0=R/-2 p1=R/1 p2=R/1",
+      "generation": 4,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 2,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": 6.0,
+      "y": 4.0
+    },
+    {
+      "id": 157,
+      "expr": "r4  p0=S/-2 p1=S/1 p2=S/1",
+      "generation": 4,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 2,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": 18.0,
+      "y": 4.0
+    },
+    {
+      "id": 158,
+      "expr": "r4  p0=P/-1 p1=P/2 p2=P/-1",
+      "generation": 4,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 2,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": 20.0,
+      "y": 4.0
+    },
+    {
+      "id": 159,
+      "expr": "r4  p0=P/-1 p1=P/-1 p2=P/2",
+      "generation": 4,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 2,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": 22.0,
+      "y": 4.0
+    },
+    {
+      "id": 160,
+      "expr": "r4  p0=P/1 p1=P/1 p2=P/-2",
+      "generation": 4,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 2,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": -5.0,
+      "y": 4.0
+    },
+    {
+      "id": 161,
+      "expr": "r4  p0=P/1 p1=P/-2 p2=P/1",
+      "generation": 4,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 2,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": -7.0,
+      "y": 4.0
+    },
+    {
+      "id": 162,
+      "expr": "r4  p0=R/2 p1=R/-1 p2=R/-1",
+      "generation": 4,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 2,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": -9.0,
+      "y": 4.0
+    },
+    {
+      "id": 163,
+      "expr": "r5  p0=P/0 p1=P/0 p2=P/0",
+      "generation": 5,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 7,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": true,
+      "template_starts": [],
+      "x": -4.0,
+      "y": 5.0
+    },
+    {
+      "id": 164,
+      "expr": "r5  p0=P/-1 p1=P/-1 p2=P/2",
+      "generation": 5,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 2,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": -22.0,
+      "y": 5.0
+    },
+    {
+      "id": 165,
+      "expr": "r5  p0=P/1 p1=P/1 p2=P/-2",
+      "generation": 5,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 2,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": -18.0,
+      "y": 5.0
+    },
+    {
+      "id": 166,
+      "expr": "r5  p0=P/-1 p1=P/2 p2=P/-1",
+      "generation": 5,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 2,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": -16.0,
+      "y": 5.0
+    },
+    {
+      "id": 167,
+      "expr": "r5  p0=S/-2 p1=S/1 p2=S/1",
+      "generation": 5,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 2,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": -12.0,
+      "y": 5.0
+    },
+    {
+      "id": 168,
+      "expr": "r5  p0=P/1 p1=P/-2 p2=P/1",
+      "generation": 5,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 2,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": -20.0,
+      "y": 5.0
+    },
+    {
+      "id": 169,
+      "expr": "r5  p0=R/2 p1=R/-1 p2=R/-1",
+      "generation": 5,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 2,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": -14.0,
+      "y": 5.0
+    },
+    {
+      "id": 170,
+      "expr": "r5  p0=R/0 p1=R/0 p2=R/0",
+      "generation": 5,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 7,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": true,
+      "template_starts": [],
+      "x": 4.0,
+      "y": 5.0
+    },
+    {
+      "id": 171,
+      "expr": "r5  p0=R/1 p1=R/1 p2=R/-2",
+      "generation": 5,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 2,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": 7.0,
+      "y": 5.0
+    },
+    {
+      "id": 172,
+      "expr": "r5  p0=R/-1 p1=R/-1 p2=R/2",
+      "generation": 5,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 2,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": 9.0,
+      "y": 5.0
+    },
+    {
+      "id": 173,
+      "expr": "r5  p0=R/1 p1=R/-2 p2=R/1",
+      "generation": 5,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 2,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": 11.0,
+      "y": 5.0
+    },
+    {
+      "id": 174,
+      "expr": "r5  p0=S/2 p1=S/-1 p2=S/-1",
+      "generation": 5,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 2,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": 15.0,
+      "y": 5.0
+    },
+    {
+      "id": 175,
+      "expr": "r5  p0=S/0 p1=S/0 p2=S/0",
+      "generation": 5,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 7,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": true,
+      "template_starts": [],
+      "x": 3.0,
+      "y": 5.0
+    },
+    {
+      "id": 176,
+      "expr": "r5  p0=S/1 p1=S/1 p2=S/-2",
+      "generation": 5,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 2,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": -6.0,
+      "y": 5.0
+    },
+    {
+      "id": 177,
+      "expr": "r5  p0=S/-1 p1=S/-1 p2=S/2",
+      "generation": 5,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 2,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": 21.0,
+      "y": 5.0
+    },
+    {
+      "id": 178,
+      "expr": "r5  p0=S/1 p1=S/-2 p2=S/1",
+      "generation": 5,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 2,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": -8.0,
+      "y": 5.0
+    },
+    {
+      "id": 179,
+      "expr": "r5  p0=P/2 p1=P/-1 p2=P/-1",
+      "generation": 5,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 2,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": -10.0,
+      "y": 5.0
+    },
+    {
+      "id": 180,
+      "expr": "r5  p0=P/1 p1=P/1 p2=R/-2",
+      "generation": 5,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 6,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": true,
+      "template_starts": [],
+      "x": -17.0,
+      "y": 5.0
+    },
+    {
+      "id": 181,
+      "expr": "r5  p0=P/-1 p1=P/-1 p2=S/2",
+      "generation": 5,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 6,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": true,
+      "template_starts": [],
+      "x": -21.0,
+      "y": 5.0
+    },
+    {
+      "id": 182,
+      "expr": "r5  p0=P/1 p1=R/-2 p2=P/1",
+      "generation": 5,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 6,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": true,
+      "template_starts": [],
+      "x": -19.0,
+      "y": 5.0
+    },
+    {
+      "id": 183,
+      "expr": "r5  p0=P/2 p1=R/-1 p2=R/-1",
+      "generation": 5,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 6,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": true,
+      "template_starts": [],
+      "x": -13.0,
+      "y": 5.0
+    },
+    {
+      "id": 184,
+      "expr": "r5  p0=P/0 p1=R/0 p2=S/0",
+      "generation": 5,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 6,
+      "out_degree": 27,
+      "terminal": false,
+      "strong_converge": true,
+      "template_starts": [],
+      "x": -3.0,
+      "y": 5.0
+    },
+    {
+      "id": 185,
+      "expr": "r5  p0=P/-1 p1=S/2 p2=P/-1",
+      "generation": 5,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 6,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": true,
+      "template_starts": [],
+      "x": -15.0,
+      "y": 5.0
+    },
+    {
+      "id": 186,
+      "expr": "r5  p0=P/0 p1=S/0 p2=R/0",
+      "generation": 5,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 6,
+      "out_degree": 27,
+      "terminal": false,
+      "strong_converge": true,
+      "template_starts": [],
+      "x": -2.0,
+      "y": 5.0
+    },
+    {
+      "id": 187,
+      "expr": "r5  p0=P/-2 p1=S/1 p2=S/1",
+      "generation": 5,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 6,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": true,
+      "template_starts": [],
+      "x": -11.0,
+      "y": 5.0
+    },
+    {
+      "id": 188,
+      "expr": "r5  p0=R/-2 p1=P/1 p2=P/1",
+      "generation": 5,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 6,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": true,
+      "template_starts": [],
+      "x": 5.0,
+      "y": 5.0
+    },
+    {
+      "id": 189,
+      "expr": "r5  p0=R/-1 p1=P/2 p2=R/-1",
+      "generation": 5,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 6,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": true,
+      "template_starts": [],
+      "x": 13.0,
+      "y": 5.0
+    },
+    {
+      "id": 190,
+      "expr": "r5  p0=R/0 p1=P/0 p2=S/0",
+      "generation": 5,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 6,
+      "out_degree": 27,
+      "terminal": false,
+      "strong_converge": true,
+      "template_starts": [],
+      "x": -1.0,
+      "y": 5.0
+    },
+    {
+      "id": 191,
+      "expr": "r5  p0=R/-1 p1=R/-1 p2=P/2",
+      "generation": 5,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 6,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": true,
+      "template_starts": [],
+      "x": 10.0,
+      "y": 5.0
+    },
+    {
+      "id": 192,
+      "expr": "r5  p0=R/1 p1=R/1 p2=S/-2",
+      "generation": 5,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 6,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": true,
+      "template_starts": [],
+      "x": 8.0,
+      "y": 5.0
+    },
+    {
+      "id": 193,
+      "expr": "r5  p0=R/0 p1=S/0 p2=P/0",
+      "generation": 5,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 6,
+      "out_degree": 27,
+      "terminal": false,
+      "strong_converge": true,
+      "template_starts": [],
+      "x": 0.0,
+      "y": 5.0
+    },
+    {
+      "id": 194,
+      "expr": "r5  p0=R/1 p1=S/-2 p2=R/1",
+      "generation": 5,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 6,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": true,
+      "template_starts": [],
+      "x": 12.0,
+      "y": 5.0
+    },
+    {
+      "id": 195,
+      "expr": "r5  p0=R/2 p1=S/-1 p2=S/-1",
+      "generation": 5,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 6,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": true,
+      "template_starts": [],
+      "x": 16.0,
+      "y": 5.0
+    },
+    {
+      "id": 196,
+      "expr": "r5  p0=S/2 p1=P/-1 p2=P/-1",
+      "generation": 5,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 6,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": true,
+      "template_starts": [],
+      "x": -9.0,
+      "y": 5.0
+    },
+    {
+      "id": 197,
+      "expr": "r5  p0=S/0 p1=P/0 p2=R/0",
+      "generation": 5,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 6,
+      "out_degree": 27,
+      "terminal": false,
+      "strong_converge": true,
+      "template_starts": [],
+      "x": 1.0,
+      "y": 5.0
+    },
+    {
+      "id": 198,
+      "expr": "r5  p0=S/1 p1=P/-2 p2=S/1",
+      "generation": 5,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 6,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": true,
+      "template_starts": [],
+      "x": -7.0,
+      "y": 5.0
+    },
+    {
+      "id": 199,
+      "expr": "r5  p0=S/0 p1=R/0 p2=P/0",
+      "generation": 5,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 6,
+      "out_degree": 27,
+      "terminal": false,
+      "strong_converge": true,
+      "template_starts": [],
+      "x": 2.0,
+      "y": 5.0
+    },
+    {
+      "id": 200,
+      "expr": "r5  p0=S/-2 p1=R/1 p2=R/1",
+      "generation": 5,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 6,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": true,
+      "template_starts": [],
+      "x": 17.0,
+      "y": 5.0
+    },
+    {
+      "id": 201,
+      "expr": "r5  p0=S/-1 p1=R/2 p2=S/-1",
+      "generation": 5,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 6,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": true,
+      "template_starts": [],
+      "x": 19.0,
+      "y": 5.0
+    },
+    {
+      "id": 202,
+      "expr": "r5  p0=S/1 p1=S/1 p2=P/-2",
+      "generation": 5,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 6,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": true,
+      "template_starts": [],
+      "x": -5.0,
+      "y": 5.0
+    },
+    {
+      "id": 203,
+      "expr": "r5  p0=S/-1 p1=S/-1 p2=R/2",
+      "generation": 5,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 6,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": true,
+      "template_starts": [],
+      "x": 22.0,
+      "y": 5.0
+    },
+    {
+      "id": 204,
+      "expr": "r5  p0=S/-1 p1=S/2 p2=S/-1",
+      "generation": 5,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 2,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": 20.0,
+      "y": 5.0
+    },
+    {
+      "id": 205,
+      "expr": "r5  p0=R/-2 p1=R/1 p2=R/1",
+      "generation": 5,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 2,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": 18.0,
+      "y": 5.0
+    },
+    {
+      "id": 206,
+      "expr": "r5  p0=P/-2 p1=P/1 p2=P/1",
+      "generation": 5,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 2,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": 6.0,
+      "y": 5.0
+    },
+    {
+      "id": 207,
+      "expr": "r5  p0=R/-1 p1=R/2 p2=R/-1",
+      "generation": 5,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 2,
+      "out_degree": 1,
+      "terminal": false,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": 14.0,
+      "y": 5.0
+    },
+    {
+      "id": 208,
+      "expr": "r6 DRAW [0, 1, 2]  p0=S/0 p1=S/0 p2=S/0",
+      "generation": 6,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 7,
+      "out_degree": 0,
+      "terminal": true,
+      "strong_converge": true,
+      "template_starts": [],
+      "x": -13.0,
+      "y": 6.0
+    },
+    {
+      "id": 209,
+      "expr": "r6 END p2  p0=S/-1 p1=S/-1 p2=S/2",
+      "generation": 6,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 2,
+      "out_degree": 0,
+      "terminal": true,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": -22.0,
+      "y": 6.0
+    },
+    {
+      "id": 210,
+      "expr": "r6 DRAW [0, 1]  p0=S/1 p1=S/1 p2=S/-2",
+      "generation": 6,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 2,
+      "out_degree": 0,
+      "terminal": true,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": -20.0,
+      "y": 6.0
+    },
+    {
+      "id": 211,
+      "expr": "r6 END p1  p0=S/-1 p1=S/2 p2=S/-1",
+      "generation": 6,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 2,
+      "out_degree": 0,
+      "terminal": true,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": -19.0,
+      "y": 6.0
+    },
+    {
+      "id": 212,
+      "expr": "r6 DRAW [1, 2]  p0=R/-2 p1=R/1 p2=R/1",
+      "generation": 6,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 2,
+      "out_degree": 0,
+      "terminal": true,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": -17.0,
+      "y": 6.0
+    },
+    {
+      "id": 213,
+      "expr": "r6 DRAW [0, 2]  p0=S/1 p1=S/-2 p2=S/1",
+      "generation": 6,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 2,
+      "out_degree": 0,
+      "terminal": true,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": -21.0,
+      "y": 6.0
+    },
+    {
+      "id": 214,
+      "expr": "r6 END p0  p0=P/2 p1=P/-1 p2=P/-1",
+      "generation": 6,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 2,
+      "out_degree": 0,
+      "terminal": true,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": -18.0,
+      "y": 6.0
+    },
+    {
+      "id": 215,
+      "expr": "r6 DRAW [0, 1, 2]  p0=P/0 p1=P/0 p2=P/0",
+      "generation": 6,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 7,
+      "out_degree": 0,
+      "terminal": true,
+      "strong_converge": true,
+      "template_starts": [],
+      "x": 13.0,
+      "y": 6.0
+    },
+    {
+      "id": 216,
+      "expr": "r6 DRAW [0, 1]  p0=P/1 p1=P/1 p2=P/-2",
+      "generation": 6,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 2,
+      "out_degree": 0,
+      "terminal": true,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": 15.0,
+      "y": 6.0
+    },
+    {
+      "id": 217,
+      "expr": "r6 END p2  p0=P/-1 p1=P/-1 p2=P/2",
+      "generation": 6,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 2,
+      "out_degree": 0,
+      "terminal": true,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": 16.0,
+      "y": 6.0
+    },
+    {
+      "id": 218,
+      "expr": "r6 DRAW [0, 2]  p0=P/1 p1=P/-2 p2=P/1",
+      "generation": 6,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 2,
+      "out_degree": 0,
+      "terminal": true,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": 17.0,
+      "y": 6.0
+    },
+    {
+      "id": 219,
+      "expr": "r6 END p0  p0=R/2 p1=R/-1 p2=R/-1",
+      "generation": 6,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 2,
+      "out_degree": 0,
+      "terminal": true,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": 19.0,
+      "y": 6.0
+    },
+    {
+      "id": 220,
+      "expr": "r6 DRAW [0, 1, 2]  p0=R/0 p1=R/0 p2=R/0",
+      "generation": 6,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 7,
+      "out_degree": 0,
+      "terminal": true,
+      "strong_converge": true,
+      "template_starts": [],
+      "x": 12.0,
+      "y": 6.0
+    },
+    {
+      "id": 221,
+      "expr": "r6 DRAW [0, 1]  p0=R/1 p1=R/1 p2=R/-2",
+      "generation": 6,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 2,
+      "out_degree": 0,
+      "terminal": true,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": -14.0,
+      "y": 6.0
+    },
+    {
+      "id": 222,
+      "expr": "r6 END p2  p0=R/-1 p1=R/-1 p2=R/2",
+      "generation": 6,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 2,
+      "out_degree": 0,
+      "terminal": true,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": 22.0,
+      "y": 6.0
+    },
+    {
+      "id": 223,
+      "expr": "r6 DRAW [0, 2]  p0=R/1 p1=R/-2 p2=R/1",
+      "generation": 6,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 2,
+      "out_degree": 0,
+      "terminal": true,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": -15.0,
+      "y": 6.0
+    },
+    {
+      "id": 224,
+      "expr": "r6 END p0  p0=S/2 p1=S/-1 p2=S/-1",
+      "generation": 6,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 2,
+      "out_degree": 0,
+      "terminal": true,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": -16.0,
+      "y": 6.0
+    },
+    {
+      "id": 225,
+      "expr": "r6 DRAW [0, 1]  p0=P/1 p1=P/1 p2=R/-2",
+      "generation": 6,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 6,
+      "out_degree": 0,
+      "terminal": true,
+      "strong_converge": true,
+      "template_starts": [],
+      "x": -12.0,
+      "y": 6.0
+    },
+    {
+      "id": 226,
+      "expr": "r6 END p2  p0=P/-1 p1=P/-1 p2=S/2",
+      "generation": 6,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 6,
+      "out_degree": 0,
+      "terminal": true,
+      "strong_converge": true,
+      "template_starts": [],
+      "x": -11.0,
+      "y": 6.0
+    },
+    {
+      "id": 227,
+      "expr": "r6 DRAW [0, 2]  p0=P/1 p1=R/-2 p2=P/1",
+      "generation": 6,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 6,
+      "out_degree": 0,
+      "terminal": true,
+      "strong_converge": true,
+      "template_starts": [],
+      "x": -10.0,
+      "y": 6.0
+    },
+    {
+      "id": 228,
+      "expr": "r6 END p0  p0=P/2 p1=R/-1 p2=R/-1",
+      "generation": 6,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 6,
+      "out_degree": 0,
+      "terminal": true,
+      "strong_converge": true,
+      "template_starts": [],
+      "x": -9.0,
+      "y": 6.0
+    },
+    {
+      "id": 229,
+      "expr": "r6 DRAW [0, 1, 2]  p0=P/0 p1=R/0 p2=S/0",
+      "generation": 6,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 6,
+      "out_degree": 0,
+      "terminal": true,
+      "strong_converge": true,
+      "template_starts": [],
+      "x": -8.0,
+      "y": 6.0
+    },
+    {
+      "id": 230,
+      "expr": "r6 END p1  p0=P/-1 p1=S/2 p2=P/-1",
+      "generation": 6,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 6,
+      "out_degree": 0,
+      "terminal": true,
+      "strong_converge": true,
+      "template_starts": [],
+      "x": -7.0,
+      "y": 6.0
+    },
+    {
+      "id": 231,
+      "expr": "r6 DRAW [0, 1, 2]  p0=P/0 p1=S/0 p2=R/0",
+      "generation": 6,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 6,
+      "out_degree": 0,
+      "terminal": true,
+      "strong_converge": true,
+      "template_starts": [],
+      "x": -6.0,
+      "y": 6.0
+    },
+    {
+      "id": 232,
+      "expr": "r6 DRAW [1, 2]  p0=P/-2 p1=S/1 p2=S/1",
+      "generation": 6,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 6,
+      "out_degree": 0,
+      "terminal": true,
+      "strong_converge": true,
+      "template_starts": [],
+      "x": -5.0,
+      "y": 6.0
+    },
+    {
+      "id": 233,
+      "expr": "r6 DRAW [1, 2]  p0=R/-2 p1=P/1 p2=P/1",
+      "generation": 6,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 6,
+      "out_degree": 0,
+      "terminal": true,
+      "strong_converge": true,
+      "template_starts": [],
+      "x": -4.0,
+      "y": 6.0
+    },
+    {
+      "id": 234,
+      "expr": "r6 END p1  p0=R/-1 p1=P/2 p2=R/-1",
+      "generation": 6,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 6,
+      "out_degree": 0,
+      "terminal": true,
+      "strong_converge": true,
+      "template_starts": [],
+      "x": -3.0,
+      "y": 6.0
+    },
+    {
+      "id": 235,
+      "expr": "r6 DRAW [0, 1, 2]  p0=R/0 p1=P/0 p2=S/0",
+      "generation": 6,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 6,
+      "out_degree": 0,
+      "terminal": true,
+      "strong_converge": true,
+      "template_starts": [],
+      "x": -2.0,
+      "y": 6.0
+    },
+    {
+      "id": 236,
+      "expr": "r6 END p2  p0=R/-1 p1=R/-1 p2=P/2",
+      "generation": 6,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 6,
+      "out_degree": 0,
+      "terminal": true,
+      "strong_converge": true,
+      "template_starts": [],
+      "x": -1.0,
+      "y": 6.0
+    },
+    {
+      "id": 237,
+      "expr": "r6 DRAW [0, 1]  p0=R/1 p1=R/1 p2=S/-2",
+      "generation": 6,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 6,
+      "out_degree": 0,
+      "terminal": true,
+      "strong_converge": true,
+      "template_starts": [],
+      "x": 0.0,
+      "y": 6.0
+    },
+    {
+      "id": 238,
+      "expr": "r6 DRAW [0, 1, 2]  p0=R/0 p1=S/0 p2=P/0",
+      "generation": 6,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 6,
+      "out_degree": 0,
+      "terminal": true,
+      "strong_converge": true,
+      "template_starts": [],
+      "x": 1.0,
+      "y": 6.0
+    },
+    {
+      "id": 239,
+      "expr": "r6 DRAW [0, 2]  p0=R/1 p1=S/-2 p2=R/1",
+      "generation": 6,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 6,
+      "out_degree": 0,
+      "terminal": true,
+      "strong_converge": true,
+      "template_starts": [],
+      "x": 2.0,
+      "y": 6.0
+    },
+    {
+      "id": 240,
+      "expr": "r6 END p0  p0=R/2 p1=S/-1 p2=S/-1",
+      "generation": 6,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 6,
+      "out_degree": 0,
+      "terminal": true,
+      "strong_converge": true,
+      "template_starts": [],
+      "x": 3.0,
+      "y": 6.0
+    },
+    {
+      "id": 241,
+      "expr": "r6 END p0  p0=S/2 p1=P/-1 p2=P/-1",
+      "generation": 6,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 6,
+      "out_degree": 0,
+      "terminal": true,
+      "strong_converge": true,
+      "template_starts": [],
+      "x": 4.0,
+      "y": 6.0
+    },
+    {
+      "id": 242,
+      "expr": "r6 DRAW [0, 1, 2]  p0=S/0 p1=P/0 p2=R/0",
+      "generation": 6,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 6,
+      "out_degree": 0,
+      "terminal": true,
+      "strong_converge": true,
+      "template_starts": [],
+      "x": 5.0,
+      "y": 6.0
+    },
+    {
+      "id": 243,
+      "expr": "r6 DRAW [0, 2]  p0=S/1 p1=P/-2 p2=S/1",
+      "generation": 6,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 6,
+      "out_degree": 0,
+      "terminal": true,
+      "strong_converge": true,
+      "template_starts": [],
+      "x": 6.0,
+      "y": 6.0
+    },
+    {
+      "id": 244,
+      "expr": "r6 DRAW [0, 1, 2]  p0=S/0 p1=R/0 p2=P/0",
+      "generation": 6,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 6,
+      "out_degree": 0,
+      "terminal": true,
+      "strong_converge": true,
+      "template_starts": [],
+      "x": 7.0,
+      "y": 6.0
+    },
+    {
+      "id": 245,
+      "expr": "r6 DRAW [1, 2]  p0=S/-2 p1=R/1 p2=R/1",
+      "generation": 6,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 6,
+      "out_degree": 0,
+      "terminal": true,
+      "strong_converge": true,
+      "template_starts": [],
+      "x": 8.0,
+      "y": 6.0
+    },
+    {
+      "id": 246,
+      "expr": "r6 END p1  p0=S/-1 p1=R/2 p2=S/-1",
+      "generation": 6,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 6,
+      "out_degree": 0,
+      "terminal": true,
+      "strong_converge": true,
+      "template_starts": [],
+      "x": 9.0,
+      "y": 6.0
+    },
+    {
+      "id": 247,
+      "expr": "r6 DRAW [0, 1]  p0=S/1 p1=S/1 p2=P/-2",
+      "generation": 6,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 6,
+      "out_degree": 0,
+      "terminal": true,
+      "strong_converge": true,
+      "template_starts": [],
+      "x": 10.0,
+      "y": 6.0
+    },
+    {
+      "id": 248,
+      "expr": "r6 END p2  p0=S/-1 p1=S/-1 p2=R/2",
+      "generation": 6,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 6,
+      "out_degree": 0,
+      "terminal": true,
+      "strong_converge": true,
+      "template_starts": [],
+      "x": 11.0,
+      "y": 6.0
+    },
+    {
+      "id": 249,
+      "expr": "r6 DRAW [1, 2]  p0=S/-2 p1=S/1 p2=S/1",
+      "generation": 6,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 2,
+      "out_degree": 0,
+      "terminal": true,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": 14.0,
+      "y": 6.0
+    },
+    {
+      "id": 250,
+      "expr": "r6 END p1  p0=P/-1 p1=P/2 p2=P/-1",
+      "generation": 6,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 2,
+      "out_degree": 0,
+      "terminal": true,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": 18.0,
+      "y": 6.0
+    },
+    {
+      "id": 251,
+      "expr": "r6 DRAW [1, 2]  p0=P/-2 p1=P/1 p2=P/1",
+      "generation": 6,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 2,
+      "out_degree": 0,
+      "terminal": true,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": 20.0,
+      "y": 6.0
+    },
+    {
+      "id": 252,
+      "expr": "r6 END p1  p0=R/-1 p1=R/2 p2=R/-1",
+      "generation": 6,
+      "labels": [],
+      "pinned": false,
+      "in_degree": 2,
+      "out_degree": 0,
+      "terminal": true,
+      "strong_converge": false,
+      "template_starts": [],
+      "x": 21.0,
+      "y": 6.0
+    }
+  ],
+  "edges": [
+    {
+      "from": 0,
+      "to": 1,
+      "action": "round(R,R,R)",
+      "type": "round"
+    },
+    {
+      "from": 0,
+      "to": 2,
+      "action": "round(R,R,P)",
+      "type": "round"
+    },
+    {
+      "from": 0,
+      "to": 3,
+      "action": "round(R,R,S)",
+      "type": "round"
+    },
+    {
+      "from": 0,
+      "to": 4,
+      "action": "round(R,P,R)",
+      "type": "round"
+    },
+    {
+      "from": 0,
+      "to": 5,
+      "action": "round(R,P,P)",
+      "type": "round"
+    },
+    {
+      "from": 0,
+      "to": 6,
+      "action": "round(R,P,S)",
+      "type": "round"
+    },
+    {
+      "from": 0,
+      "to": 7,
+      "action": "round(R,S,R)",
+      "type": "round"
+    },
+    {
+      "from": 0,
+      "to": 8,
+      "action": "round(R,S,P)",
+      "type": "round"
+    },
+    {
+      "from": 0,
+      "to": 9,
+      "action": "round(R,S,S)",
+      "type": "round"
+    },
+    {
+      "from": 0,
+      "to": 10,
+      "action": "round(P,R,R)",
+      "type": "round"
+    },
+    {
+      "from": 0,
+      "to": 11,
+      "action": "round(P,R,P)",
+      "type": "round"
+    },
+    {
+      "from": 0,
+      "to": 12,
+      "action": "round(P,R,S)",
+      "type": "round"
+    },
+    {
+      "from": 0,
+      "to": 13,
+      "action": "round(P,P,R)",
+      "type": "round"
+    },
+    {
+      "from": 0,
+      "to": 14,
+      "action": "round(P,P,P)",
+      "type": "round"
+    },
+    {
+      "from": 0,
+      "to": 15,
+      "action": "round(P,P,S)",
+      "type": "round"
+    },
+    {
+      "from": 0,
+      "to": 16,
+      "action": "round(P,S,R)",
+      "type": "round"
+    },
+    {
+      "from": 0,
+      "to": 17,
+      "action": "round(P,S,P)",
+      "type": "round"
+    },
+    {
+      "from": 0,
+      "to": 18,
+      "action": "round(P,S,S)",
+      "type": "round"
+    },
+    {
+      "from": 0,
+      "to": 19,
+      "action": "round(S,R,R)",
+      "type": "round"
+    },
+    {
+      "from": 0,
+      "to": 20,
+      "action": "round(S,R,P)",
+      "type": "round"
+    },
+    {
+      "from": 0,
+      "to": 21,
+      "action": "round(S,R,S)",
+      "type": "round"
+    },
+    {
+      "from": 0,
+      "to": 22,
+      "action": "round(S,P,R)",
+      "type": "round"
+    },
+    {
+      "from": 0,
+      "to": 23,
+      "action": "round(S,P,P)",
+      "type": "round"
+    },
+    {
+      "from": 0,
+      "to": 24,
+      "action": "round(S,P,S)",
+      "type": "round"
+    },
+    {
+      "from": 0,
+      "to": 25,
+      "action": "round(S,S,R)",
+      "type": "round"
+    },
+    {
+      "from": 0,
+      "to": 26,
+      "action": "round(S,S,P)",
+      "type": "round"
+    },
+    {
+      "from": 0,
+      "to": 27,
+      "action": "round(S,S,S)",
+      "type": "round"
+    },
+    {
+      "from": 1,
+      "to": 28,
+      "action": "round(P,P,P)",
+      "type": "round"
+    },
+    {
+      "from": 2,
+      "to": 29,
+      "action": "round(P,P,P)",
+      "type": "round"
+    },
+    {
+      "from": 3,
+      "to": 30,
+      "action": "round(P,P,P)",
+      "type": "round"
+    },
+    {
+      "from": 4,
+      "to": 31,
+      "action": "round(P,P,P)",
+      "type": "round"
+    },
+    {
+      "from": 5,
+      "to": 32,
+      "action": "round(S,S,S)",
+      "type": "round"
+    },
+    {
+      "from": 6,
+      "to": 28,
+      "action": "round(P,P,P)",
+      "type": "round"
+    },
+    {
+      "from": 6,
+      "to": 33,
+      "action": "round(P,P,R)",
+      "type": "round"
+    },
+    {
+      "from": 6,
+      "to": 34,
+      "action": "round(P,P,S)",
+      "type": "round"
+    },
+    {
+      "from": 6,
+      "to": 35,
+      "action": "round(P,R,P)",
+      "type": "round"
+    },
+    {
+      "from": 6,
+      "to": 36,
+      "action": "round(P,R,R)",
+      "type": "round"
+    },
+    {
+      "from": 6,
+      "to": 37,
+      "action": "round(P,R,S)",
+      "type": "round"
+    },
+    {
+      "from": 6,
+      "to": 38,
+      "action": "round(P,S,P)",
+      "type": "round"
+    },
+    {
+      "from": 6,
+      "to": 39,
+      "action": "round(P,S,R)",
+      "type": "round"
+    },
+    {
+      "from": 6,
+      "to": 40,
+      "action": "round(P,S,S)",
+      "type": "round"
+    },
+    {
+      "from": 6,
+      "to": 41,
+      "action": "round(R,P,P)",
+      "type": "round"
+    },
+    {
+      "from": 6,
+      "to": 42,
+      "action": "round(R,P,R)",
+      "type": "round"
+    },
+    {
+      "from": 6,
+      "to": 43,
+      "action": "round(R,P,S)",
+      "type": "round"
+    },
+    {
+      "from": 6,
+      "to": 44,
+      "action": "round(R,R,P)",
+      "type": "round"
+    },
+    {
+      "from": 6,
+      "to": 45,
+      "action": "round(R,R,R)",
+      "type": "round"
+    },
+    {
+      "from": 6,
+      "to": 46,
+      "action": "round(R,R,S)",
+      "type": "round"
+    },
+    {
+      "from": 6,
+      "to": 47,
+      "action": "round(R,S,P)",
+      "type": "round"
+    },
+    {
+      "from": 6,
+      "to": 48,
+      "action": "round(R,S,R)",
+      "type": "round"
+    },
+    {
+      "from": 6,
+      "to": 49,
+      "action": "round(R,S,S)",
+      "type": "round"
+    },
+    {
+      "from": 6,
+      "to": 50,
+      "action": "round(S,P,P)",
+      "type": "round"
+    },
+    {
+      "from": 6,
+      "to": 51,
+      "action": "round(S,P,R)",
+      "type": "round"
+    },
+    {
+      "from": 6,
+      "to": 52,
+      "action": "round(S,P,S)",
+      "type": "round"
+    },
+    {
+      "from": 6,
+      "to": 53,
+      "action": "round(S,R,P)",
+      "type": "round"
+    },
+    {
+      "from": 6,
+      "to": 54,
+      "action": "round(S,R,R)",
+      "type": "round"
+    },
+    {
+      "from": 6,
+      "to": 55,
+      "action": "round(S,R,S)",
+      "type": "round"
+    },
+    {
+      "from": 6,
+      "to": 56,
+      "action": "round(S,S,P)",
+      "type": "round"
+    },
+    {
+      "from": 6,
+      "to": 57,
+      "action": "round(S,S,R)",
+      "type": "round"
+    },
+    {
+      "from": 6,
+      "to": 58,
+      "action": "round(S,S,S)",
+      "type": "round"
+    },
+    {
+      "from": 7,
+      "to": 59,
+      "action": "round(P,P,P)",
+      "type": "round"
+    },
+    {
+      "from": 8,
+      "to": 28,
+      "action": "round(P,P,P)",
+      "type": "round"
+    },
+    {
+      "from": 8,
+      "to": 33,
+      "action": "round(P,P,R)",
+      "type": "round"
+    },
+    {
+      "from": 8,
+      "to": 34,
+      "action": "round(P,P,S)",
+      "type": "round"
+    },
+    {
+      "from": 8,
+      "to": 35,
+      "action": "round(P,R,P)",
+      "type": "round"
+    },
+    {
+      "from": 8,
+      "to": 36,
+      "action": "round(P,R,R)",
+      "type": "round"
+    },
+    {
+      "from": 8,
+      "to": 37,
+      "action": "round(P,R,S)",
+      "type": "round"
+    },
+    {
+      "from": 8,
+      "to": 38,
+      "action": "round(P,S,P)",
+      "type": "round"
+    },
+    {
+      "from": 8,
+      "to": 39,
+      "action": "round(P,S,R)",
+      "type": "round"
+    },
+    {
+      "from": 8,
+      "to": 40,
+      "action": "round(P,S,S)",
+      "type": "round"
+    },
+    {
+      "from": 8,
+      "to": 41,
+      "action": "round(R,P,P)",
+      "type": "round"
+    },
+    {
+      "from": 8,
+      "to": 42,
+      "action": "round(R,P,R)",
+      "type": "round"
+    },
+    {
+      "from": 8,
+      "to": 43,
+      "action": "round(R,P,S)",
+      "type": "round"
+    },
+    {
+      "from": 8,
+      "to": 44,
+      "action": "round(R,R,P)",
+      "type": "round"
+    },
+    {
+      "from": 8,
+      "to": 45,
+      "action": "round(R,R,R)",
+      "type": "round"
+    },
+    {
+      "from": 8,
+      "to": 46,
+      "action": "round(R,R,S)",
+      "type": "round"
+    },
+    {
+      "from": 8,
+      "to": 47,
+      "action": "round(R,S,P)",
+      "type": "round"
+    },
+    {
+      "from": 8,
+      "to": 48,
+      "action": "round(R,S,R)",
+      "type": "round"
+    },
+    {
+      "from": 8,
+      "to": 49,
+      "action": "round(R,S,S)",
+      "type": "round"
+    },
+    {
+      "from": 8,
+      "to": 50,
+      "action": "round(S,P,P)",
+      "type": "round"
+    },
+    {
+      "from": 8,
+      "to": 51,
+      "action": "round(S,P,R)",
+      "type": "round"
+    },
+    {
+      "from": 8,
+      "to": 52,
+      "action": "round(S,P,S)",
+      "type": "round"
+    },
+    {
+      "from": 8,
+      "to": 53,
+      "action": "round(S,R,P)",
+      "type": "round"
+    },
+    {
+      "from": 8,
+      "to": 54,
+      "action": "round(S,R,R)",
+      "type": "round"
+    },
+    {
+      "from": 8,
+      "to": 55,
+      "action": "round(S,R,S)",
+      "type": "round"
+    },
+    {
+      "from": 8,
+      "to": 56,
+      "action": "round(S,S,P)",
+      "type": "round"
+    },
+    {
+      "from": 8,
+      "to": 57,
+      "action": "round(S,S,R)",
+      "type": "round"
+    },
+    {
+      "from": 8,
+      "to": 58,
+      "action": "round(S,S,S)",
+      "type": "round"
+    },
+    {
+      "from": 9,
+      "to": 60,
+      "action": "round(R,R,R)",
+      "type": "round"
+    },
+    {
+      "from": 10,
+      "to": 61,
+      "action": "round(P,P,P)",
+      "type": "round"
+    },
+    {
+      "from": 11,
+      "to": 62,
+      "action": "round(S,S,S)",
+      "type": "round"
+    },
+    {
+      "from": 12,
+      "to": 28,
+      "action": "round(P,P,P)",
+      "type": "round"
+    },
+    {
+      "from": 12,
+      "to": 33,
+      "action": "round(P,P,R)",
+      "type": "round"
+    },
+    {
+      "from": 12,
+      "to": 34,
+      "action": "round(P,P,S)",
+      "type": "round"
+    },
+    {
+      "from": 12,
+      "to": 35,
+      "action": "round(P,R,P)",
+      "type": "round"
+    },
+    {
+      "from": 12,
+      "to": 36,
+      "action": "round(P,R,R)",
+      "type": "round"
+    },
+    {
+      "from": 12,
+      "to": 37,
+      "action": "round(P,R,S)",
+      "type": "round"
+    },
+    {
+      "from": 12,
+      "to": 38,
+      "action": "round(P,S,P)",
+      "type": "round"
+    },
+    {
+      "from": 12,
+      "to": 39,
+      "action": "round(P,S,R)",
+      "type": "round"
+    },
+    {
+      "from": 12,
+      "to": 40,
+      "action": "round(P,S,S)",
+      "type": "round"
+    },
+    {
+      "from": 12,
+      "to": 41,
+      "action": "round(R,P,P)",
+      "type": "round"
+    },
+    {
+      "from": 12,
+      "to": 42,
+      "action": "round(R,P,R)",
+      "type": "round"
+    },
+    {
+      "from": 12,
+      "to": 43,
+      "action": "round(R,P,S)",
+      "type": "round"
+    },
+    {
+      "from": 12,
+      "to": 44,
+      "action": "round(R,R,P)",
+      "type": "round"
+    },
+    {
+      "from": 12,
+      "to": 45,
+      "action": "round(R,R,R)",
+      "type": "round"
+    },
+    {
+      "from": 12,
+      "to": 46,
+      "action": "round(R,R,S)",
+      "type": "round"
+    },
+    {
+      "from": 12,
+      "to": 47,
+      "action": "round(R,S,P)",
+      "type": "round"
+    },
+    {
+      "from": 12,
+      "to": 48,
+      "action": "round(R,S,R)",
+      "type": "round"
+    },
+    {
+      "from": 12,
+      "to": 49,
+      "action": "round(R,S,S)",
+      "type": "round"
+    },
+    {
+      "from": 12,
+      "to": 50,
+      "action": "round(S,P,P)",
+      "type": "round"
+    },
+    {
+      "from": 12,
+      "to": 51,
+      "action": "round(S,P,R)",
+      "type": "round"
+    },
+    {
+      "from": 12,
+      "to": 52,
+      "action": "round(S,P,S)",
+      "type": "round"
+    },
+    {
+      "from": 12,
+      "to": 53,
+      "action": "round(S,R,P)",
+      "type": "round"
+    },
+    {
+      "from": 12,
+      "to": 54,
+      "action": "round(S,R,R)",
+      "type": "round"
+    },
+    {
+      "from": 12,
+      "to": 55,
+      "action": "round(S,R,S)",
+      "type": "round"
+    },
+    {
+      "from": 12,
+      "to": 56,
+      "action": "round(S,S,P)",
+      "type": "round"
+    },
+    {
+      "from": 12,
+      "to": 57,
+      "action": "round(S,S,R)",
+      "type": "round"
+    },
+    {
+      "from": 12,
+      "to": 58,
+      "action": "round(S,S,S)",
+      "type": "round"
+    },
+    {
+      "from": 13,
+      "to": 63,
+      "action": "round(S,S,S)",
+      "type": "round"
+    },
+    {
+      "from": 14,
+      "to": 58,
+      "action": "round(S,S,S)",
+      "type": "round"
+    },
+    {
+      "from": 15,
+      "to": 64,
+      "action": "round(S,S,S)",
+      "type": "round"
+    },
+    {
+      "from": 16,
+      "to": 28,
+      "action": "round(P,P,P)",
+      "type": "round"
+    },
+    {
+      "from": 16,
+      "to": 33,
+      "action": "round(P,P,R)",
+      "type": "round"
+    },
+    {
+      "from": 16,
+      "to": 34,
+      "action": "round(P,P,S)",
+      "type": "round"
+    },
+    {
+      "from": 16,
+      "to": 35,
+      "action": "round(P,R,P)",
+      "type": "round"
+    },
+    {
+      "from": 16,
+      "to": 36,
+      "action": "round(P,R,R)",
+      "type": "round"
+    },
+    {
+      "from": 16,
+      "to": 37,
+      "action": "round(P,R,S)",
+      "type": "round"
+    },
+    {
+      "from": 16,
+      "to": 38,
+      "action": "round(P,S,P)",
+      "type": "round"
+    },
+    {
+      "from": 16,
+      "to": 39,
+      "action": "round(P,S,R)",
+      "type": "round"
+    },
+    {
+      "from": 16,
+      "to": 40,
+      "action": "round(P,S,S)",
+      "type": "round"
+    },
+    {
+      "from": 16,
+      "to": 41,
+      "action": "round(R,P,P)",
+      "type": "round"
+    },
+    {
+      "from": 16,
+      "to": 42,
+      "action": "round(R,P,R)",
+      "type": "round"
+    },
+    {
+      "from": 16,
+      "to": 43,
+      "action": "round(R,P,S)",
+      "type": "round"
+    },
+    {
+      "from": 16,
+      "to": 44,
+      "action": "round(R,R,P)",
+      "type": "round"
+    },
+    {
+      "from": 16,
+      "to": 45,
+      "action": "round(R,R,R)",
+      "type": "round"
+    },
+    {
+      "from": 16,
+      "to": 46,
+      "action": "round(R,R,S)",
+      "type": "round"
+    },
+    {
+      "from": 16,
+      "to": 47,
+      "action": "round(R,S,P)",
+      "type": "round"
+    },
+    {
+      "from": 16,
+      "to": 48,
+      "action": "round(R,S,R)",
+      "type": "round"
+    },
+    {
+      "from": 16,
+      "to": 49,
+      "action": "round(R,S,S)",
+      "type": "round"
+    },
+    {
+      "from": 16,
+      "to": 50,
+      "action": "round(S,P,P)",
+      "type": "round"
+    },
+    {
+      "from": 16,
+      "to": 51,
+      "action": "round(S,P,R)",
+      "type": "round"
+    },
+    {
+      "from": 16,
+      "to": 52,
+      "action": "round(S,P,S)",
+      "type": "round"
+    },
+    {
+      "from": 16,
+      "to": 53,
+      "action": "round(S,R,P)",
+      "type": "round"
+    },
+    {
+      "from": 16,
+      "to": 54,
+      "action": "round(S,R,R)",
+      "type": "round"
+    },
+    {
+      "from": 16,
+      "to": 55,
+      "action": "round(S,R,S)",
+      "type": "round"
+    },
+    {
+      "from": 16,
+      "to": 56,
+      "action": "round(S,S,P)",
+      "type": "round"
+    },
+    {
+      "from": 16,
+      "to": 57,
+      "action": "round(S,S,R)",
+      "type": "round"
+    },
+    {
+      "from": 16,
+      "to": 58,
+      "action": "round(S,S,S)",
+      "type": "round"
+    },
+    {
+      "from": 17,
+      "to": 65,
+      "action": "round(S,S,S)",
+      "type": "round"
+    },
+    {
+      "from": 18,
+      "to": 66,
+      "action": "round(R,R,R)",
+      "type": "round"
+    },
+    {
+      "from": 19,
+      "to": 67,
+      "action": "round(P,P,P)",
+      "type": "round"
+    },
+    {
+      "from": 20,
+      "to": 28,
+      "action": "round(P,P,P)",
+      "type": "round"
+    },
+    {
+      "from": 20,
+      "to": 33,
+      "action": "round(P,P,R)",
+      "type": "round"
+    },
+    {
+      "from": 20,
+      "to": 34,
+      "action": "round(P,P,S)",
+      "type": "round"
+    },
+    {
+      "from": 20,
+      "to": 35,
+      "action": "round(P,R,P)",
+      "type": "round"
+    },
+    {
+      "from": 20,
+      "to": 36,
+      "action": "round(P,R,R)",
+      "type": "round"
+    },
+    {
+      "from": 20,
+      "to": 37,
+      "action": "round(P,R,S)",
+      "type": "round"
+    },
+    {
+      "from": 20,
+      "to": 38,
+      "action": "round(P,S,P)",
+      "type": "round"
+    },
+    {
+      "from": 20,
+      "to": 39,
+      "action": "round(P,S,R)",
+      "type": "round"
+    },
+    {
+      "from": 20,
+      "to": 40,
+      "action": "round(P,S,S)",
+      "type": "round"
+    },
+    {
+      "from": 20,
+      "to": 41,
+      "action": "round(R,P,P)",
+      "type": "round"
+    },
+    {
+      "from": 20,
+      "to": 42,
+      "action": "round(R,P,R)",
+      "type": "round"
+    },
+    {
+      "from": 20,
+      "to": 43,
+      "action": "round(R,P,S)",
+      "type": "round"
+    },
+    {
+      "from": 20,
+      "to": 44,
+      "action": "round(R,R,P)",
+      "type": "round"
+    },
+    {
+      "from": 20,
+      "to": 45,
+      "action": "round(R,R,R)",
+      "type": "round"
+    },
+    {
+      "from": 20,
+      "to": 46,
+      "action": "round(R,R,S)",
+      "type": "round"
+    },
+    {
+      "from": 20,
+      "to": 47,
+      "action": "round(R,S,P)",
+      "type": "round"
+    },
+    {
+      "from": 20,
+      "to": 48,
+      "action": "round(R,S,R)",
+      "type": "round"
+    },
+    {
+      "from": 20,
+      "to": 49,
+      "action": "round(R,S,S)",
+      "type": "round"
+    },
+    {
+      "from": 20,
+      "to": 50,
+      "action": "round(S,P,P)",
+      "type": "round"
+    },
+    {
+      "from": 20,
+      "to": 51,
+      "action": "round(S,P,R)",
+      "type": "round"
+    },
+    {
+      "from": 20,
+      "to": 52,
+      "action": "round(S,P,S)",
+      "type": "round"
+    },
+    {
+      "from": 20,
+      "to": 53,
+      "action": "round(S,R,P)",
+      "type": "round"
+    },
+    {
+      "from": 20,
+      "to": 54,
+      "action": "round(S,R,R)",
+      "type": "round"
+    },
+    {
+      "from": 20,
+      "to": 55,
+      "action": "round(S,R,S)",
+      "type": "round"
+    },
+    {
+      "from": 20,
+      "to": 56,
+      "action": "round(S,S,P)",
+      "type": "round"
+    },
+    {
+      "from": 20,
+      "to": 57,
+      "action": "round(S,S,R)",
+      "type": "round"
+    },
+    {
+      "from": 20,
+      "to": 58,
+      "action": "round(S,S,S)",
+      "type": "round"
+    },
+    {
+      "from": 21,
+      "to": 68,
+      "action": "round(R,R,R)",
+      "type": "round"
+    },
+    {
+      "from": 22,
+      "to": 28,
+      "action": "round(P,P,P)",
+      "type": "round"
+    },
+    {
+      "from": 22,
+      "to": 33,
+      "action": "round(P,P,R)",
+      "type": "round"
+    },
+    {
+      "from": 22,
+      "to": 34,
+      "action": "round(P,P,S)",
+      "type": "round"
+    },
+    {
+      "from": 22,
+      "to": 35,
+      "action": "round(P,R,P)",
+      "type": "round"
+    },
+    {
+      "from": 22,
+      "to": 36,
+      "action": "round(P,R,R)",
+      "type": "round"
+    },
+    {
+      "from": 22,
+      "to": 37,
+      "action": "round(P,R,S)",
+      "type": "round"
+    },
+    {
+      "from": 22,
+      "to": 38,
+      "action": "round(P,S,P)",
+      "type": "round"
+    },
+    {
+      "from": 22,
+      "to": 39,
+      "action": "round(P,S,R)",
+      "type": "round"
+    },
+    {
+      "from": 22,
+      "to": 40,
+      "action": "round(P,S,S)",
+      "type": "round"
+    },
+    {
+      "from": 22,
+      "to": 41,
+      "action": "round(R,P,P)",
+      "type": "round"
+    },
+    {
+      "from": 22,
+      "to": 42,
+      "action": "round(R,P,R)",
+      "type": "round"
+    },
+    {
+      "from": 22,
+      "to": 43,
+      "action": "round(R,P,S)",
+      "type": "round"
+    },
+    {
+      "from": 22,
+      "to": 44,
+      "action": "round(R,R,P)",
+      "type": "round"
+    },
+    {
+      "from": 22,
+      "to": 45,
+      "action": "round(R,R,R)",
+      "type": "round"
+    },
+    {
+      "from": 22,
+      "to": 46,
+      "action": "round(R,R,S)",
+      "type": "round"
+    },
+    {
+      "from": 22,
+      "to": 47,
+      "action": "round(R,S,P)",
+      "type": "round"
+    },
+    {
+      "from": 22,
+      "to": 48,
+      "action": "round(R,S,R)",
+      "type": "round"
+    },
+    {
+      "from": 22,
+      "to": 49,
+      "action": "round(R,S,S)",
+      "type": "round"
+    },
+    {
+      "from": 22,
+      "to": 50,
+      "action": "round(S,P,P)",
+      "type": "round"
+    },
+    {
+      "from": 22,
+      "to": 51,
+      "action": "round(S,P,R)",
+      "type": "round"
+    },
+    {
+      "from": 22,
+      "to": 52,
+      "action": "round(S,P,S)",
+      "type": "round"
+    },
+    {
+      "from": 22,
+      "to": 53,
+      "action": "round(S,R,P)",
+      "type": "round"
+    },
+    {
+      "from": 22,
+      "to": 54,
+      "action": "round(S,R,R)",
+      "type": "round"
+    },
+    {
+      "from": 22,
+      "to": 55,
+      "action": "round(S,R,S)",
+      "type": "round"
+    },
+    {
+      "from": 22,
+      "to": 56,
+      "action": "round(S,S,P)",
+      "type": "round"
+    },
+    {
+      "from": 22,
+      "to": 57,
+      "action": "round(S,S,R)",
+      "type": "round"
+    },
+    {
+      "from": 22,
+      "to": 58,
+      "action": "round(S,S,S)",
+      "type": "round"
+    },
+    {
+      "from": 23,
+      "to": 69,
+      "action": "round(S,S,S)",
+      "type": "round"
+    },
+    {
+      "from": 24,
+      "to": 70,
+      "action": "round(R,R,R)",
+      "type": "round"
+    },
+    {
+      "from": 25,
+      "to": 71,
+      "action": "round(R,R,R)",
+      "type": "round"
+    },
+    {
+      "from": 26,
+      "to": 72,
+      "action": "round(R,R,R)",
+      "type": "round"
+    },
+    {
+      "from": 27,
+      "to": 45,
+      "action": "round(R,R,R)",
+      "type": "round"
+    },
+    {
+      "from": 28,
+      "to": 73,
+      "action": "round(S,S,S)",
+      "type": "round"
+    },
+    {
+      "from": 29,
+      "to": 74,
+      "action": "round(S,S,S)",
+      "type": "round"
+    },
+    {
+      "from": 30,
+      "to": 75,
+      "action": "round(S,S,S)",
+      "type": "round"
+    },
+    {
+      "from": 31,
+      "to": 76,
+      "action": "round(S,S,S)",
+      "type": "round"
+    },
+    {
+      "from": 32,
+      "to": 77,
+      "action": "round(R,R,R)",
+      "type": "round"
+    },
+    {
+      "from": 33,
+      "to": 75,
+      "action": "round(S,S,S)",
+      "type": "round"
+    },
+    {
+      "from": 34,
+      "to": 74,
+      "action": "round(S,S,S)",
+      "type": "round"
+    },
+    {
+      "from": 35,
+      "to": 78,
+      "action": "round(S,S,S)",
+      "type": "round"
+    },
+    {
+      "from": 36,
+      "to": 79,
+      "action": "round(P,P,P)",
+      "type": "round"
+    },
+    {
+      "from": 37,
+      "to": 80,
+      "action": "round(P,P,P)",
+      "type": "round"
+    },
+    {
+      "from": 37,
+      "to": 81,
+      "action": "round(P,P,R)",
+      "type": "round"
+    },
+    {
+      "from": 37,
+      "to": 82,
+      "action": "round(P,P,S)",
+      "type": "round"
+    },
+    {
+      "from": 37,
+      "to": 83,
+      "action": "round(P,R,P)",
+      "type": "round"
+    },
+    {
+      "from": 37,
+      "to": 84,
+      "action": "round(P,R,R)",
+      "type": "round"
+    },
+    {
+      "from": 37,
+      "to": 85,
+      "action": "round(P,R,S)",
+      "type": "round"
+    },
+    {
+      "from": 37,
+      "to": 86,
+      "action": "round(P,S,P)",
+      "type": "round"
+    },
+    {
+      "from": 37,
+      "to": 87,
+      "action": "round(P,S,R)",
+      "type": "round"
+    },
+    {
+      "from": 37,
+      "to": 88,
+      "action": "round(P,S,S)",
+      "type": "round"
+    },
+    {
+      "from": 37,
+      "to": 89,
+      "action": "round(R,P,P)",
+      "type": "round"
+    },
+    {
+      "from": 37,
+      "to": 90,
+      "action": "round(R,P,R)",
+      "type": "round"
+    },
+    {
+      "from": 37,
+      "to": 91,
+      "action": "round(R,P,S)",
+      "type": "round"
+    },
+    {
+      "from": 37,
+      "to": 92,
+      "action": "round(R,R,P)",
+      "type": "round"
+    },
+    {
+      "from": 37,
+      "to": 93,
+      "action": "round(R,R,R)",
+      "type": "round"
+    },
+    {
+      "from": 37,
+      "to": 94,
+      "action": "round(R,R,S)",
+      "type": "round"
+    },
+    {
+      "from": 37,
+      "to": 95,
+      "action": "round(R,S,P)",
+      "type": "round"
+    },
+    {
+      "from": 37,
+      "to": 96,
+      "action": "round(R,S,R)",
+      "type": "round"
+    },
+    {
+      "from": 37,
+      "to": 97,
+      "action": "round(R,S,S)",
+      "type": "round"
+    },
+    {
+      "from": 37,
+      "to": 98,
+      "action": "round(S,P,P)",
+      "type": "round"
+    },
+    {
+      "from": 37,
+      "to": 99,
+      "action": "round(S,P,R)",
+      "type": "round"
+    },
+    {
+      "from": 37,
+      "to": 100,
+      "action": "round(S,P,S)",
+      "type": "round"
+    },
+    {
+      "from": 37,
+      "to": 101,
+      "action": "round(S,R,P)",
+      "type": "round"
+    },
+    {
+      "from": 37,
+      "to": 102,
+      "action": "round(S,R,R)",
+      "type": "round"
+    },
+    {
+      "from": 37,
+      "to": 103,
+      "action": "round(S,R,S)",
+      "type": "round"
+    },
+    {
+      "from": 37,
+      "to": 104,
+      "action": "round(S,S,P)",
+      "type": "round"
+    },
+    {
+      "from": 37,
+      "to": 105,
+      "action": "round(S,S,R)",
+      "type": "round"
+    },
+    {
+      "from": 37,
+      "to": 73,
+      "action": "round(S,S,S)",
+      "type": "round"
+    },
+    {
+      "from": 38,
+      "to": 76,
+      "action": "round(S,S,S)",
+      "type": "round"
+    },
+    {
+      "from": 39,
+      "to": 80,
+      "action": "round(P,P,P)",
+      "type": "round"
+    },
+    {
+      "from": 39,
+      "to": 81,
+      "action": "round(P,P,R)",
+      "type": "round"
+    },
+    {
+      "from": 39,
+      "to": 82,
+      "action": "round(P,P,S)",
+      "type": "round"
+    },
+    {
+      "from": 39,
+      "to": 83,
+      "action": "round(P,R,P)",
+      "type": "round"
+    },
+    {
+      "from": 39,
+      "to": 84,
+      "action": "round(P,R,R)",
+      "type": "round"
+    },
+    {
+      "from": 39,
+      "to": 85,
+      "action": "round(P,R,S)",
+      "type": "round"
+    },
+    {
+      "from": 39,
+      "to": 86,
+      "action": "round(P,S,P)",
+      "type": "round"
+    },
+    {
+      "from": 39,
+      "to": 87,
+      "action": "round(P,S,R)",
+      "type": "round"
+    },
+    {
+      "from": 39,
+      "to": 88,
+      "action": "round(P,S,S)",
+      "type": "round"
+    },
+    {
+      "from": 39,
+      "to": 89,
+      "action": "round(R,P,P)",
+      "type": "round"
+    },
+    {
+      "from": 39,
+      "to": 90,
+      "action": "round(R,P,R)",
+      "type": "round"
+    },
+    {
+      "from": 39,
+      "to": 91,
+      "action": "round(R,P,S)",
+      "type": "round"
+    },
+    {
+      "from": 39,
+      "to": 92,
+      "action": "round(R,R,P)",
+      "type": "round"
+    },
+    {
+      "from": 39,
+      "to": 93,
+      "action": "round(R,R,R)",
+      "type": "round"
+    },
+    {
+      "from": 39,
+      "to": 94,
+      "action": "round(R,R,S)",
+      "type": "round"
+    },
+    {
+      "from": 39,
+      "to": 95,
+      "action": "round(R,S,P)",
+      "type": "round"
+    },
+    {
+      "from": 39,
+      "to": 96,
+      "action": "round(R,S,R)",
+      "type": "round"
+    },
+    {
+      "from": 39,
+      "to": 97,
+      "action": "round(R,S,S)",
+      "type": "round"
+    },
+    {
+      "from": 39,
+      "to": 98,
+      "action": "round(S,P,P)",
+      "type": "round"
+    },
+    {
+      "from": 39,
+      "to": 99,
+      "action": "round(S,P,R)",
+      "type": "round"
+    },
+    {
+      "from": 39,
+      "to": 100,
+      "action": "round(S,P,S)",
+      "type": "round"
+    },
+    {
+      "from": 39,
+      "to": 101,
+      "action": "round(S,R,P)",
+      "type": "round"
+    },
+    {
+      "from": 39,
+      "to": 102,
+      "action": "round(S,R,R)",
+      "type": "round"
+    },
+    {
+      "from": 39,
+      "to": 103,
+      "action": "round(S,R,S)",
+      "type": "round"
+    },
+    {
+      "from": 39,
+      "to": 104,
+      "action": "round(S,S,P)",
+      "type": "round"
+    },
+    {
+      "from": 39,
+      "to": 105,
+      "action": "round(S,S,R)",
+      "type": "round"
+    },
+    {
+      "from": 39,
+      "to": 73,
+      "action": "round(S,S,S)",
+      "type": "round"
+    },
+    {
+      "from": 40,
+      "to": 77,
+      "action": "round(R,R,R)",
+      "type": "round"
+    },
+    {
+      "from": 41,
+      "to": 106,
+      "action": "round(S,S,S)",
+      "type": "round"
+    },
+    {
+      "from": 42,
+      "to": 107,
+      "action": "round(P,P,P)",
+      "type": "round"
+    },
+    {
+      "from": 43,
+      "to": 80,
+      "action": "round(P,P,P)",
+      "type": "round"
+    },
+    {
+      "from": 43,
+      "to": 81,
+      "action": "round(P,P,R)",
+      "type": "round"
+    },
+    {
+      "from": 43,
+      "to": 82,
+      "action": "round(P,P,S)",
+      "type": "round"
+    },
+    {
+      "from": 43,
+      "to": 83,
+      "action": "round(P,R,P)",
+      "type": "round"
+    },
+    {
+      "from": 43,
+      "to": 84,
+      "action": "round(P,R,R)",
+      "type": "round"
+    },
+    {
+      "from": 43,
+      "to": 85,
+      "action": "round(P,R,S)",
+      "type": "round"
+    },
+    {
+      "from": 43,
+      "to": 86,
+      "action": "round(P,S,P)",
+      "type": "round"
+    },
+    {
+      "from": 43,
+      "to": 87,
+      "action": "round(P,S,R)",
+      "type": "round"
+    },
+    {
+      "from": 43,
+      "to": 88,
+      "action": "round(P,S,S)",
+      "type": "round"
+    },
+    {
+      "from": 43,
+      "to": 89,
+      "action": "round(R,P,P)",
+      "type": "round"
+    },
+    {
+      "from": 43,
+      "to": 90,
+      "action": "round(R,P,R)",
+      "type": "round"
+    },
+    {
+      "from": 43,
+      "to": 91,
+      "action": "round(R,P,S)",
+      "type": "round"
+    },
+    {
+      "from": 43,
+      "to": 92,
+      "action": "round(R,R,P)",
+      "type": "round"
+    },
+    {
+      "from": 43,
+      "to": 93,
+      "action": "round(R,R,R)",
+      "type": "round"
+    },
+    {
+      "from": 43,
+      "to": 94,
+      "action": "round(R,R,S)",
+      "type": "round"
+    },
+    {
+      "from": 43,
+      "to": 95,
+      "action": "round(R,S,P)",
+      "type": "round"
+    },
+    {
+      "from": 43,
+      "to": 96,
+      "action": "round(R,S,R)",
+      "type": "round"
+    },
+    {
+      "from": 43,
+      "to": 97,
+      "action": "round(R,S,S)",
+      "type": "round"
+    },
+    {
+      "from": 43,
+      "to": 98,
+      "action": "round(S,P,P)",
+      "type": "round"
+    },
+    {
+      "from": 43,
+      "to": 99,
+      "action": "round(S,P,R)",
+      "type": "round"
+    },
+    {
+      "from": 43,
+      "to": 100,
+      "action": "round(S,P,S)",
+      "type": "round"
+    },
+    {
+      "from": 43,
+      "to": 101,
+      "action": "round(S,R,P)",
+      "type": "round"
+    },
+    {
+      "from": 43,
+      "to": 102,
+      "action": "round(S,R,R)",
+      "type": "round"
+    },
+    {
+      "from": 43,
+      "to": 103,
+      "action": "round(S,R,S)",
+      "type": "round"
+    },
+    {
+      "from": 43,
+      "to": 104,
+      "action": "round(S,S,P)",
+      "type": "round"
+    },
+    {
+      "from": 43,
+      "to": 105,
+      "action": "round(S,S,R)",
+      "type": "round"
+    },
+    {
+      "from": 43,
+      "to": 73,
+      "action": "round(S,S,S)",
+      "type": "round"
+    },
+    {
+      "from": 44,
+      "to": 108,
+      "action": "round(P,P,P)",
+      "type": "round"
+    },
+    {
+      "from": 45,
+      "to": 80,
+      "action": "round(P,P,P)",
+      "type": "round"
+    },
+    {
+      "from": 46,
+      "to": 109,
+      "action": "round(P,P,P)",
+      "type": "round"
+    },
+    {
+      "from": 47,
+      "to": 80,
+      "action": "round(P,P,P)",
+      "type": "round"
+    },
+    {
+      "from": 47,
+      "to": 81,
+      "action": "round(P,P,R)",
+      "type": "round"
+    },
+    {
+      "from": 47,
+      "to": 82,
+      "action": "round(P,P,S)",
+      "type": "round"
+    },
+    {
+      "from": 47,
+      "to": 83,
+      "action": "round(P,R,P)",
+      "type": "round"
+    },
+    {
+      "from": 47,
+      "to": 84,
+      "action": "round(P,R,R)",
+      "type": "round"
+    },
+    {
+      "from": 47,
+      "to": 85,
+      "action": "round(P,R,S)",
+      "type": "round"
+    },
+    {
+      "from": 47,
+      "to": 86,
+      "action": "round(P,S,P)",
+      "type": "round"
+    },
+    {
+      "from": 47,
+      "to": 87,
+      "action": "round(P,S,R)",
+      "type": "round"
+    },
+    {
+      "from": 47,
+      "to": 88,
+      "action": "round(P,S,S)",
+      "type": "round"
+    },
+    {
+      "from": 47,
+      "to": 89,
+      "action": "round(R,P,P)",
+      "type": "round"
+    },
+    {
+      "from": 47,
+      "to": 90,
+      "action": "round(R,P,R)",
+      "type": "round"
+    },
+    {
+      "from": 47,
+      "to": 91,
+      "action": "round(R,P,S)",
+      "type": "round"
+    },
+    {
+      "from": 47,
+      "to": 92,
+      "action": "round(R,R,P)",
+      "type": "round"
+    },
+    {
+      "from": 47,
+      "to": 93,
+      "action": "round(R,R,R)",
+      "type": "round"
+    },
+    {
+      "from": 47,
+      "to": 94,
+      "action": "round(R,R,S)",
+      "type": "round"
+    },
+    {
+      "from": 47,
+      "to": 95,
+      "action": "round(R,S,P)",
+      "type": "round"
+    },
+    {
+      "from": 47,
+      "to": 96,
+      "action": "round(R,S,R)",
+      "type": "round"
+    },
+    {
+      "from": 47,
+      "to": 97,
+      "action": "round(R,S,S)",
+      "type": "round"
+    },
+    {
+      "from": 47,
+      "to": 98,
+      "action": "round(S,P,P)",
+      "type": "round"
+    },
+    {
+      "from": 47,
+      "to": 99,
+      "action": "round(S,P,R)",
+      "type": "round"
+    },
+    {
+      "from": 47,
+      "to": 100,
+      "action": "round(S,P,S)",
+      "type": "round"
+    },
+    {
+      "from": 47,
+      "to": 101,
+      "action": "round(S,R,P)",
+      "type": "round"
+    },
+    {
+      "from": 47,
+      "to": 102,
+      "action": "round(S,R,R)",
+      "type": "round"
+    },
+    {
+      "from": 47,
+      "to": 103,
+      "action": "round(S,R,S)",
+      "type": "round"
+    },
+    {
+      "from": 47,
+      "to": 104,
+      "action": "round(S,S,P)",
+      "type": "round"
+    },
+    {
+      "from": 47,
+      "to": 105,
+      "action": "round(S,S,R)",
+      "type": "round"
+    },
+    {
+      "from": 47,
+      "to": 73,
+      "action": "round(S,S,S)",
+      "type": "round"
+    },
+    {
+      "from": 48,
+      "to": 110,
+      "action": "round(P,P,P)",
+      "type": "round"
+    },
+    {
+      "from": 49,
+      "to": 111,
+      "action": "round(R,R,R)",
+      "type": "round"
+    },
+    {
+      "from": 50,
+      "to": 112,
+      "action": "round(S,S,S)",
+      "type": "round"
+    },
+    {
+      "from": 51,
+      "to": 80,
+      "action": "round(P,P,P)",
+      "type": "round"
+    },
+    {
+      "from": 51,
+      "to": 81,
+      "action": "round(P,P,R)",
+      "type": "round"
+    },
+    {
+      "from": 51,
+      "to": 82,
+      "action": "round(P,P,S)",
+      "type": "round"
+    },
+    {
+      "from": 51,
+      "to": 83,
+      "action": "round(P,R,P)",
+      "type": "round"
+    },
+    {
+      "from": 51,
+      "to": 84,
+      "action": "round(P,R,R)",
+      "type": "round"
+    },
+    {
+      "from": 51,
+      "to": 85,
+      "action": "round(P,R,S)",
+      "type": "round"
+    },
+    {
+      "from": 51,
+      "to": 86,
+      "action": "round(P,S,P)",
+      "type": "round"
+    },
+    {
+      "from": 51,
+      "to": 87,
+      "action": "round(P,S,R)",
+      "type": "round"
+    },
+    {
+      "from": 51,
+      "to": 88,
+      "action": "round(P,S,S)",
+      "type": "round"
+    },
+    {
+      "from": 51,
+      "to": 89,
+      "action": "round(R,P,P)",
+      "type": "round"
+    },
+    {
+      "from": 51,
+      "to": 90,
+      "action": "round(R,P,R)",
+      "type": "round"
+    },
+    {
+      "from": 51,
+      "to": 91,
+      "action": "round(R,P,S)",
+      "type": "round"
+    },
+    {
+      "from": 51,
+      "to": 92,
+      "action": "round(R,R,P)",
+      "type": "round"
+    },
+    {
+      "from": 51,
+      "to": 93,
+      "action": "round(R,R,R)",
+      "type": "round"
+    },
+    {
+      "from": 51,
+      "to": 94,
+      "action": "round(R,R,S)",
+      "type": "round"
+    },
+    {
+      "from": 51,
+      "to": 95,
+      "action": "round(R,S,P)",
+      "type": "round"
+    },
+    {
+      "from": 51,
+      "to": 96,
+      "action": "round(R,S,R)",
+      "type": "round"
+    },
+    {
+      "from": 51,
+      "to": 97,
+      "action": "round(R,S,S)",
+      "type": "round"
+    },
+    {
+      "from": 51,
+      "to": 98,
+      "action": "round(S,P,P)",
+      "type": "round"
+    },
+    {
+      "from": 51,
+      "to": 99,
+      "action": "round(S,P,R)",
+      "type": "round"
+    },
+    {
+      "from": 51,
+      "to": 100,
+      "action": "round(S,P,S)",
+      "type": "round"
+    },
+    {
+      "from": 51,
+      "to": 101,
+      "action": "round(S,R,P)",
+      "type": "round"
+    },
+    {
+      "from": 51,
+      "to": 102,
+      "action": "round(S,R,R)",
+      "type": "round"
+    },
+    {
+      "from": 51,
+      "to": 103,
+      "action": "round(S,R,S)",
+      "type": "round"
+    },
+    {
+      "from": 51,
+      "to": 104,
+      "action": "round(S,S,P)",
+      "type": "round"
+    },
+    {
+      "from": 51,
+      "to": 105,
+      "action": "round(S,S,R)",
+      "type": "round"
+    },
+    {
+      "from": 51,
+      "to": 73,
+      "action": "round(S,S,S)",
+      "type": "round"
+    },
+    {
+      "from": 52,
+      "to": 113,
+      "action": "round(R,R,R)",
+      "type": "round"
+    },
+    {
+      "from": 53,
+      "to": 80,
+      "action": "round(P,P,P)",
+      "type": "round"
+    },
+    {
+      "from": 53,
+      "to": 81,
+      "action": "round(P,P,R)",
+      "type": "round"
+    },
+    {
+      "from": 53,
+      "to": 82,
+      "action": "round(P,P,S)",
+      "type": "round"
+    },
+    {
+      "from": 53,
+      "to": 83,
+      "action": "round(P,R,P)",
+      "type": "round"
+    },
+    {
+      "from": 53,
+      "to": 84,
+      "action": "round(P,R,R)",
+      "type": "round"
+    },
+    {
+      "from": 53,
+      "to": 85,
+      "action": "round(P,R,S)",
+      "type": "round"
+    },
+    {
+      "from": 53,
+      "to": 86,
+      "action": "round(P,S,P)",
+      "type": "round"
+    },
+    {
+      "from": 53,
+      "to": 87,
+      "action": "round(P,S,R)",
+      "type": "round"
+    },
+    {
+      "from": 53,
+      "to": 88,
+      "action": "round(P,S,S)",
+      "type": "round"
+    },
+    {
+      "from": 53,
+      "to": 89,
+      "action": "round(R,P,P)",
+      "type": "round"
+    },
+    {
+      "from": 53,
+      "to": 90,
+      "action": "round(R,P,R)",
+      "type": "round"
+    },
+    {
+      "from": 53,
+      "to": 91,
+      "action": "round(R,P,S)",
+      "type": "round"
+    },
+    {
+      "from": 53,
+      "to": 92,
+      "action": "round(R,R,P)",
+      "type": "round"
+    },
+    {
+      "from": 53,
+      "to": 93,
+      "action": "round(R,R,R)",
+      "type": "round"
+    },
+    {
+      "from": 53,
+      "to": 94,
+      "action": "round(R,R,S)",
+      "type": "round"
+    },
+    {
+      "from": 53,
+      "to": 95,
+      "action": "round(R,S,P)",
+      "type": "round"
+    },
+    {
+      "from": 53,
+      "to": 96,
+      "action": "round(R,S,R)",
+      "type": "round"
+    },
+    {
+      "from": 53,
+      "to": 97,
+      "action": "round(R,S,S)",
+      "type": "round"
+    },
+    {
+      "from": 53,
+      "to": 98,
+      "action": "round(S,P,P)",
+      "type": "round"
+    },
+    {
+      "from": 53,
+      "to": 99,
+      "action": "round(S,P,R)",
+      "type": "round"
+    },
+    {
+      "from": 53,
+      "to": 100,
+      "action": "round(S,P,S)",
+      "type": "round"
+    },
+    {
+      "from": 53,
+      "to": 101,
+      "action": "round(S,R,P)",
+      "type": "round"
+    },
+    {
+      "from": 53,
+      "to": 102,
+      "action": "round(S,R,R)",
+      "type": "round"
+    },
+    {
+      "from": 53,
+      "to": 103,
+      "action": "round(S,R,S)",
+      "type": "round"
+    },
+    {
+      "from": 53,
+      "to": 104,
+      "action": "round(S,S,P)",
+      "type": "round"
+    },
+    {
+      "from": 53,
+      "to": 105,
+      "action": "round(S,S,R)",
+      "type": "round"
+    },
+    {
+      "from": 53,
+      "to": 73,
+      "action": "round(S,S,S)",
+      "type": "round"
+    },
+    {
+      "from": 54,
+      "to": 114,
+      "action": "round(P,P,P)",
+      "type": "round"
+    },
+    {
+      "from": 55,
+      "to": 115,
+      "action": "round(R,R,R)",
+      "type": "round"
+    },
+    {
+      "from": 56,
+      "to": 116,
+      "action": "round(R,R,R)",
+      "type": "round"
+    },
+    {
+      "from": 57,
+      "to": 117,
+      "action": "round(R,R,R)",
+      "type": "round"
+    },
+    {
+      "from": 58,
+      "to": 93,
+      "action": "round(R,R,R)",
+      "type": "round"
+    },
+    {
+      "from": 59,
+      "to": 78,
+      "action": "round(S,S,S)",
+      "type": "round"
+    },
+    {
+      "from": 60,
+      "to": 79,
+      "action": "round(P,P,P)",
+      "type": "round"
+    },
+    {
+      "from": 61,
+      "to": 112,
+      "action": "round(S,S,S)",
+      "type": "round"
+    },
+    {
+      "from": 62,
+      "to": 113,
+      "action": "round(R,R,R)",
+      "type": "round"
+    },
+    {
+      "from": 63,
+      "to": 116,
+      "action": "round(R,R,R)",
+      "type": "round"
+    },
+    {
+      "from": 64,
+      "to": 117,
+      "action": "round(R,R,R)",
+      "type": "round"
+    },
+    {
+      "from": 65,
+      "to": 115,
+      "action": "round(R,R,R)",
+      "type": "round"
+    },
+    {
+      "from": 66,
+      "to": 114,
+      "action": "round(P,P,P)",
+      "type": "round"
+    },
+    {
+      "from": 67,
+      "to": 106,
+      "action": "round(S,S,S)",
+      "type": "round"
+    },
+    {
+      "from": 68,
+      "to": 107,
+      "action": "round(P,P,P)",
+      "type": "round"
+    },
+    {
+      "from": 69,
+      "to": 111,
+      "action": "round(R,R,R)",
+      "type": "round"
+    },
+    {
+      "from": 70,
+      "to": 110,
+      "action": "round(P,P,P)",
+      "type": "round"
+    },
+    {
+      "from": 71,
+      "to": 108,
+      "action": "round(P,P,P)",
+      "type": "round"
+    },
+    {
+      "from": 72,
+      "to": 109,
+      "action": "round(P,P,P)",
+      "type": "round"
+    },
+    {
+      "from": 73,
+      "to": 118,
+      "action": "round(R,R,R)",
+      "type": "round"
+    },
+    {
+      "from": 74,
+      "to": 119,
+      "action": "round(R,R,R)",
+      "type": "round"
+    },
+    {
+      "from": 75,
+      "to": 120,
+      "action": "round(R,R,R)",
+      "type": "round"
+    },
+    {
+      "from": 76,
+      "to": 121,
+      "action": "round(R,R,R)",
+      "type": "round"
+    },
+    {
+      "from": 77,
+      "to": 122,
+      "action": "round(P,P,P)",
+      "type": "round"
+    },
+    {
+      "from": 78,
+      "to": 123,
+      "action": "round(R,R,R)",
+      "type": "round"
+    },
+    {
+      "from": 79,
+      "to": 124,
+      "action": "round(S,S,S)",
+      "type": "round"
+    },
+    {
+      "from": 80,
+      "to": 125,
+      "action": "round(S,S,S)",
+      "type": "round"
+    },
+    {
+      "from": 81,
+      "to": 126,
+      "action": "round(S,S,S)",
+      "type": "round"
+    },
+    {
+      "from": 82,
+      "to": 127,
+      "action": "round(S,S,S)",
+      "type": "round"
+    },
+    {
+      "from": 83,
+      "to": 128,
+      "action": "round(S,S,S)",
+      "type": "round"
+    },
+    {
+      "from": 84,
+      "to": 129,
+      "action": "round(P,P,P)",
+      "type": "round"
+    },
+    {
+      "from": 85,
+      "to": 130,
+      "action": "round(P,P,P)",
+      "type": "round"
+    },
+    {
+      "from": 85,
+      "to": 131,
+      "action": "round(P,P,R)",
+      "type": "round"
+    },
+    {
+      "from": 85,
+      "to": 132,
+      "action": "round(P,P,S)",
+      "type": "round"
+    },
+    {
+      "from": 85,
+      "to": 133,
+      "action": "round(P,R,P)",
+      "type": "round"
+    },
+    {
+      "from": 85,
+      "to": 134,
+      "action": "round(P,R,R)",
+      "type": "round"
+    },
+    {
+      "from": 85,
+      "to": 135,
+      "action": "round(P,R,S)",
+      "type": "round"
+    },
+    {
+      "from": 85,
+      "to": 136,
+      "action": "round(P,S,P)",
+      "type": "round"
+    },
+    {
+      "from": 85,
+      "to": 137,
+      "action": "round(P,S,R)",
+      "type": "round"
+    },
+    {
+      "from": 85,
+      "to": 138,
+      "action": "round(P,S,S)",
+      "type": "round"
+    },
+    {
+      "from": 85,
+      "to": 139,
+      "action": "round(R,P,P)",
+      "type": "round"
+    },
+    {
+      "from": 85,
+      "to": 140,
+      "action": "round(R,P,R)",
+      "type": "round"
+    },
+    {
+      "from": 85,
+      "to": 141,
+      "action": "round(R,P,S)",
+      "type": "round"
+    },
+    {
+      "from": 85,
+      "to": 142,
+      "action": "round(R,R,P)",
+      "type": "round"
+    },
+    {
+      "from": 85,
+      "to": 118,
+      "action": "round(R,R,R)",
+      "type": "round"
+    },
+    {
+      "from": 85,
+      "to": 143,
+      "action": "round(R,R,S)",
+      "type": "round"
+    },
+    {
+      "from": 85,
+      "to": 144,
+      "action": "round(R,S,P)",
+      "type": "round"
+    },
+    {
+      "from": 85,
+      "to": 145,
+      "action": "round(R,S,R)",
+      "type": "round"
+    },
+    {
+      "from": 85,
+      "to": 146,
+      "action": "round(R,S,S)",
+      "type": "round"
+    },
+    {
+      "from": 85,
+      "to": 147,
+      "action": "round(S,P,P)",
+      "type": "round"
+    },
+    {
+      "from": 85,
+      "to": 148,
+      "action": "round(S,P,R)",
+      "type": "round"
+    },
+    {
+      "from": 85,
+      "to": 149,
+      "action": "round(S,P,S)",
+      "type": "round"
+    },
+    {
+      "from": 85,
+      "to": 150,
+      "action": "round(S,R,P)",
+      "type": "round"
+    },
+    {
+      "from": 85,
+      "to": 151,
+      "action": "round(S,R,R)",
+      "type": "round"
+    },
+    {
+      "from": 85,
+      "to": 152,
+      "action": "round(S,R,S)",
+      "type": "round"
+    },
+    {
+      "from": 85,
+      "to": 153,
+      "action": "round(S,S,P)",
+      "type": "round"
+    },
+    {
+      "from": 85,
+      "to": 154,
+      "action": "round(S,S,R)",
+      "type": "round"
+    },
+    {
+      "from": 85,
+      "to": 125,
+      "action": "round(S,S,S)",
+      "type": "round"
+    },
+    {
+      "from": 86,
+      "to": 155,
+      "action": "round(S,S,S)",
+      "type": "round"
+    },
+    {
+      "from": 87,
+      "to": 130,
+      "action": "round(P,P,P)",
+      "type": "round"
+    },
+    {
+      "from": 87,
+      "to": 131,
+      "action": "round(P,P,R)",
+      "type": "round"
+    },
+    {
+      "from": 87,
+      "to": 132,
+      "action": "round(P,P,S)",
+      "type": "round"
+    },
+    {
+      "from": 87,
+      "to": 133,
+      "action": "round(P,R,P)",
+      "type": "round"
+    },
+    {
+      "from": 87,
+      "to": 134,
+      "action": "round(P,R,R)",
+      "type": "round"
+    },
+    {
+      "from": 87,
+      "to": 135,
+      "action": "round(P,R,S)",
+      "type": "round"
+    },
+    {
+      "from": 87,
+      "to": 136,
+      "action": "round(P,S,P)",
+      "type": "round"
+    },
+    {
+      "from": 87,
+      "to": 137,
+      "action": "round(P,S,R)",
+      "type": "round"
+    },
+    {
+      "from": 87,
+      "to": 138,
+      "action": "round(P,S,S)",
+      "type": "round"
+    },
+    {
+      "from": 87,
+      "to": 139,
+      "action": "round(R,P,P)",
+      "type": "round"
+    },
+    {
+      "from": 87,
+      "to": 140,
+      "action": "round(R,P,R)",
+      "type": "round"
+    },
+    {
+      "from": 87,
+      "to": 141,
+      "action": "round(R,P,S)",
+      "type": "round"
+    },
+    {
+      "from": 87,
+      "to": 142,
+      "action": "round(R,R,P)",
+      "type": "round"
+    },
+    {
+      "from": 87,
+      "to": 118,
+      "action": "round(R,R,R)",
+      "type": "round"
+    },
+    {
+      "from": 87,
+      "to": 143,
+      "action": "round(R,R,S)",
+      "type": "round"
+    },
+    {
+      "from": 87,
+      "to": 144,
+      "action": "round(R,S,P)",
+      "type": "round"
+    },
+    {
+      "from": 87,
+      "to": 145,
+      "action": "round(R,S,R)",
+      "type": "round"
+    },
+    {
+      "from": 87,
+      "to": 146,
+      "action": "round(R,S,S)",
+      "type": "round"
+    },
+    {
+      "from": 87,
+      "to": 147,
+      "action": "round(S,P,P)",
+      "type": "round"
+    },
+    {
+      "from": 87,
+      "to": 148,
+      "action": "round(S,P,R)",
+      "type": "round"
+    },
+    {
+      "from": 87,
+      "to": 149,
+      "action": "round(S,P,S)",
+      "type": "round"
+    },
+    {
+      "from": 87,
+      "to": 150,
+      "action": "round(S,R,P)",
+      "type": "round"
+    },
+    {
+      "from": 87,
+      "to": 151,
+      "action": "round(S,R,R)",
+      "type": "round"
+    },
+    {
+      "from": 87,
+      "to": 152,
+      "action": "round(S,R,S)",
+      "type": "round"
+    },
+    {
+      "from": 87,
+      "to": 153,
+      "action": "round(S,S,P)",
+      "type": "round"
+    },
+    {
+      "from": 87,
+      "to": 154,
+      "action": "round(S,S,R)",
+      "type": "round"
+    },
+    {
+      "from": 87,
+      "to": 125,
+      "action": "round(S,S,S)",
+      "type": "round"
+    },
+    {
+      "from": 88,
+      "to": 156,
+      "action": "round(R,R,R)",
+      "type": "round"
+    },
+    {
+      "from": 89,
+      "to": 157,
+      "action": "round(S,S,S)",
+      "type": "round"
+    },
+    {
+      "from": 90,
+      "to": 158,
+      "action": "round(P,P,P)",
+      "type": "round"
+    },
+    {
+      "from": 91,
+      "to": 130,
+      "action": "round(P,P,P)",
+      "type": "round"
+    },
+    {
+      "from": 91,
+      "to": 131,
+      "action": "round(P,P,R)",
+      "type": "round"
+    },
+    {
+      "from": 91,
+      "to": 132,
+      "action": "round(P,P,S)",
+      "type": "round"
+    },
+    {
+      "from": 91,
+      "to": 133,
+      "action": "round(P,R,P)",
+      "type": "round"
+    },
+    {
+      "from": 91,
+      "to": 134,
+      "action": "round(P,R,R)",
+      "type": "round"
+    },
+    {
+      "from": 91,
+      "to": 135,
+      "action": "round(P,R,S)",
+      "type": "round"
+    },
+    {
+      "from": 91,
+      "to": 136,
+      "action": "round(P,S,P)",
+      "type": "round"
+    },
+    {
+      "from": 91,
+      "to": 137,
+      "action": "round(P,S,R)",
+      "type": "round"
+    },
+    {
+      "from": 91,
+      "to": 138,
+      "action": "round(P,S,S)",
+      "type": "round"
+    },
+    {
+      "from": 91,
+      "to": 139,
+      "action": "round(R,P,P)",
+      "type": "round"
+    },
+    {
+      "from": 91,
+      "to": 140,
+      "action": "round(R,P,R)",
+      "type": "round"
+    },
+    {
+      "from": 91,
+      "to": 141,
+      "action": "round(R,P,S)",
+      "type": "round"
+    },
+    {
+      "from": 91,
+      "to": 142,
+      "action": "round(R,R,P)",
+      "type": "round"
+    },
+    {
+      "from": 91,
+      "to": 118,
+      "action": "round(R,R,R)",
+      "type": "round"
+    },
+    {
+      "from": 91,
+      "to": 143,
+      "action": "round(R,R,S)",
+      "type": "round"
+    },
+    {
+      "from": 91,
+      "to": 144,
+      "action": "round(R,S,P)",
+      "type": "round"
+    },
+    {
+      "from": 91,
+      "to": 145,
+      "action": "round(R,S,R)",
+      "type": "round"
+    },
+    {
+      "from": 91,
+      "to": 146,
+      "action": "round(R,S,S)",
+      "type": "round"
+    },
+    {
+      "from": 91,
+      "to": 147,
+      "action": "round(S,P,P)",
+      "type": "round"
+    },
+    {
+      "from": 91,
+      "to": 148,
+      "action": "round(S,P,R)",
+      "type": "round"
+    },
+    {
+      "from": 91,
+      "to": 149,
+      "action": "round(S,P,S)",
+      "type": "round"
+    },
+    {
+      "from": 91,
+      "to": 150,
+      "action": "round(S,R,P)",
+      "type": "round"
+    },
+    {
+      "from": 91,
+      "to": 151,
+      "action": "round(S,R,R)",
+      "type": "round"
+    },
+    {
+      "from": 91,
+      "to": 152,
+      "action": "round(S,R,S)",
+      "type": "round"
+    },
+    {
+      "from": 91,
+      "to": 153,
+      "action": "round(S,S,P)",
+      "type": "round"
+    },
+    {
+      "from": 91,
+      "to": 154,
+      "action": "round(S,S,R)",
+      "type": "round"
+    },
+    {
+      "from": 91,
+      "to": 125,
+      "action": "round(S,S,S)",
+      "type": "round"
+    },
+    {
+      "from": 92,
+      "to": 159,
+      "action": "round(P,P,P)",
+      "type": "round"
+    },
+    {
+      "from": 93,
+      "to": 130,
+      "action": "round(P,P,P)",
+      "type": "round"
+    },
+    {
+      "from": 94,
+      "to": 160,
+      "action": "round(P,P,P)",
+      "type": "round"
+    },
+    {
+      "from": 95,
+      "to": 130,
+      "action": "round(P,P,P)",
+      "type": "round"
+    },
+    {
+      "from": 95,
+      "to": 131,
+      "action": "round(P,P,R)",
+      "type": "round"
+    },
+    {
+      "from": 95,
+      "to": 132,
+      "action": "round(P,P,S)",
+      "type": "round"
+    },
+    {
+      "from": 95,
+      "to": 133,
+      "action": "round(P,R,P)",
+      "type": "round"
+    },
+    {
+      "from": 95,
+      "to": 134,
+      "action": "round(P,R,R)",
+      "type": "round"
+    },
+    {
+      "from": 95,
+      "to": 135,
+      "action": "round(P,R,S)",
+      "type": "round"
+    },
+    {
+      "from": 95,
+      "to": 136,
+      "action": "round(P,S,P)",
+      "type": "round"
+    },
+    {
+      "from": 95,
+      "to": 137,
+      "action": "round(P,S,R)",
+      "type": "round"
+    },
+    {
+      "from": 95,
+      "to": 138,
+      "action": "round(P,S,S)",
+      "type": "round"
+    },
+    {
+      "from": 95,
+      "to": 139,
+      "action": "round(R,P,P)",
+      "type": "round"
+    },
+    {
+      "from": 95,
+      "to": 140,
+      "action": "round(R,P,R)",
+      "type": "round"
+    },
+    {
+      "from": 95,
+      "to": 141,
+      "action": "round(R,P,S)",
+      "type": "round"
+    },
+    {
+      "from": 95,
+      "to": 142,
+      "action": "round(R,R,P)",
+      "type": "round"
+    },
+    {
+      "from": 95,
+      "to": 118,
+      "action": "round(R,R,R)",
+      "type": "round"
+    },
+    {
+      "from": 95,
+      "to": 143,
+      "action": "round(R,R,S)",
+      "type": "round"
+    },
+    {
+      "from": 95,
+      "to": 144,
+      "action": "round(R,S,P)",
+      "type": "round"
+    },
+    {
+      "from": 95,
+      "to": 145,
+      "action": "round(R,S,R)",
+      "type": "round"
+    },
+    {
+      "from": 95,
+      "to": 146,
+      "action": "round(R,S,S)",
+      "type": "round"
+    },
+    {
+      "from": 95,
+      "to": 147,
+      "action": "round(S,P,P)",
+      "type": "round"
+    },
+    {
+      "from": 95,
+      "to": 148,
+      "action": "round(S,P,R)",
+      "type": "round"
+    },
+    {
+      "from": 95,
+      "to": 149,
+      "action": "round(S,P,S)",
+      "type": "round"
+    },
+    {
+      "from": 95,
+      "to": 150,
+      "action": "round(S,R,P)",
+      "type": "round"
+    },
+    {
+      "from": 95,
+      "to": 151,
+      "action": "round(S,R,R)",
+      "type": "round"
+    },
+    {
+      "from": 95,
+      "to": 152,
+      "action": "round(S,R,S)",
+      "type": "round"
+    },
+    {
+      "from": 95,
+      "to": 153,
+      "action": "round(S,S,P)",
+      "type": "round"
+    },
+    {
+      "from": 95,
+      "to": 154,
+      "action": "round(S,S,R)",
+      "type": "round"
+    },
+    {
+      "from": 95,
+      "to": 125,
+      "action": "round(S,S,S)",
+      "type": "round"
+    },
+    {
+      "from": 96,
+      "to": 161,
+      "action": "round(P,P,P)",
+      "type": "round"
+    },
+    {
+      "from": 97,
+      "to": 162,
+      "action": "round(R,R,R)",
+      "type": "round"
+    },
+    {
+      "from": 98,
+      "to": 124,
+      "action": "round(S,S,S)",
+      "type": "round"
+    },
+    {
+      "from": 99,
+      "to": 130,
+      "action": "round(P,P,P)",
+      "type": "round"
+    },
+    {
+      "from": 99,
+      "to": 131,
+      "action": "round(P,P,R)",
+      "type": "round"
+    },
+    {
+      "from": 99,
+      "to": 132,
+      "action": "round(P,P,S)",
+      "type": "round"
+    },
+    {
+      "from": 99,
+      "to": 133,
+      "action": "round(P,R,P)",
+      "type": "round"
+    },
+    {
+      "from": 99,
+      "to": 134,
+      "action": "round(P,R,R)",
+      "type": "round"
+    },
+    {
+      "from": 99,
+      "to": 135,
+      "action": "round(P,R,S)",
+      "type": "round"
+    },
+    {
+      "from": 99,
+      "to": 136,
+      "action": "round(P,S,P)",
+      "type": "round"
+    },
+    {
+      "from": 99,
+      "to": 137,
+      "action": "round(P,S,R)",
+      "type": "round"
+    },
+    {
+      "from": 99,
+      "to": 138,
+      "action": "round(P,S,S)",
+      "type": "round"
+    },
+    {
+      "from": 99,
+      "to": 139,
+      "action": "round(R,P,P)",
+      "type": "round"
+    },
+    {
+      "from": 99,
+      "to": 140,
+      "action": "round(R,P,R)",
+      "type": "round"
+    },
+    {
+      "from": 99,
+      "to": 141,
+      "action": "round(R,P,S)",
+      "type": "round"
+    },
+    {
+      "from": 99,
+      "to": 142,
+      "action": "round(R,R,P)",
+      "type": "round"
+    },
+    {
+      "from": 99,
+      "to": 118,
+      "action": "round(R,R,R)",
+      "type": "round"
+    },
+    {
+      "from": 99,
+      "to": 143,
+      "action": "round(R,R,S)",
+      "type": "round"
+    },
+    {
+      "from": 99,
+      "to": 144,
+      "action": "round(R,S,P)",
+      "type": "round"
+    },
+    {
+      "from": 99,
+      "to": 145,
+      "action": "round(R,S,R)",
+      "type": "round"
+    },
+    {
+      "from": 99,
+      "to": 146,
+      "action": "round(R,S,S)",
+      "type": "round"
+    },
+    {
+      "from": 99,
+      "to": 147,
+      "action": "round(S,P,P)",
+      "type": "round"
+    },
+    {
+      "from": 99,
+      "to": 148,
+      "action": "round(S,P,R)",
+      "type": "round"
+    },
+    {
+      "from": 99,
+      "to": 149,
+      "action": "round(S,P,S)",
+      "type": "round"
+    },
+    {
+      "from": 99,
+      "to": 150,
+      "action": "round(S,R,P)",
+      "type": "round"
+    },
+    {
+      "from": 99,
+      "to": 151,
+      "action": "round(S,R,R)",
+      "type": "round"
+    },
+    {
+      "from": 99,
+      "to": 152,
+      "action": "round(S,R,S)",
+      "type": "round"
+    },
+    {
+      "from": 99,
+      "to": 153,
+      "action": "round(S,S,P)",
+      "type": "round"
+    },
+    {
+      "from": 99,
+      "to": 154,
+      "action": "round(S,S,R)",
+      "type": "round"
+    },
+    {
+      "from": 99,
+      "to": 125,
+      "action": "round(S,S,S)",
+      "type": "round"
+    },
+    {
+      "from": 100,
+      "to": 123,
+      "action": "round(R,R,R)",
+      "type": "round"
+    },
+    {
+      "from": 101,
+      "to": 130,
+      "action": "round(P,P,P)",
+      "type": "round"
+    },
+    {
+      "from": 101,
+      "to": 131,
+      "action": "round(P,P,R)",
+      "type": "round"
+    },
+    {
+      "from": 101,
+      "to": 132,
+      "action": "round(P,P,S)",
+      "type": "round"
+    },
+    {
+      "from": 101,
+      "to": 133,
+      "action": "round(P,R,P)",
+      "type": "round"
+    },
+    {
+      "from": 101,
+      "to": 134,
+      "action": "round(P,R,R)",
+      "type": "round"
+    },
+    {
+      "from": 101,
+      "to": 135,
+      "action": "round(P,R,S)",
+      "type": "round"
+    },
+    {
+      "from": 101,
+      "to": 136,
+      "action": "round(P,S,P)",
+      "type": "round"
+    },
+    {
+      "from": 101,
+      "to": 137,
+      "action": "round(P,S,R)",
+      "type": "round"
+    },
+    {
+      "from": 101,
+      "to": 138,
+      "action": "round(P,S,S)",
+      "type": "round"
+    },
+    {
+      "from": 101,
+      "to": 139,
+      "action": "round(R,P,P)",
+      "type": "round"
+    },
+    {
+      "from": 101,
+      "to": 140,
+      "action": "round(R,P,R)",
+      "type": "round"
+    },
+    {
+      "from": 101,
+      "to": 141,
+      "action": "round(R,P,S)",
+      "type": "round"
+    },
+    {
+      "from": 101,
+      "to": 142,
+      "action": "round(R,R,P)",
+      "type": "round"
+    },
+    {
+      "from": 101,
+      "to": 118,
+      "action": "round(R,R,R)",
+      "type": "round"
+    },
+    {
+      "from": 101,
+      "to": 143,
+      "action": "round(R,R,S)",
+      "type": "round"
+    },
+    {
+      "from": 101,
+      "to": 144,
+      "action": "round(R,S,P)",
+      "type": "round"
+    },
+    {
+      "from": 101,
+      "to": 145,
+      "action": "round(R,S,R)",
+      "type": "round"
+    },
+    {
+      "from": 101,
+      "to": 146,
+      "action": "round(R,S,S)",
+      "type": "round"
+    },
+    {
+      "from": 101,
+      "to": 147,
+      "action": "round(S,P,P)",
+      "type": "round"
+    },
+    {
+      "from": 101,
+      "to": 148,
+      "action": "round(S,P,R)",
+      "type": "round"
+    },
+    {
+      "from": 101,
+      "to": 149,
+      "action": "round(S,P,S)",
+      "type": "round"
+    },
+    {
+      "from": 101,
+      "to": 150,
+      "action": "round(S,R,P)",
+      "type": "round"
+    },
+    {
+      "from": 101,
+      "to": 151,
+      "action": "round(S,R,R)",
+      "type": "round"
+    },
+    {
+      "from": 101,
+      "to": 152,
+      "action": "round(S,R,S)",
+      "type": "round"
+    },
+    {
+      "from": 101,
+      "to": 153,
+      "action": "round(S,S,P)",
+      "type": "round"
+    },
+    {
+      "from": 101,
+      "to": 154,
+      "action": "round(S,S,R)",
+      "type": "round"
+    },
+    {
+      "from": 101,
+      "to": 125,
+      "action": "round(S,S,S)",
+      "type": "round"
+    },
+    {
+      "from": 102,
+      "to": 122,
+      "action": "round(P,P,P)",
+      "type": "round"
+    },
+    {
+      "from": 103,
+      "to": 121,
+      "action": "round(R,R,R)",
+      "type": "round"
+    },
+    {
+      "from": 104,
+      "to": 120,
+      "action": "round(R,R,R)",
+      "type": "round"
+    },
+    {
+      "from": 105,
+      "to": 119,
+      "action": "round(R,R,R)",
+      "type": "round"
+    },
+    {
+      "from": 106,
+      "to": 156,
+      "action": "round(R,R,R)",
+      "type": "round"
+    },
+    {
+      "from": 107,
+      "to": 155,
+      "action": "round(S,S,S)",
+      "type": "round"
+    },
+    {
+      "from": 108,
+      "to": 127,
+      "action": "round(S,S,S)",
+      "type": "round"
+    },
+    {
+      "from": 109,
+      "to": 126,
+      "action": "round(S,S,S)",
+      "type": "round"
+    },
+    {
+      "from": 110,
+      "to": 128,
+      "action": "round(S,S,S)",
+      "type": "round"
+    },
+    {
+      "from": 111,
+      "to": 129,
+      "action": "round(P,P,P)",
+      "type": "round"
+    },
+    {
+      "from": 112,
+      "to": 162,
+      "action": "round(R,R,R)",
+      "type": "round"
+    },
+    {
+      "from": 113,
+      "to": 161,
+      "action": "round(P,P,P)",
+      "type": "round"
+    },
+    {
+      "from": 114,
+      "to": 157,
+      "action": "round(S,S,S)",
+      "type": "round"
+    },
+    {
+      "from": 115,
+      "to": 158,
+      "action": "round(P,P,P)",
+      "type": "round"
+    },
+    {
+      "from": 116,
+      "to": 160,
+      "action": "round(P,P,P)",
+      "type": "round"
+    },
+    {
+      "from": 117,
+      "to": 159,
+      "action": "round(P,P,P)",
+      "type": "round"
+    },
+    {
+      "from": 118,
+      "to": 163,
+      "action": "round(P,P,P)",
+      "type": "round"
+    },
+    {
+      "from": 119,
+      "to": 164,
+      "action": "round(P,P,P)",
+      "type": "round"
+    },
+    {
+      "from": 120,
+      "to": 165,
+      "action": "round(P,P,P)",
+      "type": "round"
+    },
+    {
+      "from": 121,
+      "to": 166,
+      "action": "round(P,P,P)",
+      "type": "round"
+    },
+    {
+      "from": 122,
+      "to": 167,
+      "action": "round(S,S,S)",
+      "type": "round"
+    },
+    {
+      "from": 123,
+      "to": 168,
+      "action": "round(P,P,P)",
+      "type": "round"
+    },
+    {
+      "from": 124,
+      "to": 169,
+      "action": "round(R,R,R)",
+      "type": "round"
+    },
+    {
+      "from": 125,
+      "to": 170,
+      "action": "round(R,R,R)",
+      "type": "round"
+    },
+    {
+      "from": 126,
+      "to": 171,
+      "action": "round(R,R,R)",
+      "type": "round"
+    },
+    {
+      "from": 127,
+      "to": 172,
+      "action": "round(R,R,R)",
+      "type": "round"
+    },
+    {
+      "from": 128,
+      "to": 173,
+      "action": "round(R,R,R)",
+      "type": "round"
+    },
+    {
+      "from": 129,
+      "to": 174,
+      "action": "round(S,S,S)",
+      "type": "round"
+    },
+    {
+      "from": 130,
+      "to": 175,
+      "action": "round(S,S,S)",
+      "type": "round"
+    },
+    {
+      "from": 131,
+      "to": 176,
+      "action": "round(S,S,S)",
+      "type": "round"
+    },
+    {
+      "from": 132,
+      "to": 177,
+      "action": "round(S,S,S)",
+      "type": "round"
+    },
+    {
+      "from": 133,
+      "to": 178,
+      "action": "round(S,S,S)",
+      "type": "round"
+    },
+    {
+      "from": 134,
+      "to": 179,
+      "action": "round(P,P,P)",
+      "type": "round"
+    },
+    {
+      "from": 135,
+      "to": 163,
+      "action": "round(P,P,P)",
+      "type": "round"
+    },
+    {
+      "from": 135,
+      "to": 180,
+      "action": "round(P,P,R)",
+      "type": "round"
+    },
+    {
+      "from": 135,
+      "to": 181,
+      "action": "round(P,P,S)",
+      "type": "round"
+    },
+    {
+      "from": 135,
+      "to": 182,
+      "action": "round(P,R,P)",
+      "type": "round"
+    },
+    {
+      "from": 135,
+      "to": 183,
+      "action": "round(P,R,R)",
+      "type": "round"
+    },
+    {
+      "from": 135,
+      "to": 184,
+      "action": "round(P,R,S)",
+      "type": "round"
+    },
+    {
+      "from": 135,
+      "to": 185,
+      "action": "round(P,S,P)",
+      "type": "round"
+    },
+    {
+      "from": 135,
+      "to": 186,
+      "action": "round(P,S,R)",
+      "type": "round"
+    },
+    {
+      "from": 135,
+      "to": 187,
+      "action": "round(P,S,S)",
+      "type": "round"
+    },
+    {
+      "from": 135,
+      "to": 188,
+      "action": "round(R,P,P)",
+      "type": "round"
+    },
+    {
+      "from": 135,
+      "to": 189,
+      "action": "round(R,P,R)",
+      "type": "round"
+    },
+    {
+      "from": 135,
+      "to": 190,
+      "action": "round(R,P,S)",
+      "type": "round"
+    },
+    {
+      "from": 135,
+      "to": 191,
+      "action": "round(R,R,P)",
+      "type": "round"
+    },
+    {
+      "from": 135,
+      "to": 170,
+      "action": "round(R,R,R)",
+      "type": "round"
+    },
+    {
+      "from": 135,
+      "to": 192,
+      "action": "round(R,R,S)",
+      "type": "round"
+    },
+    {
+      "from": 135,
+      "to": 193,
+      "action": "round(R,S,P)",
+      "type": "round"
+    },
+    {
+      "from": 135,
+      "to": 194,
+      "action": "round(R,S,R)",
+      "type": "round"
+    },
+    {
+      "from": 135,
+      "to": 195,
+      "action": "round(R,S,S)",
+      "type": "round"
+    },
+    {
+      "from": 135,
+      "to": 196,
+      "action": "round(S,P,P)",
+      "type": "round"
+    },
+    {
+      "from": 135,
+      "to": 197,
+      "action": "round(S,P,R)",
+      "type": "round"
+    },
+    {
+      "from": 135,
+      "to": 198,
+      "action": "round(S,P,S)",
+      "type": "round"
+    },
+    {
+      "from": 135,
+      "to": 199,
+      "action": "round(S,R,P)",
+      "type": "round"
+    },
+    {
+      "from": 135,
+      "to": 200,
+      "action": "round(S,R,R)",
+      "type": "round"
+    },
+    {
+      "from": 135,
+      "to": 201,
+      "action": "round(S,R,S)",
+      "type": "round"
+    },
+    {
+      "from": 135,
+      "to": 202,
+      "action": "round(S,S,P)",
+      "type": "round"
+    },
+    {
+      "from": 135,
+      "to": 203,
+      "action": "round(S,S,R)",
+      "type": "round"
+    },
+    {
+      "from": 135,
+      "to": 175,
+      "action": "round(S,S,S)",
+      "type": "round"
+    },
+    {
+      "from": 136,
+      "to": 204,
+      "action": "round(S,S,S)",
+      "type": "round"
+    },
+    {
+      "from": 137,
+      "to": 163,
+      "action": "round(P,P,P)",
+      "type": "round"
+    },
+    {
+      "from": 137,
+      "to": 180,
+      "action": "round(P,P,R)",
+      "type": "round"
+    },
+    {
+      "from": 137,
+      "to": 181,
+      "action": "round(P,P,S)",
+      "type": "round"
+    },
+    {
+      "from": 137,
+      "to": 182,
+      "action": "round(P,R,P)",
+      "type": "round"
+    },
+    {
+      "from": 137,
+      "to": 183,
+      "action": "round(P,R,R)",
+      "type": "round"
+    },
+    {
+      "from": 137,
+      "to": 184,
+      "action": "round(P,R,S)",
+      "type": "round"
+    },
+    {
+      "from": 137,
+      "to": 185,
+      "action": "round(P,S,P)",
+      "type": "round"
+    },
+    {
+      "from": 137,
+      "to": 186,
+      "action": "round(P,S,R)",
+      "type": "round"
+    },
+    {
+      "from": 137,
+      "to": 187,
+      "action": "round(P,S,S)",
+      "type": "round"
+    },
+    {
+      "from": 137,
+      "to": 188,
+      "action": "round(R,P,P)",
+      "type": "round"
+    },
+    {
+      "from": 137,
+      "to": 189,
+      "action": "round(R,P,R)",
+      "type": "round"
+    },
+    {
+      "from": 137,
+      "to": 190,
+      "action": "round(R,P,S)",
+      "type": "round"
+    },
+    {
+      "from": 137,
+      "to": 191,
+      "action": "round(R,R,P)",
+      "type": "round"
+    },
+    {
+      "from": 137,
+      "to": 170,
+      "action": "round(R,R,R)",
+      "type": "round"
+    },
+    {
+      "from": 137,
+      "to": 192,
+      "action": "round(R,R,S)",
+      "type": "round"
+    },
+    {
+      "from": 137,
+      "to": 193,
+      "action": "round(R,S,P)",
+      "type": "round"
+    },
+    {
+      "from": 137,
+      "to": 194,
+      "action": "round(R,S,R)",
+      "type": "round"
+    },
+    {
+      "from": 137,
+      "to": 195,
+      "action": "round(R,S,S)",
+      "type": "round"
+    },
+    {
+      "from": 137,
+      "to": 196,
+      "action": "round(S,P,P)",
+      "type": "round"
+    },
+    {
+      "from": 137,
+      "to": 197,
+      "action": "round(S,P,R)",
+      "type": "round"
+    },
+    {
+      "from": 137,
+      "to": 198,
+      "action": "round(S,P,S)",
+      "type": "round"
+    },
+    {
+      "from": 137,
+      "to": 199,
+      "action": "round(S,R,P)",
+      "type": "round"
+    },
+    {
+      "from": 137,
+      "to": 200,
+      "action": "round(S,R,R)",
+      "type": "round"
+    },
+    {
+      "from": 137,
+      "to": 201,
+      "action": "round(S,R,S)",
+      "type": "round"
+    },
+    {
+      "from": 137,
+      "to": 202,
+      "action": "round(S,S,P)",
+      "type": "round"
+    },
+    {
+      "from": 137,
+      "to": 203,
+      "action": "round(S,S,R)",
+      "type": "round"
+    },
+    {
+      "from": 137,
+      "to": 175,
+      "action": "round(S,S,S)",
+      "type": "round"
+    },
+    {
+      "from": 138,
+      "to": 205,
+      "action": "round(R,R,R)",
+      "type": "round"
+    },
+    {
+      "from": 139,
+      "to": 167,
+      "action": "round(S,S,S)",
+      "type": "round"
+    },
+    {
+      "from": 140,
+      "to": 166,
+      "action": "round(P,P,P)",
+      "type": "round"
+    },
+    {
+      "from": 141,
+      "to": 163,
+      "action": "round(P,P,P)",
+      "type": "round"
+    },
+    {
+      "from": 141,
+      "to": 180,
+      "action": "round(P,P,R)",
+      "type": "round"
+    },
+    {
+      "from": 141,
+      "to": 181,
+      "action": "round(P,P,S)",
+      "type": "round"
+    },
+    {
+      "from": 141,
+      "to": 182,
+      "action": "round(P,R,P)",
+      "type": "round"
+    },
+    {
+      "from": 141,
+      "to": 183,
+      "action": "round(P,R,R)",
+      "type": "round"
+    },
+    {
+      "from": 141,
+      "to": 184,
+      "action": "round(P,R,S)",
+      "type": "round"
+    },
+    {
+      "from": 141,
+      "to": 185,
+      "action": "round(P,S,P)",
+      "type": "round"
+    },
+    {
+      "from": 141,
+      "to": 186,
+      "action": "round(P,S,R)",
+      "type": "round"
+    },
+    {
+      "from": 141,
+      "to": 187,
+      "action": "round(P,S,S)",
+      "type": "round"
+    },
+    {
+      "from": 141,
+      "to": 188,
+      "action": "round(R,P,P)",
+      "type": "round"
+    },
+    {
+      "from": 141,
+      "to": 189,
+      "action": "round(R,P,R)",
+      "type": "round"
+    },
+    {
+      "from": 141,
+      "to": 190,
+      "action": "round(R,P,S)",
+      "type": "round"
+    },
+    {
+      "from": 141,
+      "to": 191,
+      "action": "round(R,R,P)",
+      "type": "round"
+    },
+    {
+      "from": 141,
+      "to": 170,
+      "action": "round(R,R,R)",
+      "type": "round"
+    },
+    {
+      "from": 141,
+      "to": 192,
+      "action": "round(R,R,S)",
+      "type": "round"
+    },
+    {
+      "from": 141,
+      "to": 193,
+      "action": "round(R,S,P)",
+      "type": "round"
+    },
+    {
+      "from": 141,
+      "to": 194,
+      "action": "round(R,S,R)",
+      "type": "round"
+    },
+    {
+      "from": 141,
+      "to": 195,
+      "action": "round(R,S,S)",
+      "type": "round"
+    },
+    {
+      "from": 141,
+      "to": 196,
+      "action": "round(S,P,P)",
+      "type": "round"
+    },
+    {
+      "from": 141,
+      "to": 197,
+      "action": "round(S,P,R)",
+      "type": "round"
+    },
+    {
+      "from": 141,
+      "to": 198,
+      "action": "round(S,P,S)",
+      "type": "round"
+    },
+    {
+      "from": 141,
+      "to": 199,
+      "action": "round(S,R,P)",
+      "type": "round"
+    },
+    {
+      "from": 141,
+      "to": 200,
+      "action": "round(S,R,R)",
+      "type": "round"
+    },
+    {
+      "from": 141,
+      "to": 201,
+      "action": "round(S,R,S)",
+      "type": "round"
+    },
+    {
+      "from": 141,
+      "to": 202,
+      "action": "round(S,S,P)",
+      "type": "round"
+    },
+    {
+      "from": 141,
+      "to": 203,
+      "action": "round(S,S,R)",
+      "type": "round"
+    },
+    {
+      "from": 141,
+      "to": 175,
+      "action": "round(S,S,S)",
+      "type": "round"
+    },
+    {
+      "from": 142,
+      "to": 164,
+      "action": "round(P,P,P)",
+      "type": "round"
+    },
+    {
+      "from": 143,
+      "to": 165,
+      "action": "round(P,P,P)",
+      "type": "round"
+    },
+    {
+      "from": 144,
+      "to": 163,
+      "action": "round(P,P,P)",
+      "type": "round"
+    },
+    {
+      "from": 144,
+      "to": 180,
+      "action": "round(P,P,R)",
+      "type": "round"
+    },
+    {
+      "from": 144,
+      "to": 181,
+      "action": "round(P,P,S)",
+      "type": "round"
+    },
+    {
+      "from": 144,
+      "to": 182,
+      "action": "round(P,R,P)",
+      "type": "round"
+    },
+    {
+      "from": 144,
+      "to": 183,
+      "action": "round(P,R,R)",
+      "type": "round"
+    },
+    {
+      "from": 144,
+      "to": 184,
+      "action": "round(P,R,S)",
+      "type": "round"
+    },
+    {
+      "from": 144,
+      "to": 185,
+      "action": "round(P,S,P)",
+      "type": "round"
+    },
+    {
+      "from": 144,
+      "to": 186,
+      "action": "round(P,S,R)",
+      "type": "round"
+    },
+    {
+      "from": 144,
+      "to": 187,
+      "action": "round(P,S,S)",
+      "type": "round"
+    },
+    {
+      "from": 144,
+      "to": 188,
+      "action": "round(R,P,P)",
+      "type": "round"
+    },
+    {
+      "from": 144,
+      "to": 189,
+      "action": "round(R,P,R)",
+      "type": "round"
+    },
+    {
+      "from": 144,
+      "to": 190,
+      "action": "round(R,P,S)",
+      "type": "round"
+    },
+    {
+      "from": 144,
+      "to": 191,
+      "action": "round(R,R,P)",
+      "type": "round"
+    },
+    {
+      "from": 144,
+      "to": 170,
+      "action": "round(R,R,R)",
+      "type": "round"
+    },
+    {
+      "from": 144,
+      "to": 192,
+      "action": "round(R,R,S)",
+      "type": "round"
+    },
+    {
+      "from": 144,
+      "to": 193,
+      "action": "round(R,S,P)",
+      "type": "round"
+    },
+    {
+      "from": 144,
+      "to": 194,
+      "action": "round(R,S,R)",
+      "type": "round"
+    },
+    {
+      "from": 144,
+      "to": 195,
+      "action": "round(R,S,S)",
+      "type": "round"
+    },
+    {
+      "from": 144,
+      "to": 196,
+      "action": "round(S,P,P)",
+      "type": "round"
+    },
+    {
+      "from": 144,
+      "to": 197,
+      "action": "round(S,P,R)",
+      "type": "round"
+    },
+    {
+      "from": 144,
+      "to": 198,
+      "action": "round(S,P,S)",
+      "type": "round"
+    },
+    {
+      "from": 144,
+      "to": 199,
+      "action": "round(S,R,P)",
+      "type": "round"
+    },
+    {
+      "from": 144,
+      "to": 200,
+      "action": "round(S,R,R)",
+      "type": "round"
+    },
+    {
+      "from": 144,
+      "to": 201,
+      "action": "round(S,R,S)",
+      "type": "round"
+    },
+    {
+      "from": 144,
+      "to": 202,
+      "action": "round(S,S,P)",
+      "type": "round"
+    },
+    {
+      "from": 144,
+      "to": 203,
+      "action": "round(S,S,R)",
+      "type": "round"
+    },
+    {
+      "from": 144,
+      "to": 175,
+      "action": "round(S,S,S)",
+      "type": "round"
+    },
+    {
+      "from": 145,
+      "to": 168,
+      "action": "round(P,P,P)",
+      "type": "round"
+    },
+    {
+      "from": 146,
+      "to": 169,
+      "action": "round(R,R,R)",
+      "type": "round"
+    },
+    {
+      "from": 147,
+      "to": 174,
+      "action": "round(S,S,S)",
+      "type": "round"
+    },
+    {
+      "from": 148,
+      "to": 163,
+      "action": "round(P,P,P)",
+      "type": "round"
+    },
+    {
+      "from": 148,
+      "to": 180,
+      "action": "round(P,P,R)",
+      "type": "round"
+    },
+    {
+      "from": 148,
+      "to": 181,
+      "action": "round(P,P,S)",
+      "type": "round"
+    },
+    {
+      "from": 148,
+      "to": 182,
+      "action": "round(P,R,P)",
+      "type": "round"
+    },
+    {
+      "from": 148,
+      "to": 183,
+      "action": "round(P,R,R)",
+      "type": "round"
+    },
+    {
+      "from": 148,
+      "to": 184,
+      "action": "round(P,R,S)",
+      "type": "round"
+    },
+    {
+      "from": 148,
+      "to": 185,
+      "action": "round(P,S,P)",
+      "type": "round"
+    },
+    {
+      "from": 148,
+      "to": 186,
+      "action": "round(P,S,R)",
+      "type": "round"
+    },
+    {
+      "from": 148,
+      "to": 187,
+      "action": "round(P,S,S)",
+      "type": "round"
+    },
+    {
+      "from": 148,
+      "to": 188,
+      "action": "round(R,P,P)",
+      "type": "round"
+    },
+    {
+      "from": 148,
+      "to": 189,
+      "action": "round(R,P,R)",
+      "type": "round"
+    },
+    {
+      "from": 148,
+      "to": 190,
+      "action": "round(R,P,S)",
+      "type": "round"
+    },
+    {
+      "from": 148,
+      "to": 191,
+      "action": "round(R,R,P)",
+      "type": "round"
+    },
+    {
+      "from": 148,
+      "to": 170,
+      "action": "round(R,R,R)",
+      "type": "round"
+    },
+    {
+      "from": 148,
+      "to": 192,
+      "action": "round(R,R,S)",
+      "type": "round"
+    },
+    {
+      "from": 148,
+      "to": 193,
+      "action": "round(R,S,P)",
+      "type": "round"
+    },
+    {
+      "from": 148,
+      "to": 194,
+      "action": "round(R,S,R)",
+      "type": "round"
+    },
+    {
+      "from": 148,
+      "to": 195,
+      "action": "round(R,S,S)",
+      "type": "round"
+    },
+    {
+      "from": 148,
+      "to": 196,
+      "action": "round(S,P,P)",
+      "type": "round"
+    },
+    {
+      "from": 148,
+      "to": 197,
+      "action": "round(S,P,R)",
+      "type": "round"
+    },
+    {
+      "from": 148,
+      "to": 198,
+      "action": "round(S,P,S)",
+      "type": "round"
+    },
+    {
+      "from": 148,
+      "to": 199,
+      "action": "round(S,R,P)",
+      "type": "round"
+    },
+    {
+      "from": 148,
+      "to": 200,
+      "action": "round(S,R,R)",
+      "type": "round"
+    },
+    {
+      "from": 148,
+      "to": 201,
+      "action": "round(S,R,S)",
+      "type": "round"
+    },
+    {
+      "from": 148,
+      "to": 202,
+      "action": "round(S,S,P)",
+      "type": "round"
+    },
+    {
+      "from": 148,
+      "to": 203,
+      "action": "round(S,S,R)",
+      "type": "round"
+    },
+    {
+      "from": 148,
+      "to": 175,
+      "action": "round(S,S,S)",
+      "type": "round"
+    },
+    {
+      "from": 149,
+      "to": 173,
+      "action": "round(R,R,R)",
+      "type": "round"
+    },
+    {
+      "from": 150,
+      "to": 163,
+      "action": "round(P,P,P)",
+      "type": "round"
+    },
+    {
+      "from": 150,
+      "to": 180,
+      "action": "round(P,P,R)",
+      "type": "round"
+    },
+    {
+      "from": 150,
+      "to": 181,
+      "action": "round(P,P,S)",
+      "type": "round"
+    },
+    {
+      "from": 150,
+      "to": 182,
+      "action": "round(P,R,P)",
+      "type": "round"
+    },
+    {
+      "from": 150,
+      "to": 183,
+      "action": "round(P,R,R)",
+      "type": "round"
+    },
+    {
+      "from": 150,
+      "to": 184,
+      "action": "round(P,R,S)",
+      "type": "round"
+    },
+    {
+      "from": 150,
+      "to": 185,
+      "action": "round(P,S,P)",
+      "type": "round"
+    },
+    {
+      "from": 150,
+      "to": 186,
+      "action": "round(P,S,R)",
+      "type": "round"
+    },
+    {
+      "from": 150,
+      "to": 187,
+      "action": "round(P,S,S)",
+      "type": "round"
+    },
+    {
+      "from": 150,
+      "to": 188,
+      "action": "round(R,P,P)",
+      "type": "round"
+    },
+    {
+      "from": 150,
+      "to": 189,
+      "action": "round(R,P,R)",
+      "type": "round"
+    },
+    {
+      "from": 150,
+      "to": 190,
+      "action": "round(R,P,S)",
+      "type": "round"
+    },
+    {
+      "from": 150,
+      "to": 191,
+      "action": "round(R,R,P)",
+      "type": "round"
+    },
+    {
+      "from": 150,
+      "to": 170,
+      "action": "round(R,R,R)",
+      "type": "round"
+    },
+    {
+      "from": 150,
+      "to": 192,
+      "action": "round(R,R,S)",
+      "type": "round"
+    },
+    {
+      "from": 150,
+      "to": 193,
+      "action": "round(R,S,P)",
+      "type": "round"
+    },
+    {
+      "from": 150,
+      "to": 194,
+      "action": "round(R,S,R)",
+      "type": "round"
+    },
+    {
+      "from": 150,
+      "to": 195,
+      "action": "round(R,S,S)",
+      "type": "round"
+    },
+    {
+      "from": 150,
+      "to": 196,
+      "action": "round(S,P,P)",
+      "type": "round"
+    },
+    {
+      "from": 150,
+      "to": 197,
+      "action": "round(S,P,R)",
+      "type": "round"
+    },
+    {
+      "from": 150,
+      "to": 198,
+      "action": "round(S,P,S)",
+      "type": "round"
+    },
+    {
+      "from": 150,
+      "to": 199,
+      "action": "round(S,R,P)",
+      "type": "round"
+    },
+    {
+      "from": 150,
+      "to": 200,
+      "action": "round(S,R,R)",
+      "type": "round"
+    },
+    {
+      "from": 150,
+      "to": 201,
+      "action": "round(S,R,S)",
+      "type": "round"
+    },
+    {
+      "from": 150,
+      "to": 202,
+      "action": "round(S,S,P)",
+      "type": "round"
+    },
+    {
+      "from": 150,
+      "to": 203,
+      "action": "round(S,S,R)",
+      "type": "round"
+    },
+    {
+      "from": 150,
+      "to": 175,
+      "action": "round(S,S,S)",
+      "type": "round"
+    },
+    {
+      "from": 151,
+      "to": 206,
+      "action": "round(P,P,P)",
+      "type": "round"
+    },
+    {
+      "from": 152,
+      "to": 207,
+      "action": "round(R,R,R)",
+      "type": "round"
+    },
+    {
+      "from": 153,
+      "to": 171,
+      "action": "round(R,R,R)",
+      "type": "round"
+    },
+    {
+      "from": 154,
+      "to": 172,
+      "action": "round(R,R,R)",
+      "type": "round"
+    },
+    {
+      "from": 155,
+      "to": 207,
+      "action": "round(R,R,R)",
+      "type": "round"
+    },
+    {
+      "from": 156,
+      "to": 206,
+      "action": "round(P,P,P)",
+      "type": "round"
+    },
+    {
+      "from": 157,
+      "to": 205,
+      "action": "round(R,R,R)",
+      "type": "round"
+    },
+    {
+      "from": 158,
+      "to": 204,
+      "action": "round(S,S,S)",
+      "type": "round"
+    },
+    {
+      "from": 159,
+      "to": 177,
+      "action": "round(S,S,S)",
+      "type": "round"
+    },
+    {
+      "from": 160,
+      "to": 176,
+      "action": "round(S,S,S)",
+      "type": "round"
+    },
+    {
+      "from": 161,
+      "to": 178,
+      "action": "round(S,S,S)",
+      "type": "round"
+    },
+    {
+      "from": 162,
+      "to": 179,
+      "action": "round(P,P,P)",
+      "type": "round"
+    },
+    {
+      "from": 163,
+      "to": 208,
+      "action": "round(S,S,S)",
+      "type": "round"
+    },
+    {
+      "from": 164,
+      "to": 209,
+      "action": "round(S,S,S)",
+      "type": "round"
+    },
+    {
+      "from": 165,
+      "to": 210,
+      "action": "round(S,S,S)",
+      "type": "round"
+    },
+    {
+      "from": 166,
+      "to": 211,
+      "action": "round(S,S,S)",
+      "type": "round"
+    },
+    {
+      "from": 167,
+      "to": 212,
+      "action": "round(R,R,R)",
+      "type": "round"
+    },
+    {
+      "from": 168,
+      "to": 213,
+      "action": "round(S,S,S)",
+      "type": "round"
+    },
+    {
+      "from": 169,
+      "to": 214,
+      "action": "round(P,P,P)",
+      "type": "round"
+    },
+    {
+      "from": 170,
+      "to": 215,
+      "action": "round(P,P,P)",
+      "type": "round"
+    },
+    {
+      "from": 171,
+      "to": 216,
+      "action": "round(P,P,P)",
+      "type": "round"
+    },
+    {
+      "from": 172,
+      "to": 217,
+      "action": "round(P,P,P)",
+      "type": "round"
+    },
+    {
+      "from": 173,
+      "to": 218,
+      "action": "round(P,P,P)",
+      "type": "round"
+    },
+    {
+      "from": 174,
+      "to": 219,
+      "action": "round(R,R,R)",
+      "type": "round"
+    },
+    {
+      "from": 175,
+      "to": 220,
+      "action": "round(R,R,R)",
+      "type": "round"
+    },
+    {
+      "from": 176,
+      "to": 221,
+      "action": "round(R,R,R)",
+      "type": "round"
+    },
+    {
+      "from": 177,
+      "to": 222,
+      "action": "round(R,R,R)",
+      "type": "round"
+    },
+    {
+      "from": 178,
+      "to": 223,
+      "action": "round(R,R,R)",
+      "type": "round"
+    },
+    {
+      "from": 179,
+      "to": 224,
+      "action": "round(S,S,S)",
+      "type": "round"
+    },
+    {
+      "from": 180,
+      "to": 210,
+      "action": "round(S,S,S)",
+      "type": "round"
+    },
+    {
+      "from": 181,
+      "to": 209,
+      "action": "round(S,S,S)",
+      "type": "round"
+    },
+    {
+      "from": 182,
+      "to": 213,
+      "action": "round(S,S,S)",
+      "type": "round"
+    },
+    {
+      "from": 183,
+      "to": 214,
+      "action": "round(P,P,P)",
+      "type": "round"
+    },
+    {
+      "from": 184,
+      "to": 215,
+      "action": "round(P,P,P)",
+      "type": "round"
+    },
+    {
+      "from": 184,
+      "to": 225,
+      "action": "round(P,P,R)",
+      "type": "round"
+    },
+    {
+      "from": 184,
+      "to": 226,
+      "action": "round(P,P,S)",
+      "type": "round"
+    },
+    {
+      "from": 184,
+      "to": 227,
+      "action": "round(P,R,P)",
+      "type": "round"
+    },
+    {
+      "from": 184,
+      "to": 228,
+      "action": "round(P,R,R)",
+      "type": "round"
+    },
+    {
+      "from": 184,
+      "to": 229,
+      "action": "round(P,R,S)",
+      "type": "round"
+    },
+    {
+      "from": 184,
+      "to": 230,
+      "action": "round(P,S,P)",
+      "type": "round"
+    },
+    {
+      "from": 184,
+      "to": 231,
+      "action": "round(P,S,R)",
+      "type": "round"
+    },
+    {
+      "from": 184,
+      "to": 232,
+      "action": "round(P,S,S)",
+      "type": "round"
+    },
+    {
+      "from": 184,
+      "to": 233,
+      "action": "round(R,P,P)",
+      "type": "round"
+    },
+    {
+      "from": 184,
+      "to": 234,
+      "action": "round(R,P,R)",
+      "type": "round"
+    },
+    {
+      "from": 184,
+      "to": 235,
+      "action": "round(R,P,S)",
+      "type": "round"
+    },
+    {
+      "from": 184,
+      "to": 236,
+      "action": "round(R,R,P)",
+      "type": "round"
+    },
+    {
+      "from": 184,
+      "to": 220,
+      "action": "round(R,R,R)",
+      "type": "round"
+    },
+    {
+      "from": 184,
+      "to": 237,
+      "action": "round(R,R,S)",
+      "type": "round"
+    },
+    {
+      "from": 184,
+      "to": 238,
+      "action": "round(R,S,P)",
+      "type": "round"
+    },
+    {
+      "from": 184,
+      "to": 239,
+      "action": "round(R,S,R)",
+      "type": "round"
+    },
+    {
+      "from": 184,
+      "to": 240,
+      "action": "round(R,S,S)",
+      "type": "round"
+    },
+    {
+      "from": 184,
+      "to": 241,
+      "action": "round(S,P,P)",
+      "type": "round"
+    },
+    {
+      "from": 184,
+      "to": 242,
+      "action": "round(S,P,R)",
+      "type": "round"
+    },
+    {
+      "from": 184,
+      "to": 243,
+      "action": "round(S,P,S)",
+      "type": "round"
+    },
+    {
+      "from": 184,
+      "to": 244,
+      "action": "round(S,R,P)",
+      "type": "round"
+    },
+    {
+      "from": 184,
+      "to": 245,
+      "action": "round(S,R,R)",
+      "type": "round"
+    },
+    {
+      "from": 184,
+      "to": 246,
+      "action": "round(S,R,S)",
+      "type": "round"
+    },
+    {
+      "from": 184,
+      "to": 247,
+      "action": "round(S,S,P)",
+      "type": "round"
+    },
+    {
+      "from": 184,
+      "to": 248,
+      "action": "round(S,S,R)",
+      "type": "round"
+    },
+    {
+      "from": 184,
+      "to": 208,
+      "action": "round(S,S,S)",
+      "type": "round"
+    },
+    {
+      "from": 185,
+      "to": 211,
+      "action": "round(S,S,S)",
+      "type": "round"
+    },
+    {
+      "from": 186,
+      "to": 215,
+      "action": "round(P,P,P)",
+      "type": "round"
+    },
+    {
+      "from": 186,
+      "to": 225,
+      "action": "round(P,P,R)",
+      "type": "round"
+    },
+    {
+      "from": 186,
+      "to": 226,
+      "action": "round(P,P,S)",
+      "type": "round"
+    },
+    {
+      "from": 186,
+      "to": 227,
+      "action": "round(P,R,P)",
+      "type": "round"
+    },
+    {
+      "from": 186,
+      "to": 228,
+      "action": "round(P,R,R)",
+      "type": "round"
+    },
+    {
+      "from": 186,
+      "to": 229,
+      "action": "round(P,R,S)",
+      "type": "round"
+    },
+    {
+      "from": 186,
+      "to": 230,
+      "action": "round(P,S,P)",
+      "type": "round"
+    },
+    {
+      "from": 186,
+      "to": 231,
+      "action": "round(P,S,R)",
+      "type": "round"
+    },
+    {
+      "from": 186,
+      "to": 232,
+      "action": "round(P,S,S)",
+      "type": "round"
+    },
+    {
+      "from": 186,
+      "to": 233,
+      "action": "round(R,P,P)",
+      "type": "round"
+    },
+    {
+      "from": 186,
+      "to": 234,
+      "action": "round(R,P,R)",
+      "type": "round"
+    },
+    {
+      "from": 186,
+      "to": 235,
+      "action": "round(R,P,S)",
+      "type": "round"
+    },
+    {
+      "from": 186,
+      "to": 236,
+      "action": "round(R,R,P)",
+      "type": "round"
+    },
+    {
+      "from": 186,
+      "to": 220,
+      "action": "round(R,R,R)",
+      "type": "round"
+    },
+    {
+      "from": 186,
+      "to": 237,
+      "action": "round(R,R,S)",
+      "type": "round"
+    },
+    {
+      "from": 186,
+      "to": 238,
+      "action": "round(R,S,P)",
+      "type": "round"
+    },
+    {
+      "from": 186,
+      "to": 239,
+      "action": "round(R,S,R)",
+      "type": "round"
+    },
+    {
+      "from": 186,
+      "to": 240,
+      "action": "round(R,S,S)",
+      "type": "round"
+    },
+    {
+      "from": 186,
+      "to": 241,
+      "action": "round(S,P,P)",
+      "type": "round"
+    },
+    {
+      "from": 186,
+      "to": 242,
+      "action": "round(S,P,R)",
+      "type": "round"
+    },
+    {
+      "from": 186,
+      "to": 243,
+      "action": "round(S,P,S)",
+      "type": "round"
+    },
+    {
+      "from": 186,
+      "to": 244,
+      "action": "round(S,R,P)",
+      "type": "round"
+    },
+    {
+      "from": 186,
+      "to": 245,
+      "action": "round(S,R,R)",
+      "type": "round"
+    },
+    {
+      "from": 186,
+      "to": 246,
+      "action": "round(S,R,S)",
+      "type": "round"
+    },
+    {
+      "from": 186,
+      "to": 247,
+      "action": "round(S,S,P)",
+      "type": "round"
+    },
+    {
+      "from": 186,
+      "to": 248,
+      "action": "round(S,S,R)",
+      "type": "round"
+    },
+    {
+      "from": 186,
+      "to": 208,
+      "action": "round(S,S,S)",
+      "type": "round"
+    },
+    {
+      "from": 187,
+      "to": 212,
+      "action": "round(R,R,R)",
+      "type": "round"
+    },
+    {
+      "from": 188,
+      "to": 249,
+      "action": "round(S,S,S)",
+      "type": "round"
+    },
+    {
+      "from": 189,
+      "to": 250,
+      "action": "round(P,P,P)",
+      "type": "round"
+    },
+    {
+      "from": 190,
+      "to": 215,
+      "action": "round(P,P,P)",
+      "type": "round"
+    },
+    {
+      "from": 190,
+      "to": 225,
+      "action": "round(P,P,R)",
+      "type": "round"
+    },
+    {
+      "from": 190,
+      "to": 226,
+      "action": "round(P,P,S)",
+      "type": "round"
+    },
+    {
+      "from": 190,
+      "to": 227,
+      "action": "round(P,R,P)",
+      "type": "round"
+    },
+    {
+      "from": 190,
+      "to": 228,
+      "action": "round(P,R,R)",
+      "type": "round"
+    },
+    {
+      "from": 190,
+      "to": 229,
+      "action": "round(P,R,S)",
+      "type": "round"
+    },
+    {
+      "from": 190,
+      "to": 230,
+      "action": "round(P,S,P)",
+      "type": "round"
+    },
+    {
+      "from": 190,
+      "to": 231,
+      "action": "round(P,S,R)",
+      "type": "round"
+    },
+    {
+      "from": 190,
+      "to": 232,
+      "action": "round(P,S,S)",
+      "type": "round"
+    },
+    {
+      "from": 190,
+      "to": 233,
+      "action": "round(R,P,P)",
+      "type": "round"
+    },
+    {
+      "from": 190,
+      "to": 234,
+      "action": "round(R,P,R)",
+      "type": "round"
+    },
+    {
+      "from": 190,
+      "to": 235,
+      "action": "round(R,P,S)",
+      "type": "round"
+    },
+    {
+      "from": 190,
+      "to": 236,
+      "action": "round(R,R,P)",
+      "type": "round"
+    },
+    {
+      "from": 190,
+      "to": 220,
+      "action": "round(R,R,R)",
+      "type": "round"
+    },
+    {
+      "from": 190,
+      "to": 237,
+      "action": "round(R,R,S)",
+      "type": "round"
+    },
+    {
+      "from": 190,
+      "to": 238,
+      "action": "round(R,S,P)",
+      "type": "round"
+    },
+    {
+      "from": 190,
+      "to": 239,
+      "action": "round(R,S,R)",
+      "type": "round"
+    },
+    {
+      "from": 190,
+      "to": 240,
+      "action": "round(R,S,S)",
+      "type": "round"
+    },
+    {
+      "from": 190,
+      "to": 241,
+      "action": "round(S,P,P)",
+      "type": "round"
+    },
+    {
+      "from": 190,
+      "to": 242,
+      "action": "round(S,P,R)",
+      "type": "round"
+    },
+    {
+      "from": 190,
+      "to": 243,
+      "action": "round(S,P,S)",
+      "type": "round"
+    },
+    {
+      "from": 190,
+      "to": 244,
+      "action": "round(S,R,P)",
+      "type": "round"
+    },
+    {
+      "from": 190,
+      "to": 245,
+      "action": "round(S,R,R)",
+      "type": "round"
+    },
+    {
+      "from": 190,
+      "to": 246,
+      "action": "round(S,R,S)",
+      "type": "round"
+    },
+    {
+      "from": 190,
+      "to": 247,
+      "action": "round(S,S,P)",
+      "type": "round"
+    },
+    {
+      "from": 190,
+      "to": 248,
+      "action": "round(S,S,R)",
+      "type": "round"
+    },
+    {
+      "from": 190,
+      "to": 208,
+      "action": "round(S,S,S)",
+      "type": "round"
+    },
+    {
+      "from": 191,
+      "to": 217,
+      "action": "round(P,P,P)",
+      "type": "round"
+    },
+    {
+      "from": 192,
+      "to": 216,
+      "action": "round(P,P,P)",
+      "type": "round"
+    },
+    {
+      "from": 193,
+      "to": 215,
+      "action": "round(P,P,P)",
+      "type": "round"
+    },
+    {
+      "from": 193,
+      "to": 225,
+      "action": "round(P,P,R)",
+      "type": "round"
+    },
+    {
+      "from": 193,
+      "to": 226,
+      "action": "round(P,P,S)",
+      "type": "round"
+    },
+    {
+      "from": 193,
+      "to": 227,
+      "action": "round(P,R,P)",
+      "type": "round"
+    },
+    {
+      "from": 193,
+      "to": 228,
+      "action": "round(P,R,R)",
+      "type": "round"
+    },
+    {
+      "from": 193,
+      "to": 229,
+      "action": "round(P,R,S)",
+      "type": "round"
+    },
+    {
+      "from": 193,
+      "to": 230,
+      "action": "round(P,S,P)",
+      "type": "round"
+    },
+    {
+      "from": 193,
+      "to": 231,
+      "action": "round(P,S,R)",
+      "type": "round"
+    },
+    {
+      "from": 193,
+      "to": 232,
+      "action": "round(P,S,S)",
+      "type": "round"
+    },
+    {
+      "from": 193,
+      "to": 233,
+      "action": "round(R,P,P)",
+      "type": "round"
+    },
+    {
+      "from": 193,
+      "to": 234,
+      "action": "round(R,P,R)",
+      "type": "round"
+    },
+    {
+      "from": 193,
+      "to": 235,
+      "action": "round(R,P,S)",
+      "type": "round"
+    },
+    {
+      "from": 193,
+      "to": 236,
+      "action": "round(R,R,P)",
+      "type": "round"
+    },
+    {
+      "from": 193,
+      "to": 220,
+      "action": "round(R,R,R)",
+      "type": "round"
+    },
+    {
+      "from": 193,
+      "to": 237,
+      "action": "round(R,R,S)",
+      "type": "round"
+    },
+    {
+      "from": 193,
+      "to": 238,
+      "action": "round(R,S,P)",
+      "type": "round"
+    },
+    {
+      "from": 193,
+      "to": 239,
+      "action": "round(R,S,R)",
+      "type": "round"
+    },
+    {
+      "from": 193,
+      "to": 240,
+      "action": "round(R,S,S)",
+      "type": "round"
+    },
+    {
+      "from": 193,
+      "to": 241,
+      "action": "round(S,P,P)",
+      "type": "round"
+    },
+    {
+      "from": 193,
+      "to": 242,
+      "action": "round(S,P,R)",
+      "type": "round"
+    },
+    {
+      "from": 193,
+      "to": 243,
+      "action": "round(S,P,S)",
+      "type": "round"
+    },
+    {
+      "from": 193,
+      "to": 244,
+      "action": "round(S,R,P)",
+      "type": "round"
+    },
+    {
+      "from": 193,
+      "to": 245,
+      "action": "round(S,R,R)",
+      "type": "round"
+    },
+    {
+      "from": 193,
+      "to": 246,
+      "action": "round(S,R,S)",
+      "type": "round"
+    },
+    {
+      "from": 193,
+      "to": 247,
+      "action": "round(S,S,P)",
+      "type": "round"
+    },
+    {
+      "from": 193,
+      "to": 248,
+      "action": "round(S,S,R)",
+      "type": "round"
+    },
+    {
+      "from": 193,
+      "to": 208,
+      "action": "round(S,S,S)",
+      "type": "round"
+    },
+    {
+      "from": 194,
+      "to": 218,
+      "action": "round(P,P,P)",
+      "type": "round"
+    },
+    {
+      "from": 195,
+      "to": 219,
+      "action": "round(R,R,R)",
+      "type": "round"
+    },
+    {
+      "from": 196,
+      "to": 224,
+      "action": "round(S,S,S)",
+      "type": "round"
+    },
+    {
+      "from": 197,
+      "to": 215,
+      "action": "round(P,P,P)",
+      "type": "round"
+    },
+    {
+      "from": 197,
+      "to": 225,
+      "action": "round(P,P,R)",
+      "type": "round"
+    },
+    {
+      "from": 197,
+      "to": 226,
+      "action": "round(P,P,S)",
+      "type": "round"
+    },
+    {
+      "from": 197,
+      "to": 227,
+      "action": "round(P,R,P)",
+      "type": "round"
+    },
+    {
+      "from": 197,
+      "to": 228,
+      "action": "round(P,R,R)",
+      "type": "round"
+    },
+    {
+      "from": 197,
+      "to": 229,
+      "action": "round(P,R,S)",
+      "type": "round"
+    },
+    {
+      "from": 197,
+      "to": 230,
+      "action": "round(P,S,P)",
+      "type": "round"
+    },
+    {
+      "from": 197,
+      "to": 231,
+      "action": "round(P,S,R)",
+      "type": "round"
+    },
+    {
+      "from": 197,
+      "to": 232,
+      "action": "round(P,S,S)",
+      "type": "round"
+    },
+    {
+      "from": 197,
+      "to": 233,
+      "action": "round(R,P,P)",
+      "type": "round"
+    },
+    {
+      "from": 197,
+      "to": 234,
+      "action": "round(R,P,R)",
+      "type": "round"
+    },
+    {
+      "from": 197,
+      "to": 235,
+      "action": "round(R,P,S)",
+      "type": "round"
+    },
+    {
+      "from": 197,
+      "to": 236,
+      "action": "round(R,R,P)",
+      "type": "round"
+    },
+    {
+      "from": 197,
+      "to": 220,
+      "action": "round(R,R,R)",
+      "type": "round"
+    },
+    {
+      "from": 197,
+      "to": 237,
+      "action": "round(R,R,S)",
+      "type": "round"
+    },
+    {
+      "from": 197,
+      "to": 238,
+      "action": "round(R,S,P)",
+      "type": "round"
+    },
+    {
+      "from": 197,
+      "to": 239,
+      "action": "round(R,S,R)",
+      "type": "round"
+    },
+    {
+      "from": 197,
+      "to": 240,
+      "action": "round(R,S,S)",
+      "type": "round"
+    },
+    {
+      "from": 197,
+      "to": 241,
+      "action": "round(S,P,P)",
+      "type": "round"
+    },
+    {
+      "from": 197,
+      "to": 242,
+      "action": "round(S,P,R)",
+      "type": "round"
+    },
+    {
+      "from": 197,
+      "to": 243,
+      "action": "round(S,P,S)",
+      "type": "round"
+    },
+    {
+      "from": 197,
+      "to": 244,
+      "action": "round(S,R,P)",
+      "type": "round"
+    },
+    {
+      "from": 197,
+      "to": 245,
+      "action": "round(S,R,R)",
+      "type": "round"
+    },
+    {
+      "from": 197,
+      "to": 246,
+      "action": "round(S,R,S)",
+      "type": "round"
+    },
+    {
+      "from": 197,
+      "to": 247,
+      "action": "round(S,S,P)",
+      "type": "round"
+    },
+    {
+      "from": 197,
+      "to": 248,
+      "action": "round(S,S,R)",
+      "type": "round"
+    },
+    {
+      "from": 197,
+      "to": 208,
+      "action": "round(S,S,S)",
+      "type": "round"
+    },
+    {
+      "from": 198,
+      "to": 223,
+      "action": "round(R,R,R)",
+      "type": "round"
+    },
+    {
+      "from": 199,
+      "to": 215,
+      "action": "round(P,P,P)",
+      "type": "round"
+    },
+    {
+      "from": 199,
+      "to": 225,
+      "action": "round(P,P,R)",
+      "type": "round"
+    },
+    {
+      "from": 199,
+      "to": 226,
+      "action": "round(P,P,S)",
+      "type": "round"
+    },
+    {
+      "from": 199,
+      "to": 227,
+      "action": "round(P,R,P)",
+      "type": "round"
+    },
+    {
+      "from": 199,
+      "to": 228,
+      "action": "round(P,R,R)",
+      "type": "round"
+    },
+    {
+      "from": 199,
+      "to": 229,
+      "action": "round(P,R,S)",
+      "type": "round"
+    },
+    {
+      "from": 199,
+      "to": 230,
+      "action": "round(P,S,P)",
+      "type": "round"
+    },
+    {
+      "from": 199,
+      "to": 231,
+      "action": "round(P,S,R)",
+      "type": "round"
+    },
+    {
+      "from": 199,
+      "to": 232,
+      "action": "round(P,S,S)",
+      "type": "round"
+    },
+    {
+      "from": 199,
+      "to": 233,
+      "action": "round(R,P,P)",
+      "type": "round"
+    },
+    {
+      "from": 199,
+      "to": 234,
+      "action": "round(R,P,R)",
+      "type": "round"
+    },
+    {
+      "from": 199,
+      "to": 235,
+      "action": "round(R,P,S)",
+      "type": "round"
+    },
+    {
+      "from": 199,
+      "to": 236,
+      "action": "round(R,R,P)",
+      "type": "round"
+    },
+    {
+      "from": 199,
+      "to": 220,
+      "action": "round(R,R,R)",
+      "type": "round"
+    },
+    {
+      "from": 199,
+      "to": 237,
+      "action": "round(R,R,S)",
+      "type": "round"
+    },
+    {
+      "from": 199,
+      "to": 238,
+      "action": "round(R,S,P)",
+      "type": "round"
+    },
+    {
+      "from": 199,
+      "to": 239,
+      "action": "round(R,S,R)",
+      "type": "round"
+    },
+    {
+      "from": 199,
+      "to": 240,
+      "action": "round(R,S,S)",
+      "type": "round"
+    },
+    {
+      "from": 199,
+      "to": 241,
+      "action": "round(S,P,P)",
+      "type": "round"
+    },
+    {
+      "from": 199,
+      "to": 242,
+      "action": "round(S,P,R)",
+      "type": "round"
+    },
+    {
+      "from": 199,
+      "to": 243,
+      "action": "round(S,P,S)",
+      "type": "round"
+    },
+    {
+      "from": 199,
+      "to": 244,
+      "action": "round(S,R,P)",
+      "type": "round"
+    },
+    {
+      "from": 199,
+      "to": 245,
+      "action": "round(S,R,R)",
+      "type": "round"
+    },
+    {
+      "from": 199,
+      "to": 246,
+      "action": "round(S,R,S)",
+      "type": "round"
+    },
+    {
+      "from": 199,
+      "to": 247,
+      "action": "round(S,S,P)",
+      "type": "round"
+    },
+    {
+      "from": 199,
+      "to": 248,
+      "action": "round(S,S,R)",
+      "type": "round"
+    },
+    {
+      "from": 199,
+      "to": 208,
+      "action": "round(S,S,S)",
+      "type": "round"
+    },
+    {
+      "from": 200,
+      "to": 251,
+      "action": "round(P,P,P)",
+      "type": "round"
+    },
+    {
+      "from": 201,
+      "to": 252,
+      "action": "round(R,R,R)",
+      "type": "round"
+    },
+    {
+      "from": 202,
+      "to": 221,
+      "action": "round(R,R,R)",
+      "type": "round"
+    },
+    {
+      "from": 203,
+      "to": 222,
+      "action": "round(R,R,R)",
+      "type": "round"
+    },
+    {
+      "from": 204,
+      "to": 252,
+      "action": "round(R,R,R)",
+      "type": "round"
+    },
+    {
+      "from": 205,
+      "to": 251,
+      "action": "round(P,P,P)",
+      "type": "round"
+    },
+    {
+      "from": 206,
+      "to": 249,
+      "action": "round(S,S,S)",
+      "type": "round"
+    },
+    {
+      "from": 207,
+      "to": 250,
+      "action": "round(P,P,P)",
+      "type": "round"
+    }
+  ],
+  "meta": {
+    "n_nodes": 253,
+    "n_edges": 1014,
+    "n_terminal": 45,
+    "n_convergence": 135,
+    "n_strong_convergence": 108,
+    "templates": [
+      {
+        "key": "round -> round -> round",
+        "count": 21360
+      }
+    ]
+  }
+}
