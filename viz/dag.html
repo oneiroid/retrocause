@@ -11,6 +11,7 @@
     --text: #d8dee6;
     --text-dim: #8a93a0;
     --accent: #6aa6ff;
+    --path: #ff7a9c;            /* path-from-root highlight */
     --converge: #ffc857;
     --pinned: #7dd3a5;
   }
@@ -24,6 +25,8 @@
   #canvas-wrap { position: relative; overflow: hidden; }
   canvas { display: block; width: 100%; height: 100%; background: var(--bg); cursor: grab; }
   canvas.grabbing { cursor: grabbing; }
+  canvas.dragging-node { cursor: grabbing; }
+  canvas.over-node { cursor: pointer; }
   #sidebar {
     border-left: 1px solid var(--panel-border);
     background: var(--panel);
@@ -71,8 +74,6 @@
 <div id="app">
   <div id="canvas-wrap">
     <div id="toolbar">
-      <button id="btn-mode-full" class="active">full</button>
-      <button id="btn-mode-summary">summary</button>
       <button id="btn-fit">fit</button>
       <button id="btn-focus">focus</button>
       <button id="btn-clear">clear</button>
@@ -80,7 +81,7 @@
       <span class="stats" id="stats">loading&hellip;</span>
     </div>
     <div id="legend"></div>
-    <div id="hint">drag = pan · wheel = zoom · click = select · dbl-click node = focus / supernode = drill</div>
+    <div id="hint">drag empty = pan · drag node = move · wheel = zoom · click = select · dbl-click node = focus</div>
     <canvas></canvas>
     <div id="tooltip"></div>
   </div>
@@ -97,14 +98,14 @@
 "use strict";
 
 // ---- tuning ---------------------------------------------------------
-const Y_SCALE = 90;        // px per generation (force-Y target)
+const Y_SCALE = 90;
 const FORCE_CHARGE = -90;
 const FORCE_LINK_DIST = 30;
 const FORCE_COLLIDE = 9;
-const WARM_TICKS = 220;    // run sim this long before settling
+const WARM_TICKS = 220;
 const FOCUS_HOPS = 2;
-const LOD_LABEL_K = 0.7;   // labels appear above this zoom level
-const LOD_EDGE_K  = 0.25;  // below this, draw every Nth edge
+const LOD_LABEL_K = 0.7;
+const LOD_EDGE_K  = 0.25;
 
 const KIND_COLOR = {
   open:         "#b48eff",
@@ -142,13 +143,11 @@ d3.json(DATA_URL).then(run).catch(err => {
 
 function run(data) {
   // ---- prep -------------------------------------------------------
-  // Force-sim mutates x/y. Seed from layout coords if present so the
-  // first frame already looks reasonable; sim then relaxes.
   const nodes = data.nodes.map(n => ({
     ...n,
     x: (n.x || 0) * 28,
     y: (n.y || n.generation || 0) * Y_SCALE,
-    _fy: (n.generation || 0) * Y_SCALE,  // soft y target (forceY)
+    _fy: (n.generation || 0) * Y_SCALE,
   }));
   const nodesById = new Map(nodes.map(n => [n.id, n]));
   const edges = data.edges.map(e => ({
@@ -157,28 +156,16 @@ function run(data) {
     action: e.action, type: e.type,
     from: e.from, to: e.to,
   }));
+  // edge index for fast incidence lookup (used by path highlight)
+  const edgeBySrcDst = new Map();
+  edges.forEach(e => { edgeBySrcDst.set(e.from + "->" + e.to, e); });
 
-  const agg = data.aggregation || { nodes: [], edges: [] };
-  const supers = agg.nodes.map(s => ({
-    ...s,
-    x: (s.x || 0) * 28,
-    y: (s.generation || 0) * Y_SCALE,
-    _fy: (s.generation || 0) * Y_SCALE,
-  }));
-  const supersById = new Map(supers.map(s => [s.id, s]));
-  const superEdges = agg.edges.map(e => ({
-    source: supersById.get(e.from),
-    target: supersById.get(e.to),
-    count: e.count,
-    from: e.from, to: e.to,
-  }));
-
-  // adjacency for focus mode
+  // adjacency
   const adjOut = new Map(nodes.map(n => [n.id, []]));
   const adjIn  = new Map(nodes.map(n => [n.id, []]));
   edges.forEach(e => { adjOut.get(e.from).push(e.to); adjIn.get(e.to).push(e.from); });
 
-  // viewer-side kindOf, mirrors builder/aggregate.py
+  // domain-aware kind classification
   function kindOf(d) {
     const e = d.expr || "";
     if (/ACCEPTED/.test(e)) return "accepted";
@@ -196,7 +183,7 @@ function run(data) {
     return "alive";
   }
   nodes.forEach(n => { n._kind = kindOf(n); });
-  const presentKinds = new Set(nodes.map(n => n._kind).concat(supers.map(s => s.kind)));
+  const presentKinds = new Set(nodes.map(n => n._kind));
 
   const salient = new Set(
     nodes.filter(n => n.in_degree >= 3 || n.terminal || n.pinned ||
@@ -204,11 +191,9 @@ function run(data) {
          .map(n => n.id)
   );
 
-  // ---- stats ------------------------------------------------------
   document.getElementById("stats").textContent =
     `nodes=${data.meta.n_nodes} edges=${data.meta.n_edges} ` +
-    `terminal=${data.meta.n_terminal} converge=${data.meta.n_convergence} ` +
-    `super=${supers.length}/${superEdges.length}`;
+    `terminal=${data.meta.n_terminal} converge=${data.meta.n_convergence}`;
 
   // ---- canvas -----------------------------------------------------
   const canvas = document.querySelector("canvas");
@@ -221,39 +206,41 @@ function run(data) {
     canvas.width  = Math.round(cssW * dpr);
     canvas.height = Math.round(cssH * dpr);
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    if (sim) sim.force("x", d3.forceX(cssW / 2).strength(0.015));
     needsRender = true;
   }
   window.addEventListener("resize", resize);
 
   // ---- state ------------------------------------------------------
-  let mode = "full";              // "full" | "summary"
   let transform = d3.zoomIdentity;
-  let selected = null;            // node id (full) or super obj (summary)
-  let selectedKind = null;        // "node" | "super"
-  let focusSet = null;            // Set<id> | null
+  let selected = null;             // node id | null
+  let focusSet = null;             // Set<id> | null
+  let pathEdges = null;            // Set<"from->to"> | null
+  let pathNodes = null;            // Set<id> | null
   let hovered = null;
-  let hoveredKind = null;
+  let dragNode = null;             // node currently being dragged
   let needsRender = true;
-  let simAlive = true;            // false = sim frozen
+  let simAlive = true;
+  let userManuallyUnfroze = false; // once true, auto-freeze never re-fires
 
-  // Quadtree built each render for hit-testing in current sim state.
-  let nodeTree  = null;
-  let superTree = null;
+  let nodeTree = null;
 
-  // ---- zoom -------------------------------------------------------
+  // ---- zoom (pan via empty-canvas drag, wheel = zoom) -------------
   const d3c = d3.select(canvas);
   const zoom = d3.zoom()
     .scaleExtent([0.04, 8])
+    // Filter blocks zoom-pan when the press hits a node so node-drag can take over.
+    .filter((event) => {
+      if (event.type === "wheel") return true;
+      if (event.button !== 0 && event.button !== undefined) return false;
+      const hit = hitAtClient(event.clientX, event.clientY);
+      return !hit;
+    })
     .on("start", () => canvas.classList.add("grabbing"))
     .on("end",   () => canvas.classList.remove("grabbing"))
     .on("zoom",  (e) => { transform = e.transform; needsRender = true; });
   d3c.call(zoom);
 
   // ---- force sim --------------------------------------------------
-  // We run two sims (full, summary) but only the active one ticks.
-  // forceY pulls each node toward (generation * Y_SCALE) softly so
-  // layers stay readable but the sim still gives organic spread.
   const fullSim = d3.forceSimulation(nodes)
     .force("link",   d3.forceLink(edges).id(d => d.id).distance(FORCE_LINK_DIST).strength(0.25))
     .force("charge", d3.forceManyBody().strength(FORCE_CHARGE).theta(0.9).distanceMax(400))
@@ -263,33 +250,23 @@ function run(data) {
     .alpha(1).alphaDecay(0.025)
     .on("tick", () => { needsRender = true; });
 
-  const summarySim = d3.forceSimulation(supers)
-    .force("link",   d3.forceLink(superEdges).id(d => d.id).distance(80).strength(0.4))
-    .force("charge", d3.forceManyBody().strength(-450).theta(0.9))
-    .force("y",      d3.forceY(d => d._fy).strength(0.7))
-    .force("x",      d3.forceX(0).strength(0.02))
-    .force("collide",d3.forceCollide(d => 8 + Math.sqrt(d.count) * 2))
-    .alpha(1).alphaDecay(0.03)
-    .on("tick", () => { needsRender = true; });
-  summarySim.stop();   // start frozen until summary mode is selected
-
-  // After WARM_TICKS, freeze automatically to save CPU. User can
-  // un-freeze via the toolbar.
+  // Auto-freeze after WARM_TICKS, unless the user has already manually
+  // toggled freeze (then they own the freeze state).
   let warmTickCount = 0;
   fullSim.on("tick.warm", () => {
     warmTickCount++;
-    if (warmTickCount >= WARM_TICKS && simAlive) {
+    if (warmTickCount >= WARM_TICKS && simAlive && !userManuallyUnfroze) {
       simAlive = false;
       fullSim.stop();
-      document.getElementById("btn-freeze").textContent = "frozen";
-      document.getElementById("btn-freeze").classList.remove("active");
+      const btn = document.getElementById("btn-freeze");
+      btn.textContent = "frozen";
+      btn.classList.remove("active");
+      fit();
     }
   });
 
   // ---- helpers ----------------------------------------------------
   function nodeRadius(n) { return 3.5 + Math.min(5, Math.log2(1 + n.in_degree)); }
-  function superRadius(s) { return 7 + Math.sqrt(s.count) * 1.6; }
-
   const tx = (wx) => transform.x + wx * transform.k;
   const ty = (wy) => transform.y + wy * transform.k;
   const wx = (sx) => (sx - transform.x) / transform.k;
@@ -299,58 +276,7 @@ function run(data) {
   function render() {
     needsRender = false;
     ctx.clearRect(0, 0, cssW, cssH);
-    if (mode === "summary") drawSummary();
-    else                     drawFull();
-  }
-
-  function drawSummary() {
-    superTree = d3.quadtree().x(s => s.x).y(s => s.y).addAll(supers);
-
-    // --- super edges (single batched stroke, then per-edge arrow) ---
-    ctx.strokeStyle = "rgba(130,145,170,0.55)";
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    for (const se of superEdges) {
-      ctx.moveTo(tx(se.source.x), ty(se.source.y));
-      ctx.lineTo(tx(se.target.x), ty(se.target.y));
-    }
-    ctx.stroke();
-
-    for (const se of superEdges) {
-      const a = se.source, b = se.target;
-      const ax = tx(a.x), ay = ty(a.y), bx = tx(b.x), by = ty(b.y);
-      const dx = bx - ax, dy = by - ay;
-      const d = Math.hypot(dx, dy) || 1;
-      const ux = dx / d, uy = dy / d;
-      const rB = superRadius(b);
-      drawArrow(bx - ux * (rB + 4), by - uy * (rB + 4), ux, uy,
-                Math.max(4, Math.log2(1 + se.count) * 1.6),
-                "rgba(130,145,170,0.85)");
-    }
-
-    // --- nodes ---
-    for (const s of supers) {
-      const cx = tx(s.x), cy = ty(s.y);
-      const r = superRadius(s);
-      ctx.fillStyle = KIND_COLOR[s.kind] || KIND_COLOR.alive;
-      ctx.strokeStyle = (selectedKind === "super" && selected === s) ? "#fff"
-                      : (hoveredKind === "super" && hovered === s)   ? "#eee"
-                      : "#0c0f14";
-      ctx.lineWidth = (selectedKind === "super" && selected === s) ? 2.6 : 1.4;
-      ctx.beginPath();
-      ctx.arc(cx, cy, r, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.stroke();
-      // count + kind label
-      ctx.fillStyle = "#0c0f14";
-      ctx.font = "bold 11px ui-monospace, Menlo, monospace";
-      ctx.textAlign = "center"; ctx.textBaseline = "middle";
-      ctx.fillText(String(s.count), cx, cy);
-      ctx.fillStyle = "#8a93a0";
-      ctx.font = "10px ui-monospace, Menlo, monospace";
-      ctx.textBaseline = "alphabetic";
-      ctx.fillText(`g${s.generation} ${KIND_LABEL[s.kind] || s.kind}`, cx, cy - r - 4);
-    }
+    drawFull();
   }
 
   function drawFull() {
@@ -360,45 +286,58 @@ function run(data) {
     const showLabels = k >= LOD_LABEL_K;
     const edgeStride = k < LOD_EDGE_K ? Math.max(1, Math.round(LOD_EDGE_K / k)) : 1;
 
-    // viewport bounds (world coords)
     const vx0 = wx(-40), vy0 = wy(-40);
     const vx1 = wx(cssW + 40), vy1 = wy(cssH + 40);
 
-    // --- edges in one batched stroke ---
+    // --- background edges ---
     ctx.strokeStyle = "rgba(58,64,80,0.55)";
     ctx.lineWidth = 1;
     ctx.beginPath();
-    let drawn = 0;
     for (let i = 0; i < edges.length; i += edgeStride) {
       const e = edges[i];
-      const a = e.source, b = e.target;
       if (focusSet && (!focusSet.has(e.from) || !focusSet.has(e.to))) continue;
+      // path edges drawn separately on top
+      if (pathEdges && pathEdges.has(e.from + "->" + e.to)) continue;
+      const a = e.source, b = e.target;
       if ((a.x < vx0 && b.x < vx0) || (a.x > vx1 && b.x > vx1)) continue;
       if ((a.y < vy0 && b.y < vy0) || (a.y > vy1 && b.y > vy1)) continue;
       ctx.moveTo(tx(a.x), ty(a.y));
       ctx.lineTo(tx(b.x), ty(b.y));
-      drawn++;
     }
     ctx.stroke();
 
-    // --- highlighted incident edges (per-edge, on top) ---
-    if (selected != null && selectedKind === "node") {
+    // --- incident edges (selected node, blue) ---
+    if (selected != null) {
       ctx.strokeStyle = "rgba(106,166,255,1)";
       ctx.lineWidth = 1.8;
       ctx.beginPath();
       for (const e of edges) {
         if (e.from !== selected && e.to !== selected) continue;
+        if (pathEdges && pathEdges.has(e.from + "->" + e.to)) continue;
         ctx.moveTo(tx(e.source.x), ty(e.source.y));
         ctx.lineTo(tx(e.target.x), ty(e.target.y));
       }
       ctx.stroke();
     }
 
-    // --- arrowheads: only if zoomed in enough to be visible ---
+    // --- path-from-root edges (pink) ---
+    if (pathEdges) {
+      ctx.strokeStyle = "rgba(255,122,156,1)";
+      ctx.lineWidth = 2.4;
+      ctx.beginPath();
+      for (const e of edges) {
+        if (!pathEdges.has(e.from + "->" + e.to)) continue;
+        ctx.moveTo(tx(e.source.x), ty(e.source.y));
+        ctx.lineTo(tx(e.target.x), ty(e.target.y));
+      }
+      ctx.stroke();
+    }
+
+    // --- arrowheads on edges (only when zoomed in enough) ---
     if (k >= 0.5) {
       for (const e of edges) {
-        const a = e.source, b = e.target;
         if (focusSet && (!focusSet.has(e.from) || !focusSet.has(e.to))) continue;
+        const a = e.source, b = e.target;
         if (a.x < vx0 || a.x > vx1 || a.y < vy0 || a.y > vy1) {
           if (b.x < vx0 || b.x > vx1 || b.y < vy0 || b.y > vy1) continue;
         }
@@ -407,13 +346,17 @@ function run(data) {
         const d = Math.hypot(dx, dy) || 1;
         const ux = dx / d, uy = dy / d;
         const rB = nodeRadius(b);
-        drawArrow(bx - ux * (rB + 4), by - uy * (rB + 4), ux, uy, 3.5,
-                  "rgba(58,64,80,0.85)");
+        const isPath = pathEdges && pathEdges.has(e.from + "->" + e.to);
+        const isIncident = selected != null && (e.from === selected || e.to === selected);
+        const color = isPath     ? "rgba(255,122,156,1)"
+                     : isIncident ? "rgba(106,166,255,1)"
+                     :              "rgba(58,64,80,0.85)";
+        drawArrow(bx - ux * (rB + 4), by - uy * (rB + 4), ux, uy,
+                  isPath ? 5 : (isIncident ? 4.5 : 3.5), color);
       }
     }
 
-    // --- nodes (group by fill color to minimize state changes) ---
-    // Build per-color paths.
+    // --- nodes (batched per fill colour to minimize state changes) ---
     const byColor = new Map();
     for (const n of nodes) {
       if (focusSet && !focusSet.has(n.id)) continue;
@@ -435,7 +378,7 @@ function run(data) {
       ctx.stroke();
     }
 
-    // --- per-node decorations (converge ring, pinned, hovered, selected) ---
+    // --- decorations ---
     for (const n of nodes) {
       if (focusSet && !focusSet.has(n.id)) continue;
       if (n.x < vx0 || n.x > vx1 || n.y < vy0 || n.y > vy1) continue;
@@ -443,8 +386,9 @@ function run(data) {
       if (n.strong_converge) { stroke = "#ffc857"; sw = 2.2; }
       else if (n.in_degree >= 3) { stroke = "#ffc857"; sw = 1.4; }
       if (n.pinned)              { stroke = "#7dd3a5"; sw = 2.2; }
-      if (selectedKind === "node" && n.id === selected) { stroke = "#fff"; sw = 3; }
-      else if (hoveredKind === "node" && n.id === hovered) { stroke = "#eee"; sw = 2; }
+      if (pathNodes && pathNodes.has(n.id))                    { stroke = "#ff7a9c"; sw = 2.4; }
+      if (n.id === selected)                                   { stroke = "#fff";    sw = 3;   }
+      else if (hovered && n.id === hovered.id)                 { stroke = "#eee";    sw = 2;   }
       if (!stroke) continue;
       ctx.strokeStyle = stroke;
       ctx.lineWidth = sw;
@@ -459,7 +403,7 @@ function run(data) {
       ctx.font = "10px ui-monospace, Menlo, monospace";
       ctx.textAlign = "center"; ctx.textBaseline = "bottom";
       for (const n of nodes) {
-        if (!salient.has(n.id)) continue;
+        if (!salient.has(n.id) && !(pathNodes && pathNodes.has(n.id))) continue;
         if (focusSet && !focusSet.has(n.id)) continue;
         if (n.x < vx0 || n.x > vx1 || n.y < vy0 || n.y > vy1) continue;
         ctx.fillText(shortLabel(n), tx(n.x), ty(n.y) - nodeRadius(n) - 3);
@@ -494,114 +438,176 @@ function run(data) {
   requestAnimationFrame(frame);
 
   // ---- hit testing -----------------------------------------------
-  function hitAt(clientX, clientY) {
+  function hitAtClient(clientX, clientY) {
     const rect = canvas.getBoundingClientRect();
     const sx = clientX - rect.left, sy = clientY - rect.top;
     const wmx = wx(sx), wmy = wy(sy);
-    const R = 12 / transform.k;
-    if (mode === "summary") {
-      if (!superTree) return null;
-      const s = superTree.find(wmx, wmy, Math.max(R, 30));
-      return s ? { kind: "super", obj: s } : null;
-    }
     if (!nodeTree) return null;
+    const R = 12 / transform.k;
     const n = nodeTree.find(wmx, wmy, R);
-    return n ? { kind: "node", obj: n } : null;
+    return n || null;
   }
 
-  // ---- interactions ----------------------------------------------
+  // ---- node drag (independent of d3.zoom; zoom filter blocks pan
+  //                 starts that hit a node so this can take over) --
+  canvas.addEventListener("mousedown", (ev) => {
+    if (ev.button !== 0) return;
+    const n = hitAtClient(ev.clientX, ev.clientY);
+    if (!n) return;
+    dragNode = n;
+    canvas.classList.add("dragging-node");
+    if (simAlive) fullSim.alphaTarget(0.3).restart();
+    n.fx = n.x; n.fy = n.y;
+    ev.preventDefault();
+  });
+  window.addEventListener("mousemove", (ev) => {
+    if (!dragNode) return;
+    const rect = canvas.getBoundingClientRect();
+    const wmx = wx(ev.clientX - rect.left);
+    const wmy = wy(ev.clientY - rect.top);
+    dragNode.fx = wmx; dragNode.fy = wmy;
+    if (!simAlive) {
+      // No sim to relax through fx/fy -> update positions directly
+      dragNode.x = wmx; dragNode.y = wmy;
+      needsRender = true;
+    }
+  });
+  window.addEventListener("mouseup", (ev) => {
+    if (!dragNode) return;
+    canvas.classList.remove("dragging-node");
+    if (simAlive) {
+      fullSim.alphaTarget(0);
+      // Release pin so the sim can relax the node back into the layout.
+      dragNode.fx = null; dragNode.fy = null;
+    } else {
+      // Frozen: leave the node where it was dropped (fx/fy stay set
+      // would be wrong because they'd reactivate on a future restart;
+      // x/y are already at drop point so just clear pins).
+      dragNode.fx = null; dragNode.fy = null;
+    }
+    dragNode = null;
+  });
+
+  // ---- mousemove for hover tooltip --------------------------------
   const tip = document.getElementById("tooltip");
   canvas.addEventListener("mousemove", (ev) => {
-    const h = hitAt(ev.clientX, ev.clientY);
-    const prev = hovered, prevK = hoveredKind;
-    hovered = h ? h.obj : null;
-    hoveredKind = h ? h.kind : null;
-    if (h) {
+    if (dragNode) return;     // drag handler owns this
+    const n = hitAtClient(ev.clientX, ev.clientY);
+    const prev = hovered;
+    hovered = n;
+    canvas.classList.toggle("over-node", !!n);
+    if (n) {
       tip.style.opacity = 1;
-      tip.innerHTML = h.kind === "super"
-        ? `<b>gen${h.obj.generation} / ${KIND_LABEL[h.obj.kind] || h.obj.kind}</b><br/>count=${h.obj.count}`
-        : `<b>#${h.obj.id}</b> ${escapeHtml(h.obj.expr)}<br/>in=${h.obj.in_degree} out=${h.obj.out_degree}`;
+      tip.innerHTML =
+        `<b>#${n.id}</b> ${escapeHtml(n.expr)}<br/>in=${n.in_degree} out=${n.out_degree}`;
       tip.style.left = (ev.clientX + 12) + "px";
       tip.style.top  = (ev.clientY + 12) + "px";
     } else {
       tip.style.opacity = 0;
     }
-    if (prev !== hovered || prevK !== hoveredKind) needsRender = true;
+    if (prev !== hovered) needsRender = true;
   });
   canvas.addEventListener("mouseleave", () => {
-    hovered = null; hoveredKind = null;
+    hovered = null;
     tip.style.opacity = 0;
+    canvas.classList.remove("over-node");
     needsRender = true;
   });
+
+  // ---- click select / dblclick focus -----------------------------
+  // Click is fired AFTER mouseup. Skip it if a drag actually moved.
+  let dragMovedSince = false;
+  canvas.addEventListener("mousedown", () => { dragMovedSince = false; });
+  window.addEventListener("mousemove", () => { if (dragNode) dragMovedSince = true; });
   canvas.addEventListener("click", (ev) => {
-    const h = hitAt(ev.clientX, ev.clientY);
-    if (!h) return;
-    selectedKind = h.kind;
-    selected = h.kind === "node" ? h.obj.id : h.obj;
+    if (dragMovedSince) return;
+    const n = hitAtClient(ev.clientX, ev.clientY);
+    if (!n) return;
+    selected = n.id;
+    computePathToRoot(selected);
     renderInspector();
     needsRender = true;
   });
   canvas.addEventListener("dblclick", (ev) => {
-    const h = hitAt(ev.clientX, ev.clientY);
-    if (!h) return;
-    if (h.kind === "super") {
-      setMode("full");
-      zoomToIds(h.obj.member_ids, 1.4);
-    } else {
-      selectedKind = "node"; selected = h.obj.id;
-      setFocus(true);
-    }
+    const n = hitAtClient(ev.clientX, ev.clientY);
+    if (!n) return;
+    selected = n.id;
+    computePathToRoot(selected);
+    setFocus(true);
     renderInspector();
     needsRender = true;
   });
 
+  // ---- path from root --------------------------------------------
+  // BFS backward from selected via adjIn until we hit a node with no
+  // predecessors (the seed). Reconstruct one shortest path.
+  function computePathToRoot(targetId) {
+    if (targetId == null) { pathEdges = null; pathNodes = null; return; }
+    const parent = new Map();
+    parent.set(targetId, null);
+    const q = [targetId];
+    let head = 0;
+    let rootId = null;
+    while (head < q.length) {
+      const cur = q[head++];
+      const preds = adjIn.get(cur) || [];
+      if (preds.length === 0) { rootId = cur; break; }
+      for (const p of preds) {
+        if (parent.has(p)) continue;
+        parent.set(p, cur);
+        q.push(p);
+      }
+    }
+    if (rootId == null) {
+      pathEdges = null; pathNodes = null; return;
+    }
+    pathEdges = new Set();
+    pathNodes = new Set();
+    let cur = rootId;
+    pathNodes.add(cur);
+    while (parent.get(cur) != null) {
+      const next = parent.get(cur);
+      pathEdges.add(cur + "->" + next);
+      pathNodes.add(next);
+      cur = next;
+    }
+  }
+
   // ---- inspector --------------------------------------------------
   function renderInspector() {
     const c = document.getElementById("inspector-body");
-    if (!selected && selectedKind == null) {
+    if (selected == null) {
       c.innerHTML = `<p style="color: var(--text-dim)">Click a node to inspect.</p>`;
       return;
     }
-    if (selectedKind === "super") {
-      const s = selected;
-      const members = s.member_ids.slice(0, 80);
-      c.innerHTML = `
-        <div class="kv">
-          <div class="k">kind</div><div>${escapeHtml(KIND_LABEL[s.kind] || s.kind)}</div>
-          <div class="k">generation</div><div>${s.generation}</div>
-          <div class="k">count</div><div>${s.count}</div>
-        </div>
-        <h2>Members (${s.count}${s.count > members.length ? `, first ${members.length}` : ""})</h2>
-        <ul>${members.map(id => `<li><a href="#" data-goto-node="${id}">#${id}</a> <span style="color: var(--text-dim)">${escapeHtml(nodesById.get(id).expr)}</span></li>`).join("")}</ul>
-      `;
-    } else {
-      const d = nodesById.get(selected);
-      const preds = edges.filter(e => e.to === d.id);
-      const succs = edges.filter(e => e.from === d.id);
-      const labels = d.labels && d.labels.length ? d.labels.join(", ") : "-";
-      c.innerHTML = `
-        <div class="kv">
-          <div class="k">id</div><div>#${d.id}</div>
-          <div class="k">expr</div><div>${escapeHtml(d.expr)}</div>
-          <div class="k">generation</div><div>${d.generation}</div>
-          <div class="k">in / out</div><div>${d.in_degree} / ${d.out_degree}</div>
-          <div class="k">terminal</div><div>${d.terminal}</div>
-          <div class="k">pinned</div><div>${d.pinned}</div>
-          <div class="k">labels</div><div>${escapeHtml(labels)}</div>
-        </div>
-        <h2>Predecessors (${preds.length})</h2>
-        <ul>${preds.slice(0,60).map(e => `<li><a href="#" data-goto-node="${e.from}">#${e.from}</a> <span style="color: var(--text-dim)">via ${escapeHtml(e.action)}</span></li>`).join("") || '<li style="color: var(--text-dim)">none</li>'}</ul>
-        <h2>Successors (${succs.length})</h2>
-        <ul>${succs.slice(0,60).map(e => `<li><a href="#" data-goto-node="${e.to}">#${e.to}</a> <span style="color: var(--text-dim)">via ${escapeHtml(e.action)}</span></li>`).join("") || '<li style="color: var(--text-dim)">none</li>'}</ul>
-      `;
-    }
+    const d = nodesById.get(selected);
+    const preds = edges.filter(e => e.to === d.id);
+    const succs = edges.filter(e => e.from === d.id);
+    const labels = d.labels && d.labels.length ? d.labels.join(", ") : "-";
+    const pathLen = pathEdges ? pathEdges.size : 0;
+    c.innerHTML = `
+      <div class="kv">
+        <div class="k">id</div><div>#${d.id}</div>
+        <div class="k">expr</div><div>${escapeHtml(d.expr)}</div>
+        <div class="k">generation</div><div>${d.generation}</div>
+        <div class="k">in / out</div><div>${d.in_degree} / ${d.out_degree}</div>
+        <div class="k">terminal</div><div>${d.terminal}</div>
+        <div class="k">pinned</div><div>${d.pinned}</div>
+        <div class="k">labels</div><div>${escapeHtml(labels)}</div>
+        <div class="k">path-from-root</div><div>${pathLen ? pathLen + " edges" : "-"}</div>
+      </div>
+      <h2>Predecessors (${preds.length})</h2>
+      <ul>${preds.slice(0,60).map(e => `<li><a href="#" data-goto-node="${e.from}">#${e.from}</a> <span style="color: var(--text-dim)">via ${escapeHtml(e.action)}</span></li>`).join("") || '<li style="color: var(--text-dim)">none</li>'}</ul>
+      <h2>Successors (${succs.length})</h2>
+      <ul>${succs.slice(0,60).map(e => `<li><a href="#" data-goto-node="${e.to}">#${e.to}</a> <span style="color: var(--text-dim)">via ${escapeHtml(e.action)}</span></li>`).join("") || '<li style="color: var(--text-dim)">none</li>'}</ul>
+    `;
     c.querySelectorAll("a[data-goto-node]").forEach(a => {
       a.addEventListener("click", (ev) => {
         ev.preventDefault();
         const id = parseInt(a.dataset.gotoNode, 10);
         if (!nodesById.get(id)) return;
-        setMode("full");
-        selectedKind = "node"; selected = id;
+        selected = id;
+        computePathToRoot(selected);
         zoomToIds([id], 2);
         renderInspector();
         needsRender = true;
@@ -611,7 +617,7 @@ function run(data) {
 
   // ---- focus ------------------------------------------------------
   function setFocus(on) {
-    if (!on || selectedKind !== "node" || selected == null) {
+    if (!on || selected == null) {
       focusSet = null;
     } else {
       focusSet = bfsNeighborhood(selected, FOCUS_HOPS);
@@ -634,48 +640,31 @@ function run(data) {
     return seen;
   }
 
-  // ---- mode toggle ------------------------------------------------
-  const btnFull    = document.getElementById("btn-mode-full");
-  const btnSummary = document.getElementById("btn-mode-summary");
-  function setMode(m) {
-    if (m === mode) return;
-    mode = m;
-    btnFull.classList.toggle("active", m === "full");
-    btnSummary.classList.toggle("active", m === "summary");
-    if (m === "summary") {
-      summarySim.alpha(0.6).restart();
-    } else {
-      summarySim.stop();
-      if (simAlive) fullSim.alpha(0.4).restart();
-    }
-    needsRender = true;
-    fit();
-  }
-  btnFull.onclick    = () => setMode("full");
-  btnSummary.onclick = () => setMode("summary");
-
-  // ---- freeze toggle ----------------------------------------------
+  // ---- freeze toggle ---------------------------------------------
   const btnFreeze = document.getElementById("btn-freeze");
   btnFreeze.onclick = () => {
-    if (mode === "summary") {
-      // toggle summary sim
-      if (summarySim.alpha() > 0.01) { summarySim.stop(); btnFreeze.textContent = "frozen"; btnFreeze.classList.remove("active"); }
-      else { summarySim.alpha(0.6).restart(); btnFreeze.textContent = "live sim"; btnFreeze.classList.add("active"); }
+    simAlive = !simAlive;
+    if (simAlive) {
+      fullSim.alpha(0.5).restart();
+      btnFreeze.textContent = "live sim";
+      btnFreeze.classList.add("active");
+      // User explicitly chose live: never auto-freeze again this session.
+      userManuallyUnfroze = true;
+      warmTickCount = 0;
     } else {
-      simAlive = !simAlive;
-      if (simAlive) { fullSim.alpha(0.5).restart(); btnFreeze.textContent = "live sim"; btnFreeze.classList.add("active"); warmTickCount = 0; }
-      else { fullSim.stop(); btnFreeze.textContent = "frozen"; btnFreeze.classList.remove("active"); }
+      fullSim.stop();
+      btnFreeze.textContent = "frozen";
+      btnFreeze.classList.remove("active");
     }
   };
 
   // ---- fit / zoom-to ----------------------------------------------
   function fit() {
-    const pts = (mode === "summary") ? supers : nodes;
-    if (!pts.length) return;
+    if (!nodes.length) return;
     let x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity;
-    for (const p of pts) {
-      if (p.x < x0) x0 = p.x; if (p.x > x1) x1 = p.x;
-      if (p.y < y0) y0 = p.y; if (p.y > y1) y1 = p.y;
+    for (const n of nodes) {
+      if (n.x < x0) x0 = n.x; if (n.x > x1) x1 = n.x;
+      if (n.y < y0) y0 = n.y; if (n.y > y1) y1 = n.y;
     }
     applyFit(x0, y0, x1, y1, 0.95, 2);
   }
@@ -707,11 +696,11 @@ function run(data) {
     );
   }
 
-  // ---- toolbar buttons --------------------------------------------
+  // ---- toolbar ----------------------------------------------------
   document.getElementById("btn-fit").onclick = fit;
   document.getElementById("btn-focus").onclick = () => setFocus(!focusSet);
   document.getElementById("btn-clear").onclick = () => {
-    selected = null; selectedKind = null; focusSet = null;
+    selected = null; focusSet = null; pathEdges = null; pathNodes = null;
     document.getElementById("btn-focus").classList.remove("active");
     renderInspector();
     needsRender = true;
@@ -728,9 +717,10 @@ function run(data) {
     legend.appendChild(document.createTextNode(KIND_LABEL[k] || k));
   });
   [
-    ["converge", "#ffc857"],
-    ["pinned",   "#7dd3a5"],
-    ["selected", "#ffffff"],
+    ["converge",       "#ffc857"],
+    ["pinned",         "#7dd3a5"],
+    ["selected",       "#ffffff"],
+    ["path from root", "#ff7a9c"],
   ].forEach(([txt, col]) => {
     const dot = document.createElement("span");
     dot.className = "sw";
@@ -742,8 +732,9 @@ function run(data) {
 
   // ---- boot -------------------------------------------------------
   resize();
-  // Let the sim warm a moment, then fit.
-  setTimeout(fit, 600);
+  // Initial fit kicks in once the sim has spread the layout. Auto-
+  // freeze (above) calls fit() again with the settled positions.
+  setTimeout(fit, 1500);
 }
 
 function escapeHtml(s) {

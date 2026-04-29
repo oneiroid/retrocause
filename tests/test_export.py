@@ -18,8 +18,7 @@ def test_dag_to_dict_structure():
     expand_depth(dag, r, levels=2)
 
     data = dag_to_dict(dag, r)
-    assert set(data.keys()) == {"nodes", "edges", "aggregation", "meta"}
-    assert set(data["aggregation"].keys()) == {"nodes", "edges"}
+    assert set(data.keys()) == {"nodes", "edges", "meta"}
     assert data["meta"]["n_nodes"] == len(dag.nodes)
     assert data["meta"]["n_edges"] == len(dag.edges)
 
