@@ -1,0 +1,8 @@
+{
+  "name": "retrocause-story-dag-builder",
+  "private": true,
+  "version": "0.1.0",
+  "scripts": {
+    "test": "node --check story_builder_app.js && node --check story_builder_engine.js && node --test tests/story_builder_engine.test.js"
+  }
+}
