@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Retrocause Branching Story DAG Builder</title>
+  <link rel="stylesheet" href="story_builder.css">
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+</head>
+<body>
+  <div id="app" class="app-shell">
+    <aside class="panel panel-left" aria-label="Story and editing controls">
+      <header class="masthead">
+        <p class="eyebrow">Retrocause lab</p>
+        <h1>Branching Story DAG Builder</h1>
+        <p>Start from a known narrative spine, then expand any state into counterfactual causal branches.</p>
+      </header>
+
+      <section class="panel-section">
+        <h2>1 · Story seed</h2>
+        <div id="seedList" class="seed-list"></div>
+        <div class="button-row">
+          <button id="blankGraphBtn" type="button" class="secondary">Blank DAG</button>
+          <button id="loadLocalBtn" type="button" class="secondary">Restore local</button>
+        </div>
+      </section>
+
+      <section class="panel-section">
+        <h2>2 · Branch selected state</h2>
+        <label>Branch title<input id="branchLabel" placeholder="Red asks a woodcutter for help"></label>
+        <label>Semantic expression<input id="branchExpr" placeholder="ask_help(red, woodcutter)"></label>
+        <label>State after branch<textarea id="branchState" placeholder="What becomes true in the story world?"></textarea></label>
+        <label>Changed condition<textarea id="branchDelta" placeholder="What differs from the canonical path?"></textarea></label>
+        <label>Invariant facts<textarea id="branchInvariants" placeholder="Facts that must remain true for a fair counterfactual"></textarea></label>
+        <label>Optional rejoin target<select id="rejoinSelect"></select></label>
+        <div class="button-row">
+          <button id="addBranchBtn" type="button" class="primary">Add branch</button>
+          <button id="suggestBranchBtn" type="button" class="secondary">Prefill suggestion</button>
+        </div>
+      </section>
+
+      <section class="panel-section">
+        <h2>3 · Direct graph edit</h2>
+        <label>New node label<input id="manualNodeLabel" placeholder="New state node"></label>
+        <label>Connect from<select id="manualFrom"></select></label>
+        <label>Connect to<select id="manualTo"></select></label>
+        <label>Edge type<select id="manualEdgeType"></select></label>
+        <label>Edge label<input id="manualEdgeLabel" placeholder="causal note"></label>
+        <div class="button-row">
+          <button id="addManualBtn" type="button" class="secondary">Add node / edge</button>
+          <button id="deleteSelectedBtn" type="button" class="danger">Delete selected</button>
+        </div>
+      </section>
+    </aside>
+
+    <main class="graph-stage" aria-label="Interactive DAG visualization">
+      <div class="graph-toolbar">
+        <div class="toolbar-group">
+          <button id="fitBtn" type="button">Fit</button>
+          <button id="reheatBtn" type="button">Reheat</button>
+          <button id="validateBtn" type="button">Validate</button>
+          <button id="toggleLabelsBtn" type="button">Edge labels</button>
+        </div>
+        <div class="toolbar-group search-group">
+          <input id="searchInput" placeholder="Search nodes, tags, expressions" aria-label="Search graph">
+          <select id="viewMode" aria-label="View mode">
+            <option value="all">All nodes</option>
+            <option value="canonical">Canonical only</option>
+            <option value="branches">Branches + joins</option>
+          </select>
+        </div>
+      </div>
+      <svg id="graphSvg" role="img" aria-label="Causal branching story DAG"></svg>
+      <div id="toast" class="toast" role="status"></div>
+    </main>
+
+    <aside class="panel panel-right" aria-label="Inspection and import export">
+      <section class="panel-section compact">
+        <h2>DAG status</h2>
+        <div class="stats">
+          <div><strong id="nodeCount">0</strong><span>Nodes</span></div>
+          <div><strong id="edgeCount">0</strong><span>Edges</span></div>
+          <div><strong id="branchCount">0</strong><span>Branches</span></div>
+          <div><strong id="joinCount">0</strong><span>Rejoins</span></div>
+        </div>
+        <div id="validationReport" class="report muted">Validation has not run yet.</div>
+      </section>
+
+      <section class="panel-section">
+        <h2>Selected state</h2>
+        <div id="selectedNode" class="selected-card muted">Select a node in the graph.</div>
+        <details class="editor-details">
+          <summary>Edit selected node</summary>
+          <label>Label<input id="editLabel"></label>
+          <label>Expression<input id="editExpr"></label>
+          <label>State<textarea id="editState"></textarea></label>
+          <label>Tags<input id="editTags" placeholder="comma, separated, tags"></label>
+          <button id="saveNodeBtn" type="button" class="secondary">Save node edits</button>
+        </details>
+      </section>
+
+      <section class="panel-section">
+        <h2>Branch heuristics</h2>
+        <div id="heuristicList" class="card-list"></div>
+      </section>
+
+      <section class="panel-section">
+        <h2>LLM assist</h2>
+        <label>Instruction<textarea id="assistInstruction">Generate three causally plausible alternative branches from the selected state. Preserve invariant facts, make the changed condition explicit, and choose a rejoin target when possible.</textarea></label>
+        <div class="button-row">
+          <button id="buildPromptBtn" type="button" class="secondary">Build prompt</button>
+          <button id="copyPromptBtn" type="button" class="secondary">Copy prompt</button>
+        </div>
+        <label>Reviewed JSON import<textarea id="importText" placeholder='{"branches":[{"label":"...","expr":"...","state":"...","rejoinTargetId":"..."}]}'></textarea></label>
+        <button id="importJsonBtn" type="button" class="primary">Import reviewed JSON</button>
+      </section>
+
+      <section class="panel-section">
+        <h2>Save / restore</h2>
+        <div class="button-row">
+          <button id="exportJsonBtn" type="button" class="secondary">Show JSON</button>
+          <button id="downloadJsonBtn" type="button" class="secondary">Download JSON</button>
+          <button id="saveLocalBtn" type="button" class="secondary">Save local</button>
+        </div>
+        <textarea id="jsonText" class="json-box" aria-label="Graph JSON"></textarea>
+      </section>
+    </aside>
+  </div>
+
+  <dialog id="jsonDialog">
+    <form method="dialog">
+      <header class="dialog-head">
+        <h2 id="dialogTitle">Graph JSON</h2>
+        <button value="close" aria-label="Close dialog">×</button>
+      </header>
+      <pre id="dialogBody"></pre>
+    </form>
+  </dialog>
+
+  <script src="story_builder_engine.js"></script>
+  <script src="story_builder_app.js"></script>
+</body>
+</html>
