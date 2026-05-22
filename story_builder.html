@@ -100,6 +100,22 @@
       </section>
 
       <section class="panel-section">
+        <h2>Allowed continuations (&Phi;)</h2>
+        <div class="phi-controls">
+          <label class="inline-label">
+            <input id="phiGroupToggle" type="checkbox" checked>
+            <span>Group by L entry</span>
+          </label>
+          <label class="inline-label">
+            <input id="phiHideNoopToggle" type="checkbox">
+            <span>Hide signature-only entries</span>
+          </label>
+        </div>
+        <div id="phiSummary" class="muted phi-summary">Select a node with a typed fixture (Red or Magi) to see &Phi;.</div>
+        <div id="phiList" class="phi-list"></div>
+      </section>
+
+      <section class="panel-section">
         <h2>Branch heuristics</h2>
         <div id="heuristicList" class="card-list"></div>
       </section>
@@ -138,6 +154,9 @@
   </dialog>
 
   <script src="story_builder_engine.js"></script>
+  <script src="phi.js"></script>
+  <script src="red_fixture.js"></script>
+  <script src="magi_fixture.js"></script>
   <script src="story_builder_app.js"></script>
 </body>
 </html>

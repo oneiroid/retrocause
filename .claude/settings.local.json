@@ -1,0 +1,21 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python:*)",
+      "Bash(ls:*)",
+      "Bash(git mv *)",
+      "Bash(git rm *)",
+      "mcp__plugin_playwright_playwright__browser_resize",
+      "mcp__plugin_playwright_playwright__browser_console_messages",
+      "mcp__plugin_playwright_playwright__browser_snapshot",
+      "mcp__plugin_playwright_playwright__browser_click",
+      "mcp__plugin_playwright_playwright__browser_close",
+      "WebSearch",
+      "Bash(nvidia-smi *)",
+      "PowerShell(Get-PnpDevice *)",
+      "PowerShell(Get-CimInstance *)",
+      "PowerShell(Test-Path *)",
+      "PowerShell(Get-Service *)"
+    ]
+  }
+}

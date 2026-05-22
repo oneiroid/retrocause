@@ -86,6 +86,227 @@ The paper uses only simple types. We need:
 are themselves completions? The paper hints at this with nested subDAGs
 but doesn't formalize the type signature.
 
+### 1.5 Extension: Preconditions and Effects
+
+The paper's L entries declare only a type signature and a gloss. That
+is enough to *represent* an event but not enough to *decide* whether
+the event is allowed at a particular point in a story. To make the
+formalism executable -- in particular, to enumerate the set of branches
+that may legally follow a given node -- each L entry may additionally
+declare:
+
+```
+name :: (type_1, ..., type_n) -> result_type
+name(x_1, ..., x_n) = "informal natural-language gloss"
+requires: <state predicate over the x_i, evaluated in the pre-state>
+effects:  <list of +fact / -fact deltas applied to produce the post-state>
+```
+
+Both `requires` and `effects` are **optional**. An entry without
+`requires` is interpreted as `requires: true` (always applicable). An
+entry without `effects` is interpreted as `effects: {}` (no state
+change). This keeps every entry written before this extension
+backward-compatible: untyped narrative expressions remain legal and
+behave as unconditional, pure events.
+
+Worked example:
+
+```
+confess :: (entity, entity, completion) -> completion
+confess(X, Y, Z) = "[X] confesses [Z] to [Y]"
+requires: knows(X, Z) and not knows(Y, Z)
+effects:  +knows(Y, Z)
+
+recognize :: (entity, completion, mode) -> completion
+recognize(X, Z, M) = "[X] recognizes [Z], in mode [M]"
+requires: present(X, Z)
+effects:  +knows(X, Z)
+```
+
+The state language used inside `requires` and `effects` is defined in
+§1.6 below.
+
+This extension addresses one of the v2-as-written gaps: §4.5 defines
+agency `sigma` as "the function selecting the next node at DAG branch
+points" but never defines the **set** from which `sigma` selects.
+Section 7.8 (the frontier operator) gives that set its formal
+definition, and that definition is only computable once L entries
+carry preconditions and effects.
+
+### 1.6 Extension: State Predicate Vocabulary P
+
+P is a typed vocabulary of world-state predicates, parallel to L but
+operating at the level of facts about the storyworld rather than
+events within it.
+
+```
+predicate_name :: (type_1, ..., type_n) -> bool
+```
+
+A **state** sigma is a finite set of saturated predicate applications
+(ground atoms). Closed-world assumption: a predicate application is
+true iff it is in sigma. Negation in `requires` is interpreted as
+absence from sigma.
+
+A small initial vocabulary (extensible per analysis, like L itself):
+
+| Predicate | Arity | Meaning |
+|-----------|-------|---------|
+| `knows`     | (entity, completion) | The entity has information about an event |
+| `has`       | (entity, entity)     | The first entity possesses the second |
+| `at`        | (entity, place)      | The entity is located at the place |
+| `alive`     | (entity,)            | The entity is alive |
+| `trusts`    | (entity, entity)     | The first entity trusts the second |
+| `intends`   | (entity, completion) | The entity has the event as a goal |
+| `present`   | (entity, completion) | The entity is co-located with the event |
+
+State propagation along the DAG. For a node v with causal predecessors
+preds(v), the pre-state is the union of the predecessors' post-states:
+
+```
+pre-state(v)  = union { post-state(u) : u in preds(v) }
+post-state(v) = apply(effects(v), pre-state(v))
+```
+
+where `apply(delta, sigma)` adds every `+f` in delta to sigma and
+removes every `-f` in delta from sigma.
+
+Sources (nodes with no predecessors) receive an initial state declared
+by the enclosing subDAG -- see §3.5.
+
+**OPEN: convergence conflicts.** When two parallel branches set
+contradictory facts and both feed a convergence node, the union is
+ill-defined. v2 leaves this as set-union with collision noted (a
+collision is a contradiction between `+f` from one branch and `-f`
+from another). A principled resolution probably requires the
+convergence node to declare which branch's facts it commits to, or
+equivalently to declare its own pre-state preconditions.
+
+**OPEN: predicate vocabulary growth.** P, like L, is meant to grow
+with analysis. We do not commit to a fixed P. Whatever predicates a
+story's `requires` clauses mention are the predicates that story
+needs.
+
+### 1.7 Extension: Derivation Rules over P
+
+State updates as defined in §1.6 are purely additive/subtractive:
+post-state is pre-state with effects applied as set deltas. This is
+not always enough. Some facts in a storyworld are **derived** from
+others -- they follow logically from the explicit state but are not
+themselves declared as effects of any single event. The cleanest case
+arises at parallel-branch convergence (§3.3, §8.1), where merging
+two post-states produces a state that entails facts neither
+post-state alone entailed. The worked example in Appendix C names
+this case directly: dramatic irony in "The Gift of the Magi" is
+structurally an entailed fact at the merge of Della's and Jim's
+parallel sacrifice chains.
+
+#### 1.7.1 Definition
+
+A **derivation rule** has the form:
+
+```
+rule_name: <antecedent> ==> <consequent>
+```
+
+The antecedent is a conjunction of P-atoms, possibly with free
+variables that bind by pattern matching against the current state.
+The consequent is one or more P-atoms (possibly mentioning derived
+terms not present in the antecedent).
+
+#### 1.7.2 When rules fire
+
+After every state update -- whether from materializing an atomic
+event (§7.8) or merging post-states at a convergence node (§1.6) --
+the **derivation closure** is computed by forward chaining:
+repeatedly apply rules whose antecedents match the current state
+until a fixed point is reached. The fixed-point state is what later
+nodes see as their pre-state.
+
+#### 1.7.3 Worked rule (from Magi, Appendix C)
+
+```
+useless_pairing:
+  has(X, GiftA) and has(Y, GiftB)
+  and pairs_with(GiftA, RequiredA)
+  and not has(Y, RequiredA)
+  ==> useless(GiftA, sacrificed(Y, RequiredA))
+```
+
+With `pairs_with(watch_chain, watch)` and `pairs_with(combs, hair)`
+declared as story-level givens, the merged state at `magi_reveal`
+(see §C.4) fires this rule symmetrically and yields the two `useless`
+atoms that the `reveal` effects then propagate as knowledge.
+
+The audience sees these `useless` atoms because they sit outside the
+DAG and observe its merged state; the characters do not, until
+`reveal` updates their `knows` predicates. This is the formal content
+of "dramatic irony": **a fact logically entailed by the merged
+storyworld state that no individual character's pre-state entails.**
+
+#### 1.7.4 Rule classes
+
+- **Conservative rules** (entailment): consequent follows from
+  antecedent by classical first-order logic. Always safe; the
+  closure is monotone.
+- **Default rules** (defeasible): consequent is asserted unless an
+  explicit contradicting fact is present. Needed for storyworld
+  defaults like "co-located entities perceive each other". Closure
+  is non-monotone; care is required.
+- **Constructive rules** (introducing fresh derived terms): the
+  consequent mentions a term not appearing in the antecedent. The
+  Magi rule above is constructive (`useless(...)` is fresh).
+  Constructive rules require an upper bound on derivation depth or
+  the closure may not terminate.
+
+#### 1.7.5 Termination and confluence (OPEN)
+
+Naive forward chaining can loop. v2 restricts the initial rule
+library to **stratified** rules: derived predicates form a DAG with
+no cycles. This guarantees termination of the closure step.
+
+**Confluence** -- the property that the closure result is independent
+of rule firing order -- is stronger and needs case-by-case
+verification. Conservative rules are trivially confluent. Default
+and constructive rules can fail confluence; v2 leaves this as an
+analysis obligation on the rule library, not a property the formalism
+enforces.
+
+#### 1.7.6 Where rules live (OPEN)
+
+Two routes:
+
+(a) **Per-story** rules declared in scope(D) alongside cast/setting/
+    props/initial_state (see §3.5's extended `derivations` field).
+    Story-specific rules like `useless_pairing` belong here because
+    `pairs_with` is per-story data.
+
+(b) **Per-predicate** rules attached to predicates in P, applying
+    across all stories that use those predicates. Genuinely universal
+    rules belong here.
+
+v2 recommends route (a) as the default and lifting only verified-
+universal rules into a shared default-rule library. Magi's
+`useless_pairing` is borderline: "useless gift" is a general human
+concept, but it bottoms out on a per-story `pairs_with`, so the rule
+as written is correctly per-story.
+
+#### 1.7.7 Section relationships
+
+- Extends §1.6 (state propagation): rules fire after every state
+  update, between effects-application and the next node's pre-state
+  computation.
+- Partially closes the §1.6 OPEN on convergence conflicts: explicit
+  derivation rules can encode conflict-resolution policy, replacing
+  the silent set-union default with a declared policy.
+- Grounds §8.1 (convergence): a convergence node is structurally
+  significant precisely because it is where merge-derivations can
+  fire that no upstream node could have triggered.
+- Modifies §7.8 (frontier): post-state for a candidate is the
+  derivation closure of (apply effects to pre-state), not just
+  (apply effects to pre-state). `requires` clauses of subsequent
+  candidates may reference derived facts.
+
 ---
 
 ## 2. Semantic Expressions
@@ -208,6 +429,61 @@ specific lens. The formalism works identically whether or not you
 accept this ontological claim. The claim's role is interpretive:
 it tells you what the mathematics IS ABOUT, not how to do the
 mathematics.
+
+### 3.5 Extension: Scope (cast, setting, props)
+
+A subDAG D additionally declares a typed environment that bounds the
+parameter values its interior nodes may bind:
+
+```
+scope(D) = (cast, setting, props, initial_state, derivations)
+  cast          :: set of (name :: type) entity declarations
+  setting       :: set of (name :: type) static-place declarations
+  props         :: set of (name :: type) other static-typed values
+  initial_state :: a state (set of P-atoms) seeding the source nodes
+  derivations   :: set of derivation rules (§1.7) fired in state-update
+                   closure; optional, defaults to empty
+```
+
+Nesting rule: an interior subDAG D' inherits the scope of its
+enclosing D and may extend it with declarations introduced by its own
+nodes (e.g., a node that introduces a new character extends `cast`).
+A node v may bind a parameter slot to a value only if that value is
+declared in some scope on the path from v out to the root subDAG.
+
+Worked example -- "Little Red Riding Hood":
+
+```
+scope(red_story) = (
+  cast = {
+    red :: entity, mother :: entity, wolf :: entity,
+    grandmother :: entity, woodcutter :: entity
+  },
+  setting = {
+    home :: place, woods :: place, grandmother_house :: place
+  },
+  props = {
+    basket :: object, path :: object
+  },
+  initial_state = {
+    alive(red), alive(mother), alive(wolf),
+    alive(grandmother), alive(woodcutter),
+    at(red, home), at(mother, home),
+    at(grandmother, grandmother_house),
+    has(mother, basket), trusts(red, mother)
+  }
+)
+```
+
+Why this is required for §7.8. The frontier operator enumerates "all
+allowed continuations" by ranging the L entries' parameter slots over
+some set of values. Without `scope`, that set is undefined -- we'd be
+ranging over an unbounded universe. With `scope`, enumeration is
+finite and per-story.
+
+This extension closes one of the gaps surfaced when trying to make
+the §7 operators computable on real stories: §3.2 describes subDAG
+nesting but does not say which entities are visible at a given node.
 
 ---
 
@@ -590,6 +866,127 @@ These may be the fundamental operations from which all DAG structure
 is built. If so, the archetype question becomes: how many distinct
 well-formed compositions exist at bounded depth?
 
+### 7.8 Frontier Operator: Phi
+
+The **frontier** at a node v in subDAG D is the set of well-formed
+candidate continuations: every event the lexicon and the model's
+rules together permit to follow v.
+
+**Atomic frontier** (over L entries):
+
+```
+Phi(v) = {
+  (e, p) :
+    e :: (t_1, ..., t_n) -> completion   in L,
+    p = (p_1 :: t_1, ..., p_n :: t_n)    with each p_i drawn from scope(D),
+    requires(e)[p] holds in post-state(v),
+    e(p_1, ..., p_n) is not already a node downstream of v in D
+}
+```
+
+A candidate (e, p) is **materialized** by:
+
+1. creating a new node v' with `expr(v') = e(p_1, ..., p_n)`,
+2. inserting an edge e(v, v') in D,
+3. setting `post-state(v') = derivation_closure(apply(effects(e)[p], post-state(v)))`
+   per §1.7,
+4. confirming acyclicity of the updated D (per §3.1).
+
+Step 4 is the only filter outside L+P+scope: the formalism is
+otherwise compositional, and the cycle check belongs to the DAG layer.
+Step 3's `derivation_closure` wrapper ensures that derived facts from
+§1.7 are present before any subsequent candidate's `requires` clauses
+are evaluated.
+
+**Template frontier** (over the template registry T introduced in §5):
+
+```
+Phi_T(v) = {
+  (A, q) :
+    A in T,
+    precondition_pattern(A) matches (expr(v), tags(v)),
+    q = (q_1 :: tau_1, ..., q_m :: tau_m) with each q_i drawn from scope(D),
+    for each interior node u of A[q], visited in dependency order,
+      requires(u) holds in the state reached just before u
+}
+```
+
+A template candidate materializes by instantiating the full subDAG
+A[q] and attaching it to v with the choice/causes/rejoins edges
+declared by A.
+
+The **unified outgoing frontier** is `Phi(v) cup Phi_T(v)`. Atomic and
+template candidates are distinguishable by carrying their generator's
+identity.
+
+**Boundedness.** Phi(v) is finite because L is finite at any moment of
+analysis and scope(D) is finite by §3.5. Phi_T(v) is finite because T
+is finite by enumeration. If T contains a template that can be applied
+to its own output, Phi_T is potentially unbounded under iteration; v2
+restricts T to non-self-applicable templates and parks recursion as a
+follow-on extension (see also §10 T-new below).
+
+**Use.** This is the operator the branching story DAG builder uses
+when a user selects a node and asks "what outgoing branches are
+allowed here?" The answer is exactly `Phi(v) cup Phi_T(v)`.
+
+### 7.9 Ranking Metrics on Frontier Candidates
+
+Phi(v) cup Phi_T(v) can be large. To surface the "best" branches by
+some criterion, v2 defines three orthogonal scores. None is canonical;
+applications combine them per their own goals.
+
+**Specificity.** How concretely the candidate's parameters are bound.
+
+```
+specificity((e, p)) = (# of p_i that are concrete entities in scope)
+                      / (arity of e)
+```
+
+Atomic candidates always have specificity = 1 because L entries are
+saturated at materialization. The metric is most useful for template
+candidates whose declared slots may remain abstract.
+
+**Contrast.** How much the candidate diverges from the canonical
+continuation at v, in the sense of §6.2.
+
+```
+contrast(c, c_canonical) =
+  | { i : c.binding[i] != c_canonical.binding[i] } |
+                                  if c and c_canonical share a template
+  edit_distance(expr(c), expr(c_canonical))
+                                  otherwise
+```
+
+High contrast = counterfactually informative; low contrast = a near
+paraphrase of the canonical path.
+
+**Convergence proximity.** How close the candidate is to a downstream
+convergence node it could rejoin.
+
+```
+convergence_proximity(c) =
+  min { rank(w) - rank(c) : w reachable from c in D
+                          and (in_degree(w) >= 2 or w.kind == convergence)
+                          and requires-of-w satisfiable from post-state(c) }
+```
+
+Smaller proximity = tighter counterfactual loop, easier rejoin. If no
+such w exists, the candidate is **open** (no rejoin available); the
+metric is undefined and the UI should mark it accordingly.
+
+**Composition.** v2 does not commit to a scalar combination of these
+three. Default presentation: a Pareto front over
+`(specificity, contrast, -convergence_proximity)`, so no aesthetic is
+pre-baked into the ranking.
+
+**OPEN: MDL-style ranking.** A description-length metric over the
+template registry would let the system prefer candidates whose
+materialized subDAGs are best compressed by an existing template
+(reward archetypal continuations) or, dually, prefer candidates that
+extend the registry (reward novelty). The choice between these depends
+on whether the application wants conventional or surprising stories.
+
 ---
 
 ## 8. Retrocause-Specific Extensions
@@ -606,6 +1003,16 @@ such that multiple independent directed paths within S terminate at v.
 The paper doesn't discuss convergence explicitly because Groundhog Day's
 structure is mostly iterative (thread revisitation), not convergent
 (multiple paths merging). But the formalism supports it directly.
+
+**Structural significance via §1.7.** A convergence node is more than
+a topological feature -- it is the unique kind of node at which
+derivation rules can fire that no upstream node could have triggered.
+Merging two parallel post-states can entail facts neither post-state
+alone entails, and §1.7's `derivation_closure` is what surfaces them.
+This is the mathematical content of phenomena like dramatic irony
+(see Appendix C.4): the merged storyworld state entails a fact that
+no individual character's pre-state did. Convergence is therefore
+not just where paths meet -- it is where emergent facts appear.
 
 ### 8.2 Mind-Cursor (retained, grounded in threading)
 
@@ -738,6 +1145,21 @@ equivalent at another.
 | **Template** | A parametrized subDAG with open parameter slots. The archetype mechanism. |
 | **Thread** | An ordered sequence of node visits. May revisit, skip, jump. |
 | **Thread shortcut** | A thread that traverses only some interior nodes of a subDAG. |
+| **Cast** | The typed set of entities in scope for a subDAG. Part of scope(D). |
+| **Derivation closure** | The fixed-point state reached by forward-chaining derivation rules over a state. Computed after every state update (§1.7). |
+| **Derivation rule** | A rule of the form `<antecedent over P> ==> <consequent P-atom(s)>` that fires whenever its antecedent matches the current state (§1.7). |
+| **Dramatic irony (formal)** | A fact entailed by the merged post-states at a convergence node that no upstream post-state alone entailed; the audience observes the merged state while characters do not (§1.7.3, §8.1, Appendix C.4). |
+| **Effects** | The +/- fact delta declared by an L entry, applied to pre-state to produce post-state. |
+| **Frontier (Phi)** | The set of allowed continuations from a node, given L, P, and scope. The successor set of §7.8. |
+| **Initial state** | The pre-state seeded into source nodes of a subDAG. Part of scope(D). |
+| **Stratified rules** | A derivation rule library whose derived predicates form a DAG (no cycles among rule heads), guaranteeing closure termination (§1.7.5). |
+| **P** | The world-state predicate vocabulary. Parallel to L but at the state level. |
+| **Post-state** | The state after a node's effects are applied. |
+| **Pre-state** | The state entering a node, as the union of predecessors' post-states. |
+| **Requires** | The precondition over pre-state for an L entry to be applicable. |
+| **Scope** | The (cast, setting, props, initial_state) environment of a subDAG. |
+| **Setting** | The typed set of static places in scope for a subDAG. Part of scope(D). |
+| **Specificity / contrast / convergence proximity** | The three ranking metrics on frontier candidates (§7.9). |
 
 ---
 
@@ -759,6 +1181,13 @@ Concepts extended beyond the paper:
 - Archetype as template equivalence class
 - Convergence nodes and attractor theory
 - Anti-unification as archetype extraction
+- State-conditioned L entries with `requires` and `effects` (§1.5)
+- Predicate vocabulary P for world state (§1.6)
+- Derivation rules and closure semantics, with dramatic irony as the
+  formal case of a merge-derived entailment at a convergence node (§1.7, §8.1)
+- Typed subDAG scope: cast, setting, props, initial_state, derivations (§3.5)
+- Frontier operator Phi for enumerating allowed continuations (§7.8)
+- Ranking metrics on frontier candidates (§7.9)
 
 Concepts from v1 that are REPLACED:
 - "Topological equivalence class" -> parametrized template
@@ -772,3 +1201,673 @@ Concepts from v1 that are DEFERRED:
 - Observable domain windows (ecology, markets, gene regulation)
 - Substrate sequence (atoms -> ... -> language -> ?)
 - Spatial dimension conjecture
+
+---
+
+## Appendix B: Worked Example -- Little Red Riding Hood
+
+This appendix annotates one of the builder's seeded story DAGs
+end-to-end against the v2 formalism as extended by §1.5, §1.6, §3.5,
+§7.8, and §7.9. It is concrete enough that the builder's frontier
+enumerator can be written directly against the declarations below.
+
+The seed being annotated is the `red` story in `story_builder_app.js`.
+
+### B.1 Scope
+
+```
+scope(red_story) = (
+  cast = {
+    red :: entity,
+    mother :: entity,
+    wolf :: entity,
+    grandmother :: entity,
+    woodcutter :: entity
+  },
+  setting = {
+    home :: place,
+    woods :: place,
+    grandmother_house :: place
+  },
+  props = {
+    basket :: entity
+  },
+  initial_state = {
+    alive(red), alive(mother), alive(wolf),
+    alive(grandmother), alive(woodcutter),
+    at(red, home), at(mother, home),
+    at(wolf, woods), at(woodcutter, woods),
+    at(grandmother, grandmother_house),
+    has(mother, basket),
+    trusts(red, mother), trusts(red, grandmother),
+    intends(red, deliver_basket),
+    knows(red, destination(red, grandmother_house))
+  }
+)
+```
+
+The basket is typed `entity` (rather than introducing a separate
+`object` base type) because the existing L entries take two `entity`
+arguments. This is a convenience -- L's base types are extensible per
+§1.2.
+
+`knows(red, destination(red, grandmother_house))` is in initial_state
+deliberately; §B.4 below shows why omitting it would block the wolf's
+deception precondition.
+
+### B.2 Lexicon L (entries used in this story)
+
+Seven entries are annotated fully (preconditions + effects). Two
+entries that appear in node expressions but do not affect frontier
+enumeration in the canonical path are annotated only with their type
+signature.
+
+#### Fully annotated
+
+```
+give :: (entity, entity, entity) -> completion
+give(Giver, Receiver, Item) = "[Giver] gives [Item] to [Receiver]"
+requires: has(Giver, Item)
+          and exists P (at(Giver, P) and at(Receiver, P))
+effects:  -has(Giver, Item), +has(Receiver, Item)
+
+move :: (entity, place, place) -> completion
+move(X, From, To) = "[X] moves from [From] to [To]"
+requires: at(X, From) and alive(X)
+effects:  -at(X, From), +at(X, To)
+
+learn_from :: (entity, entity, completion, place) -> completion
+learn_from(L, S, F, P) = "[L] learns [F] from [S] at [P]"
+requires: at(L, P) and at(S, P) and knows(S, F)
+effects:  +knows(L, F)
+
+impersonate :: (entity, entity, place) -> completion
+impersonate(X, Y, P) = "[X] impersonates [Y] at [P]"
+requires: at(X, P) and not at(Y, P) and alive(X)
+effects:  (see OPEN B.3-1 below: introduces a quantified belief
+           predicate not yet expressible in P)
+
+recognize :: (entity, completion, mode) -> completion
+recognize(X, Z, M) = "[X] recognizes [Z], in mode [M]"
+requires: present(X, Z)
+effects:  +knows(X, Z)
+
+ask_help :: (entity, entity) -> completion
+ask_help(Asker, Helper) = "[Asker] asks [Helper] for help"
+requires: alive(Helper)
+          and exists P (at(Asker, P) and at(Helper, P))
+effects:  +intends(Helper, aid(Asker))
+
+rescue :: (entity, entity, entity) -> completion
+rescue(Rescuer, Victim, Bystander) = "[Rescuer] rescues [Victim] and [Bystander]"
+requires: intends(Rescuer, aid(Victim))
+          and exists P (at(Rescuer,P) and at(Victim,P) and at(Bystander,P))
+effects:  +safe(Victim), +safe(Bystander)
+```
+
+#### Lightly annotated (signature only)
+
+```
+delay :: (entity, entity) -> completion
+delay(X, Distractor) = "[X] is delayed by [Distractor]"
+
+warn :: (entity, entity, completion) -> completion
+warn(Sender, Receiver, Topic) = "[Sender] warns [Receiver] about [Topic]"
+```
+
+`delay` is duration-creating; v2 does not yet have a temporal
+predicate vocabulary. `warn` has a clear precondition (a communication
+channel between sender and receiver), but the story does not model
+how Red would reach grandmother without arriving in person; the entry
+is listed for completeness but its branch instance
+(`red_branch_warning`) implicitly assumes co-location.
+
+### B.3 Typed expressions for every node
+
+| Node id              | Seed expression                       | Fully typed form                                                  |
+|----------------------|---------------------------------------|-------------------------------------------------------------------|
+| red_start            | send(mother, red, basket)             | give(mother, red, basket)                                         |
+| red_woods            | enter(red, woods)                     | move(red, home, woods)                                            |
+| red_wolf             | deceive(wolf, red)                    | learn_from(wolf, red, destination(red, grandmother_house), woods) |
+| red_delay            | delay(red, flowers)                   | delay(red, flowers)                                               |
+| red_grandma          | arrive(wolf, grandmother_house)       | move(wolf, woods, grandmother_house)                              |
+| red_disguise         | impersonate(wolf, grandmother)        | impersonate(wolf, grandmother, grandmother_house)                 |
+| red_recognition      | recognize(red, wolf, late)            | recognize(red, deception(wolf, grandmother), late)                |
+| red_rescue           | rescue(woodcutter, red, grandmother)  | rescue(woodcutter, red, grandmother)                              |
+| red_branch_help      | ask_help(red, woodcutter)             | ask_help(red, woodcutter)                                         |
+| red_branch_warning   | warn(red, grandmother)                | warn(red, grandmother, deception(wolf, grandmother))              |
+
+`destination(red, grandmother_house)` and `deception(wolf,
+grandmother)` are nested completion expressions used as completion-
+typed arguments. They are named completion values, not separate L
+entries -- the model permits this per §1.4's OPEN note on recursive
+types.
+
+OPEN (B.3-1): the effect of `impersonate` is "any third party who
+arrives at P and does not know about the impersonation comes to
+believe Y is at P." This is a quantified, conditional effect that P
+as defined in §1.6 does not yet support. For this example we treat it
+as a derived rule applied at the moment a third party performs
+`move(?, ?, P)` during the impersonation. A principled solution would
+extend P with a `holds_during` operator over thread segments.
+
+### B.4 State propagation along the canonical path
+
+Tracking sigma through the first three canonical nodes makes the
+precondition checks of §1.5 concrete.
+
+```
+pre-state(red_start) = initial_state                       -- per §3.5
+
+red_start = give(mother, red, basket)
+  requires: has(mother, basket)
+            and exists P (at(mother,P) and at(red,P))   [P = home]
+  STATUS:   satisfied
+  effects:  -has(mother, basket), +has(red, basket)
+post-state(red_start) = initial_state
+                        \ { has(mother, basket) }
+                        u { has(red, basket) }
+
+red_woods = move(red, home, woods)
+  pre-state = post-state(red_start)
+  requires: at(red, home) and alive(red)
+  STATUS:   satisfied
+  effects:  -at(red, home), +at(red, woods)
+post-state(red_woods) = pre-state
+                        \ { at(red, home) }
+                        u { at(red, woods) }
+
+red_wolf = learn_from(wolf, red, destination(red, grandmother_house), woods)
+  pre-state = post-state(red_woods)
+  requires: at(wolf, woods)                  [from initial_state, untouched]
+            and at(red, woods)               [just established]
+            and knows(red, destination(red, grandmother_house))
+                                             [from initial_state]
+  STATUS:   satisfied
+  effects:  +knows(wolf, destination(red, grandmother_house))
+post-state(red_wolf) = pre-state
+                       u { knows(wolf, destination(red, grandmother_house)) }
+```
+
+If `knows(red, destination(red, grandmother_house))` were not in
+initial_state (as it was not in the v2 §3.5 draft), the precondition
+check above would fail at red_wolf and the canonical path would be
+flagged unsatisfiable. That a careful pass through the formalism
+surfaces this implicit assumption is exactly the validation-by-
+execution benefit anticipated in §7.8.
+
+### B.5 Frontier computation at red_wolf
+
+Choose v = red_wolf. We enumerate Phi(red_wolf) given scope(red_story),
+the L entries of §B.2, and post-state(red_wolf) from §B.4.
+
+#### Phi_atomic(red_wolf) -- sample candidates considered
+
+| Candidate                                            | requires satisfied? | Note                                                 |
+|------------------------------------------------------|---------------------|------------------------------------------------------|
+| move(red, woods, grandmother_house)                  | yes                 | continues the canonical journey                      |
+| move(red, woods, home)                               | yes                 | turn back                                            |
+| move(wolf, woods, grandmother_house)                 | yes                 | wolf races ahead (this is canonical red_grandma)     |
+| ask_help(red, woodcutter)                            | yes                 | both at woods; matches the seed's existing branch    |
+| ask_help(red, wolf)                                  | yes                 | type-correct, narratively absurd (see B.6 OPEN)      |
+| give(red, wolf, basket)                              | yes                 | placation; novel relative to seed                    |
+| give(red, woodcutter, basket)                        | yes                 | novel                                                |
+| delay(red, flowers)                                  | (sig-only)          | accepted as always-applicable in this example        |
+| impersonate(wolf, grandmother, grandmother_house)    | no                  | at(wolf, woods), not at grandmother_house            |
+| recognize(red, deception(wolf, grandmother), late)   | no                  | present(red, deception) not yet established          |
+| rescue(woodcutter, red, grandmother)                 | no                  | intends(woodcutter, aid(red)) not yet established    |
+
+Phi_atomic(red_wolf) returns the eight rows marked "yes" / "sig-only".
+The three "no" rows are filtered by their unsatisfied preconditions.
+Notice that the seed's existing branch -- `ask_help(red, woodcutter)`
+-- appears as one candidate among others. The formalism does not
+single it out; the ranking metrics in §B.6 do.
+
+#### Phi_T(red_wolf) -- template candidates
+
+Assume a minimal template registry T with two entries.
+
+```
+T1: counsel(Asker :: entity, Ally :: entity) = slist(
+      ask_help(Asker, Ally),
+      learn_from(Asker, Ally, advice, ?),
+      reconsider(Asker)
+    )
+    precondition_pattern: any node with tag in {"threshold","deception"}
+
+T2: recognize_early(X :: entity, F :: completion) = slist(
+      observe(X, anomaly),
+      recognize(X, F, early)
+    )
+    precondition_pattern: any node whose expr's L entry is in
+                          {"learn_from","deceive","impersonate"}
+```
+
+| Template candidate                                       | Binding             | Applicable?                                         |
+|----------------------------------------------------------|---------------------|-----------------------------------------------------|
+| counsel(red, woodcutter)                                 | Ally = woodcutter   | yes                                                 |
+| counsel(red, wolf)                                       | Ally = wolf         | yes (typed-correct, semantically poor)              |
+| counsel(red, mother)                                     | Ally = mother       | no -- mother at home, ask_help requires co-location |
+| recognize_early(red, deception(wolf, grandmother))       | --                  | yes                                                 |
+
+Unified frontier: eight atomic + three template = eleven candidates.
+
+### B.6 Ranking the frontier
+
+Apply §7.9 to the unified frontier. Take the canonical continuation
+at red_wolf to be `move(red, woods, grandmother_house)` (Red's
+implicit next step before delay/arrival). Convergence target for
+proximity scoring is `red_recognition` (the seed's tagged convergence
+node).
+
+| Candidate                                              | spec | contrast | conv. prox. | Pareto-optimal?                |
+|--------------------------------------------------------|------|----------|-------------|--------------------------------|
+| move(red, woods, grandmother_house)                    | 1.0  | 0        | 4           | yes (canonical baseline)       |
+| move(red, woods, home)                                 | 1.0  | 1        | infinity    | no (open, dominated by ask_help) |
+| move(wolf, woods, grandmother_house)                   | 1.0  | high     | 3           | yes (the canonical wolf move)  |
+| ask_help(red, woodcutter)                              | 1.0  | high     | 3           | yes                            |
+| ask_help(red, wolf)                                    | 1.0  | high     | 3           | survives in bare formalism; see B.6-1 |
+| give(red, wolf, basket)                                | 1.0  | high     | infinity    | yes (open, unique on contrast) |
+| give(red, woodcutter, basket)                          | 1.0  | high     | infinity    | dominated by ask_help/woodcutter |
+| delay(red, flowers)                                    | 1.0  | 0        | 3           | yes (canonical sequence)       |
+| counsel(red, woodcutter)            [template T1]      | 1.0  | high     | 3           | yes                            |
+| counsel(red, wolf)                  [template T1]      | 1.0  | high     | 3           | survives; see B.6-1            |
+| recognize_early(red, deception(wolf, grandmother)) [T2] | 1.0  | very high| 2           | yes (strongest counterfactual) |
+
+OPEN (B.6-1): the bare §7.9 metrics do not penalize narrative
+incoherence (`ask_help(red, wolf)`, `counsel(red, wolf)`). Two routes
+forward: (a) extend P with adversarial/trust predicates so a
+precondition like `not_adversary(Asker, Helper)` filters such
+candidates at §7.8, or (b) leave coherence to a higher-level metric
+beyond §7.9. v2 recommends (a) where the relationship can be declared
+in initial_state -- consistent with the preference for filtering by
+formal preconditions over filtering by external taste. The minimal
+addition for red_story is a single fact: `adversarial(wolf, red)` in
+initial_state plus `not adversarial(Helper, Asker)` in ask_help's
+requires.
+
+### B.7 What this example demonstrates
+
+1. Every section of v2 (incl. §1.5, §1.6, §3.5, §7.8, §7.9) lands on
+   real story content -- not just on abstract diagrams.
+2. State propagation through `requires`/`effects` immediately surfaced
+   one implicit assumption in the seed (Red's knowledge of her
+   destination, §B.4) and one expressive gap in P (quantified
+   `believes_during` for impersonation, §B.3 OPEN). Both are
+   improvements, not failures.
+3. The seed's hand-authored branch (`ask_help(red, woodcutter)`) is
+   recovered automatically as a Pareto-optimal frontier candidate at
+   `red_wolf` -- the enumerator can re-derive human authoring choices,
+   not just generate alternatives.
+4. A stronger candidate (`recognize_early(...)`) appears in the
+   frontier that the seed does not currently include -- the enumerator
+   can also propose authoring moves the human did not.
+5. A narratively poor candidate (`ask_help(red, wolf)`) shows up too,
+   identifying the next concrete extension of L/P needed before
+   automation can fully replace authorial judgment (§B.6 OPEN).
+
+---
+
+## Appendix C: Worked Example -- The Gift of the Magi
+
+A second worked example. Magi is chosen over the other seeded stories
+because it stresses parts of the formalism Red did not: parallel
+subDAGs that converge (§6.1, §8.1), state-merge at convergence (§1.6
+OPEN), dyadic-group entities, and dramatic irony as a property
+emerging from merged post-states. Necklace would stress temporal
+predicates that v2 explicitly defers, so it is held back until a
+temporal extension of P is in scope.
+
+The goal of this appendix is not to re-demonstrate the formalism --
+that was Appendix B's job. The goal is to **calibrate** which OPEN
+markers from Appendix B are general gaps in v2 versus which were
+Red-specific quirks, and to identify any new gaps Red did not expose.
+
+The seed being annotated is the `magi` story in `story_builder_app.js`.
+
+### C.1 Scope
+
+```
+scope(magi_story) = (
+  cast = {
+    della :: entity,
+    jim :: entity,
+    couple :: entity,           -- a dyadic group entity; see OPEN C.1-1
+    buyer_hair :: entity,       -- the (off-stage) hair purchaser
+    buyer_watch :: entity       -- the (off-stage) watch purchaser
+  },
+  setting = {
+    home :: place,
+    shop :: place
+  },
+  props = {
+    hair :: entity,
+    watch :: entity,
+    watch_chain :: entity,
+    combs :: entity
+  },
+  initial_state = {
+    alive(della), alive(jim),
+    married(della, jim),
+    members_of(couple, della), members_of(couple, jim),
+    at(della, home), at(jim, home),
+    has(della, hair), has(jim, watch),
+    values(della, hair), values(jim, watch),
+    intends(della, gift_for(jim)),
+    intends(jim, gift_for(della)),
+    not has_funds(della), not has_funds(jim)
+  }
+)
+```
+
+OPEN (C.1-1): `couple` is treated as a first-class entity with
+`members_of` linking it to its constituents. This was not needed in
+Red because every action took individual actors. Magi's canonical
+nodes mention `couple` as the subject of `recognize(couple, love)`,
+which only makes sense if `couple` is a separately bindable parameter.
+Two principled routes: (a) lift `couple` to a derived entity whose
+properties are computed from members' properties (extending §1.2 with
+a derivation operator), or (b) treat any `couple`-subject action as
+sugar for the conjunction of single-actor actions over the membership.
+Route (b) is simpler and preserves §1.6's closed-world semantics; the
+worked nodes in §C.3 use it.
+
+OPEN (C.1-2): `gift_for(jim)` and `gift_for(della)` are intentional
+completions appearing in `intends` as predicate arguments. These are
+goal-typed values (a completion that hasn't happened yet but is held
+as an aim). Red's `intends(red, deliver_basket)` had the same shape.
+This is a recurring pattern -- the same shape was flagged in §1.4 as
+the OPEN around recursive types and shows up immediately in two
+independent stories. v2 should likely promote `intends(X, F)` to a
+first-class construct with declared semantics rather than continuing
+to treat F as a generic completion.
+
+### C.2 Lexicon L (entries used in this story)
+
+Five entries fully annotated. Three entries from Appendix B (recognize,
+confess, choose) are reused with the same signatures.
+
+```
+realize :: (entity, state_atom) -> completion
+realize(X, F) = "[X] realizes that [F]"
+requires: F                                  -- the state must actually hold
+effects:  +knows(X, F)
+
+sacrifice :: (entity, entity) -> completion
+sacrifice(X, Item) = "[X] sacrifices [Item]"
+requires: has(X, Item) and values(X, Item)
+effects:  -has(X, Item), +has_funds(X)
+
+buy :: (entity, entity) -> completion
+buy(X, Item) = "[X] buys [Item]"
+requires: has_funds(X)
+effects:  +has(X, Item), -has_funds(X)
+
+reveal :: (completion) -> completion
+reveal(F) = "[F] is revealed to everyone present"
+requires: F
+effects:  for each Z in cast with at(Z, P_F): +knows(Z, F)
+          where P_F is the place at which F was made manifest
+```
+
+OPEN (C.2-1): `reveal`'s effects clause uses a per-entity quantifier
+("for each Z in cast"). This is the same shape as Red's
+`impersonate` (§B.3 OPEN B.3-1) -- a quantified effect that P as
+defined in §1.6 does not yet directly express. **Two independent
+stories now need this feature.** It is no longer a Red-specific quirk;
+it is a real gap that the next revision of P should close. Candidate
+fix: extend §1.6 with a `forall X in S: <delta>` form for effects.
+
+#### Reused from Appendix B
+
+```
+recognize :: (entity, completion, mode) -> completion
+confess   :: (entity, entity, completion) -> completion
+choose    :: (entity, completion) -> completion
+```
+
+The fact that three of Red's L entries are reusable verbatim is a
+calibration signal in itself: the lexicon has genuine cross-story
+reuse, which is exactly the §3.4 ontological-G claim in operational
+form. (If L were truly per-story, Red and Magi should share zero
+entries.)
+
+### C.3 Typed expressions for every node
+
+| Node id              | Seed expression                  | Fully typed form                                                                                  |
+|----------------------|----------------------------------|---------------------------------------------------------------------------------------------------|
+| magi_start           | lack(della, money)               | realize(della, not has_funds(della))                                                              |
+| magi_sell_hair       | sacrifice(della, hair)           | sacrifice(della, hair)                                                                            |
+| magi_buy_chain       | buy(della, watch_chain)          | buy(della, watch_chain)                                                                           |
+| magi_jim_watch       | sacrifice(jim, watch)            | sacrifice(jim, watch)                                                                             |
+| magi_jim_combs       | buy(jim, combs)                  | buy(jim, combs)                                                                                   |
+| magi_reveal          | reveal(useless(chain, combs))    | reveal(useless(watch_chain, sacrificed(jim, watch))) and reveal(useless(combs, sacrificed(della, hair))) |
+| magi_love            | recognize(couple, love)          | recognize(della, mutual_sacrifice(della, jim), profound) and recognize(jim, mutual_sacrifice(della, jim), profound)         |
+| magi_branch_talk     | confess(couple, scarcity)        | confess(della, jim, not has_funds(della)) ; confess(jim, della, not has_funds(jim))               |
+| magi_branch_simple   | choose(couple, shared_meal)      | choose(della, shared_meal) ; choose(jim, shared_meal)                                             |
+| magi_branch_revalue  | recognize(couple, love, without_loss) | recognize(della, love(della, jim), early) and recognize(jim, love(della, jim), early)        |
+
+Three structural notes:
+
+1. `magi_start` is a state-marker event, not a state-changing one.
+   `realize` was added to L precisely to handle this case: it lets
+   the formalism distinguish "X discovers that F" from "X causes F".
+   Red did not need this -- its first node (`give(mother, red, basket)`)
+   was a real state-changer.
+2. `magi_reveal`'s typed form is a conjunction of two `reveal`
+   applications -- one per gift's uselessness. The seed compresses
+   both into the single expression `reveal(useless(chain, combs))`.
+   The formalism is more explicit about the two facts being revealed
+   independently.
+3. `couple`-subject actions are desugared to per-member conjunctions
+   per §C.1 OPEN C.1-1's route (b).
+
+OPEN (C.3-1): the canonical edges in the seed treat Della's and
+Jim's sacrifice chains as **sequential** (`magi_sell_hair` ->
+`magi_buy_chain` -> `magi_jim_watch` -> `magi_jim_combs`) with a
+single `parallels` edge annotating the symmetry. The story's irony,
+however, depends on the two chains being **concurrent and
+information-isolated** (neither spouse knows the other is sacrificing).
+A faithful formalization would split these into actual parallel
+subDAGs whose convergence is `magi_reveal`. This is a structural
+finding the v2 formalism is ready to express (§3.2 supports it) but
+the seed does not yet use; it is not a gap in v2 itself.
+
+### C.4 State propagation along the canonical path
+
+```
+pre-state(magi_start) = initial_state
+
+magi_start = realize(della, not has_funds(della))
+  requires: not has_funds(della)              [in initial_state]
+  STATUS:   satisfied
+  effects:  +knows(della, not has_funds(della))
+post-state(magi_start) = initial_state
+                         u { knows(della, not has_funds(della)) }
+
+magi_sell_hair = sacrifice(della, hair)
+  pre-state = post-state(magi_start)
+  requires: has(della, hair) and values(della, hair)
+  STATUS:   satisfied
+  effects:  -has(della, hair), +has_funds(della)
+post-state(magi_sell_hair) = pre-state
+                             \ { has(della, hair) }
+                             u { has_funds(della) }
+
+magi_buy_chain = buy(della, watch_chain)
+  pre-state = post-state(magi_sell_hair)
+  requires: has_funds(della)                  [just established]
+  STATUS:   satisfied
+  effects:  +has(della, watch_chain), -has_funds(della)
+```
+
+Now the parallel chain (treated per §C.3 OPEN C.3-1 as a separate
+subDAG even though the seed sequences it):
+
+```
+magi_jim_watch = sacrifice(jim, watch)
+  pre-state = post-state(magi_start)          [parallel branch, not chained off della]
+  requires: has(jim, watch) and values(jim, watch)
+  STATUS:   satisfied
+  effects:  -has(jim, watch), +has_funds(jim)
+
+magi_jim_combs = buy(jim, combs)
+  pre-state = post-state(magi_jim_watch)
+  requires: has_funds(jim)
+  STATUS:   satisfied
+  effects:  +has(jim, combs), -has_funds(jim)
+```
+
+Convergence at `magi_reveal`:
+
+```
+pre-state(magi_reveal) = post-state(magi_buy_chain)  union  post-state(magi_jim_combs)
+                       = initial_state
+                         u { knows(della, not has_funds(della)) }
+                         \ { has(della, hair), has(jim, watch) }
+                         u { has(della, watch_chain), has(jim, combs) }
+
+The fact useless(watch_chain, sacrificed(jim, watch)) is DERIVABLE
+from this state: watch_chain has utility only if has(jim, watch);
+that fact has been removed. Symmetrically for useless(combs, ...).
+So the precondition of reveal -- that the revealed F actually holds
+-- is satisfied by the merged state, but **only via a derivation rule
+that v2 does not yet formalize**.
+
+effects: +knows(della, useless(watch_chain, sacrificed(jim, watch)))
+         +knows(jim, useless(combs, sacrificed(della, hair)))
+         (both at home, where they exchange gifts)
+```
+
+OPEN (C.4-1) -- **RESOLVED in §1.7**: the irony in Magi is structurally
+a **derivation rule fired at a convergence node**. Two parallel
+post-states, when merged, entail a derived fact that neither post-state
+alone entailed. The original §1.6 set-union merge did not include a
+derivation step; §1.7 (added after this appendix flagged the gap)
+introduces derivation rules and a closure operator that fire after
+every state update. The Magi `useless_pairing` rule used here is the
+worked rule in §1.7.3. The structural claim -- dramatic irony is a
+logical consequence of parallel-branch merge plus an entailment rule
+-- is now part of the formalism rather than an appendix observation.
+
+### C.5 Frontier computation at magi_start
+
+Mirroring §B.5: we pick the seed's actual branch-source node so the
+seed's hand-authored alternative appears in the frontier and can be
+ranked. The seed's branch fires at `magi_start` (the `magi_branch_talk`
+edge originates there).
+
+#### Phi_atomic(magi_start)
+
+| Candidate                                       | requires satisfied?      | Note                                                |
+|-------------------------------------------------|--------------------------|-----------------------------------------------------|
+| sacrifice(della, hair)                          | yes                      | canonical next                                      |
+| sacrifice(jim, watch)                           | yes                      | jim's parallel chain (canonical, but offstage)      |
+| sacrifice(della, watch)                         | no                       | has(della, watch) is false                          |
+| confess(della, jim, not has_funds(della))       | yes                      | both at home; della knows; jim does not             |
+| confess(jim, della, not has_funds(jim))         | no                       | requires knows(jim, not has_funds(jim))             |
+| realize(jim, not has_funds(jim))                | yes                      | the symmetric awareness event                       |
+| buy(della, watch_chain)                         | no                       | not has_funds(della)                                |
+| recognize(della, love(della, jim), early)       | depends on present()     | sig-only in this example                            |
+
+Phi_atomic returns the five "yes" rows. Notice that `confess` fires
+as available only one-way: della cannot confess what jim has not
+realized. This asymmetry is exactly what the dramatic situation needs
+-- and the formalism produces it without being told.
+
+#### Phi_T(magi_start)
+
+Reuse the registry from §B.5 (T1 = counsel, T2 = recognize_early).
+Add one template:
+
+```
+T3: communicate_constraint(X :: entity, Y :: entity, F :: state_atom) = slist(
+      realize(X, F),
+      confess(X, Y, F),
+      choose(couple_of(X, Y), shared_plan)
+    )
+    precondition_pattern: any node whose expr is realize(?, not has_funds(?))
+                          or whose tags include "scarcity"
+```
+
+| Template candidate                                                          | Binding                                | Applicable? |
+|-----------------------------------------------------------------------------|----------------------------------------|-------------|
+| counsel(della, jim)                                                         | Ally = jim                             | yes         |
+| counsel(della, buyer_hair)                                                  | Ally = buyer_hair                      | no (not at home) |
+| communicate_constraint(della, jim, not has_funds(della))                    | X=della, Y=jim, F=funds-lack           | yes         |
+| recognize_early(della, mutual_sacrifice(della, jim))                        | --                                     | depends     |
+
+Unified frontier: five atomic + two template = seven candidates.
+
+### C.6 Ranking the frontier
+
+Apply §7.9. Canonical continuation at magi_start is
+`sacrifice(della, hair)`. Convergence target for proximity scoring
+is `magi_reveal`.
+
+| Candidate                                                          | spec | contrast | conv. prox. | Pareto-optimal?            |
+|--------------------------------------------------------------------|------|----------|-------------|----------------------------|
+| sacrifice(della, hair)                                             | 1.0  | 0        | 4           | yes (canonical baseline)   |
+| sacrifice(jim, watch)                                              | 1.0  | low      | 3           | yes (faster path to reveal)|
+| confess(della, jim, not has_funds(della))                          | 1.0  | very high| reroutes to magi_branch_revalue (proximity 2) | yes (seed's authored branch step 1) |
+| realize(jim, not has_funds(jim))                                   | 1.0  | medium   | 4           | dominated by confess on contrast |
+| counsel(della, jim)                              [template T1]     | 1.0  | high     | 3 (via branch) | yes                    |
+| communicate_constraint(della, jim, not has_funds(della)) [T3]      | 1.0  | very high| 2           | yes (whole branch in one step) |
+| recognize_early(della, mutual_sacrifice(della, jim))               | 1.0  | very high| 2           | yes (the strongest counterfactual, same shape as in Red §B.6) |
+
+Two observations:
+
+1. **The seed's hand-authored branch is recovered**, mirroring Red's
+   §B.6. The atomic `confess(della, jim, ...)` and the template
+   `communicate_constraint` both appear and are Pareto-optimal.
+2. **`recognize_early` is again the strongest counterfactual** by the
+   bare metrics -- in both Red and Magi. This is suggestive: either
+   the metric has a systematic bias toward early-recognition templates
+   (it does -- they minimize convergence proximity and maximize
+   contrast simultaneously), or recognition-shortcuts really are
+   under-used by human authors. v2 cannot decide between these from
+   two examples. **A third worked example (Necklace) once temporal
+   predicates are in scope would calibrate this.**
+
+### C.7 Calibration: which OPENs generalize?
+
+This is the meta-point of doing a second worked example.
+
+| Open from Appendix B                              | Status after Appendix C                                |
+|---------------------------------------------------|--------------------------------------------------------|
+| B.3-1: quantified effects (impersonate)           | **Recurs as C.2-1** (reveal). Confirmed structural gap; v2 should add `forall X in S: <delta>` to §1.6. |
+| B.4: implicit knows() missing from initial_state  | Did not recur in Magi. May have been Red-specific; tentatively a per-story authoring discipline rather than a v2 gap. |
+| B.6-1: type-correct-but-absurd candidates         | Did not surface in Magi at all. Magi's cast is two cooperating spouses + two off-stage shopkeepers; there is no antagonist for type-correct-but-absurd candidates to bind against. Magi-specific absence, not a refutation. |
+
+**New OPENs from Magi:**
+
+| New open       | What it is                                                                                  |
+|----------------|---------------------------------------------------------------------------------------------|
+| C.1-1          | Group entities (`couple`) need either a derivation operator (§1.2 extension) or a desugaring convention. |
+| C.1-2 / B re-look | `intends(X, F)` is a recurring shape; both stories use F as a goal-typed completion. v2 should promote it. |
+| C.3-1          | Seeds encode parallel chains as sequential. The formalism supports parallels; the seeds need a representation update. (Not a v2 gap; a builder-data gap.) |
+| C.4-1 -- **RESOLVED** | Dramatic irony = derivation rule at convergence-merge. Promoted to §1.7. The most interesting new finding became spec, not appendix. |
+
+Summary: of three B-OPENs, one was structural (quantified effects, now
+confirmed) and two were Red-specific. Of four C-OPENs, three are
+genuinely new (group entities, derivation-at-convergence, parallel
+representation), and one (`intends`) reinforces an existing §1.4
+opening. Two worked examples have been enough to separate signal from
+noise on every one of B's findings.
+
+### C.8 What this example demonstrates
+
+1. The formalism scales from a single-protagonist quest (Red) to a
+   dual-protagonist convergence story (Magi) with no structural
+   changes -- only L extensions.
+2. The most interesting finding is C.4-1: **dramatic irony is a
+   logical consequence of parallel-branch merge plus an entailment
+   rule**. This is a falsifiable claim the formalism makes that
+   ordinary narrative theory does not.
+3. Three L entries (`recognize`, `confess`, `choose`) carried over
+   verbatim from Red. This is the first operational evidence that L
+   is shareable across stories rather than per-story -- a small step
+   toward the §3.4 ontological-G claim being testable.
+4. The "strongest counterfactual = early recognition" pattern
+   recurred in both stories. Worth flagging as either a metric bias
+   or a real authorial blind spot; one more story would decide.

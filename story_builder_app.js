@@ -116,6 +116,34 @@
     }
   };
 
+  // Bridge from seed-level nodes to typed fixtures (FORMAL_MODEL_v2.md
+  // Appendices B + C). Per seed: fixture global, and a function that
+  // builds a {nodeId -> Set<fact>} map of post-states at supported nodes.
+  // Unsupported nodes show "no typed fixture state available" — the
+  // typed-fixture coverage is intentionally narrow for the first cut.
+  const phiBindings = {
+    red: {
+      fixture: () => (typeof window !== "undefined" ? window.RetrocauseRedFixture : null),
+      states: (fx, Phi) => {
+        const { entries, scope } = fx;
+        const s0 = scope.initial_state;
+        const s1 = Phi.step(s0, entries.give, { Giver: "mother", Receiver: "red", Item: "basket" }, scope.derivations);
+        const s2 = Phi.step(s1, entries.move, { X: "red", From: "home", To: "woods" }, scope.derivations);
+        const s3 = Phi.step(s2, entries.learn_from, { L: "wolf", S: "red", F: "destination(red,grandmother_house)", P: "woods" }, scope.derivations);
+        return { red_start: s1, red_woods: s2, red_wolf: s3 };
+      },
+    },
+    magi: {
+      fixture: () => (typeof window !== "undefined" ? window.RetrocauseMagiFixture : null),
+      states: (fx) => ({
+        magi_start: fx.postStateAfterMagiStart(),
+        magi_buy_chain: fx.postStateDellaChainEnd(),
+        magi_jim_combs: fx.postStateJimChainEnd(),
+        magi_reveal: fx.postStateAtMagiReveal(),
+      }),
+    },
+  };
+
   function node(id, label, expr, state, kind = "canonical", tags = []) {
     return { id, label, expr, state, kind, tags, createdBy: "seed", delta: "", invariants: "" };
   }
@@ -136,7 +164,9 @@
     showEdgeLabels: true,
     search: "",
     viewMode: "all",
-    promptText: ""
+    promptText: "",
+    phiGroupByEntry: true,
+    phiHideNoop: false
   };
 
   const el = Object.fromEntries(Array.from(document.querySelectorAll("[id]")).map((item) => [item.id, item]));
@@ -257,6 +287,8 @@
     el.toggleLabelsBtn.addEventListener("click", () => { state.showEdgeLabels = !state.showEdgeLabels; renderGraph(); });
     el.searchInput.addEventListener("input", () => { state.search = el.searchInput.value.trim().toLowerCase(); renderGraph(); });
     el.viewMode.addEventListener("change", () => { state.viewMode = el.viewMode.value; renderAll(); });
+    if (el.phiGroupToggle) el.phiGroupToggle.addEventListener("change", () => { state.phiGroupByEntry = el.phiGroupToggle.checked; renderPhiPanel(getNode(state.selectedId)); });
+    if (el.phiHideNoopToggle) el.phiHideNoopToggle.addEventListener("change", () => { state.phiHideNoop = el.phiHideNoopToggle.checked; renderPhiPanel(getNode(state.selectedId)); });
     el.saveNodeBtn.addEventListener("click", saveSelectedNodeEdits);
     el.buildPromptBtn.addEventListener("click", () => showPrompt(true));
     el.copyPromptBtn.addEventListener("click", copyPrompt);
@@ -447,8 +479,104 @@
     el.joinCount.textContent = graph.edges.filter((item) => item.type === "rejoins").length;
     renderSelects();
     renderSelected(selected);
+    renderPhiPanel(selected);
     renderHeuristics(selected);
     syncEditor(selected);
+  }
+
+  function renderPhiPanel(selected) {
+    if (!el.phiList || !el.phiSummary) return;
+    const Phi = (typeof window !== "undefined" && window.RetrocausePhi) || null;
+    const binding = state.activeSeed ? phiBindings[state.activeSeed] : null;
+    if (!Phi || !binding) {
+      el.phiSummary.className = "muted phi-summary";
+      el.phiSummary.textContent = "No typed fixture for this seed. Phi available only for Red and Magi.";
+      el.phiList.innerHTML = "";
+      return;
+    }
+    const fx = binding.fixture && binding.fixture();
+    if (!fx) {
+      el.phiSummary.className = "muted phi-summary warn";
+      el.phiSummary.textContent = "Typed fixture script did not load. Check console.";
+      el.phiList.innerHTML = "";
+      return;
+    }
+    if (!selected) {
+      el.phiSummary.className = "muted phi-summary";
+      el.phiSummary.textContent = "Select a node.";
+      el.phiList.innerHTML = "";
+      return;
+    }
+
+    let statesByNode;
+    try {
+      statesByNode = binding.states(fx, Phi);
+    } catch (err) {
+      el.phiSummary.className = "muted phi-summary warn";
+      el.phiSummary.textContent = `Fixture replay failed: ${err.message}`;
+      el.phiList.innerHTML = "";
+      return;
+    }
+    const nodeState = statesByNode[selected.id];
+    if (!nodeState) {
+      el.phiSummary.className = "muted phi-summary";
+      const supported = Object.keys(statesByNode).join(", ") || "(none)";
+      el.phiSummary.textContent = `No typed state available at this node. Supported: ${supported}`;
+      el.phiList.innerHTML = "";
+      return;
+    }
+
+    const candidates = Phi.phi({
+      lexicon: fx.lexicon,
+      scope: fx.scope,
+      state: nodeState,
+      downstreamExprs: new Set(),
+    });
+
+    const byEntry = new Map();
+    for (const c of candidates) {
+      if (!byEntry.has(c.entry.name)) byEntry.set(c.entry.name, []);
+      byEntry.get(c.entry.name).push(c);
+    }
+
+    el.phiSummary.className = "phi-summary good";
+    el.phiSummary.textContent = `${candidates.length} candidate${candidates.length === 1 ? "" : "s"} across ${byEntry.size} L entr${byEntry.size === 1 ? "y" : "ies"} at this node.`;
+
+    if (state.phiGroupByEntry) {
+      const groups = Array.from(byEntry.entries()).sort((a, b) => b[1].length - a[1].length);
+      el.phiList.innerHTML = groups.map(([entryName, list]) => {
+        const noop = !list[0].entry.effects || !hasAnyEffects(list[0].entry, list[0].binding, nodeState);
+        if (state.phiHideNoop && noop) return "";
+        const open = list.length <= 6 ? " open" : "";
+        const items = list.map((c) => phiCandidateMarkup(c, nodeState)).join("");
+        return `<details class="phi-group" data-noop="${noop ? "true" : "false"}"${open}>
+          <summary><span>${escapeHtml(entryName)}${noop ? " (no effects)" : ""}</span><span class="phi-count">${list.length}</span></summary>
+          ${items}
+        </details>`;
+      }).join("");
+    } else {
+      el.phiList.innerHTML = candidates.map((c) => phiCandidateMarkup(c, nodeState)).join("");
+    }
+  }
+
+  function hasAnyEffects(entry, binding, state) {
+    if (!entry.effects) return false;
+    try {
+      const d = entry.effects(binding, state) || {};
+      return (d.add && d.add.length) || (d.remove && d.remove.length);
+    } catch { return false; }
+  }
+
+  function phiCandidateMarkup(candidate, contextState) {
+    const gloss = candidate.entry.gloss ? safeGloss(candidate.entry, candidate.binding) : "";
+    return `<div class="phi-candidate">
+      <code>${escapeHtml(candidate.expr)}</code>
+      ${gloss ? `<span class="phi-gloss">${escapeHtml(gloss)}</span>` : ""}
+    </div>`;
+  }
+
+  function safeGloss(entry, binding) {
+    try { return entry.gloss(binding) || ""; } catch { return ""; }
   }
 
   function renderSelects() {
