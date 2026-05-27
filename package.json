@@ -3,6 +3,6 @@
   "private": true,
   "version": "0.1.0",
   "scripts": {
-    "test": "node --check story_builder_app.js && node --check story_builder_engine.js && node --check phi.js && node --check red_fixture.js && node --check magi_fixture.js && node --test tests/story_builder_engine.test.js tests/phi.test.js tests/magi.test.js"
+    "test": "node --check story_builder_app.js && node --check story_builder_engine.js && node --check phi.js && node --check red_fixture.js && node --check magi_fixture.js && node --check seeds.js && node --check state_walker.js && node --test tests/story_builder_engine.test.js tests/phi.test.js tests/magi.test.js tests/state_walker.test.js"
   }
 }

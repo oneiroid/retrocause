@@ -20,139 +20,23 @@
     foreshadows: "#38bdf8"
   };
 
-  const seeds = {
-    red: {
-      title: "Little Red Riding Hood",
-      summary: "Clean warning → temptation → disguise → rescue structure; good for early-detection branches.",
-      root: "red_start",
-      nodes: [
-        node("red_start", "Mother gives errand", "send(mother, red, basket)", "Red has a mission, a destination, and a warning to stay on the path.", "root", ["warning", "quest"]),
-        node("red_woods", "Red enters the woods", "enter(red, woods)", "Red crosses from domestic safety into a place where strangers can intervene.", "canonical", ["threshold"]),
-        node("red_wolf", "Wolf learns destination", "deceive(wolf, red)", "The wolf gains enough information to race ahead and construct a trap.", "canonical", ["deception", "predator"]),
-        node("red_delay", "Red gathers flowers", "delay(red, flowers)", "Red loses time; the predator's route becomes causally prior to hers.", "canonical", ["temptation", "delay"]),
-        node("red_grandma", "Wolf reaches grandmother", "arrive(wolf, grandmother_house)", "The safe endpoint becomes compromised before Red arrives.", "canonical", ["inversion"]),
-        node("red_disguise", "Wolf impersonates grandmother", "impersonate(wolf, grandmother)", "A trusted role now hides a threat inside a trusted house.", "canonical", ["disguise"]),
-        node("red_recognition", "Red recognizes danger too late", "recognize(red, wolf, late)", "The deception collapses after Red has entered the trap.", "convergence", ["recognition"]),
-        node("red_rescue", "Rescue restores household", "rescue(woodcutter, red, grandmother)", "Outside intervention reverses the closed predator-prey path.", "canonical", ["rescue", "restoration"]),
-        node("red_branch_help", "Red asks woodcutter first", "ask_help(red, woodcutter)", "Red introduces an ally before the house becomes a closed trap.", "branch", ["counterfactual", "ally"]),
-        node("red_branch_warning", "Grandmother is warned", "warn(red, grandmother)", "The endpoint remains dangerous, but the victim is no longer uninformed.", "branch", ["counterfactual", "information"])
-      ],
-      edges: [
-        ...pathEdges(["red_start", "red_woods", "red_wolf", "red_delay", "red_grandma", "red_disguise", "red_recognition", "red_rescue"]),
-        edge("red_wolf", "red_branch_help", "choice", "asks for help"),
-        edge("red_branch_help", "red_branch_warning", "causes", "ally enables warning"),
-        edge("red_branch_warning", "red_recognition", "rejoins", "danger still revealed")
-      ]
-    },
-    magi: {
-      title: "The Gift of the Magi",
-      summary: "Parallel sacrifices and ironic convergence; excellent for invariant-love counterfactuals.",
-      root: "magi_start",
-      nodes: [
-        node("magi_start", "Della lacks gift money", "lack(della, money)", "Love is constrained by scarcity; action must convert value into a gift.", "root", ["scarcity", "love"]),
-        node("magi_sell_hair", "Della sells her hair", "sacrifice(della, hair)", "Della turns her prized possession into money while losing what combs would adorn.", "canonical", ["sacrifice"]),
-        node("magi_buy_chain", "Della buys chain", "buy(della, watch_chain)", "Her gift assumes Jim still has his watch.", "canonical", ["gift", "assumption"]),
-        node("magi_jim_watch", "Jim sells his watch", "sacrifice(jim, watch)", "Jim's offstage sacrifice removes the object Della's gift serves.", "canonical", ["parallel", "sacrifice"]),
-        node("magi_jim_combs", "Jim buys combs", "buy(jim, combs)", "His gift assumes Della still has her hair.", "canonical", ["irony", "gift"]),
-        node("magi_reveal", "Gifts cannot be used", "reveal(useless(chain, combs))", "The practical value of both gifts cancels at the moment of exchange.", "convergence", ["recognition", "irony"]),
-        node("magi_love", "Love becomes real gift", "recognize(couple, love)", "The story's value shifts from objects to mutual sacrifice.", "canonical", ["revaluation", "love"]),
-        node("magi_branch_talk", "They confess the money problem", "confess(couple, scarcity)", "The couple shares constraint before converting possessions into gifts.", "branch", ["counterfactual", "communication"]),
-        node("magi_branch_simple", "They choose a shared simple meal", "choose(couple, shared_meal)", "The gift becomes time and honesty rather than symmetrical material sacrifice.", "branch", ["counterfactual", "invariant-love"]),
-        node("magi_branch_revalue", "Love is recognized without irony", "recognize(couple, love, without_loss)", "The same emotional attractor is reached without destroying the useful objects.", "convergence", ["counterfactual", "revaluation"])
-      ],
-      edges: [
-        ...pathEdges(["magi_start", "magi_sell_hair", "magi_buy_chain", "magi_jim_watch", "magi_jim_combs", "magi_reveal", "magi_love"]),
-        edge("magi_start", "magi_branch_talk", "choice", "confession instead of secrecy"),
-        edge("magi_branch_talk", "magi_branch_simple", "causes", "shared constraints"),
-        edge("magi_branch_simple", "magi_branch_revalue", "causes", "care remains visible"),
-        edge("magi_branch_revalue", "magi_love", "rejoins", "same moral convergence"),
-        edge("magi_sell_hair", "magi_jim_watch", "parallels", "symmetrical sacrifice")
-      ]
-    },
-    necklace: {
-      title: "The Necklace",
-      summary: "A tiny concealment choice creates years of cost; ideal for confession/rejoin analysis.",
-      root: "neck_start",
-      nodes: [
-        node("neck_start", "Mathilde borrows necklace", "borrow(mathilde, necklace)", "Status desire is externalized into a borrowed object.", "root", ["status", "borrowed-value"]),
-        node("neck_ball", "She performs wealth at the ball", "attend(mathilde, ball)", "The desired identity is briefly achieved through display.", "canonical", ["mask", "aspiration"]),
-        node("neck_loss", "The necklace is lost", "lose(mathilde, necklace)", "A missing object creates a fork: confess now or hide the loss.", "convergence", ["loss", "choice-point"]),
-        node("neck_replace", "They replace it secretly", "replace(couple, necklace)", "Concealment turns a social problem into a financial catastrophe.", "canonical", ["secrecy", "debt"]),
-        node("neck_labor", "Years of labor repay debt", "labor(couple, years)", "The replacement choice reshapes their class, bodies, and marriage.", "canonical", ["consequence", "duration"]),
-        node("neck_fake", "The original was fake", "reveal(friend, fake_necklace)", "The entire causal chain is reinterpreted as avoidable tragedy.", "convergence", ["reversal", "recognition"]),
-        node("neck_branch_confess", "Mathilde confesses immediately", "confess(mathilde, friend, loss)", "Embarrassment is paid up front, but information returns to the system.", "branch", ["counterfactual", "truth"]),
-        node("neck_branch_learn_fake", "Friend reveals low value", "reveal(friend, imitation_necklace)", "The debt branch collapses because the invariant object was never precious.", "branch", ["counterfactual", "information"]),
-        node("neck_branch_social", "Status illusion breaks early", "recognize(mathilde, status_illusion)", "The same recognition occurs without losing ten years.", "convergence", ["counterfactual", "recognition"])
-      ],
-      edges: [
-        ...pathEdges(["neck_start", "neck_ball", "neck_loss", "neck_replace", "neck_labor", "neck_fake"]),
-        edge("neck_loss", "neck_branch_confess", "choice", "truth instead of concealment"),
-        edge("neck_branch_confess", "neck_branch_learn_fake", "causes", "owner has information"),
-        edge("neck_branch_learn_fake", "neck_branch_social", "causes", "false value revealed"),
-        edge("neck_branch_social", "neck_fake", "rejoins", "same fact, earlier"),
-        edge("neck_replace", "neck_fake", "foreshadows", "hidden premise")
-      ]
-    },
-    tortoise: {
-      title: "The Tortoise and the Hare",
-      summary: "Compact pride/persistence reversal with clear branch points around feedback and attention.",
-      root: "tor_start",
-      nodes: [
-        node("tor_start", "Hare mocks Tortoise", "mock(hare, tortoise)", "Status conflict motivates a measurable contest.", "root", ["pride"]),
-        node("tor_race", "Race begins", "start(race)", "Both characters enter the same course with different capabilities.", "canonical", ["contest"]),
-        node("tor_hare_leads", "Hare sprints ahead", "outrun(hare, tortoise)", "Natural advantage creates overconfidence.", "canonical", ["advantage"]),
-        node("tor_hare_sleeps", "Hare naps", "sleep(hare)", "The leading path pauses and becomes vulnerable.", "canonical", ["hubris"]),
-        node("tor_tortoise_moves", "Tortoise keeps moving", "persist(tortoise)", "Slow consistent action accumulates enough progress to reverse the race.", "convergence", ["persistence"]),
-        node("tor_finish", "Tortoise wins", "win(tortoise, race)", "Persistence beats unused speed.", "canonical", ["reversal"]),
-        node("tor_branch_warning", "Hare hears a warning", "warn(observer, hare)", "Feedback interrupts pride before the nap becomes decisive.", "branch", ["counterfactual", "feedback"]),
-        node("tor_branch_close", "Race stays close", "compete(hare, tortoise, close)", "The moral changes from persistence-over-pride to mutual effort.", "branch", ["counterfactual"])
-      ],
-      edges: [
-        ...pathEdges(["tor_start", "tor_race", "tor_hare_leads", "tor_hare_sleeps", "tor_tortoise_moves", "tor_finish"]),
-        edge("tor_hare_leads", "tor_branch_warning", "choice", "accept feedback"),
-        edge("tor_branch_warning", "tor_branch_close", "causes", "attention restored"),
-        edge("tor_branch_close", "tor_finish", "rejoins", "finish still tests character")
-      ]
-    }
-  };
+  const seeds = (typeof window !== "undefined" && window.RetrocauseSeeds)
+    ? window.RetrocauseSeeds.seeds
+    : (typeof require !== "undefined" ? require("./seeds.js").seeds : {});
 
   // Bridge from seed-level nodes to typed fixtures (FORMAL_MODEL_v2.md
-  // Appendices B + C). Per seed: fixture global, and a function that
-  // builds a {nodeId -> Set<fact>} map of post-states at supported nodes.
-  // Unsupported nodes show "no typed fixture state available" — the
-  // typed-fixture coverage is intentionally narrow for the first cut.
+  // Appendices B + C). Per seed: fixture global. Post-states are now
+  // computed generically by state_walker.postStateAt — no hand-coded
+  // per-seed state table. Seeds without a `fixture` entry show
+  // "No typed fixture for this seed."
   const phiBindings = {
     red: {
       fixture: () => (typeof window !== "undefined" ? window.RetrocauseRedFixture : null),
-      states: (fx, Phi) => {
-        const { entries, scope } = fx;
-        const s0 = scope.initial_state;
-        const s1 = Phi.step(s0, entries.give, { Giver: "mother", Receiver: "red", Item: "basket" }, scope.derivations);
-        const s2 = Phi.step(s1, entries.move, { X: "red", From: "home", To: "woods" }, scope.derivations);
-        const s3 = Phi.step(s2, entries.learn_from, { L: "wolf", S: "red", F: "destination(red,grandmother_house)", P: "woods" }, scope.derivations);
-        return { red_start: s1, red_woods: s2, red_wolf: s3 };
-      },
     },
     magi: {
       fixture: () => (typeof window !== "undefined" ? window.RetrocauseMagiFixture : null),
-      states: (fx) => ({
-        magi_start: fx.postStateAfterMagiStart(),
-        magi_buy_chain: fx.postStateDellaChainEnd(),
-        magi_jim_combs: fx.postStateJimChainEnd(),
-        magi_reveal: fx.postStateAtMagiReveal(),
-      }),
     },
   };
-
-  function node(id, label, expr, state, kind = "canonical", tags = []) {
-    return { id, label, expr, state, kind, tags, createdBy: "seed", delta: "", invariants: "" };
-  }
-  function edge(from, to, type = "causes", label = "") {
-    return { id: `e_${from}_${to}_${type}`, from, to, type, label, canonical: type === "causes" };
-  }
-  function pathEdges(ids) {
-    return ids.slice(0, -1).map((from, index) => edge(from, ids[index + 1], "causes", "canonical next"));
-  }
 
   const state = {
     graph: makeGraph(seeds.magi),
@@ -166,7 +50,9 @@
     viewMode: "all",
     promptText: "",
     phiGroupByEntry: true,
-    phiHideNoop: false
+    phiHideNoop: false,
+    autoBranchRunning: false,
+    stopAutoBranch: false
   };
 
   const el = Object.fromEntries(Array.from(document.querySelectorAll("[id]")).map((item) => [item.id, item]));
@@ -199,6 +85,11 @@
   let nodeSelection = nodeLayer.selectAll("g.node");
   let edgeSelection = edgeLayer.selectAll("path.link");
   let edgeLabelSelection = labelLayer.selectAll("text.edge-label");
+
+  // Rendered candidates kept in render order so the materialize-button
+  // event delegation can look up the original candidate (with closures)
+  // by index without round-tripping JSON through data-attributes.
+  let phiCandidatesByIndex = [];
 
   init();
 
@@ -289,6 +180,11 @@
     el.viewMode.addEventListener("change", () => { state.viewMode = el.viewMode.value; renderAll(); });
     if (el.phiGroupToggle) el.phiGroupToggle.addEventListener("change", () => { state.phiGroupByEntry = el.phiGroupToggle.checked; renderPhiPanel(getNode(state.selectedId)); });
     if (el.phiHideNoopToggle) el.phiHideNoopToggle.addEventListener("change", () => { state.phiHideNoop = el.phiHideNoopToggle.checked; renderPhiPanel(getNode(state.selectedId)); });
+    if (el.autoBranchBtn) el.autoBranchBtn.addEventListener("click", autoBranchFromSelected);
+    if (el.stopAutoBranchBtn) el.stopAutoBranchBtn.addEventListener("click", () => {
+      state.stopAutoBranch = true;
+      setAutoBranchStatus("Stopping after the current insert...");
+    });
     el.saveNodeBtn.addEventListener("click", saveSelectedNodeEdits);
     el.buildPromptBtn.addEventListener("click", () => showPrompt(true));
     el.copyPromptBtn.addEventListener("click", copyPrompt);
@@ -486,53 +382,19 @@
 
   function renderPhiPanel(selected) {
     if (!el.phiList || !el.phiSummary) return;
-    const Phi = (typeof window !== "undefined" && window.RetrocausePhi) || null;
-    const binding = state.activeSeed ? phiBindings[state.activeSeed] : null;
-    if (!Phi || !binding) {
+    const data = getPhiData(selected);
+    if (!data.ok) {
       el.phiSummary.className = "muted phi-summary";
-      el.phiSummary.textContent = "No typed fixture for this seed. Phi available only for Red and Magi.";
-      el.phiList.innerHTML = "";
-      return;
-    }
-    const fx = binding.fixture && binding.fixture();
-    if (!fx) {
-      el.phiSummary.className = "muted phi-summary warn";
-      el.phiSummary.textContent = "Typed fixture script did not load. Check console.";
-      el.phiList.innerHTML = "";
-      return;
-    }
-    if (!selected) {
-      el.phiSummary.className = "muted phi-summary";
-      el.phiSummary.textContent = "Select a node.";
+      if (data.warn) el.phiSummary.className += " warn";
+      el.phiSummary.textContent = data.message;
       el.phiList.innerHTML = "";
       return;
     }
 
-    let statesByNode;
-    try {
-      statesByNode = binding.states(fx, Phi);
-    } catch (err) {
-      el.phiSummary.className = "muted phi-summary warn";
-      el.phiSummary.textContent = `Fixture replay failed: ${err.message}`;
-      el.phiList.innerHTML = "";
-      return;
-    }
-    const nodeState = statesByNode[selected.id];
-    if (!nodeState) {
-      el.phiSummary.className = "muted phi-summary";
-      const supported = Object.keys(statesByNode).join(", ") || "(none)";
-      el.phiSummary.textContent = `No typed state available at this node. Supported: ${supported}`;
-      el.phiList.innerHTML = "";
-      return;
-    }
+    const { candidates, nodeState } = data;
+    phiCandidatesByIndex = candidates;
 
-    const candidates = Phi.phi({
-      lexicon: fx.lexicon,
-      scope: fx.scope,
-      state: nodeState,
-      downstreamExprs: new Set(),
-    });
-
+    const indexByCandidate = new Map(candidates.map((c, i) => [c, i]));
     const byEntry = new Map();
     for (const c of candidates) {
       if (!byEntry.has(c.entry.name)) byEntry.set(c.entry.name, []);
@@ -548,15 +410,25 @@
         const noop = !list[0].entry.effects || !hasAnyEffects(list[0].entry, list[0].binding, nodeState);
         if (state.phiHideNoop && noop) return "";
         const open = list.length <= 6 ? " open" : "";
-        const items = list.map((c) => phiCandidateMarkup(c, nodeState)).join("");
+        const items = list.map((c) => phiCandidateMarkup(c, nodeState, indexByCandidate.get(c))).join("");
         return `<details class="phi-group" data-noop="${noop ? "true" : "false"}"${open}>
           <summary><span>${escapeHtml(entryName)}${noop ? " (no effects)" : ""}</span><span class="phi-count">${list.length}</span></summary>
           ${items}
         </details>`;
       }).join("");
     } else {
-      el.phiList.innerHTML = candidates.map((c) => phiCandidateMarkup(c, nodeState)).join("");
+      el.phiList.innerHTML = candidates.map((c, i) => phiCandidateMarkup(c, nodeState, i)).join("");
     }
+
+    el.phiList.querySelectorAll("[data-phi-cidx]").forEach((btn) => {
+      btn.addEventListener("click", (event) => {
+        event.stopPropagation();
+        const idx = Number(btn.dataset.phiCidx);
+        const candidate = phiCandidatesByIndex[idx];
+        if (!candidate) return;
+        materializeCandidate(selected, candidate);
+      });
+    });
   }
 
   function hasAnyEffects(entry, binding, state) {
@@ -567,12 +439,311 @@
     } catch { return false; }
   }
 
-  function phiCandidateMarkup(candidate, contextState) {
+  function getPhiData(selected) {
+    const Phi = (typeof window !== "undefined" && window.RetrocausePhi) || null;
+    const binding = state.activeSeed ? phiBindings[state.activeSeed] : null;
+    if (!Phi || !binding) {
+      return { ok: false, message: "No typed fixture for this seed. Phi available only for Red and Magi." };
+    }
+    const fx = binding.fixture && binding.fixture();
+    if (!fx) {
+      return { ok: false, warn: true, message: "Typed fixture script did not load. Check console." };
+    }
+    if (!selected) {
+      return { ok: false, message: "Select a node." };
+    }
+    const Walker = (typeof window !== "undefined" && window.RetrocauseStateWalker) || null;
+    if (!Walker) {
+      return { ok: false, warn: true, message: "state_walker.js not loaded." };
+    }
+    let postStates;
+    try {
+      postStates = Walker.computeAllPostStates(state.graph, fx, Phi);
+    } catch (err) {
+      return { ok: false, warn: true, message: `State walker failed: ${err.message}` };
+    }
+    const nodeState = postStates.get(selected.id);
+    if (!nodeState) {
+      return { ok: false, message: "No typed state available at this node (no action annotation upstream)." };
+    }
+    return {
+      ok: true,
+      fixture: fx,
+      nodeState,
+      candidates: Phi.phi({
+        lexicon: fx.lexicon,
+        scope: fx.scope,
+        state: nodeState,
+        downstreamExprs: new Set(),
+      }),
+    };
+  }
+
+  function phiCandidateMarkup(candidate, contextState, idx) {
     const gloss = candidate.entry.gloss ? safeGloss(candidate.entry, candidate.binding) : "";
     return `<div class="phi-candidate">
+      <button type="button" class="phi-add-btn" data-phi-cidx="${idx}" title="Materialize as branch node">+</button>
       <code>${escapeHtml(candidate.expr)}</code>
       ${gloss ? `<span class="phi-gloss">${escapeHtml(gloss)}</span>` : ""}
     </div>`;
+  }
+
+  // Insert a Phi candidate as a new branch node descended from `source`.
+  // - Edge type is `causes` (canonical) so the walker replays through it.
+  // - Node kind is `branch` (visual: user-introduced, not the original DAG).
+  // - The `action` field is carried verbatim so re-walking yields the same
+  //   post-state the Phi panel was reasoning about.
+  function materializeCandidate(source, candidate, options = {}) {
+    const {
+      render = true,
+      select = true,
+      notify = true,
+      extraTags = [],
+      createdBy = "phi",
+    } = options;
+    if (!source) return toast("Select a source node first", true);
+    const entry = candidate.entry;
+    const gloss = safeGloss(entry, candidate.binding) || candidate.expr;
+    const id = uniqueId("phi");
+    const newNode = {
+      id,
+      label: gloss,
+      expr: candidate.expr,
+      state: "",
+      kind: "branch",
+      tags: unique(["phi", ...extraTags, entry.name]),
+      createdBy,
+      delta: "",
+      invariants: "",
+      action: { entry: entry.name, binding: { ...candidate.binding } },
+    };
+    state.graph.nodes.push(newNode);
+    const result = addEdge({
+      from: source.id,
+      to: id,
+      type: "causes",
+      label: `phi: ${entry.name}`,
+      canonical: true,
+    });
+    if (!result.ok) {
+      state.graph.nodes = state.graph.nodes.filter((n) => n.id !== id);
+      if (notify) toast(result.message, true);
+      return null;
+    }
+    if (select) state.selectedId = id;
+    if (render) renderAll();
+    if (notify) toast(`Materialized ${entry.name}(...) from Phi`);
+    return newNode;
+  }
+
+  async function autoBranchFromSelected() {
+    if (state.autoBranchRunning) return;
+    const root = getNode(state.selectedId);
+    if (!root) return toast("Select a node first", true);
+    if (!phiBindings[state.activeSeed]) return toast("Auto branching needs a typed seed; Magi or Red are supported.", true);
+
+    const maxDepth = clampNumber(el.autoDepth?.value, 1, 4, 2);
+    const perNode = clampNumber(el.autoWidth?.value, 1, 4, 2);
+    const maxNodes = clampNumber(el.autoMaxNodes?.value, 1, 40, 12);
+    const queue = [{ id: root.id, depth: 0, pathEntryNames: entryPathTo(root.id) }];
+    const autoSeenStateKeys = new Set();
+    let made = 0;
+    let skipped = 0;
+    let lastMadeId = null;
+
+    state.autoBranchRunning = true;
+    state.stopAutoBranch = false;
+    syncAutoBranchControls();
+    setAutoBranchStatus(`Running from ${root.label}: depth ${maxDepth}, width ${perNode}, cap ${maxNodes}.`);
+
+    try {
+      while (queue.length && made < maxNodes && !state.stopAutoBranch) {
+        const { id, depth, pathEntryNames } = queue.shift();
+        if (depth >= maxDepth) continue;
+        const source = getNode(id);
+        if (!source) continue;
+        const data = getPhiData(source);
+        if (!data.ok) {
+          skipped += 1;
+          continue;
+        }
+        const candidates = chooseAutoCandidates(source, data.candidates, data.nodeState, {
+          fixture: data.fixture,
+          limit: perNode,
+          seenStateKeys: autoSeenStateKeys,
+          pathEntryNames,
+        });
+        if (!candidates.length) {
+          skipped += 1;
+          continue;
+        }
+        for (const candidate of candidates) {
+          if (state.stopAutoBranch || made >= maxNodes) break;
+          const newNode = materializeCandidate(source, candidate, {
+            render: false,
+            select: false,
+            notify: false,
+            extraTags: ["auto"],
+            createdBy: "phi-auto",
+          });
+          if (!newNode) {
+            skipped += 1;
+            continue;
+          }
+          made += 1;
+          lastMadeId = newNode.id;
+          if (candidate.autoPostStateKey) autoSeenStateKeys.add(candidate.autoPostStateKey);
+          queue.push({ id: newNode.id, depth: depth + 1, pathEntryNames: [...pathEntryNames, candidate.entry.name] });
+          setAutoBranchStatus(`Auto branching: ${made}/${maxNodes} nodes, queue ${queue.length}.`);
+          state.selectedId = newNode.id;
+          renderAll();
+          await yieldToBrowser();
+        }
+      }
+    } finally {
+      state.autoBranchRunning = false;
+      const stopped = state.stopAutoBranch;
+      state.stopAutoBranch = false;
+      if (lastMadeId) state.selectedId = lastMadeId;
+      renderAll();
+      syncAutoBranchControls();
+      const suffix = skipped ? ` ${skipped} expansion point${skipped === 1 ? "" : "s"} had no usable candidates.` : "";
+      setAutoBranchStatus(`${stopped ? "Stopped" : "Finished"}: created ${made} node${made === 1 ? "" : "s"}.${suffix}`);
+      toast(`${stopped ? "Stopped" : "Finished"} auto branching: ${made} node${made === 1 ? "" : "s"}`);
+    }
+  }
+
+  function chooseAutoCandidates(source, candidates, nodeState, options = {}) {
+    const {
+      fixture = null,
+      limit = 2,
+      seenStateKeys = new Set(),
+      pathEntryNames = [],
+    } = options;
+    const Phi = (typeof window !== "undefined" && window.RetrocausePhi) || null;
+    const outgoingExprs = new Set(state.graph.edges
+      .filter((edgeItem) => edgeItem.from === source.id)
+      .map((edgeItem) => getNode(edgeItem.to)?.expr)
+      .filter(Boolean));
+    const graphExprs = new Set(state.graph.nodes.map((node) => node.expr));
+    const repeatedTooOften = new Set(pathEntryNames.filter((name, idx, arr) => arr.indexOf(name) !== idx));
+    const candidatesWithEffects = candidates
+      .filter((candidate) => hasAnyEffects(candidate.entry, candidate.binding, nodeState))
+      .filter((candidate) => !outgoingExprs.has(candidate.expr))
+      .filter((candidate) => !repeatedTooOften.has(candidate.entry.name));
+
+    if (!Phi || !fixture) {
+      return candidatesWithEffects
+        .sort((a, b) => {
+          const aNew = graphExprs.has(a.expr) ? 0 : 1;
+          const bNew = graphExprs.has(b.expr) ? 0 : 1;
+          if (aNew !== bNew) return bNew - aNew;
+          return a.expr.localeCompare(b.expr);
+        })
+        .slice(0, limit);
+    }
+
+    const ranked = Phi.rankMeaningfulCandidates(candidatesWithEffects, {
+      state: nodeState,
+      rules: fixture.scope?.derivations || [],
+      seenExprs: outgoingExprs,
+      seenStateKeys,
+      pathEntryNames,
+      canonicalCandidate: canonicalCandidateAfter(source, candidatesWithEffects),
+      relevanceFacts: relevanceFactsFor(source, nodeState),
+    });
+
+    const chosen = [];
+    const localStateKeys = new Set(seenStateKeys);
+    for (const item of ranked) {
+      const candidate = item.candidate;
+      const key = item.evaluation.postStateKey;
+      if (key && localStateKeys.has(key)) continue;
+      if (key) localStateKeys.add(key);
+      candidate.autoPostStateKey = key;
+      chosen.push(candidate);
+      if (chosen.length >= limit) break;
+    }
+    return chosen;
+  }
+
+  function entryPathTo(nodeId) {
+    const byId = new Map(state.graph.nodes.map((node) => [node.id, node]));
+    const incoming = new Map();
+    for (const edgeItem of state.graph.edges) {
+      if (edgeItem.canonical === true || (edgeItem.canonical === undefined && edgeItem.type === "causes")) {
+        if (!incoming.has(edgeItem.to)) incoming.set(edgeItem.to, edgeItem.from);
+      }
+    }
+    const entries = [];
+    const seen = new Set();
+    let current = nodeId;
+    while (current && !seen.has(current)) {
+      seen.add(current);
+      const node = byId.get(current);
+      if (node?.action?.entry) entries.push(node.action.entry);
+      current = incoming.get(current);
+    }
+    return entries.reverse();
+  }
+
+  function canonicalCandidateAfter(source, candidates) {
+    const nextEdges = state.graph.edges.filter((edgeItem) =>
+      edgeItem.from === source.id
+      && (edgeItem.canonical === true || (edgeItem.canonical === undefined && edgeItem.type === "causes")));
+    const nextExprs = new Set(nextEdges.map((edgeItem) => getNode(edgeItem.to)?.expr).filter(Boolean));
+    return candidates.find((candidate) => nextExprs.has(candidate.expr)) || null;
+  }
+
+  function relevanceFactsFor(source, nodeState) {
+    const facts = new Set(nodeState || []);
+    const downstream = downstreamCanonicalNodes(source.id);
+    for (const node of downstream) {
+      for (const token of String(node.expr || "").match(/[a-z_]+(?:\([^)]+\))?|[a-z_]+/g) || []) {
+        if (token.length > 2) facts.add(token);
+      }
+      for (const tag of node.tags || []) facts.add(tag);
+    }
+    return Array.from(facts);
+  }
+
+  function downstreamCanonicalNodes(sourceId) {
+    const out = [];
+    const byId = new Map(state.graph.nodes.map((node) => [node.id, node]));
+    const queue = [sourceId];
+    const seen = new Set(queue);
+    while (queue.length) {
+      const id = queue.shift();
+      for (const edgeItem of state.graph.edges) {
+        if (edgeItem.from !== id) continue;
+        if (!(edgeItem.canonical === true || (edgeItem.canonical === undefined && edgeItem.type === "causes"))) continue;
+        if (seen.has(edgeItem.to)) continue;
+        seen.add(edgeItem.to);
+        const node = byId.get(edgeItem.to);
+        if (node) out.push(node);
+        queue.push(edgeItem.to);
+      }
+    }
+    return out;
+  }
+
+  function syncAutoBranchControls() {
+    if (el.autoBranchBtn) el.autoBranchBtn.disabled = state.autoBranchRunning;
+    if (el.stopAutoBranchBtn) el.stopAutoBranchBtn.disabled = !state.autoBranchRunning;
+  }
+
+  function setAutoBranchStatus(text) {
+    if (el.autoBranchStatus) el.autoBranchStatus.textContent = text;
+  }
+
+  function yieldToBrowser() {
+    return new Promise((resolve) => setTimeout(resolve, 35));
+  }
+
+  function clampNumber(value, min, max, fallback) {
+    const parsed = Number(value);
+    if (!Number.isFinite(parsed)) return fallback;
+    return Math.max(min, Math.min(max, Math.trunc(parsed)));
   }
 
   function safeGloss(entry, binding) {
@@ -599,9 +770,13 @@
     const incoming = state.graph.edges.filter((item) => item.to === selected.id).map(edgeSummary).join("<br>") || "none";
     const outgoing = state.graph.edges.filter((item) => item.from === selected.id).map(edgeSummary).join("<br>") || "none";
     el.selectedNode.className = "selected-card";
+    const actionLine = selected.action
+      ? `<div class="action-row"><strong>Action:</strong> <code>${escapeHtml(selected.action.entry)}(${escapeHtml(Object.values(selected.action.binding || {}).join(", "))})</code></div>`
+      : "";
     el.selectedNode.innerHTML = `
       <h3>${escapeHtml(selected.label)}</h3>
       <div class="expr">${escapeHtml(selected.expr)}</div>
+      ${actionLine}
       <div>${escapeHtml(selected.state || "No state note.")}</div>
       ${selected.delta ? `<div><strong>Changed:</strong> ${escapeHtml(selected.delta)}</div>` : ""}
       ${selected.invariants ? `<div><strong>Invariant:</strong> ${escapeHtml(selected.invariants)}</div>` : ""}
@@ -968,7 +1143,17 @@
       root: "root",
       title: "Blank Story DAG",
       meta: { title: "Blank Story DAG", summary: "A blank graph for custom story analysis.", version: 2 },
-      nodes: [node("root", "Initial state", "start(story)", "The starting state of a custom story.", "root", ["start"])],
+      nodes: [{
+        id: "root",
+        label: "Initial state",
+        expr: "start(story)",
+        state: "The starting state of a custom story.",
+        kind: "root",
+        tags: ["start"],
+        createdBy: "seed",
+        delta: "",
+        invariants: "",
+      }],
       edges: []
     });
     state.activeSeed = null;

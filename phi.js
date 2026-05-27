@@ -27,6 +27,33 @@
     return true;
   }
 
+  function stateKey(state) {
+    return Array.from(state || []).sort().join("\n");
+  }
+
+  function stateDelta(before, after) {
+    const add = [];
+    const remove = [];
+    for (const f of after || []) if (!before.has(f)) add.push(f);
+    for (const f of before || []) if (!after.has(f)) remove.push(f);
+    add.sort();
+    remove.sort();
+    return { add, remove };
+  }
+
+  function factPredicate(atom) {
+    const match = String(atom || "").match(/^([^(]+)/);
+    return match ? match[1] : "";
+  }
+
+  function candidateTouchesFacts(candidate, facts) {
+    const text = `${candidate.expr} ${Object.values(candidate.binding || {}).join(" ")}`;
+    return facts.some((fact) => {
+      const f = String(fact || "");
+      return f && (text.includes(f) || text.includes(factPredicate(f)));
+    });
+  }
+
   // §1.6: pre-state at a convergence node is the union of predecessors'
   // post-states. Set-union; conflict resolution at convergence is OPEN.
   function mergeStates(...states) {
@@ -138,10 +165,91 @@
     return strictly;
   }
 
+  function evaluateCandidate(candidate, options = {}) {
+    const {
+      state,
+      rules = [],
+      seenExprs = new Set(),
+      seenStateKeys = new Set(),
+      pathEntryNames = [],
+      canonicalCandidate = null,
+      relevanceFacts = [],
+    } = options;
+    const reasons = [];
+    if (!candidate || !candidate.entry || !state) {
+      return { admissible: false, reasons: ["missing candidate or state"], scores: [], postState: null, delta: { add: [], remove: [] } };
+    }
+    if (seenExprs.has(candidate.expr)) reasons.push("duplicate expression on this branch");
+
+    let postState;
+    let delta;
+    try {
+      postState = step(state, candidate.entry, candidate.binding, rules);
+      delta = stateDelta(state, postState);
+    } catch (err) {
+      reasons.push(`state update failed: ${err.message}`);
+      postState = null;
+      delta = { add: [], remove: [] };
+    }
+
+    if (postState && statesEqual(state, postState)) reasons.push("no state delta");
+    if (postState && seenStateKeys.has(stateKey(postState))) reasons.push("state already seen on this run");
+
+    const changedPredicates = new Set([...delta.add, ...delta.remove].map(factPredicate).filter(Boolean));
+    const meaningfulDelta = changedPredicates.size;
+    const hasRemoval = delta.remove.length ? 1 : 0;
+    const repeatedEntry = pathEntryNames.includes(candidate.entry.name) ? 1 : 0;
+    const relevance = candidateTouchesFacts(candidate, relevanceFacts) ? 1 : 0;
+    const contrast = Number.isFinite(contrastVsCanonical(candidate, canonicalCandidate))
+      ? contrastVsCanonical(candidate, canonicalCandidate)
+      : 0;
+    const specificityScore = specificity(candidate);
+
+    const scores = [
+      meaningfulDelta,
+      hasRemoval,
+      relevance,
+      contrast,
+      specificityScore,
+      -repeatedEntry,
+      -candidate.expr.length / 1000,
+    ];
+
+    return {
+      admissible: reasons.length === 0,
+      reasons,
+      scores,
+      postState,
+      postStateKey: postState ? stateKey(postState) : "",
+      delta,
+    };
+  }
+
+  function rankMeaningfulCandidates(candidates, options = {}) {
+    const evaluated = candidates.map((candidate) => ({
+      candidate,
+      evaluation: evaluateCandidate(candidate, options),
+    }));
+    const admissible = evaluated.filter((item) => item.evaluation.admissible);
+    const frontier = paretoFront(admissible, (item) => item.evaluation.scores);
+    return frontier.sort((a, b) => compareScores(b.evaluation.scores, a.evaluation.scores)
+      || a.candidate.expr.localeCompare(b.candidate.expr));
+  }
+
+  function compareScores(a, b) {
+    for (let i = 0; i < Math.max(a.length, b.length); i++) {
+      const av = a[i] || 0;
+      const bv = b[i] || 0;
+      if (av !== bv) return av - bv;
+    }
+    return 0;
+  }
+
   const api = {
     phi, step, derivationClosure, applyDelta, cloneState, canonicalExpr,
     enumerateBindings, statesEqual, mergeStates,
     specificity, contrastVsCanonical, paretoFront, dominates,
+    stateKey, stateDelta, evaluateCandidate, rankMeaningfulCandidates,
   };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   root.RetrocausePhi = api;

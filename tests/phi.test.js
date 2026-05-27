@@ -133,3 +133,65 @@ test("§1.7 derivation_closure terminates on a stratified rule", () => {
   const s3 = Phi.derivationClosure(s2, [rule]);
   assert.equal(Phi.statesEqual(s2, s3), true, "closure is idempotent at fixed point");
 });
+
+test("auto-candidate evaluation rejects entries that produce no state delta", () => {
+  const candidate = {
+    entry: {
+      name: "observe",
+      params: [{ name: "X", type: "entity" }],
+      effects: () => ({ add: [] }),
+    },
+    binding: { X: "red" },
+    expr: "observe(red)",
+  };
+  const result = Phi.evaluateCandidate(candidate, {
+    state: new Set(["at(red,woods)"]),
+  });
+  assert.equal(result.admissible, false);
+  assert.ok(result.reasons.includes("no state delta"));
+});
+
+test("auto-candidate evaluation rejects post-states already seen in the run", () => {
+  const before = new Set(["at(red,woods)"]);
+  const candidate = {
+    entry: {
+      name: "learn",
+      params: [{ name: "X", type: "entity" }],
+      effects: () => ({ add: ["knows(red,path)"] }),
+    },
+    binding: { X: "red" },
+    expr: "learn(red)",
+  };
+  const post = Phi.step(before, candidate.entry, candidate.binding, []);
+  const result = Phi.evaluateCandidate(candidate, {
+    state: before,
+    seenStateKeys: new Set([Phi.stateKey(post)]),
+  });
+  assert.equal(result.admissible, false);
+  assert.ok(result.reasons.includes("state already seen on this run"));
+});
+
+test("rankMeaningfulCandidates prefers richer state deltas on the Pareto frontier", () => {
+  const state = new Set(["has(red,basket)", "at(red,woods)"]);
+  const weak = {
+    entry: {
+      name: "notice",
+      params: [{ name: "X", type: "entity" }],
+      effects: () => ({ add: ["knows(red,wolf)"] }),
+    },
+    binding: { X: "red" },
+    expr: "notice(red)",
+  };
+  const strong = {
+    entry: {
+      name: "give",
+      params: [{ name: "X", type: "entity" }],
+      effects: () => ({ add: ["has(wolf,basket)"], remove: ["has(red,basket)"] }),
+    },
+    binding: { X: "red" },
+    expr: "give(red)",
+  };
+
+  const ranked = Phi.rankMeaningfulCandidates([weak, strong], { state });
+  assert.equal(ranked[0].candidate.expr, "give(red)");
+});
