@@ -128,3 +128,18 @@ test("§C.5 Phi(magi_start) confess fires only one-way (della->jim, not jim->del
   assert.ok(!exprs.has("confess(jim,della,not_has_funds(jim))"),
             "jim->della confession about jim's funds: blocked by knows() asymmetry");
 });
+
+test("§C.2 buy is limited to story-relevant paired gifts", () => {
+  let s = Magi.postStateAfterMagiStart();
+  s = Phi.step(s, Magi.entries.sacrifice, { X: "jim", Item: "watch" }, Magi.scope.derivations);
+  const candidates = Phi.phi({
+    lexicon: Magi.lexicon,
+    scope: Magi.scope,
+    state: s,
+    downstreamExprs: new Set(),
+  });
+  const exprs = new Set(candidates.map(c => c.expr));
+  assert.ok(exprs.has("buy(jim,combs)"), "jim can buy combs because they pair with della's hair");
+  assert.ok(!exprs.has("buy(jim,watch)"), "jim should not buy back the sacrificed item");
+  assert.ok(!exprs.has("buy(jim,hair)"), "jim should not buy an unpaired arbitrary entity");
+});

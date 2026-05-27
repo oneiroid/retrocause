@@ -69,7 +69,18 @@
       { name: "Item", type: "entity" },
     ],
     gloss: ({X, Item}) => `${X} buys ${Item}`,
-    requires: ({X}, state) => hasFact(state, "has_funds", X),
+    requires: ({X, Item}, state) =>
+      hasFact(state, "has_funds", X)
+      && !hasFact(state, "has", X, Item)
+      && !hasFact(state, "sacrificed", X, Item)
+      && Array.from(state).some((fact) => {
+        const paired = fact.match(/^pairs_with\(([^,]+),([^)]+)\)$/);
+        if (!paired || paired[1] !== Item) return false;
+        return Array.from(state).some((owned) => {
+          const held = owned.match(/^has\(([^,]+),([^)]+)\)$/);
+          return held && held[1] !== X && held[2] === paired[2];
+        });
+      }),
     effects: ({X, Item}) => ({
       add:    [`has(${X},${Item})`],
       remove: [`has_funds(${X})`],
