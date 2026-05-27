@@ -15,7 +15,8 @@
       "PowerShell(Get-PnpDevice *)",
       "PowerShell(Get-CimInstance *)",
       "PowerShell(Test-Path *)",
-      "PowerShell(Get-Service *)"
+      "PowerShell(Get-Service *)",
+      "Bash(npm test *)"
     ]
   }
 }

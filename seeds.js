@@ -13,7 +13,7 @@
 // Magi note: jim's chain branches from `magi_start` in parallel with
 // della's chain and rejoins at `magi_reveal`. The earlier sequential
 // pathEdges shape was a layout convenience that contradicted the
-// formalism (FORMAL_MODEL_v2.md §C.4). The walker uses canonical edges
+// formalism (FORMAL_MODEL.md §C.4). The walker uses canonical edges
 // to compute pre-state, so the edges have to be semantically faithful.
 
 (function attachSeeds(root) {
@@ -46,7 +46,7 @@
   }
 
   // ---------------------------------------------------------------
-  // Red Riding Hood (FORMAL_MODEL_v2.md Appendix B)
+  // Red Riding Hood (FORMAL_MODEL.md Appendix B)
   // ---------------------------------------------------------------
   const red = {
     title: "Little Red Riding Hood",
@@ -96,7 +96,7 @@
   };
 
   // ---------------------------------------------------------------
-  // Gift of the Magi (FORMAL_MODEL_v2.md Appendix C)
+  // Gift of the Magi (FORMAL_MODEL.md Appendix C)
   // Restructured for M1: jim's chain branches from magi_start in
   // parallel and rejoins at magi_reveal. The old linear pathEdges
   // chain placed jim's sacrifice after della's buy, which contradicts

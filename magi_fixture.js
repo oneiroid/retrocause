@@ -1,4 +1,4 @@
-// Gift of the Magi worked example, encoded from FORMAL_MODEL_v2.md
+// Gift of the Magi worked example, encoded from FORMAL_MODEL.md
 // Appendix C (sections C.1 scope, C.2 lexicon, C.4 state propagation)
 // and §1.7.3 (useless_pairing derivation rule).
 //

@@ -1,5 +1,5 @@
 // Tests for the frontier enumerator (phi.js) against the Red Riding
-// Hood worked example (FORMAL_MODEL_v2.md Appendix B, sections B.4-B.5).
+// Hood worked example (FORMAL_MODEL.md Appendix B, sections B.4-B.5).
 
 const test = require("node:test");
 const assert = require("node:assert/strict");

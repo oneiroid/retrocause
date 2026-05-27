@@ -1,7 +1,7 @@
 # DAG Analysis: Homer's Odyssey
 
 An intermediate-granularity directed acyclic graph analysis of the
-Odyssey, following the threaded-DAG formalism of FORMAL_MODEL_v2.
+Odyssey, following the threaded-DAG formalism of FORMAL_MODEL.
 
 ---
 

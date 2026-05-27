@@ -1,4 +1,4 @@
-// Frontier enumerator. Implements §7.8 of FORMAL_MODEL_v2.md (atomic
+// Frontier enumerator. Implements §7.8 of FORMAL_MODEL.md (atomic
 // frontier Phi only; template frontier Phi_T is deferred until the
 // template registry exists), §7.9 metric scaffolding (Pareto helpers),
 // and §1.7 derivation_closure for state-update post-processing.

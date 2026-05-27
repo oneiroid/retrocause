@@ -1,4 +1,4 @@
-// Red Riding Hood worked example, encoded from FORMAL_MODEL_v2.md
+// Red Riding Hood worked example, encoded from FORMAL_MODEL.md
 // Appendix B (sections B.1 scope, B.2 L entries, B.4 state propagation).
 // Designed so that phi(red_wolf) reproduces the sample frontier listed
 // in §B.5.
