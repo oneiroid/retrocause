@@ -27,17 +27,24 @@ The builder should feel like a semi-manual laboratory rather than a fully automa
 
 ## Engine model
 
+This section is the product-side shape of the engine. The **source of
+truth for what nodes and edges *mean*** is `FORMAL_MODEL.md` (§1.5,
+§1.6, §3.5, §7.8). The schema below is the in-memory representation
+the browser app uses; it carries the formal content as fields.
+
 ```text
 StoryGraph = {
   nodes: Node[],
   edges: Edge[],
-  meta: { title, sourceStory, version }
+  meta:  { title, sourceStory, version, scope }   // scope per FORMAL_MODEL §3.5
 }
 
 Node = {
   id, label, story,
-  expr,              // typed semantic expression, e.g. meet(red, wolf)
-  state,             // natural-language story-world state after this event
+  expr,              // typed semantic expression e.g. meet(red, wolf), per FORMAL_MODEL §1.5
+  gloss,             // optional natural-language summary; not authoritative
+  preState,          // Set<P-atom>: typed world state entering this node (§1.6)
+  postState,         // Set<P-atom>: derivation_closure(apply(effects, preState)) (§1.7)
   kind,              // root | canonical | branch | convergence | note
   tags,              // motifs, actors, values, risks
   createdBy          // seed | human | assist
@@ -53,6 +60,12 @@ Edge = {
 ```
 
 The graph is kept acyclic by testing whether a proposed edge `from -> to` would make `from` reachable from `to`. Layout uses topological ranks, so canonical and counterfactual timelines remain readable even after enrichment.
+
+State on a node is a **set of typed P-atoms** (per `FORMAL_MODEL.md`
+§1.6), not free prose. The walker (`state_walker.js`) computes
+`postState` by topo-replay along canonical `causes` edges. Prose
+glosses, where present, are convenience for display; the engine reads
+the typed atoms.
 
 ## Initial story seeds
 

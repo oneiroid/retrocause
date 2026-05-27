@@ -1,6 +1,6 @@
 # DAG Analysis: The Iliad
 
-Using the FORMAL_MODEL_v2 formalism.
+Using the FORMAL_MODEL formalism.
 Intermediate granularity -- act-level subDAGs expanded to key events,
 not every single speech or combat blow.
 

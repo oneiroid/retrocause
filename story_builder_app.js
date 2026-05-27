@@ -24,7 +24,7 @@
     ? window.RetrocauseSeeds.seeds
     : (typeof require !== "undefined" ? require("./seeds.js").seeds : {});
 
-  // Bridge from seed-level nodes to typed fixtures (FORMAL_MODEL_v2.md
+  // Bridge from seed-level nodes to typed fixtures (FORMAL_MODEL.md
   // Appendices B + C). Per seed: fixture global. Post-states are now
   // computed generically by state_walker.postStateAt — no hand-coded
   // per-seed state table. Seeds without a `fixture` entry show
