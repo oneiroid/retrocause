@@ -4,7 +4,7 @@
 
 This implementation is grounded in a few recurring findings from interactive narrative and narrative-generation research:
 
-1. **Linear stories can be mediated into branching graphs.** Riedl and Young argue that a linear narrative plan can support an acyclic branching story structure when deviations are detected and alternative plans are generated around them. This supports the app's core workflow: start with a familiar one-path story spine, then branch from any state node while preserving causal links. Source: Mark O. Riedl and R. Michael Young, “From Linear Story Generation to Branching Story Graphs,” AIIDE 2005, https://doi.org/10.1609/aiide.v1i1.18725.
+1. **Presented stories can be mediated into branching actor-thread graphs.** Riedl and Young argue that a linear narrative plan can support an acyclic branching story structure when deviations are detected and alternative plans are generated around them. Retrocause uses that as a UI entry point, but the internal seed is not required to be one path: main characters usually carry separate causal threads that can cross, merge for a run of shared action, and split again. Source: Mark O. Riedl and R. Michael Young, “From Linear Story Generation to Branching Story Graphs,” AIIDE 2005, https://doi.org/10.1609/aiide.v1i1.18725.
 
 2. **Causal links and character intent are useful authoring primitives.** IPOCL-style narrative planning treats story steps as a partial-order causal-link plan while also tracking believable character intentions. The UI therefore exposes edge types such as `causes`, `enables`, `blocks`, `choice`, and `rejoins`, and stores each node's state expression and optional goal/motif tags. Source: Liquid Narrative Group overview of IPOCL, https://liquidnarrative.eae.utah.edu/ipocl/.
 
@@ -18,7 +18,7 @@ This implementation is grounded in a few recurring findings from interactive nar
 
 The builder should feel like a semi-manual laboratory rather than a fully automatic generator:
 
-- **Known story seed:** Select a well-known short story/fable/fairy tale. The engine loads a single canonical path of state nodes.
+- **Known story seed:** Select a well-known short story/fable/fairy tale. The engine loads a canonical actor-thread DAG: main characters have their own paths, with shared encounter or convergence nodes where appropriate.
 - **Inspectable causality:** Click a node to see its expression, state delta, incoming causes, outgoing effects, and motif tags.
 - **Branch from anywhere:** Pick any node, describe an alternate choice or condition, optionally choose a rejoin target, and add one or more branch nodes.
 - **LLM-assisted but human-owned:** The browser-only app cannot call a model directly, but it produces a structured prompt that can be pasted into an LLM. The returned JSON can be imported after human review.
@@ -47,6 +47,7 @@ Node = {
   postState,         // Set<P-atom>: derivation_closure(apply(effects, preState)) (§1.7)
   kind,              // root | canonical | branch | convergence | note
   tags,              // motifs, actors, values, risks
+  actors,            // agency/thread owners active at this node; not every participant in expr
   createdBy          // seed | human | assist
 }
 
@@ -54,22 +55,32 @@ Edge = {
   id, from, to,
   type,              // causes | enables | blocks | choice | rejoins | parallels
   label,
+  actor,             // character whose agency selects this outgoing edge, if any;
+                     // must be active in source.actors when present
   branchId,
   canonical
 }
 ```
 
-The graph is kept acyclic by testing whether a proposed edge `from -> to` would make `from` reachable from `to`. Layout uses topological ranks, so canonical and counterfactual timelines remain readable even after enrichment.
+The graph is kept acyclic by testing whether a proposed edge `from -> to` would make `from` reachable from `to`. Layout uses topological ranks, so canonical actor paths and counterfactual timelines remain readable even after enrichment.
+
+Actor validity is also a graph invariant: if an edge declares
+`actor: "red"`, its source node must include `"red"` in `actors`.
+This prevents generated branches like Red warning someone from a node
+that belongs only to Wolf's path.
 
 State on a node is a **set of typed P-atoms** (per `FORMAL_MODEL.md`
 §1.6), not free prose. The walker (`state_walker.js`) computes
-`postState` by topo-replay along canonical `causes` edges. Prose
+`postState` by topo-replay along canonical `causes` edges. A node with
+multiple canonical predecessors merges their post-states, which is how
+temporarily shared actor paths and convergence points become executable.
+Prose
 glosses, where present, are convenience for display; the engine reads
 the typed atoms.
 
 ## Initial story seeds
 
-The first version includes compact canonical paths for:
+The first version includes compact canonical actor-thread DAGs for:
 
 - “Little Red Riding Hood”
 - “The Three Little Pigs”
@@ -83,8 +94,8 @@ These are intentionally short, high-familiarity stories with clear state transit
 
 The revised builder separates the browser UI from a dependency-free graph engine so JSON persistence and causal constraints can be tested without a browser package install. The UI now includes:
 
-- Richer seeded DAGs, not only single paths, for “Little Red Riding Hood,” “The Gift of the Magi,” “The Necklace,” and “The Tortoise and the Hare.” “The Gift of the Magi” and “The Necklace” include prebuilt counterfactual branches and rejoin edges because their core conflicts are especially well suited to invariant-preserving counterfactual analysis.
-- A topological D3 visualization with rank guide lines, colored node kinds, edge labels, branch/rejoin edge styling, search highlighting, and view filters for canonical paths versus branch structure.
+- Richer seeded DAGs, not only single paths, for “Little Red Riding Hood,” “The Gift of the Magi,” “The Necklace,” and “The Tortoise and the Hare.” Red, Magi, and Tortoise now explicitly encode separate main-character paths with merge points. Counterfactual branches and rejoin edges remain human-authored or Phi/assist-generated enrichment.
+- A topological D3 visualization with rank guide lines, colored node kinds, edge labels, branch/rejoin edge styling, search highlighting, and view filters for canonical actor paths versus branch structure.
 - Branch metadata fields for changed condition and invariant facts, matching the counterfactual-reasoning research motivation above.
 - Manual node/edge editing with edge types from the design model.
 - Selected-node editing, graph validation, localStorage save/restore, JSON export/download, full-graph JSON import, and reviewed LLM-branch JSON import.

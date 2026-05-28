@@ -450,6 +450,8 @@ parameter values its interior nodes may bind:
 ```
 scope(D) = (cast, setting, props, initial_state, derivations)
   cast          :: set of (name :: type) entity declarations
+  main_characters :: ordered subset of cast whose agency-bearing
+                     threads the analysis tracks explicitly
   setting       :: set of (name :: type) static-place declarations
   props         :: set of (name :: type) other static-typed values
   initial_state :: a state (set of P-atoms) seeding the source nodes
@@ -521,7 +523,44 @@ Crucially, a thread:
 - **Has ordered segments.** The ordering represents narrative time
   (the sequence of telling, not the sequence of the fabula).
 
-### 4.2 The Fabula/Sjuzhet Distinction
+### 4.2 Actor Threads
+
+A canonical story DAG is not required to be a single path. It may
+contain one or more **actor threads**: connected causal paths whose
+outgoing branch choices are attributed to a main character.
+
+```
+actor(v)      = set of main characters whose agency/thread is active
+                at node v
+chooser(e)    = actor whose agency selects outgoing edge e, when e is
+                a choice-bearing edge
+```
+
+Actor threads can split, cross, and merge. If two main characters act
+together for several nodes, those nodes have both actors and the local
+thread is effectively singular for that stretch. When the characters
+separate, later outgoing edges can again have different choosers.
+Not every participant mentioned in a node's semantic expression is an
+active actor for branching. For example, `learn_from(wolf, red, ...)`
+mentions Red as the information source, but the active agency at that
+node is Wolf's.
+
+Actor admissibility is structural:
+
+```
+chooser(e) = a  ==>  a in actor(source(e))
+```
+
+Materialized branches inherit the acting entity from the L-entry
+binding (normally the first entity parameter, such as `Sender`,
+`Asker`, `X`, or `Giver`). Therefore `warn(red, ...)` cannot be
+materialized from a node whose active actors are only `wolf` and
+`grandmother`; Red is not present on that actor thread at that node.
+
+This is still one DAG. "Canonical" names the analyst's accepted
+fabula edges, not a linear spine.
+
+### 4.3 The Fabula/Sjuzhet Distinction
 
 This is the paper's core structural insight, and it maps directly
 to retrocause's "two graphs" (Intuition #21):
@@ -539,7 +578,7 @@ The same DAG can support many different threadings:
 - Point-of-view (thread following one character's nodes only)
 - Thematic (thread following one motif across the narrative)
 
-### 4.3 Thread Revisitation = Semantic Repetition
+### 4.4 Thread Revisitation = Semantic Repetition
 
 When a thread passes through the same node more than once, that
 IS semantic repetition. The event exists once in the DAG; the
@@ -555,7 +594,7 @@ Three threadings through one node. The beggar encounter is one
 event (or one subDAG) in the fabula, visited three times in the
 sjuzhet.
 
-### 4.4 Thread Shortcuts
+### 4.5 Thread Shortcuts
 
 Later revisitations can traverse fewer interior nodes of a subDAG:
 
@@ -575,7 +614,7 @@ traversed a subDAG can re-enter it at lower resolution, touching
 fewer interior nodes. The bandwidth epsilon from v1 maps to the
 minimum subDAG scale that the threading still explicitly visits.
 
-### 4.5 Retrocause: Mind-Cursor as Threading Agent
+### 4.6 Retrocause: Mind-Cursor as Threading Agent
 
 A mind-cursor (v1's D3) IS a threading T equipped with:
 
@@ -583,7 +622,7 @@ A mind-cursor (v1's D3) IS a threading T equipped with:
 - **Bandwidth** epsilon: the minimum subDAG scale still explicitly
   threaded (below epsilon, subDAGs are traversed as atomic nodes)
 - **Agency** sigma: at nodes with multiple outgoing edges in G,
-  sigma selects which edge the thread follows next
+  sigma selects which edge the active actor thread follows next
 
 This collapses two previously separate concepts (mind-cursor and
 traversal path) into one: the threading IS the mind's experience.
@@ -951,7 +990,7 @@ contrast(c, c_canonical) =
 ```
 
 High contrast = counterfactually informative; low contrast = a near
-paraphrase of the canonical path.
+paraphrase of the current canonical actor-thread continuation.
 
 **Convergence proximity.** How close the candidate is to a downstream
 convergence node it could rejoin.
@@ -1021,10 +1060,12 @@ one that appears in few. This is the formal correlate of
 and is computable once template extraction (§5.5) is. Until then it is
 definable but not measurable on real DAGs.
 
-The other retrocause concepts — mind-cursor as threading agent,
-time-as-segment-counter, free will as the agency function at branch
-points — are tracked in `INTUITIONS.md` (claims 4 and 7) with their
-operational status. They live in the philosophical layer, not here.
+The other retrocause concepts — mind-cursor as threading agent and
+time-as-segment-counter — are tracked in `INTUITIONS.md` (claims 4
+and 7) with their operational status. Actor-level agency at outgoing
+branch points is represented here by `chooser(e)` (§4.2), while the
+metaphysical interpretation of free will remains in the philosophical
+layer.
 
 ---
 
@@ -1183,7 +1224,7 @@ deception precondition.
 
 Seven entries are annotated fully (preconditions + effects). Two
 entries that appear in node expressions but do not affect frontier
-enumeration in the canonical path are annotated only with their type
+enumeration on Red's current actor thread are annotated only with their type
 signature.
 
 #### Fully annotated
@@ -1275,7 +1316,7 @@ as a derived rule applied at the moment a third party performs
 `move(?, ?, P)` during the impersonation. A principled solution would
 extend P with a `holds_during` operator over thread segments.
 
-### B.4 State propagation along the canonical path
+### B.4 State propagation along Red's canonical actor threads
 
 Tracking sigma through the first three canonical nodes makes the
 precondition checks of §1.5 concrete.
@@ -1315,7 +1356,7 @@ post-state(red_wolf) = pre-state
 
 If `knows(red, destination(red, grandmother_house))` were not in
 initial_state (as it was not in the v2 §3.5 draft), the precondition
-check above would fail at red_wolf and the canonical path would be
+check above would fail at red_wolf and Red's canonical thread would be
 flagged unsatisfiable. That a careful pass through the formalism
 surfaces this implicit assumption is exactly the validation-by-
 execution benefit anticipated in §7.8.
@@ -1586,18 +1627,14 @@ Three structural notes:
 3. `couple`-subject actions are desugared to per-member conjunctions
    per §C.1 OPEN C.1-1's route (b).
 
-OPEN (C.3-1): the canonical edges in the seed treat Della's and
-Jim's sacrifice chains as **sequential** (`magi_sell_hair` ->
-`magi_buy_chain` -> `magi_jim_watch` -> `magi_jim_combs`) with a
-single `parallels` edge annotating the symmetry. The story's irony,
-however, depends on the two chains being **concurrent and
-information-isolated** (neither spouse knows the other is sacrificing).
-A faithful formalization would split these into actual parallel
-subDAGs whose convergence is `magi_reveal`. This is a structural
-finding the v2 formalism is ready to express (§3.2 supports it) but
-the seed does not yet use; it is not a gap in v2 itself.
+RESOLVED (C.3-1): the seed now treats Della's and Jim's sacrifice
+chains as separate canonical actor threads from `magi_start` to their
+shared convergence at `magi_reveal`. The `parallels` edge remains only
+as a non-state-bearing annotation of symmetry. This matches the
+story's irony: the two chains are concurrent and information-isolated
+until exchange.
 
-### C.4 State propagation along the canonical path
+### C.4 State propagation along Magi's canonical actor threads
 
 ```
 pre-state(magi_start) = initial_state
@@ -1625,8 +1662,7 @@ magi_buy_chain = buy(della, watch_chain)
   effects:  +has(della, watch_chain), -has_funds(della)
 ```
 
-Now the parallel chain (treated per §C.3 OPEN C.3-1 as a separate
-subDAG even though the seed sequences it):
+Now Jim's parallel actor thread:
 
 ```
 magi_jim_watch = sacrifice(jim, watch)
@@ -1769,7 +1805,7 @@ This is the meta-point of doing a second worked example.
 |----------------|---------------------------------------------------------------------------------------------|
 | C.1-1          | Group entities (`couple`) need either a derivation operator (§1.2 extension) or a desugaring convention. |
 | C.1-2 / B re-look | `intends(X, F)` is a recurring shape; both stories use F as a goal-typed completion. v2 should promote it. |
-| C.3-1          | Seeds encode parallel chains as sequential. The formalism supports parallels; the seeds need a representation update. (Not a v2 gap; a builder-data gap.) |
+| C.3-1 -- **RESOLVED** | Seeds now encode main-character actor threads directly; Magi, Red, and Tortoise are no longer forced into linearized spines. |
 | C.4-1 -- **RESOLVED** | Dramatic irony = derivation rule at convergence-merge. Promoted to §1.7. The most interesting new finding became spec, not appendix. |
 
 Summary: of three B-OPENs, one was structural (quantified effects, now

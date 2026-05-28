@@ -194,7 +194,7 @@
     derivations: [useless_pairing],
   };
 
-  // -------- §C.4 canonical replay --------
+  // -------- §C.4 actor-thread replay --------
 
   function postStateAfterMagiStart() {
     const Phi = root.RetrocausePhi || require("./phi.js");
@@ -213,9 +213,9 @@
 
   function postStateJimChainEnd() {
     const Phi = root.RetrocausePhi || require("./phi.js");
-    // jim's chain branches from initial_state in parallel (§C.3 OPEN C.3-1
-    // notes the seed sequences them, but the formalism treats them as
-    // independent). Jim's pre-state is initial_state.
+    // jim's chain is a separate actor thread. The seed also branches
+    // it from magi_start; this fixture-level helper keeps the older
+    // isolated baseline used by unit tests.
     let s = scope.initial_state;
     s = Phi.step(s, sacrifice, { X: "jim", Item: "watch" }, scope.derivations);
     s = Phi.step(s, buy,       { X: "jim", Item: "combs" }, scope.derivations);

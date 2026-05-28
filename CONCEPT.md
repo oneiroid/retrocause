@@ -77,7 +77,11 @@ the apparatus itself.
 **CODE / APP** commits to direct manipulability. A browser, D3,
 canonical story DAGs, branch from any node, export JSON. No backend,
 no LLM call from inside the page. The artifact is a reusable
-story-world object, not a generator.
+story-world object, not a generator. Canonical seeds are actor-thread
+DAGs, not linearized single-protagonist spines: each main character can
+move on a separate path, share nodes with others when they act as one
+unit, and split again. Branch choices are attributed to the actor whose
+outgoing path is being expanded.
 
 ## How to read this repository
 

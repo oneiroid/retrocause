@@ -1,7 +1,7 @@
 # Retrocause — Branching Narrative DAG Builder
 
-Browser-only D3 lab for editing canonical story DAGs and expanding any state
-node into counterfactual branches.
+Browser-only D3 lab for editing canonical actor-thread story DAGs and
+expanding any state node into counterfactual branches.
 
 **Doc stack (philosophy-first ordering — read in this order):**
 
@@ -35,8 +35,8 @@ either side. See `CONCEPT.md` §"What each layer commits to".
 | `story_builder.html` / `.css` / `story_builder_app.js` | D3 UI shell |
 | `story_builder_engine.js` | Graph ops: add/remove nodes & edges, cycle checks, branch composition |
 | `phi.js` | Frontier enumerator (§7.8) + derivation closure (§1.7) + Pareto helpers (§7.9) |
-| `state_walker.js` | Topo-replay of canonical edges → per-node post-state |
-| `seeds.js` | Visual canonical DAGs (red, magi, …) with optional `action: {entry, binding}` |
+| `state_walker.js` | Topo-replay of canonical actor-thread edges → per-node post-state |
+| `seeds.js` | Visual canonical actor-thread DAGs (red, magi, …) with optional `action: {entry, binding}` |
 | `red_fixture.js`, `magi_fixture.js` | Typed L-lexicons (Appendices B / C) |
 | `tests/*.test.js` | `node --test` unit tests |
 
@@ -51,6 +51,15 @@ either side. See `CONCEPT.md` §"What each layer commits to".
   replays `action` annotations on canonical (`type:"causes"`) edges;
   non-canonical edges (choice / rejoins / parallels / foreshadows) are
   visual and contribute no state.
+- **Actor threads.** Seeds are not linearized around one protagonist.
+  Main characters can follow separate canonical paths, merge into shared
+  encounter nodes, and split again. `mainCharacters`, node `actors`, and
+  edge `actor` fields document whose agency a branch point represents.
+  `actors` means agency/thread ownership, not every participant named in
+  `expr`.
+  An edge with `actor: "x"` is valid only when its source node's
+  `actors` contains `"x"`; Phi/auto materialization and graph validation
+  both enforce this.
 - **State representation.** A state is `Set<string>` of canonical fact
   atoms like `"at(red,woods)"`, closed-world. Don't add spaces in atoms;
   argument order follows the entry declaration.
@@ -61,6 +70,6 @@ either side. See `CONCEPT.md` §"What each layer commits to".
 ## Gotchas
 
 See top-of-file comments in `seeds.js` and `magi_fixture.js` for
-non-obvious deviations from `FORMAL_MODEL.md` (parallel-chain layout
-in the magi seed, refined `useless_pairing` form). Preserve those
-headers if you touch the rules they document.
+non-obvious formal details (actor-thread layout, refined
+`useless_pairing` form). Preserve those headers if you touch the rules
+they document.

@@ -2,6 +2,10 @@
 // story graph by topo-replay of `action` annotations, starting from
 // `fixture.scope.initial_state`. Replaces the hand-rolled per-seed
 // state tables in story_builder_app.js's phiBindings.
+// Actor-thread DAGs are first-class: different main characters can
+// advance along separate canonical paths, share a merged node for
+// several steps, then split again. Multi-predecessor nodes merge their
+// incoming post-states before closure.
 //
 // Inputs:
 //   graph    — { nodes:[{id, action?:{entry, binding}}], edges:[{from, to, type, canonical}] }
@@ -13,7 +17,7 @@
 //      do not contribute state (choice/rejoins/parallels are visual).
 //   2. For each node in order:
 //      a. preds = canonical edges into this node.
-//      b. If empty: pre = initial_state (this is a root / parallel-chain start).
+//      b. If empty: pre = initial_state (this is a root / actor-thread start).
 //      c. Else: pre = mergeStates(...post[preds]).
 //      d. If node.action: post = Phi.step(pre, entry, binding, derivations).
 //         Else:           post = Phi.derivationClosure(pre, derivations).

@@ -7,7 +7,7 @@ const assert = require("node:assert/strict");
 const Phi = require("../phi.js");
 const Red = require("../red_fixture.js");
 
-// -------- §B.4 state propagation should produce expected post-state --------
+// -------- §B.4 state propagation should produce expected actor-thread state --------
 
 test("§B.4 give(mother,red,basket) effects transfer the basket", () => {
   const give = Red.entries.give;
@@ -17,7 +17,7 @@ test("§B.4 give(mother,red,basket) effects transfer the basket", () => {
   assert.equal(s1.has("has(red,basket)"), true, "red should now have basket");
 });
 
-test("§B.4 full canonical replay yields red_wolf post-state with key facts", () => {
+test("§B.4 replay along Red's actor thread yields red_wolf post-state with key facts", () => {
   const s = Red.postStateAtRedWolf();
   assert.equal(s.has("at(red,woods)"), true, "red is at woods");
   assert.equal(s.has("at(red,home)"), false, "red is no longer at home");

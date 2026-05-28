@@ -6,6 +6,7 @@
     clone.nodes = (clone.nodes || []).map((node) => ({
       kind: "canonical",
       tags: [],
+      actors: [],
       state: "",
       expr: "event(?)",
       createdBy: "human",
@@ -17,11 +18,17 @@
       id: edge.id || `e_${edge.from}_${edge.to}_${index}`,
       type: edge.type || "causes",
       label: edge.label || edge.type || "edge",
+      actor: edge.actor || "",
       canonical: edge.canonical ?? edge.type === "causes",
       ...edge
     }));
     clone.root = clone.root || clone.nodes[0]?.id || "root";
-    clone.meta = clone.meta || { title: clone.title || "Untitled Story DAG", version: 2 };
+    clone.meta = {
+      title: clone.title || "Untitled Story DAG",
+      version: 2,
+      mainCharacters: clone.mainCharacters || [],
+      ...(clone.meta || {}),
+    };
     return clone;
   }
 
@@ -45,6 +52,8 @@
   function addEdge(graph, edge) {
     const ids = new Set(graph.nodes.map((node) => node.id));
     if (!ids.has(edge.from) || !ids.has(edge.to)) return { ok: false, message: "Edge endpoint is missing" };
+    const actorError = validateActorEdge(graph, edge);
+    if (actorError) return { ok: false, message: actorError };
     if (wouldCreateCycle(graph, edge.from, edge.to)) return { ok: false, message: "Rejected because that edge would create a cycle" };
     graph.edges.push({
       id: edge.id || `e_${edge.from}_${edge.to}_${edge.type || "edge"}_${graph.edges.length}`,
@@ -63,6 +72,7 @@
     const newNode = {
       kind: "branch",
       tags: ["counterfactual"],
+      actors: branch.actor ? [branch.actor] : [],
       state: "",
       expr: `alternate(${sourceId})`,
       createdBy: "human",
@@ -71,13 +81,13 @@
       ...branch
     };
     graph.nodes.push(newNode);
-    const choice = addEdge(graph, { from: sourceId, to: newNode.id, type: "choice", label: newNode.delta || "alternative branch", canonical: false, branchId: newNode.id });
+    const choice = addEdge(graph, { from: sourceId, to: newNode.id, type: "choice", label: newNode.delta || "alternative branch", canonical: false, branchId: newNode.id, actor: branch.actor || "" });
     if (!choice.ok) {
       graph.nodes = graph.nodes.filter((node) => node.id !== newNode.id);
       return choice;
     }
     if (rejoinTargetId) {
-      const rejoin = addEdge(graph, { from: newNode.id, to: rejoinTargetId, type: "rejoins", label: "rejoins canonical path", canonical: false, branchId: newNode.id });
+      const rejoin = addEdge(graph, { from: newNode.id, to: rejoinTargetId, type: "rejoins", label: "rejoins actor path", canonical: false, branchId: newNode.id, actor: branch.actor || "" });
       if (!rejoin.ok) return rejoin;
     }
     return { ok: true, node: newNode };
@@ -90,16 +100,29 @@
     graph.edges.forEach((edge) => {
       if (!ids.has(edge.from) || !ids.has(edge.to)) errors.push(`Missing endpoint on ${edge.id}`);
       if (edge.from === edge.to) errors.push(`Self-loop on ${edge.from}`);
+      const actorError = validateActorEdge(graph, edge);
+      if (actorError) errors.push(actorError);
     });
     graph.edges.forEach((edge) => {
       const without = graph.edges.filter((candidate) => candidate.id !== edge.id);
       if (reachable(graph, edge.to, edge.from, without)) errors.push(`Cycle through ${edge.from} → ${edge.to}`);
     });
     graph.nodes.forEach((node) => {
-      if (node.id !== graph.root && !graph.edges.some((edge) => edge.to === node.id)) warnings.push(`Orphan node: ${node.label}`);
+      if (node.id !== graph.root && node.kind !== "root" && !graph.edges.some((edge) => edge.to === node.id)) warnings.push(`Orphan node: ${node.label}`);
       if (node.kind === "branch" && !graph.edges.some((edge) => edge.from === node.id && edge.type === "rejoins")) warnings.push(`Open branch without rejoin: ${node.label}`);
     });
     return { ok: errors.length === 0, errors: Array.from(new Set(errors)), warnings: Array.from(new Set(warnings)) };
+  }
+
+  function validateActorEdge(graph, edge) {
+    if (!edge.actor) return "";
+    const source = graph.nodes.find((node) => node.id === edge.from);
+    if (!source) return "";
+    const sourceActors = source.actors || [];
+    if (sourceActors.length && !sourceActors.includes(edge.actor)) {
+      return `Actor ${edge.actor} cannot branch from ${source.label || source.id}`;
+    }
+    return "";
   }
 
   function topoRanks(graph) {

@@ -113,6 +113,7 @@
     graph.meta = {
       title: seed.title,
       summary: seed.summary,
+      mainCharacters: seed.mainCharacters || [],
       version: 2,
       savedAt: null
     };
@@ -123,6 +124,7 @@
     graph.nodes = (graph.nodes || []).map((item) => ({
       kind: "canonical",
       tags: [],
+      actors: [],
       state: "",
       expr: "event(?)",
       createdBy: "human",
@@ -134,11 +136,17 @@
       id: item.id || `e_${item.from}_${item.to}_${index}`,
       type: item.type || "causes",
       label: item.label || item.type || "edge",
+      actor: item.actor || "",
       canonical: item.canonical ?? item.type === "causes",
       ...item
     }));
     graph.root = graph.root || graph.nodes[0]?.id || "root";
-    graph.meta = graph.meta || { title: graph.title || "Untitled Story DAG", version: 2 };
+    graph.meta = {
+      title: graph.title || "Untitled Story DAG",
+      version: 2,
+      mainCharacters: graph.mainCharacters || [],
+      ...(graph.meta || {}),
+    };
     return graph;
   }
 
@@ -470,12 +478,12 @@
       ok: true,
       fixture: fx,
       nodeState,
-      candidates: Phi.phi({
+      candidates: actorAdmissibleCandidates(selected, Phi.phi({
         lexicon: fx.lexicon,
         scope: fx.scope,
         state: nodeState,
         downstreamExprs: new Set(),
-      }),
+      })),
     };
   }
 
@@ -505,6 +513,11 @@
     const entry = candidate.entry;
     const gloss = safeGloss(entry, candidate.binding) || candidate.expr;
     const id = uniqueId("phi");
+    const actor = candidateActor(candidate) || actorForNode(source);
+    if (!actorAllowedAtSource(source, actor)) {
+      if (notify) toast(`${actor} cannot branch from ${source.label}`, true);
+      return null;
+    }
     const newNode = {
       id,
       label: gloss,
@@ -512,6 +525,7 @@
       state: "",
       kind: "branch",
       tags: unique(["phi", ...extraTags, entry.name]),
+      actors: [actor],
       createdBy,
       delta: "",
       invariants: "",
@@ -524,6 +538,7 @@
       type: "causes",
       label: `phi: ${entry.name}`,
       canonical: true,
+      actor,
     });
     if (!result.ok) {
       state.graph.nodes = state.graph.nodes.filter((n) => n.id !== id);
@@ -672,19 +687,21 @@
     const incoming = new Map();
     for (const edgeItem of state.graph.edges) {
       if (edgeItem.canonical === true || (edgeItem.canonical === undefined && edgeItem.type === "causes")) {
-        if (!incoming.has(edgeItem.to)) incoming.set(edgeItem.to, edgeItem.from);
+        if (!incoming.has(edgeItem.to)) incoming.set(edgeItem.to, []);
+        incoming.get(edgeItem.to).push(edgeItem.from);
       }
     }
     const entries = [];
     const seen = new Set();
-    let current = nodeId;
-    while (current && !seen.has(current)) {
+    const visit = (current) => {
+      if (!current || seen.has(current)) return;
       seen.add(current);
+      for (const pred of incoming.get(current) || []) visit(pred);
       const node = byId.get(current);
       if (node?.action?.entry) entries.push(node.action.entry);
-      current = incoming.get(current);
     }
-    return entries.reverse();
+    visit(nodeId);
+    return entries;
   }
 
   function canonicalCandidateAfter(source, candidates) {
@@ -752,12 +769,17 @@
 
   function renderSelects() {
     const selectedRank = state.ranks[state.selectedId] || 0;
+    const selected = getNode(state.selectedId);
     const options = state.graph.nodes.map((item) => `<option value="${escapeHtml(item.id)}" ${item.id === state.selectedId ? "selected" : ""}>${escapeHtml(item.label)}</option>`).join("");
     const targetOptions = state.graph.nodes
       .filter((item) => item.id !== state.selectedId && (state.ranks[item.id] || 0) >= selectedRank)
       .map((item) => `<option value="${escapeHtml(item.id)}">${escapeHtml(item.label)}</option>`).join("");
+    const actorOptions = actorOptionsForNode(selected)
+      .map((actor) => `<option value="${escapeHtml(actor)}">${escapeHtml(actor)}</option>`)
+      .join("");
     el.manualFrom.innerHTML = options;
     el.manualTo.innerHTML = `<option value="__new__">New node</option>${options}`;
+    if (el.branchActor) el.branchActor.innerHTML = actorOptions;
     el.rejoinSelect.innerHTML = `<option value="">No rejoin yet</option>${targetOptions}`;
   }
 
@@ -773,9 +795,13 @@
     const actionLine = selected.action
       ? `<div class="action-row"><strong>Action:</strong> <code>${escapeHtml(selected.action.entry)}(${escapeHtml(Object.values(selected.action.binding || {}).join(", "))})</code></div>`
       : "";
+    const actorsLine = (selected.actors || []).length
+      ? `<div><strong>Actors:</strong> ${selected.actors.map(escapeHtml).join(", ")}</div>`
+      : "";
     el.selectedNode.innerHTML = `
       <h3>${escapeHtml(selected.label)}</h3>
       <div class="expr">${escapeHtml(selected.expr)}</div>
+      ${actorsLine}
       ${actionLine}
       <div>${escapeHtml(selected.state || "No state note.")}</div>
       ${selected.delta ? `<div><strong>Changed:</strong> ${escapeHtml(selected.delta)}</div>` : ""}
@@ -787,7 +813,7 @@
 
   function edgeSummary(edgeItem) {
     const other = getNode(edgeItem.from === state.selectedId ? edgeItem.to : edgeItem.from);
-    return `<span style="color:${EDGE_COLORS[edgeItem.type] || EDGE_COLORS.causes}">${escapeHtml(edgeItem.type)}</span> ${escapeHtml(other?.label || "?")} ${edgeItem.label ? `· ${escapeHtml(edgeItem.label)}` : ""}`;
+    return `<span style="color:${EDGE_COLORS[edgeItem.type] || EDGE_COLORS.causes}">${escapeHtml(edgeItem.type)}</span> ${escapeHtml(other?.label || "?")}${edgeItem.actor ? ` · ${escapeHtml(edgeItem.actor)}` : ""}${edgeItem.label ? ` · ${escapeHtml(edgeItem.label)}` : ""}`;
   }
 
   function renderHeuristics(selected) {
@@ -816,6 +842,7 @@
     const label = el.branchLabel.value.trim();
     if (!label) return toast("Branch title is required", true);
     const id = uniqueId("branch");
+    const actor = selectedBranchActor(source);
     const branch = {
       id,
       label,
@@ -825,17 +852,18 @@
       invariants: el.branchInvariants.value.trim(),
       kind: "branch",
       tags: ["counterfactual"],
+      actors: [actor],
       createdBy: "human"
     };
     state.graph.nodes.push(branch);
-    const choice = addEdge({ from: source.id, to: id, type: "choice", label: branch.delta || "alternative branch", canonical: false, branchId: id });
+    const choice = addEdge({ from: source.id, to: id, type: "choice", label: branch.delta || "alternative branch", canonical: false, branchId: id, actor });
     if (!choice.ok) {
       state.graph.nodes = state.graph.nodes.filter((item) => item.id !== id);
       return toast(choice.message, true);
     }
     const rejoinTarget = el.rejoinSelect.value;
     if (rejoinTarget) {
-      const rejoin = addEdge({ from: id, to: rejoinTarget, type: "rejoins", label: "rejoins canonical path", canonical: false, branchId: id });
+      const rejoin = addEdge({ from: id, to: rejoinTarget, type: "rejoins", label: "rejoins actor path", canonical: false, branchId: id, actor });
       if (!rejoin.ok) toast(rejoin.message, true);
     }
     [el.branchLabel, el.branchExpr, el.branchState, el.branchDelta, el.branchInvariants].forEach((input) => { input.value = ""; });
@@ -860,6 +888,7 @@
         state: "",
         kind: type === "rejoins" ? "convergence" : "note",
         tags: [],
+        actors: [],
         createdBy: "human",
         delta: "",
         invariants: ""
@@ -879,6 +908,8 @@
 
   function addEdge(edgeItem) {
     if (!getNode(edgeItem.from) || !getNode(edgeItem.to)) return { ok: false, message: "Edge endpoint is missing" };
+    const actorError = validateActorEdge(edgeItem);
+    if (actorError) return { ok: false, message: actorError };
     if (wouldCreateCycle(edgeItem.from, edgeItem.to)) return { ok: false, message: "Rejected because that edge would create a cycle" };
     edgeItem.id = edgeItem.id || uniqueId(`edge_${edgeItem.type}`);
     state.graph.edges.push(edgeItem);
@@ -915,13 +946,15 @@
     graph.edges.forEach((edgeItem) => {
       if (!ids.has(edgeItem.from) || !ids.has(edgeItem.to)) errors.push(`Missing endpoint on ${edgeItem.id}`);
       if (edgeItem.from === edgeItem.to) errors.push(`Self-loop on ${edgeItem.from}`);
+      const actorError = validateActorEdge(edgeItem, graph);
+      if (actorError) errors.push(actorError);
     });
     graph.edges.forEach((edgeItem) => {
       const without = graph.edges.filter((candidate) => candidate.id !== edgeItem.id);
       if (reachable(edgeItem.to, edgeItem.from, without)) errors.push(`Cycle through ${edgeItem.from} → ${edgeItem.to}`);
     });
     graph.nodes.forEach((item) => {
-      if (item.id !== graph.root && !graph.edges.some((edgeItem) => edgeItem.to === item.id)) warnings.push(`Orphan node: ${item.label}`);
+      if (item.id !== graph.root && item.kind !== "root" && !graph.edges.some((edgeItem) => edgeItem.to === item.id)) warnings.push(`Orphan node: ${item.label}`);
       if (item.kind === "branch" && !graph.edges.some((edgeItem) => edgeItem.from === item.id && edgeItem.type === "rejoins")) warnings.push(`Open branch without rejoin: ${item.label}`);
     });
     return { ok: errors.length === 0, errors: unique(errors), warnings: unique(warnings) };
@@ -960,31 +993,33 @@
 
   function buildSuggestions(selected) {
     const tags = new Set(selected.tags || []);
-    const actor = selected.expr.match(/\(([^,\)]+)/)?.[1] || "protagonist";
+    const actor = actorForNode(selected);
     const suggestions = [
       {
         label: `${selected.label}: ask for counsel first`,
         expr: `ask_help(${actor}, ally)`,
         state: "Information enters before the risky action, changing later causes without erasing the original desire.",
         delta: "The character seeks counsel before acting alone.",
-        invariants: "The original goal remains active."
+        invariants: "The original goal remains active.",
+        actor
       },
       {
         label: `${selected.label}: refuse the shortcut`,
         expr: `refuse(${actor}, shortcut)`,
         state: "Delay or effort replaces the tempting quick path; conflict must arise from cost rather than deception.",
         delta: "The shortcut is not taken.",
-        invariants: "The story's motivating need remains."
+        invariants: "The story's motivating need remains.",
+        actor
       }
     ];
     if (tags.has("deception") || tags.has("disguise")) {
-      suggestions.push({ label: "Disguise is detected early", expr: `recognize(${actor}, deception, early)`, state: "The trap is still present, but the victim is no longer epistemically isolated.", delta: "Recognition moves earlier.", invariants: "The antagonist still wants the same outcome." });
+      suggestions.push({ label: "Disguise is detected early", expr: `recognize(${actor}, deception, early)`, state: "The trap is still present, but the victim is no longer epistemically isolated.", delta: "Recognition moves earlier.", invariants: "The antagonist still wants the same outcome.", actor });
     }
     if (tags.has("scarcity") || tags.has("loss")) {
-      suggestions.push({ label: "The loss is confessed immediately", expr: `confess(${actor}, loss)`, state: "Social embarrassment replaces a long hidden cost because information returns to the system.", delta: "Truth replaces concealment.", invariants: "The loss or scarcity still happened." });
+      suggestions.push({ label: "The loss is confessed immediately", expr: `confess(${actor}, loss)`, state: "Social embarrassment replaces a long hidden cost because information returns to the system.", delta: "Truth replaces concealment.", invariants: "The loss or scarcity still happened.", actor });
     }
     if (tags.has("hubris") || tags.has("pride")) {
-      suggestions.push({ label: "Pride is interrupted by feedback", expr: `learn(${actor}, humility, before_failure)`, state: "A small warning changes behavior before the major reversal locks in.", delta: "Feedback is accepted before failure.", invariants: "The contest and status pressure remain." });
+      suggestions.push({ label: "Pride is interrupted by feedback", expr: `learn(${actor}, humility, before_failure)`, state: "A small warning changes behavior before the major reversal locks in.", delta: "Feedback is accepted before failure.", invariants: "The contest and status pressure remain.", actor });
     }
     return suggestions.slice(0, 4);
   }
@@ -995,6 +1030,12 @@
     el.branchState.value = suggestion.state;
     el.branchDelta.value = suggestion.delta || "";
     el.branchInvariants.value = suggestion.invariants || "";
+    if (suggestion.actor && el.branchActor) {
+      if (![...el.branchActor.options].some((option) => option.value === suggestion.actor)) {
+        el.branchActor.add(new Option(suggestion.actor, suggestion.actor));
+      }
+      el.branchActor.value = suggestion.actor;
+    }
   }
 
   function prefillFirstSuggestion() {
@@ -1011,6 +1052,7 @@
     state.promptText = `You are helping enrich a causal narrative DAG. Return only JSON.\n\n${JSON.stringify({
       task: el.assistInstruction.value,
       story: state.graph.meta.title,
+      mainCharacters: state.graph.meta.mainCharacters || [],
       selected,
       downstream,
       allowedEdgeTypes: EDGE_TYPES,
@@ -1019,14 +1061,16 @@
           label: "short node label",
           expr: "typed_semantic_expression(actor, object)",
           state: "state after this branch",
-          delta: "what changed from the canonical path",
+          delta: "what changed from this actor path",
           invariants: "facts preserved from the original story",
+          actor: "main character choosing this branch",
           tags: ["counterfactual"],
           rejoinTargetId: "optional existing node id"
         }]
       },
       constraints: [
         "Preserve DAG acyclicity.",
+        "Model character agency: outgoing branch choices should be chosen by the relevant actor.",
         "Make causal change explicit, not just a prose variation.",
         "Prefer one branch that rejoins a later convergence node and one branch that remains open.",
         "Do not rewrite upstream nodes."
@@ -1065,7 +1109,8 @@
           expr: branch.expr || "alternate(?)",
           state: branch.state || "",
           delta: branch.delta || "LLM-assisted branch",
-          invariants: branch.invariants || ""
+          invariants: branch.invariants || "",
+          actor: branch.actor || ""
         });
         el.rejoinSelect.value = branch.rejoinTargetId || "";
         addBranchFromForm();
@@ -1073,6 +1118,7 @@
         if (made) {
           made.createdBy = "assist";
           made.tags = Array.isArray(branch.tags) ? branch.tags : ["counterfactual", "assist"];
+          if (branch.actor) made.actors = [branch.actor];
         }
       });
       renderAll();
@@ -1185,6 +1231,54 @@
 
   function getNode(id) {
     return state.graph.nodes.find((item) => item.id === id);
+  }
+
+  function actorForNode(node) {
+    if (!node) return "protagonist";
+    if (Array.isArray(node.actors) && node.actors.length === 1) return node.actors[0];
+    const parsed = String(node.expr || "").match(/\(([^,\)]+)/)?.[1];
+    return parsed || (state.graph.meta.mainCharacters || [])[0] || "protagonist";
+  }
+
+  function actorOptionsForNode(node) {
+    if (Array.isArray(node?.actors) && node.actors.length) return unique(node.actors);
+    const options = [];
+    options.push(actorForNode(node));
+    options.push(...(state.graph.meta.mainCharacters || []));
+    return unique(options.filter(Boolean));
+  }
+
+  function selectedBranchActor(source) {
+    return el.branchActor?.value || actorForNode(source);
+  }
+
+  function candidateActor(candidate) {
+    const params = candidate?.entry?.params || [];
+    const firstEntity = params.find((param) => param.type === "entity");
+    return firstEntity ? candidate.binding?.[firstEntity.name] || "" : "";
+  }
+
+  function actorAdmissibleCandidates(source, candidates) {
+    return candidates.filter((candidate) => {
+      const actor = candidateActor(candidate);
+      return !actor || actorAllowedAtSource(source, actor);
+    });
+  }
+
+  function actorAllowedAtSource(source, actor) {
+    if (!actor) return true;
+    const sourceActors = source?.actors || [];
+    return sourceActors.length === 0 || sourceActors.includes(actor);
+  }
+
+  function validateActorEdge(edgeItem, graph = state.graph) {
+    if (!edgeItem.actor) return "";
+    const source = (graph.nodes || []).find((node) => node.id === edgeItem.from);
+    if (!source) return "";
+    if (!actorAllowedAtSource(source, edgeItem.actor)) {
+      return `Actor ${edgeItem.actor} cannot branch from ${source.label || source.id}`;
+    }
+    return "";
   }
 
   function reachable(from, to, edges = state.graph.edges) {

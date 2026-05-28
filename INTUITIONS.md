@@ -65,6 +65,14 @@ distinguished only by edge type and by which path the analyst declared
 canonical. Branching from any state node is structurally identical to
 canonical extension — only the threading marker differs.
 
+Canonical does not mean linear. A story normally contains several
+main-character threads. Those threads can cross or merge for several
+nodes when the characters act as one encounter/unit, then split again.
+At an outgoing branch point, the relevant actor chooses among the
+available outgoing edges; in code this is represented by node `actors`
+and edge `actor` metadata, while the underlying object remains an
+acyclic graph.
+
 ---
 
 ## 4. Time = thread position; space = perceptual embedding `partial`
@@ -73,7 +81,8 @@ canonical extension — only the threading marker differs.
 clock in G; "before" and "after" exist only relative to a chosen
 thread. This maps directly to FORMAL_MODEL §4 (threading) and is
 operational at that level — the engine's state walker is exactly a
-topo-replay along canonical thread segments.
+topo-replay along canonical actor-thread segments, with state merge
+where threads converge.
 
 **Space**, in this framework, is the dimensional structure a mind adds
 to unfold branching chains for simultaneous comparison without

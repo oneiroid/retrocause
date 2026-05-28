@@ -111,6 +111,31 @@ test("walker reaches every node in the canonical sub-DAG of red", () => {
   assert.equal(order[0], "red_start", "root sorts first");
 });
 
+test("red seed uses separate Red and Wolf actor threads after their meeting", () => {
+  const graph = normalize(seeds.red);
+  const meetingIncoming = graph.edges.filter((edge) => edge.to === "red_meet_wolf" && edge.canonical);
+  assert.equal(meetingIncoming.length, 2, "meeting should merge Red and Wolf starting paths");
+  assert.ok(meetingIncoming.some((edge) => edge.from === "red_woods" && edge.actor === "red"));
+  assert.ok(meetingIncoming.some((edge) => edge.from === "red_wolf_woods" && edge.actor === "wolf"));
+  const outgoing = graph.edges.filter((edge) => edge.from === "red_meet_wolf" && edge.canonical);
+  assert.equal(outgoing.length, 2, "meeting should split back into Red and Wolf paths");
+  assert.ok(outgoing.some((edge) => edge.to === "red_delay" && edge.actor === "red"));
+  assert.ok(outgoing.some((edge) => edge.to === "red_wolf" && edge.actor === "wolf"));
+  assert.deepEqual(graph.nodes.find((node) => node.id === "red_wolf").actors, ["wolf"]);
+  const incomingRecognition = graph.edges.filter((edge) => edge.to === "red_recognition" && edge.canonical);
+  assert.equal(incomingRecognition.length, 2, "recognition should merge Red's delayed path and Wolf's trap path");
+});
+
+test("tortoise seed splits Hare and Tortoise paths and merges at finish", () => {
+  const graph = normalize(seeds.tortoise);
+  const raceOut = graph.edges.filter((edge) => edge.from === "tor_race" && edge.canonical);
+  assert.equal(raceOut.length, 2, "race should split into separate actor paths");
+  assert.ok(raceOut.some((edge) => edge.to === "tor_hare_leads" && edge.actor === "hare"));
+  assert.ok(raceOut.some((edge) => edge.to === "tor_tortoise_moves" && edge.actor === "tortoise"));
+  const finishIn = graph.edges.filter((edge) => edge.to === "tor_finish" && edge.canonical);
+  assert.equal(finishIn.length, 2, "finish should merge Hare and Tortoise paths");
+});
+
 test("walker detects cycles in the canonical sub-DAG", () => {
   const cyclic = {
     nodes: [{ id: "a" }, { id: "b" }],

@@ -206,7 +206,7 @@
     derivations: [],  // none for Red; rules exercised by Magi fixture
   };
 
-  // -------- §B.4 canonical path replay: produce post-state at red_wolf --------
+  // -------- §B.4 actor-thread replay: produce post-state at red_wolf --------
 
   function postStateAtRedWolf() {
     const Phi = root.RetrocausePhi || require("./phi.js");
