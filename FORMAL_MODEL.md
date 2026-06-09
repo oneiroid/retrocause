@@ -448,9 +448,10 @@ successor." It is the **deemed-possible cone**: the subset that frontier
 agents' collective, capability-weighted forward-simulation sustains. This
 supplies the content of "compatible with G's constraints" (INTUITIONS
 claim 3) — without it G would be a near-complete graph with no topology.
-The mechanism that fixes the cone is `open` (§9 item 8; INTUITIONS
-Open-Question 9); the formalism below treats cone membership as a given
-input, not something it derives.
+The cone is **derived**, not supplied: given an attractor Ω, cone
+membership is bidirectional source↔Ω reachability (§8.3.2). The only
+irreducible input is Ω — a destination node, not the cone — and even Ω has
+a candidate structural derivation (§8.3.4, `open`).
 
 ### 3.5 Extension: Scope (cast, setting, props)
 
@@ -933,7 +934,8 @@ allowed here?" The answer is Phi(v).
 **Combinatorial vs. realized frontier (`open`, INTUITIONS claim 9).**
 Phi(v) as defined is the *combinatorial* frontier: every
 precondition-satisfying generator. The **realized** frontier is
-`Phi(v) ∩ cone` -- restricted to the deemed-possible subset (§3.4). Two
+`Phi(v) ∩ cone` -- restricted to the deemed-possible subset (§3.4,
+derived from the attractor in §8.3). Two
 consequences for how to read Phi:
 
 - **No decider.** A candidate attributed to an actor and a candidate
@@ -1023,8 +1025,11 @@ dominate, and a meta-agent's weight derives from the ~dozen atomic agents
 constituting it. This is a weighting on *cone membership / persistence*,
 NOT a scalar that elects one path -- there is no materialization
 (INTUITIONS claim 9). The fitness measure and aggregation are `open`
-(INTUITIONS Open-Question 9); until supplied, capability weight is an
-author-provided input per scope, not derived.
+(INTUITIONS Open-Question 9). Capability weight is **derived**, not
+author-provided: it is the **cut-criticality** of a transition toward the
+attractor (§8.3.3) — heavy-tailed, concentrating on bridge-like
+transitions at narrow waists. What stays `open` is only the bridge from
+this structural quantity to real-world *agent fitness*.
 
 ---
 
@@ -1038,6 +1043,15 @@ many edges arrive at it. In retrocause terms, this is an attractor.
 **Reformulation:** A convergence node v in a story DAG S is a node
 such that multiple independent directed paths within S terminate at v.
 "Independent" = no shared ancestor within S other than S's source region.
+
+**Relaxation to waists (`partial`, §8.3.3).** A convergence need not be a
+*single* node. The general form is a **waist**: a small antichain W that
+every source→attractor path crosses, occurring at a local minimum of the
+cone's width. A single node is the width-1 special case; a width-k waist
+is a k-node bottleneck (a pinch can be several mutually-incomparable nodes,
+not strictly one). The single-node reformulation above is recovered when
+the local min-cut is 1. The §1.7 emergent-fact mechanism still applies,
+now to the merge of the post-states arriving at the waist set.
 
 The paper doesn't discuss convergence explicitly because Groundhog Day's
 structure is mostly iterative (thread revisitation), not convergent
@@ -1081,6 +1095,102 @@ time-as-segment-counter, free will as the agency function at branch
 points — are tracked in `INTUITIONS.md` (claims 4 and 7) with their
 operational status. They live in the philosophical layer, not here.
 
+### 8.3 Derivation of the cone, its waists, and the capability weight (retrocausal closure)
+
+§3.4, §7.8, and §7.9 each deferred to "an author-supplied input": which
+successors lie in the deemed-possible cone, and how candidates are
+capability-weighted. Leaving these to the author is the formalism's
+weakest seam — it lets the analyst hand-place the structure (the
+sand-castle problem, INTUITIONS §8). This section removes the seam. Given
+the lexicon L, the scope, and a designated **attractor** Ω, the cone, its
+waists, and the weighting are all *derived* by structural operations; the
+irreducible input drops from three fuzzy quantities to one concrete one
+(Ω), and §8.3.4 sketches a candidate derivation of Ω itself.
+
+Throughout, the **raw graph** R is the (finite, §7.8) DAG of all
+precondition-satisfiable transitions reachable forward from the source
+state under scope. Attribution of a transition to an agent is its entry's
+agent argument (§7.8) — not a separate input.
+
+#### 8.3.1 The attractor Ω
+
+Ω is a non-empty set of **terminal nodes** of R — the story's
+destination(s). Retrocause's thesis (INTUITIONS §5, "knowing the
+destination constrains the routes") is here made literal: Ω is the
+boundary condition from which the rest of the cone is derived. An ending
+is a concrete node, not a fuzzy "deem this possible", so handing the model
+Ω is not the slippery move that handing it the whole cone was. §8.3.4
+discusses deriving Ω too.
+
+#### 8.3.2 Cone support = bidirectional reachability  `partial`
+
+A node v is **possible** (in the cone's support) iff it lies on at least
+one source→Ω directed path in R:
+
+```
+support(R, Ω) = { v : v reachable from source  ∧  some ω ∈ Ω reachable from v }
+```
+
+Two linear passes (forward from the source, backward from Ω). Everything
+else in R is the cone's **rim** — precondition-satisfiable but leading
+nowhere, hence not in G. This derives claim 9's possible/impossible
+boundary with no stipulation: a branch is impossible exactly when it
+cannot reach the attractor. The actual/counterfactual gap stays abolished
+*within* the support (no path is elected); this fixes only the support's
+extent.
+
+#### 8.3.3 Waists and the capability weight, via Menger  `partial`
+
+With Ω fixed, relax convergence (§8.1) to a **clean cut**: an antichain
+A ⊆ support that every source→Ω path crosses exactly once. By Menger's
+theorem the minimum clean-cut size at a phase equals the number of
+vertex-disjoint source→Ω paths there — the cone's local **width**. A
+**waist** is a clean cut at a local minimum of the width profile; width 1
+recovers the single convergence node of §8.1, width k a k-node bottleneck.
+
+The **capability weight** of a transition e is its **cut-criticality** —
+how much source→Ω connectivity is lost when e is removed:
+
+```
+criticality(e) = maxflow(source → Ω over support)
+               - maxflow(source → Ω over support \ {e})
+```
+
+A transition on every route to Ω through a width-1 waist is maximally
+critical: removing it makes that destination unreachable — the branch
+becomes impossible. A transition in a wide, redundant region is near zero.
+Criticality is **heavy-tailed**, concentrating on bridge-like transitions
+at narrow waists — exactly claim 9's founder-domination, now *derived*
+rather than asserted. An **agent's** weight is the aggregate criticality
+of the transitions attributed to it; a **meta-agent's** aggregates its
+constituting atomic agents'.
+
+The weighted cone is then `support` (8.3.2) carrying the criticality
+measure: the rim is zero-support, "thin" regions are low-criticality
+(possible but negligible), the spine is the high-criticality chain of
+waists. **Both the set and the measure are derived from (L, scope, Ω)** —
+no author-supplied cone, no author-supplied weights.
+
+`partial` for the whole derivation: defined and computable (two
+reachabilities + a max-flow per candidate transition), but unimplemented
+and untested on real DAGs. The identification of structural
+cut-criticality with real-world **agent fitness** (claim 9's Anthropic
+reading) is `open` — structural necessity is a proxy for capability, not
+proven equal to it.
+
+#### 8.3.4 Deriving Ω itself  `open`
+
+The chain bottoms out at Ω. A candidate makes even Ω structural: take Ω as
+the **dominant convergence** of R — the terminal-ward node(s) of maximal
+meaning (§8.2, most template participations) and in-degree, i.e. the
+deepest waist the raw cone already funnels toward. This closes the loop as
+a fixed point (the cone needs Ω; Ω is a waist of the cone) and is
+well-founded if seeded from raw in-degree / meaning maxima and iterated to
+stability. It is `open`: it presumes R already *has* a dominant attractor,
+which is the eternal-melody question (INTUITIONS Open-Q 1) in local form.
+Until that is resolved, Ω is the single legitimate author input — a
+destination, not a hand-placed structure.
+
 ---
 
 ## 9. What is still missing
@@ -1109,17 +1219,20 @@ The formalism does not yet provide:
    structure has typed flavors (temporal, logical, material,
    informational). Sub-classification would enrich the template
    language but is not currently implemented.
-8. **The possibility-cone mechanism, and the forward/backward tension.**
-   INTUITIONS claim 9 makes G's existing-path-set the deemed-possible
-   cone carved by frontier agents' capability-weighted simulation (§3.4,
-   §7.8, §7.9). The formalism treats cone membership and weights as
-   *given inputs*; it does not derive them. Separately, the cone's
-   downstream attractor (retrocausal dominance) pulls *against* forward
-   preconditions (`requires`): the past constrains the future, the future
-   constrains which pasts exist. When they conflict the model **records
-   the conflict as data** (dramatic irony / destiny, §8.1) rather than
-   resolving it by deleting either direction -- per the `CLAUDE.md`
-   conflict rule. Both are `open`.
+8. **The attractor Ω, and the forward/backward tension.** §8.3 now
+   *derives* the deemed-possible cone, its waists, and the capability
+   weighting from (L, scope, Ω) — they are no longer "given inputs". What
+   remains missing is narrower: (a) **deriving Ω itself** (§8.3.4 gives a
+   candidate — the dominant convergence — but it reduces to Open-Q 1, the
+   eternal melody); (b) an **implementation** of the closure and its
+   validation on external DAGs; (c) the **bridge** from structural
+   cut-criticality to real-world agent fitness (claim 9's Anthropic
+   reading). Separately, the cone's downstream attractor (retrocausal
+   dominance) pulls *against* forward preconditions (`requires`): the past
+   constrains the future, the future constrains which pasts exist. When
+   they conflict the model **records the conflict as data** (dramatic
+   irony / destiny, §8.1) rather than resolving it by deleting either
+   direction — per the `CLAUDE.md` conflict rule.
 
 These limits are deliberate. The formalism captures what the project
 can defend; the rest is in `INTUITIONS.md` as `partial` or `open`.
