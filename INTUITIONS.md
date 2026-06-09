@@ -65,6 +65,11 @@ distinguished only by edge type and by which path the analyst declared
 canonical. Branching from any state node is structurally identical to
 canonical extension — only the threading marker differs.
 
+*What bounds* which *branches exist — why this is a structured DAG and
+not "all compatible events" — is claim 9 (the possibility cone). The gap
+this claim abolishes is actual/counterfactual* within *the cone; the
+possible/impossible gap at its rim belongs to claim 9 and is `open`.*
+
 ---
 
 ## 4. Time = thread position; space = perceptual embedding `partial`
@@ -113,6 +118,10 @@ local mechanism of "destiny" — the future attractor reaches back
 through entailment, not through time.
 
 This claim is the operational core of the name **retrocause**.
+
+*Claim 9 adds a* generative *reading: a convergence is the waist where
+the shared possibility cone narrows. That account is `open`; the
+topological convergence defined here stays `operational`.*
 
 ---
 
@@ -169,6 +178,11 @@ freely among edges compatible with downstream attractors). The
 framework is agnostic between determinist and libertarian readings;
 both are compatible with G being static.
 
+*Claim 9 extends the agency function two ways: the* simulation gradient
+*(non-agent = bare least-action selection; agent = model-carrying) and
+the* capability weighting *(a few extreme-fitness atomic agents carve the
+cone). Both `open`.*
+
 ---
 
 ## 8. We see only projections `partial`
@@ -199,6 +213,67 @@ Two consequences the project takes seriously:
 This claim is `partial` because the project applies the constraint as
 methodology but has not yet performed a test that uses external DAGs
 in a way that could falsify the framework's predictions.
+
+---
+
+## 9. The possibility cone `open`
+
+Not every combinatorially compatible continuation of a node exists. Of
+all successors whose preconditions (FORMAL_MODEL §1.5) are satisfiable,
+only those inside the **shared deemed-possible cone of frontier agents**
+are in G. This supplies the content of claim 3's otherwise-blank phrase
+"compatible with G's constraints": the constraint *is* the agents'
+collective forward-simulation. Without it G is a structureless
+near-complete graph — the cone is what gives G the topology claim 1
+asserts.
+
+Five sub-claims, tagged separately so the formalism absorbs nothing it
+hasn't earned:
+
+- **The cone is capability-weighted, heavy-tailed `open`.** Paths persist
+  weighted by the *fitness* of the agents whose simulation sustains them —
+  not at population level: a small number of extreme-fitness *atomic*
+  agents carve most of the frontier. A meta-agent (corporation ← nation ←
+  culture) is constituted by ~a dozen atomic agents converging on a shared
+  ideal (Anthropic is the worked case). Formal home: a weighting term on
+  frontier candidates, FORMAL_MODEL §7.9. The weighting governs
+  *existence in the cone*, not election of a path.
+
+- **No materialization `operational` (sharpening of claim 3).** No path in
+  the cone is privileged as "the actual one." Two gaps stay separate:
+  *possible / impossible* lives at the **rim** of the cone (`open`);
+  *actual / counterfactual* is abolished **within** it (claim 3,
+  `operational`). This separation is the guardrail against re-introducing
+  a selected "real" path.
+
+- **Convergence is the waist of the cone `open` (generative reading of
+  claim 5).** A convergence is where the shared cone narrows toward a node;
+  divergence is where it widens. The DAG breathes: a founder-waist radiates
+  a meta-agent's forward cone, which narrows again at the next waist.
+  Claim 5's topological convergence stays `operational`; this account of
+  *why* branches converge is the `open` addition.
+
+- **Simulation gradient `open`.** Every entity forward-simulates. A
+  non-agent is the degenerate case — bare variational path-selection (least
+  action / the path integral select a trajectory by reference to its whole
+  extent) with no explicit model. An agent carries a model of futures;
+  "more agentic" = richer model. Threading (claim 7, FORMAL_MODEL §4.5) is a
+  forward-simulating agency function choosing its next segment over the
+  static-but-agent-constituted cone: reader-over-static, which reconciles
+  claim 3 (nothing is created) with claim 7 (the reader simulates to choose).
+
+- **Retrocausal dominance, held as tension `open`.** The downstream
+  attractor shapes which upstream paths exist and what they mean (claim 5,
+  FORMAL_MODEL §8.2), pulling *against* forward preconditions (`requires`:
+  past constrains future). When the two conflict, the conflict is itself the
+  content — dramatic irony, "destiny" (FORMAL_MODEL §8.1) — and is recorded
+  as **data**, never resolved by deleting either direction. The tempting
+  meta-rule "later claims erase earlier fixed rules" is rejected: it is
+  self-eating (a fixed rule forbidding fixed rules), and applied literally it
+  deletes preconditions — which are *what carve the cone*.
+
+This whole claim is `open`: it has no measurement and silently assumes the
+answer to Open-Question 1 (why this topology). It is stated, not earned.
 
 ---
 
@@ -238,6 +313,13 @@ for. Listed so the framework cannot quietly pretend it does.
 8. **Template extraction.** Anti-unification on typed DAGs is sketched
    (FORMAL_MODEL §5.5, §7.3) but not implemented. Without it, claim
    §6 stays `partial`.
+9. **The cone-selection mechanism.** Claim 9 says the deemed-possible
+   cone is carved by frontier agents' capability-weighted shared
+   simulation, but gives no procedure to determine the cone or the
+   weights from outside the agents. Whose simulation, aggregated how
+   (intersection vs. capability-weighted — the design chose weighted),
+   measured by what fitness? Until answered, claim 9 stays `open` and the
+   UI must not render it as `operational`.
 
 The promotion of any open question to `partial` or `operational` is a
 measurable advance for the project. Demoting an `operational` claim to

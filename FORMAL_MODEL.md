@@ -442,6 +442,16 @@ accept this ontological claim. The claim's role is interpretive:
 it tells you what the mathematics IS ABOUT, not how to do the
 mathematics.
 
+**Which paths are in G (`open`, INTUITIONS claim 9).** G's existing
+edge/path set is *not* "every combinatorially precondition-satisfying
+successor." It is the **deemed-possible cone**: the subset that frontier
+agents' collective, capability-weighted forward-simulation sustains. This
+supplies the content of "compatible with G's constraints" (INTUITIONS
+claim 3) — without it G would be a near-complete graph with no topology.
+The mechanism that fixes the cone is `open` (§9 item 8; INTUITIONS
+Open-Question 9); the formalism below treats cone membership as a given
+input, not something it derives.
+
 ### 3.5 Extension: Scope (cast, setting, props)
 
 A subDAG D additionally declares a typed environment that bounds the
@@ -920,6 +930,25 @@ recursive templates are deferred.
 when a user selects a node and asks "what outgoing branches are
 allowed here?" The answer is Phi(v).
 
+**Combinatorial vs. realized frontier (`open`, INTUITIONS claim 9).**
+Phi(v) as defined is the *combinatorial* frontier: every
+precondition-satisfying generator. The **realized** frontier is
+`Phi(v) ∩ cone` -- restricted to the deemed-possible subset (§3.4). Two
+consequences for how to read Phi:
+
+- **No decider.** A candidate attributed to an actor and a candidate
+  attributed to "the world" are the same kind of object -- an entry gated
+  by `requires`. "The world" is an agency source (a `sigma` with no
+  deliberation, §4.5) on equal footing with any actor. There is no
+  per-node actor structure; attribution is metadata, not topology.
+- **Joint transitions are a refinement (`open`).** Phi as written
+  enumerates *single* `(generator, binding)` candidates (one new node, one
+  edge). The picture in which a world-state branches on independent
+  `(actor, world)` transitions simultaneously is a *product* over
+  independent agency sources; materializing it -- with a non-interference
+  check so two chosen transitions do not set conflicting facts (cf. §9
+  item 5) -- is not yet in Phi. Recorded as `open`.
+
 ### 7.9 Ranking Metrics on Frontier Candidates
 
 Phi(v) can be large. The formalism defines three orthogonal scores
@@ -979,6 +1008,24 @@ materialized subDAGs are best compressed by an existing template
 extend the registry (reward novelty). The choice between these depends
 on whether the application wants conventional or surprising stories.
 
+**Capability weight (`open`, INTUITIONS claim 9, selection principle b).**
+A weighting on candidates by the *fitness* of the agents whose simulation
+sustains the path the candidate lies on:
+
+```
+capability_weight(c) = aggregate fitness of the frontier agents whose
+                       shared simulation keeps c inside the deemed-possible
+                       cone (§3.4)
+```
+
+The aggregate is **heavy-tailed**: a few extreme-fitness atomic agents
+dominate, and a meta-agent's weight derives from the ~dozen atomic agents
+constituting it. This is a weighting on *cone membership / persistence*,
+NOT a scalar that elects one path -- there is no materialization
+(INTUITIONS claim 9). The fitness measure and aggregation are `open`
+(INTUITIONS Open-Question 9); until supplied, capability weight is an
+author-provided input per scope, not derived.
+
 ---
 
 ## 8. Retrocause-Specific Extensions
@@ -1005,6 +1052,14 @@ This is the mathematical content of phenomena like dramatic irony
 (see Appendix C.4): the merged storyworld state entails a fact that
 no individual character's pre-state did. Convergence is therefore
 not just where paths meet -- it is where emergent facts appear.
+
+**Generative reading (`open`, INTUITIONS claim 9).** Beyond "where
+independent paths meet", a convergence is the **waist** where the shared
+possibility cone (§3.4) narrows toward a node; divergence is where it
+widens. This is why the felt "pull" of an attractor and the emergence of
+facts coincide: both happen where the cone funnels. The topological
+reformulation above stays `operational`; this account of *why* branches
+converge is `open`.
 
 ### 8.2 Meaning of a node
 
@@ -1054,6 +1109,17 @@ The formalism does not yet provide:
    structure has typed flavors (temporal, logical, material,
    informational). Sub-classification would enrich the template
    language but is not currently implemented.
+8. **The possibility-cone mechanism, and the forward/backward tension.**
+   INTUITIONS claim 9 makes G's existing-path-set the deemed-possible
+   cone carved by frontier agents' capability-weighted simulation (§3.4,
+   §7.8, §7.9). The formalism treats cone membership and weights as
+   *given inputs*; it does not derive them. Separately, the cone's
+   downstream attractor (retrocausal dominance) pulls *against* forward
+   preconditions (`requires`): the past constrains the future, the future
+   constrains which pasts exist. When they conflict the model **records
+   the conflict as data** (dramatic irony / destiny, §8.1) rather than
+   resolving it by deleting either direction -- per the `CLAUDE.md`
+   conflict rule. Both are `open`.
 
 These limits are deliberate. The formalism captures what the project
 can defend; the rest is in `INTUITIONS.md` as `partial` or `open`.

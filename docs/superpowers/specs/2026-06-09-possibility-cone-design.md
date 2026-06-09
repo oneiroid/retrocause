@@ -1,0 +1,118 @@
+# Design: The Possibility Cone
+
+**Date:** 2026-06-09
+**Status:** agreed shared view, pending propagation to UI/code
+**Affects:** `INTUITIONS.md`, `FORMAL_MODEL.md` (this pass); engine/UI (next plan)
+
+This records the model settled in the 2026-06-09 brainstorm. It is the
+philosophy/formal layer; code propagation is planned separately. Per
+`CLAUDE.md` conflict rule, where a new claim outruns the formalism it is
+tagged `open` and any tension is flagged as **data**, never silently absorbed.
+
+## The settled model
+
+1. **A node is a partial world-state.** Closed-world over the story's
+   *relevant/derived* domain (a `Set` of P-atoms, possibly post-derivation
+   closure §1.7). Nothing about "actors" is structural — there are no
+   per-node actor arrays, no per-edge actor ownership. This is the rollback's
+   positive content.
+
+2. **Out-branches are compatible successors — no decider.** A transition is
+   an L-entry gated by `requires` (§1.5). Actor-attributed and
+   world-attributed transitions are the *same kind of object*; "the world" is
+   an agency source (a `sigma` with no deliberation) exactly like an actor.
+   The words **"decision"** and **(ontological) "author"** are dropped: there
+   is no privileged selector. Attribution (which actor / the world) is
+   metadata on a transition, used for organizing and weighting, never structure.
+
+3. **Not all compatible paths exist — the *possibility cone*.** Of all
+   combinatorially precondition-satisfying successors, only those inside the
+   **shared deemed-possible cone of frontier agents** exist. This is the
+   *content* of §3's hitherto-blank phrase "compatible with G's constraints":
+   the constraint is the agents' collective forward-simulation. This is what
+   gives G non-trivial topology (vs. a structureless "all paths exist").
+
+4. **The cone is capability-weighted (heavy-tailed, founder-dominated).**
+   Selection principle (b): paths exist/persist weighted by the *fitness* of
+   the agents whose simulation sustains them. The weighting is not population-
+   level — a small number of extreme-fitness **atomic** agents carve most of
+   the frontier; a meta-agent (corporation ← nation ← culture) is constituted
+   by ~a dozen atomic agents converging on a shared ideal (worked example:
+   Anthropic). Weighting governs *existence/persistence in the cone*, NOT
+   election of one path (see 6).
+
+5. **Convergence = the waist of the cone.** A convergence is where the shared
+   cone narrows toward a node; divergence is where it widens. The DAG
+   "breathes": founders converge on an ideal (waist) → the meta-agent radiates
+   a wide forward cone (mouth) → narrows again at the next waist. This is a
+   *generative* account of §5/§8.1, which currently define convergence only
+   topologically (high in-degree).
+
+6. **No materialization, no election.** Among the paths in the cone, none is
+   privileged as "the actual one." Two gaps must stay separate:
+   - **possible / impossible** — lives at the *rim* of the cone (`open`).
+   - **actual / counterfactual** — *abolished within* the cone (§3 core,
+     `operational`). This separation is the guardrail against sliding back
+     into "one path gets selected."
+
+7. **Simulation gradient.** Every entity forward-simulates. A non-agent is
+   the degenerate case: bare variational path-selection (least action / path
+   integral) with no explicit model. An agent carries an explicit model of
+   futures; "more agentic" = richer model. Retrocause-in-the-world is agents
+   acting on their estimated future flow; "threading" is a forward-simulating
+   agency function picking its next segment over the static-but-agent-
+   constituted cone (reader-over-static — reconciles §3 with §7/§4.5).
+
+8. **Retrocausal dominance — flagged tension, not a deletion.** The downstream
+   attractor/convergence shapes which upstream paths exist and what they mean
+   (§5, §8.2). This coexists with **forward preconditions** (`requires`: the
+   past constrains the future). They pull opposite directions. When they
+   conflict, **that conflict is the content** (dramatic irony / "destiny",
+   §8.1) — it is recorded as data, never resolved by deleting either side.
+   Rejected meta-rule: "later claims always erase earlier fixed rules." It is
+   self-eating (a fixed rule forbidding fixed rules) and, applied literally,
+   would delete preconditions — which are *what carves the cone* — collapsing
+   the model back to "all paths exist."
+
+## Dropped
+
+- Per-node actor structure / per-edge actor ownership (the rolled-back
+  `actor-threads` overlay; preserved on branch `actor-threads-backup`).
+- The notions **"decision"** and ontological **"author"**.
+- The **expandable-node** UI idea.
+- The meta-rule "newest intuition overrides older formalism."
+
+## Honest tags
+
+| Claim | Tag | Note |
+|-------|-----|------|
+| node = world-state | `operational` | already true in engine |
+| transitions gated by `requires`, world = agency source | `partial` | §1.5 operational; "world as sigma" framing is new |
+| possibility cone (3) | `open` | no measurement; answers part of open-Q1 |
+| capability weighting / founder-domination (4) | `open` | heavy-tailed, in-principle falsifiable |
+| convergence = cone waist (5) | `open` | topological convergence stays `operational` |
+| rim vs interior separation (6) | `operational` | sharpens §3, adds no unearned claim |
+| simulation gradient (7) | `open` | least-action analogy is suggestive, not measured |
+| retrocausal dominance + tension (8) | `open` | flagged as data per conflict rule |
+
+## Planned doc edits
+
+- **INTUITIONS.md** — add **claim 9 "The possibility cone"** consolidating
+  3/4/6/7/8; add one-line cross-refs from §3, §5, §7; add an Open-Questions
+  entry for the cone-selection mechanism.
+- **FORMAL_MODEL.md** — §3.4 (G's existing-path-set = cone, not all-compatible);
+  §7.8 (realized frontier = `Phi(v) ∩ cone`; agency-source decomposition, no
+  decider); §7.9 (new **capability weight**, a weighting not an election);
+  §8.1 (generative cone-waist account); §9 (cone mechanism `open` + the
+  forward/backward tension flagged as data).
+
+## Forward pointer (next phase — code/UI)
+
+Not done here; for the writing-plans pass. Likely touch points:
+- engine `phi.js` — the `Phi ∩ cone` restriction + capability weighting as a
+  §7.9 ranking term (cone membership/weight is an *input*, probably
+  author-supplied per scope, until any extraction exists).
+- seeds/fixtures — no actor structure; transitions carry optional attribution.
+- UI — represent the cone/convergence (waist) shape; drop expandable nodes.
+- These stay conjectural where the model is `open`; the UI must not present an
+  `open` claim as if `operational`.
