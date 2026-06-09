@@ -1,13 +1,24 @@
 # Design: The Possibility Cone
 
 **Date:** 2026-06-09
-**Status:** agreed shared view, pending propagation to UI/code
-**Affects:** `INTUITIONS.md`, `FORMAL_MODEL.md` (this pass); engine/UI (next plan)
+**Status:** model formalized + derivation pass done; **code propagation
+deliberately deferred** until the derivation is solid (no sloppy inputs in code)
+**Affects:** `INTUITIONS.md`, `FORMAL_MODEL.md` only; engine/UI later
 
 This records the model settled in the 2026-06-09 brainstorm. It is the
-philosophy/formal layer; code propagation is planned separately. Per
+philosophy/formal layer; code propagation is deferred by design. Per
 `CLAUDE.md` conflict rule, where a new claim outruns the formalism it is
 tagged `open` and any tension is flagged as **data**, never silently absorbed.
+
+**Derivation pass (the real current task).** "Author-supplied input" for the
+cone and the weights was a fudge — the sand-castle problem (INTUITIONS §8). It
+is removed: FORMAL_MODEL **§8.3** derives, from `(L, scope, attractor Ω)`,
+the cone's support (bidirectional source↔Ω reachability), its waists (clean
+cuts at local width-minima, Menger; multi-node, not strictly one), and the
+capability weight (cut-criticality toward Ω, heavy-tailed by construction).
+Three fuzzy inputs collapse to one concrete one (Ω) plus two named `open`
+gaps: deriving Ω (§8.3.4 → Open-Q 1) and the structural-criticality↔agent-
+fitness bridge. Convergence is correspondingly relaxed (§8.1) to a waist set.
 
 ## The settled model
 
@@ -106,13 +117,20 @@ tagged `open` and any tension is flagged as **data**, never silently absorbed.
   §8.1 (generative cone-waist account); §9 (cone mechanism `open` + the
   forward/backward tension flagged as data).
 
-## Forward pointer (next phase — code/UI)
+## Forward pointer (deferred — do NOT start until the model is solid)
 
-Not done here; for the writing-plans pass. Likely touch points:
-- engine `phi.js` — the `Phi ∩ cone` restriction + capability weighting as a
-  §7.9 ranking term (cone membership/weight is an *input*, probably
-  author-supplied per scope, until any extraction exists).
-- seeds/fixtures — no actor structure; transitions carry optional attribution.
-- UI — represent the cone/convergence (waist) shape; drop expandable nodes.
-- These stay conjectural where the model is `open`; the UI must not present an
-  `open` claim as if `operational`.
+Code is intentionally not touched in this pass. Propagation waits on the
+derivation being implementation-ready (and ideally on closing the two `open`
+gaps, or at least deciding Ω is a deliberate per-story input). When it does
+start, likely touch points:
+- engine `phi.js` — realized frontier `Phi ∩ cone` via §8.3.2 reachability;
+  capability weight via §8.3.3 cut-criticality (max-flow/min-cut), surfaced as
+  a §7.9 ranking term. Ω is the one input (a chosen destination), not the cone.
+- waist detection — clean cuts at width-minima (§8.3.3), generalizing any
+  single-node convergence detection.
+- seeds/fixtures — no actor structure; transitions carry optional attribution
+  (the entry's agent argument), used only for aggregating agent weight.
+- UI — represent the cone/waist shape and the criticality measure; no
+  expandable nodes.
+- Anything `open` (Ω derivation, fitness bridge) must not be rendered as if
+  `operational`.

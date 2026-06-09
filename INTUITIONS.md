@@ -97,7 +97,9 @@ contingent fact about physics.
 
 ## 5. Convergence nodes are real, and they create non-local influence `operational`
 
-A convergence node is a node with multiple independent incoming paths.
+A convergence node is a node with multiple independent incoming paths
+(or, in general, a small *set* of nodes — a **waist**; claim 9 and
+FORMAL_MODEL §8.1, §8.3.3 — a pinch need not be strictly one node).
 These are real topological features of any DAG, not perceptual
 artifacts. Two branches that share a downstream convergence are not
 independent — the convergence constrains what can happen on each
@@ -227,17 +229,28 @@ collective forward-simulation. Without it G is a structureless
 near-complete graph — the cone is what gives G the topology claim 1
 asserts.
 
+The cone is no longer *stipulated*. FORMAL_MODEL §8.3 **derives** it:
+given an attractor Ω (a destination), the cone's support is bidirectional
+source↔Ω reachability and its measure is cut-criticality toward Ω. The one
+remaining input is Ω, not the cone — and even Ω has a candidate structural
+derivation (§8.3.4). This is what moves the sub-claims below from "asserted"
+toward `partial`.
+
 Five sub-claims, tagged separately so the formalism absorbs nothing it
 hasn't earned:
 
-- **The cone is capability-weighted, heavy-tailed `open`.** Paths persist
-  weighted by the *fitness* of the agents whose simulation sustains them —
-  not at population level: a small number of extreme-fitness *atomic*
+- **The cone is capability-weighted, heavy-tailed `partial`.** Paths
+  persist weighted by the *fitness* of the agents whose simulation sustains
+  them — not at population level: a small number of extreme-fitness *atomic*
   agents carve most of the frontier. A meta-agent (corporation ← nation ←
   culture) is constituted by ~a dozen atomic agents converging on a shared
-  ideal (Anthropic is the worked case). Formal home: a weighting term on
-  frontier candidates, FORMAL_MODEL §7.9. The weighting governs
-  *existence in the cone*, not election of a path.
+  ideal (Anthropic is the worked case). This is now **derived**, not
+  asserted: the weight of a transition is its **cut-criticality** toward the
+  attractor (FORMAL_MODEL §8.3.3) — which is heavy-tailed exactly because
+  criticality concentrates on bridge-like transitions at narrow waists. The
+  weighting governs *existence/measure in the cone*, not election of a path.
+  What stays `open` is only the bridge from structural criticality to
+  real-world agent fitness.
 
 - **No materialization `operational` (sharpening of claim 3).** No path in
   the cone is privileged as "the actual one." Two gaps stay separate:
@@ -246,12 +259,15 @@ hasn't earned:
   `operational`). This separation is the guardrail against re-introducing
   a selected "real" path.
 
-- **Convergence is the waist of the cone `open` (generative reading of
-  claim 5).** A convergence is where the shared cone narrows toward a node;
+- **Convergence is the waist of the cone `partial` (generative reading of
+  claim 5).** A convergence is where the shared cone narrows toward a node
+  — or a small *set* of nodes, a width-k waist (FORMAL_MODEL §8.1, §8.3.3);
   divergence is where it widens. The DAG breathes: a founder-waist radiates
-  a meta-agent's forward cone, which narrows again at the next waist.
-  Claim 5's topological convergence stays `operational`; this account of
-  *why* branches converge is the `open` addition.
+  a meta-agent's forward cone, which narrows again at the next waist. A
+  waist is now *derivable* — a clean cut at a local minimum of the cone's
+  width (Menger, §8.3.3). Claim 5's topological convergence stays
+  `operational`; the generative account of *why* branches converge is
+  `partial` (mechanism defined, unimplemented).
 
 - **Simulation gradient `open`.** Every entity forward-simulates. A
   non-agent is the degenerate case — bare variational path-selection (least
@@ -272,8 +288,15 @@ hasn't earned:
   self-eating (a fixed rule forbidding fixed rules), and applied literally it
   deletes preconditions — which are *what carve the cone*.
 
-This whole claim is `open`: it has no measurement and silently assumes the
-answer to Open-Question 1 (why this topology). It is stated, not earned.
+Status, honestly split. The cone, its waists, and the weighting are now
+`partial` — a derivation exists (FORMAL_MODEL §8.3: reachability + Menger
+cut-criticality from an attractor Ω) but is unimplemented and untested.
+What stays `open` is narrower than before: **deriving Ω itself** (§8.3.4
+reduces it to Open-Question 1, the eternal melody) and the **bridge** from
+structural cut-criticality to real-world agent fitness. The progress of
+this whole pass was pushing three fuzzy author-supplied quantities (cone,
+waists, weights) down to one concrete input (Ω) plus two named `open`
+gaps — not earning the claim outright.
 
 ---
 
@@ -313,13 +336,16 @@ for. Listed so the framework cannot quietly pretend it does.
 8. **Template extraction.** Anti-unification on typed DAGs is sketched
    (FORMAL_MODEL §5.5, §7.3) but not implemented. Without it, claim
    §6 stays `partial`.
-9. **The cone-selection mechanism.** Claim 9 says the deemed-possible
-   cone is carved by frontier agents' capability-weighted shared
-   simulation, but gives no procedure to determine the cone or the
-   weights from outside the agents. Whose simulation, aggregated how
-   (intersection vs. capability-weighted — the design chose weighted),
-   measured by what fitness? Until answered, claim 9 stays `open` and the
-   UI must not render it as `operational`.
+9. **The attractor Ω.** FORMAL_MODEL §8.3 now derives the cone, its
+   waists, and the weighting from an attractor Ω, so the open part is no
+   longer "the whole cone" but only Ω: which terminal node(s) the cone
+   funnels toward. §8.3.4 offers a candidate — Ω as the *dominant
+   convergence* (max meaning + in-degree) — but that reduces to Open-Q 1
+   (the eternal melody) in local form. Two further gaps: the closure is
+   unimplemented/untested, and the identification of structural
+   cut-criticality with real-world agent fitness is unproven. Until these
+   close, the derived quantities are `partial` and must not be rendered as
+   `operational`.
 
 The promotion of any open question to `partial` or `operational` is a
 measurable advance for the project. Demoting an `operational` claim to
