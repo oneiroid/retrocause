@@ -171,6 +171,47 @@ test("auto-candidate evaluation rejects post-states already seen in the run", ()
   assert.ok(result.reasons.includes("state already seen on this run"));
 });
 
+test("§7.9 influence_weight is surfaced as a score and a Pareto axis", () => {
+  // Two candidates identical on every other §7.9 axis (same delta shape,
+  // same expr length); only influence separates them.
+  const state = new Set(["at(red,woods)"]);
+  const mk = (name, fact) => ({
+    entry: { name, params: [{ name: "X", type: "entity" }], effects: () => ({ add: [fact] }) },
+    binding: { X: "red" },
+    expr: `${name}(red)`,
+  });
+  const stroll = mk("stroll", "went(red,path)");
+  const sprint = mk("sprint", "went(red,road)");
+
+  const evaluated = Phi.evaluateCandidate(stroll, {
+    state, influenceWeight: () => 0.5,
+  });
+  assert.equal(evaluated.influence, 0.5);
+  assert.ok(evaluated.scores.includes(0.5), "influence joins the Pareto vector");
+
+  const ranked = Phi.rankMeaningfulCandidates([sprint, stroll], {
+    state,
+    influenceWeight: (c) => (c.expr === "stroll(red)" ? 1 : 0),
+  });
+  assert.equal(ranked[0].candidate.expr, "stroll(red)");
+  assert.equal(ranked.length, 1, "dominated zero-influence twin drops off the front");
+});
+
+test("§7.9 influence_weight accepts a map keyed by expr and defaults to 0", () => {
+  const state = new Set(["at(red,woods)"]);
+  const candidate = {
+    entry: { name: "look", params: [{ name: "X", type: "entity" }], effects: () => ({ add: ["saw(red)"] }) },
+    binding: { X: "red" },
+    expr: "look(red)",
+  };
+  const withMap = Phi.evaluateCandidate(candidate, {
+    state, influenceWeight: { "look(red)": 2 },
+  });
+  assert.equal(withMap.influence, 2);
+  const withoutOption = Phi.evaluateCandidate(candidate, { state });
+  assert.equal(withoutOption.influence, 0);
+});
+
 test("rankMeaningfulCandidates prefers richer state deltas on the Pareto frontier", () => {
   const state = new Set(["has(red,basket)", "at(red,woods)"]);
   const weak = {

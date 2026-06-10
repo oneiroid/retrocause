@@ -174,10 +174,11 @@
       pathEntryNames = [],
       canonicalCandidate = null,
       relevanceFacts = [],
+      influenceWeight = null,
     } = options;
     const reasons = [];
     if (!candidate || !candidate.entry || !state) {
-      return { admissible: false, reasons: ["missing candidate or state"], scores: [], postState: null, delta: { add: [], remove: [] } };
+      return { admissible: false, reasons: ["missing candidate or state"], scores: [], postState: null, delta: { add: [], remove: [] }, influence: 0 };
     }
     if (seenExprs.has(candidate.expr)) reasons.push("duplicate expression on this branch");
 
@@ -204,6 +205,12 @@
       ? contrastVsCanonical(candidate, canonicalCandidate)
       : 0;
     const specificityScore = specificity(candidate);
+    // §7.9 influence_weight: cut-criticality of the candidate's
+    // transition toward Ω (§8.3.3, computed by cone.js — phi stays
+    // graph-free, so the caller supplies a function or an expr-keyed
+    // map). 0 = unknown or zero influence. A ranking term on the
+    // Pareto vector — it orders candidates, it never elects a path.
+    const influence = resolveInfluence(influenceWeight, candidate);
 
     const scores = [
       meaningfulDelta,
@@ -211,11 +218,13 @@
       relevance,
       contrast,
       specificityScore,
+      influence,
       -repeatedEntry,
       -candidate.expr.length / 1000,
     ];
 
     return {
+      influence,
       admissible: reasons.length === 0,
       reasons,
       scores,
@@ -223,6 +232,14 @@
       postStateKey: postState ? stateKey(postState) : "",
       delta,
     };
+  }
+
+  function resolveInfluence(influenceWeight, candidate) {
+    if (!influenceWeight) return 0;
+    const value = typeof influenceWeight === "function"
+      ? influenceWeight(candidate)
+      : influenceWeight[candidate.expr];
+    return Number.isFinite(value) ? value : 0;
   }
 
   function rankMeaningfulCandidates(candidates, options = {}) {

@@ -1030,7 +1030,9 @@ most capable agents on the most critical transitions; empirically they
 diverge (failed states are the standard counterexample). The divergence is
 itself usable data: the capability↔influence gap at a meta-level measures
 how well selection is working there. The influence quantity is `partial`
-(defined, unimplemented); the capability reading is `open` (INTUITIONS
+(defined; implemented in `cone.js` and surfaced as a Pareto axis in
+`phi.js`, tested on the internal seed DAGs — external validation
+outstanding); the capability reading is `open` (INTUITIONS
 Open-Question 9).
 
 ---
@@ -1175,8 +1177,11 @@ waists. **Both the set and the measure are derived from (L, scope, Ω)** —
 no author-supplied cone, no author-supplied weights.
 
 `partial` for the whole derivation: defined and computable (two
-reachabilities + a max-flow per candidate transition), but unimplemented
-and untested on real DAGs. Cut-criticality measures **influence**, not
+reachabilities + a max-flow per candidate transition). Implemented in
+`cone.js` (support/rim, level-cut width profile, waists, criticality,
+agent aggregation) and tested against the Red and Magi seed DAGs
+(`tests/cone.test.js`); still untested on *external* DAGs, which is what
+the §8/§9 empirical bet needs. Cut-criticality measures **influence**, not
 **capability**; equating them holds only in an idealized selection regime
 and is `open` — see §7.9, where the capability↔influence gap is itself
 treated as data.
@@ -1227,8 +1232,9 @@ The formalism does not yet provide:
    weighting from (L, scope, Ω) — they are no longer "given inputs". What
    remains missing is narrower: (a) **deriving Ω itself** (§8.3.4 gives a
    candidate — the dominant convergence — but it reduces to Open-Q 1, the
-   eternal melody); (b) an **implementation** of the closure and its
-   validation on external DAGs; (c) the **capability↔influence bridge**:
+   eternal melody); (b) **validation on external DAGs** of the closure's
+   implementation (`cone.js` covers the internal seeds only); (c) the
+   **capability↔influence bridge**:
    cut-criticality measures structural influence, and equating that with
    agent capability holds only in an idealized selection regime (§7.9 —
    the gap between the two is itself data). Separately, the cone's
