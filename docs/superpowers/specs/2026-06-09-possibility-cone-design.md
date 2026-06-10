@@ -15,7 +15,8 @@ cone and the weights was a fudge — the sand-castle problem (INTUITIONS §8). I
 is removed: FORMAL_MODEL **§8.3** derives, from `(L, scope, attractor Ω)`,
 the cone's support (bidirectional source↔Ω reachability), its waists (clean
 cuts at local width-minima, Menger; multi-node, not strictly one), and the
-capability weight (cut-criticality toward Ω, heavy-tailed by construction).
+influence weight (cut-criticality toward Ω, heavy-tailed when the cone is
+waisted — inherited from the topology bet, not free).
 Three fuzzy inputs collapse to one concrete one (Ω) plus two named `open`
 gaps: deriving Ω (§8.3.4 → Open-Q 1) and the structural-criticality↔agent-
 fitness bridge. Convergence is correspondingly relaxed (§8.1) to a waist set.
@@ -43,21 +44,27 @@ fitness bridge. Convergence is correspondingly relaxed (§8.1) to a waist set.
    the constraint is the agents' collective forward-simulation. This is what
    gives G non-trivial topology (vs. a structureless "all paths exist").
 
-4. **The cone is capability-weighted (heavy-tailed, founder-dominated).**
-   Selection principle (b): paths exist/persist weighted by the *fitness* of
-   the agents whose simulation sustains them. The weighting is not population-
-   level — a small number of extreme-fitness **atomic** agents carve most of
-   the frontier; a meta-agent (corporation ← nation ← culture) is constituted
-   by ~a dozen atomic agents converging on a shared ideal (worked example:
-   Anthropic). Weighting governs *existence/persistence in the cone*, NOT
-   election of one path (see 6).
+4. **The cone is influence-weighted; capability-weighted only ideally.**
+   *(Revised 2026-06-10; the original "capability-weighted, founder-dominated"
+   wording overclaimed.)* The derived weight of a transition is its
+   **cut-criticality** toward the attractor (FORMAL_MODEL §8.3.3) — structural
+   influence, heavy-tailed when the cone is waisted. An agent's weight
+   aggregates its transitions'; a meta-agent's (corporation ← nation ←
+   culture) aggregates its constituents'. **Influence ≠ capability**: equating
+   them presumes selection at each meta-level put the most capable agents on
+   the most critical transitions — ideal-world only; failed states refute it
+   empirically. The capability↔influence *gap* is itself a measurable of how
+   well selection works at that meta-level. Weighting governs
+   *existence/persistence in the cone*, NOT election of one path (see 6). The
+   founders/Anthropic anecdote was removed — decorative, no formal work.
 
 5. **Convergence = the waist of the cone.** A convergence is where the shared
-   cone narrows toward a node; divergence is where it widens. The DAG
-   "breathes": founders converge on an ideal (waist) → the meta-agent radiates
-   a wide forward cone (mouth) → narrows again at the next waist. This is a
-   *generative* account of §5/§8.1, which currently define convergence only
-   topologically (high in-degree).
+   cone narrows toward a node — or a small *set* of nodes, a width-k waist
+   (FORMAL_MODEL §8.1, §8.3.3; not strictly a single node); divergence is
+   where it widens. The DAG "breathes": a waist radiates a wider cone (mouth)
+   → narrows again at the next waist. This is a *generative* account of
+   §5/§8.1, which previously defined convergence only topologically (high
+   in-degree).
 
 6. **No materialization, no election.** Among the paths in the cone, none is
    privileged as "the actual one." Two gaps must stay separate:
@@ -100,8 +107,8 @@ fitness bridge. Convergence is correspondingly relaxed (§8.1) to a waist set.
 | node = world-state | `operational` | already true in engine |
 | transitions gated by `requires`, world = agency source | `partial` | §1.5 operational; "world as sigma" framing is new |
 | possibility cone (3) | `open` | no measurement; answers part of open-Q1 |
-| capability weighting / founder-domination (4) | `open` | heavy-tailed, in-principle falsifiable |
-| convergence = cone waist (5) | `open` | topological convergence stays `operational` |
+| influence weighting via cut-criticality (4) | `partial` | derived (§8.3.3); capability reading ideal-world only, `open` |
+| convergence = cone waist (5) | `partial` | derivable via Menger cuts (§8.3.3); topological convergence stays `operational` |
 | rim vs interior separation (6) | `operational` | sharpens §3, adds no unearned claim |
 | simulation gradient (7) | `open` | least-action analogy is suggestive, not measured |
 | retrocausal dominance + tension (8) | `open` | flagged as data per conflict rule |
@@ -113,7 +120,7 @@ fitness bridge. Convergence is correspondingly relaxed (§8.1) to a waist set.
   entry for the cone-selection mechanism.
 - **FORMAL_MODEL.md** — §3.4 (G's existing-path-set = cone, not all-compatible);
   §7.8 (realized frontier = `Phi(v) ∩ cone`; agency-source decomposition, no
-  decider); §7.9 (new **capability weight**, a weighting not an election);
+  decider); §7.9 (new **influence weight**, a weighting not an election);
   §8.1 (generative cone-waist account); §9 (cone mechanism `open` + the
   forward/backward tension flagged as data).
 
@@ -124,7 +131,7 @@ derivation being implementation-ready (and ideally on closing the two `open`
 gaps, or at least deciding Ω is a deliberate per-story input). When it does
 start, likely touch points:
 - engine `phi.js` — realized frontier `Phi ∩ cone` via §8.3.2 reachability;
-  capability weight via §8.3.3 cut-criticality (max-flow/min-cut), surfaced as
+  influence weight via §8.3.3 cut-criticality (max-flow/min-cut), surfaced as
   a §7.9 ranking term. Ω is the one input (a chosen destination), not the cone.
 - waist detection — clean cuts at width-minima (§8.3.3), generalizing any
   single-node convergence detection.
