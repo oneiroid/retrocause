@@ -445,7 +445,7 @@ mathematics.
 **Which paths are in G (`open`, INTUITIONS claim 9).** G's existing
 edge/path set is *not* "every combinatorially precondition-satisfying
 successor." It is the **deemed-possible cone**: the subset that frontier
-agents' collective, capability-weighted forward-simulation sustains. This
+agents' collective forward-simulation sustains. This
 supplies the content of "compatible with G's constraints" (INTUITIONS
 claim 3) — without it G would be a near-complete graph with no topology.
 The cone is **derived**, not supplied: given an attractor Ω, cone
@@ -1010,26 +1010,28 @@ materialized subDAGs are best compressed by an existing template
 extend the registry (reward novelty). The choice between these depends
 on whether the application wants conventional or surprising stories.
 
-**Capability weight (`open`, INTUITIONS claim 9, selection principle b).**
-A weighting on candidates by the *fitness* of the agents whose simulation
-sustains the path the candidate lies on:
+**Influence weight (`partial`, INTUITIONS claim 9).**
+A weighting on candidates by how load-bearing they are toward the
+attractor. Derived, not author-provided:
 
 ```
-capability_weight(c) = aggregate fitness of the frontier agents whose
-                       shared simulation keeps c inside the deemed-possible
-                       cone (§3.4)
+influence_weight(c) = cut-criticality of c's transition toward Ω (§8.3.3)
 ```
 
-The aggregate is **heavy-tailed**: a few extreme-fitness atomic agents
-dominate, and a meta-agent's weight derives from the ~dozen atomic agents
-constituting it. This is a weighting on *cone membership / persistence*,
-NOT a scalar that elects one path -- there is no materialization
-(INTUITIONS claim 9). The fitness measure and aggregation are `open`
-(INTUITIONS Open-Question 9). Capability weight is **derived**, not
-author-provided: it is the **cut-criticality** of a transition toward the
-attractor (§8.3.3) — heavy-tailed, concentrating on bridge-like
-transitions at narrow waists. What stays `open` is only the bridge from
-this structural quantity to real-world *agent fitness*.
+An agent's weight aggregates the criticality of the transitions attributed
+to it; a meta-agent's aggregates its constituents'. This is a weighting on
+*cone membership / persistence*, NOT a scalar that elects one path --
+there is no materialization (INTUITIONS claim 9).
+
+The quantity measures **influence** (structural necessity), not
+**capability** (fitness of the agent's simulation). The two coincide only
+in the idealized regime where selection at every meta-level has placed the
+most capable agents on the most critical transitions; empirically they
+diverge (failed states are the standard counterexample). The divergence is
+itself usable data: the capability↔influence gap at a meta-level measures
+how well selection is working there. The influence quantity is `partial`
+(defined, unimplemented); the capability reading is `open` (INTUITIONS
+Open-Question 9).
 
 ---
 
@@ -1095,11 +1097,11 @@ time-as-segment-counter, free will as the agency function at branch
 points — are tracked in `INTUITIONS.md` (claims 4 and 7) with their
 operational status. They live in the philosophical layer, not here.
 
-### 8.3 Derivation of the cone, its waists, and the capability weight (retrocausal closure)
+### 8.3 Derivation of the cone, its waists, and the influence weight (retrocausal closure)
 
 §3.4, §7.8, and §7.9 each deferred to "an author-supplied input": which
 successors lie in the deemed-possible cone, and how candidates are
-capability-weighted. Leaving these to the author is the formalism's
+weighted. Leaving these to the author is the formalism's
 weakest seam — it lets the analyst hand-place the structure (the
 sand-castle problem, INTUITIONS §8). This section removes the seam. Given
 the lexicon L, the scope, and a designated **attractor** Ω, the cone, its
@@ -1139,7 +1141,7 @@ cannot reach the attractor. The actual/counterfactual gap stays abolished
 *within* the support (no path is elected); this fixes only the support's
 extent.
 
-#### 8.3.3 Waists and the capability weight, via Menger  `partial`
+#### 8.3.3 Waists and the influence weight, via Menger  `partial`
 
 With Ω fixed, relax convergence (§8.1) to a **clean cut**: an antichain
 A ⊆ support that every source→Ω path crosses exactly once. By Menger's
@@ -1148,7 +1150,7 @@ vertex-disjoint source→Ω paths there — the cone's local **width**. A
 **waist** is a clean cut at a local minimum of the width profile; width 1
 recovers the single convergence node of §8.1, width k a k-node bottleneck.
 
-The **capability weight** of a transition e is its **cut-criticality** —
+The **influence weight** of a transition e is its **cut-criticality** —
 how much source→Ω connectivity is lost when e is removed:
 
 ```
@@ -1159,11 +1161,12 @@ criticality(e) = maxflow(source → Ω over support)
 A transition on every route to Ω through a width-1 waist is maximally
 critical: removing it makes that destination unreachable — the branch
 becomes impossible. A transition in a wide, redundant region is near zero.
-Criticality is **heavy-tailed**, concentrating on bridge-like transitions
-at narrow waists — exactly claim 9's founder-domination, now *derived*
-rather than asserted. An **agent's** weight is the aggregate criticality
-of the transitions attributed to it; a **meta-agent's** aggregates its
-constituting atomic agents'.
+Criticality concentrates on bridge-like transitions at narrow waists, so
+its distribution is heavy-tailed **iff the cone's width profile has
+pronounced bottlenecks** — the concentration is not free, it is inherited
+from claim 1's bet that G's topology is waisted rather than uniform. An
+**agent's** weight is the aggregate criticality of the transitions
+attributed to it; a **meta-agent's** aggregates its constituents'.
 
 The weighted cone is then `support` (8.3.2) carrying the criticality
 measure: the rim is zero-support, "thin" regions are low-criticality
@@ -1173,10 +1176,10 @@ no author-supplied cone, no author-supplied weights.
 
 `partial` for the whole derivation: defined and computable (two
 reachabilities + a max-flow per candidate transition), but unimplemented
-and untested on real DAGs. The identification of structural
-cut-criticality with real-world **agent fitness** (claim 9's Anthropic
-reading) is `open` — structural necessity is a proxy for capability, not
-proven equal to it.
+and untested on real DAGs. Cut-criticality measures **influence**, not
+**capability**; equating them holds only in an idealized selection regime
+and is `open` — see §7.9, where the capability↔influence gap is itself
+treated as data.
 
 #### 8.3.4 Deriving Ω itself  `open`
 
@@ -1225,9 +1228,11 @@ The formalism does not yet provide:
    remains missing is narrower: (a) **deriving Ω itself** (§8.3.4 gives a
    candidate — the dominant convergence — but it reduces to Open-Q 1, the
    eternal melody); (b) an **implementation** of the closure and its
-   validation on external DAGs; (c) the **bridge** from structural
-   cut-criticality to real-world agent fitness (claim 9's Anthropic
-   reading). Separately, the cone's downstream attractor (retrocausal
+   validation on external DAGs; (c) the **capability↔influence bridge**:
+   cut-criticality measures structural influence, and equating that with
+   agent capability holds only in an idealized selection regime (§7.9 —
+   the gap between the two is itself data). Separately, the cone's
+   downstream attractor (retrocausal
    dominance) pulls *against* forward preconditions (`requires`): the past
    constrains the future, the future constrains which pasts exist. When
    they conflict the model **records the conflict as data** (dramatic

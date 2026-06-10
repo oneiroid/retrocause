@@ -181,9 +181,10 @@ framework is agnostic between determinist and libertarian readings;
 both are compatible with G being static.
 
 *Claim 9 extends the agency function two ways: the* simulation gradient
-*(non-agent = bare least-action selection; agent = model-carrying) and
-the* capability weighting *(a few extreme-fitness atomic agents carve the
-cone). Both `open`.*
+*(non-agent = bare least-action selection; agent = model-carrying,
+`open`) and the* influence weighting *(an agent's weight = the
+cut-criticality of its transitions toward the attractor, FORMAL_MODEL
+§8.3.3, `partial`).*
 
 ---
 
@@ -239,18 +240,20 @@ toward `partial`.
 Five sub-claims, tagged separately so the formalism absorbs nothing it
 hasn't earned:
 
-- **The cone is capability-weighted, heavy-tailed `partial`.** Paths
-  persist weighted by the *fitness* of the agents whose simulation sustains
-  them — not at population level: a small number of extreme-fitness *atomic*
-  agents carve most of the frontier. A meta-agent (corporation ← nation ←
-  culture) is constituted by ~a dozen atomic agents converging on a shared
-  ideal (Anthropic is the worked case). This is now **derived**, not
-  asserted: the weight of a transition is its **cut-criticality** toward the
-  attractor (FORMAL_MODEL §8.3.3) — which is heavy-tailed exactly because
-  criticality concentrates on bridge-like transitions at narrow waists. The
-  weighting governs *existence/measure in the cone*, not election of a path.
-  What stays `open` is only the bridge from structural criticality to
-  real-world agent fitness.
+- **The cone is influence-weighted `partial`; capability-weighted only in
+  the ideal case `open`.** The derived weight of a transition is its
+  **cut-criticality** toward the attractor (FORMAL_MODEL §8.3.3) — how
+  load-bearing it is for reaching Ω. An agent's weight aggregates its
+  transitions'; a meta-agent's (corporation ← nation ← culture) aggregates
+  its constituents'. Criticality concentrates at narrow waists, so the
+  weighting is heavy-tailed *when the cone is waisted* — inherited from
+  claim 1's topology bet, not free. **Influence is not capability**:
+  equating them presumes selection at every meta-level has placed the most
+  capable agents on the most critical transitions — true at best in the
+  ideal case, plainly false in failed states. The capability↔influence
+  *gap* is itself a measurable: how well evolution is working at that
+  meta-level. The weighting governs *existence/measure in the cone*, not
+  election of a path.
 
 - **No materialization `operational` (sharpening of claim 3).** No path in
   the cone is privileged as "the actual one." Two gaps stay separate:
@@ -262,8 +265,8 @@ hasn't earned:
 - **Convergence is the waist of the cone `partial` (generative reading of
   claim 5).** A convergence is where the shared cone narrows toward a node
   — or a small *set* of nodes, a width-k waist (FORMAL_MODEL §8.1, §8.3.3);
-  divergence is where it widens. The DAG breathes: a founder-waist radiates
-  a meta-agent's forward cone, which narrows again at the next waist. A
+  divergence is where it widens. The DAG breathes: a waist radiates a
+  wider cone, which narrows again at the next waist. A
   waist is now *derivable* — a clean cut at a local minimum of the cone's
   width (Menger, §8.3.3). Claim 5's topological convergence stays
   `operational`; the generative account of *why* branches converge is
@@ -292,8 +295,10 @@ Status, honestly split. The cone, its waists, and the weighting are now
 `partial` — a derivation exists (FORMAL_MODEL §8.3: reachability + Menger
 cut-criticality from an attractor Ω) but is unimplemented and untested.
 What stays `open` is narrower than before: **deriving Ω itself** (§8.3.4
-reduces it to Open-Question 1, the eternal melody) and the **bridge** from
-structural cut-criticality to real-world agent fitness. The progress of
+reduces it to Open-Question 1, the eternal melody) and the
+**capability↔influence bridge** — cut-criticality measures structural
+influence, and equating that with agent capability holds only in an ideal
+selection regime. The progress of
 this whole pass was pushing three fuzzy author-supplied quantities (cone,
 waists, weights) down to one concrete input (Ω) plus two named `open`
 gaps — not earning the claim outright.
@@ -342,10 +347,11 @@ for. Listed so the framework cannot quietly pretend it does.
    funnels toward. §8.3.4 offers a candidate — Ω as the *dominant
    convergence* (max meaning + in-degree) — but that reduces to Open-Q 1
    (the eternal melody) in local form. Two further gaps: the closure is
-   unimplemented/untested, and the identification of structural
-   cut-criticality with real-world agent fitness is unproven. Until these
-   close, the derived quantities are `partial` and must not be rendered as
-   `operational`.
+   unimplemented/untested, and cut-criticality measures *influence* while
+   its identification with agent *capability* holds only in an ideal
+   selection regime (the gap between them — failed states — is itself
+   data). Until these close, the derived quantities are `partial` and must
+   not be rendered as `operational`.
 
 The promotion of any open question to `partial` or `operational` is a
 measurable advance for the project. Demoting an `operational` claim to
