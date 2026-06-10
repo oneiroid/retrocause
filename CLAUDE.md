@@ -34,9 +34,10 @@ either side. See `CONCEPT.md` §"What each layer commits to".
 |------|------|
 | `story_builder.html` / `.css` / `story_builder_app.js` | D3 UI shell |
 | `story_builder_engine.js` | Graph ops: add/remove nodes & edges, cycle checks, branch composition |
-| `phi.js` | Frontier enumerator (§7.8) + derivation closure (§1.7) + Pareto helpers (§7.9) |
+| `phi.js` | Frontier enumerator (§7.8) + derivation closure (§1.7) + Pareto helpers incl. influence axis (§7.9) |
+| `cone.js` | Possibility cone (§8.3): support/rim, width profile, waists, cut-criticality, agent influence, realized frontier |
 | `state_walker.js` | Topo-replay of canonical edges → per-node post-state |
-| `seeds.js` | Visual canonical DAGs (red, magi, …) with optional `action: {entry, binding}` |
+| `seeds.js` | Visual canonical DAGs (red, magi, …) with optional `action: {entry, binding}` and per-story `omega` (§8.3.1) |
 | `red_fixture.js`, `magi_fixture.js` | Typed L-lexicons (Appendices B / C) |
 | `tests/*.test.js` | `node --test` unit tests |
 

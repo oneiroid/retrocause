@@ -10,6 +10,12 @@
 // intentionally do not include premade counterfactual branches; branches
 // are created in the UI by users, Phi materialization, or auto-branching.
 //
+// Omega note: each seed designates `omega` — the attractor Ω of
+// FORMAL_MODEL.md §8.3.1, a non-empty list of terminal node ids. It is
+// the ONE author input the cone derivation needs; cone.js derives
+// support / waists / criticality from it. Deriving Ω automatically is
+// `open` (§8.3.4) — these values are deliberate per-story choices.
+//
 // Magi note: jim's chain branches from `magi_start` in parallel with
 // della's chain and rejoins at `magi_reveal`. The earlier sequential
 // pathEdges shape was a layout convenience that contradicted the
@@ -52,6 +58,7 @@
     title: "Little Red Riding Hood",
     summary: "Clean warning → temptation → disguise → rescue structure; good for early-detection branches.",
     root: "red_start",
+    omega: ["red_rescue"],
     nodes: [
       node("red_start", "Mother gives errand", "send(mother, red, basket)",
         "Red has a mission, a destination, and a warning to stay on the path.",
@@ -106,6 +113,7 @@
     title: "The Gift of the Magi",
     summary: "Parallel sacrifices and ironic convergence; excellent for invariant-love counterfactuals.",
     root: "magi_start",
+    omega: ["magi_love"],
     nodes: [
       node("magi_start", "Della lacks gift money", "lack(della, money)",
         "Love is constrained by scarcity; action must convert value into a gift.",
@@ -162,6 +170,7 @@
     title: "The Necklace",
     summary: "A tiny concealment choice creates years of cost; ideal for confession/rejoin analysis.",
     root: "neck_start",
+    omega: ["neck_fake"],
     nodes: [
       node("neck_start", "Mathilde borrows necklace", "borrow(mathilde, necklace)", "Status desire is externalized into a borrowed object.", "root", ["status", "borrowed-value"]),
       node("neck_ball", "She performs wealth at the ball", "attend(mathilde, ball)", "The desired identity is briefly achieved through display.", "canonical", ["mask", "aspiration"]),
@@ -180,6 +189,7 @@
     title: "The Tortoise and the Hare",
     summary: "Compact pride/persistence reversal with clear branch points around feedback and attention.",
     root: "tor_start",
+    omega: ["tor_finish"],
     nodes: [
       node("tor_start", "Hare mocks Tortoise", "mock(hare, tortoise)", "Status conflict motivates a measurable contest.", "root", ["pride"]),
       node("tor_race", "Race begins", "start(race)", "Both characters enter the same course with different capabilities.", "canonical", ["contest"]),

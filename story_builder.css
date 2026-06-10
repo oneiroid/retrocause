@@ -190,3 +190,17 @@ dialog::backdrop { background: rgba(2, 6, 23, .72); backdrop-filter: blur(3px); 
   .app-shell { grid-template-columns: 330px 1fr; }
   .panel-right { position: absolute; right: 0; top: 0; bottom: 0; width: 380px; transform: translateX(0); z-index: 9; }
 }
+
+/* Possibility cone overlay (FORMAL_MODEL §8.3). Rim nodes are dimmed,
+   never removed: possible-but-Ω-blind, not elected away. */
+.node.rim { opacity: .35; }
+.node.rim rect { stroke-dasharray: 5 4; }
+.node.waist rect { stroke: #f59e0b; stroke-width: 3; }
+.node.omega rect { stroke: #34d399; stroke-width: 3.5; }
+.link.rim { stroke-opacity: .18; stroke-dasharray: 2 5; }
+.cone-summary { font-size: 11px; line-height: 1.4; }
+.cone-summary.good { color: #a7f3d0; }
+.cone-summary.warn { color: #fde68a; }
+.cone-waists { display: flex; flex-direction: column; gap: 4px; margin-top: 6px; }
+.waist-row { font-size: 11px; color: #fcd34d; }
+.cone-conjecture { color: #fde68a; font-style: italic; }

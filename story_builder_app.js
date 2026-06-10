@@ -24,6 +24,10 @@
     ? window.RetrocauseSeeds.seeds
     : (typeof require !== "undefined" ? require("./seeds.js").seeds : {});
 
+  const Cone = (typeof window !== "undefined" && window.RetrocauseCone)
+    ? window.RetrocauseCone
+    : (typeof require !== "undefined" ? require("./cone.js") : null);
+
   // Bridge from seed-level nodes to typed fixtures (FORMAL_MODEL.md
   // Appendices B + C). Per seed: fixture global. Post-states are now
   // computed generically by state_walker.postStateAt — no hand-coded
@@ -52,7 +56,8 @@
     phiGroupByEntry: true,
     phiHideNoop: false,
     autoBranchRunning: false,
-    stopAutoBranch: false
+    stopAutoBranch: false,
+    cone: null
   };
 
   const el = Object.fromEntries(Array.from(document.querySelectorAll("[id]")).map((item) => [item.id, item]));
@@ -185,6 +190,13 @@
       state.stopAutoBranch = true;
       setAutoBranchStatus("Stopping after the current insert...");
     });
+    if (el.omegaSelect) el.omegaSelect.addEventListener("change", () => {
+      const value = el.omegaSelect.value;
+      state.graph.omega = value ? [value] : [];
+      renderAll();
+      toast(value ? `Ω set to ${getNode(value)?.label || value}` : "Ω cleared");
+    });
+    if (el.suggestOmegaBtn) el.suggestOmegaBtn.addEventListener("click", suggestOmega);
     el.saveNodeBtn.addEventListener("click", saveSelectedNodeEdits);
     el.buildPromptBtn.addEventListener("click", () => showPrompt(true));
     el.copyPromptBtn.addEventListener("click", copyPrompt);
@@ -203,9 +215,43 @@
 
   function renderAll() {
     state.ranks = topoRanks(state.graph);
+    state.cone = computeCone();
     renderGraph();
     renderPanels();
     el.jsonText.value = exportJson();
+  }
+
+  // §8.3: the cone overlay is *derived* from the one author input Ω
+  // (graph.omega, §8.3.1). Support/rim (§8.3.2), waists and edge
+  // criticality (§8.3.3) come from cone.js. Rim nodes are dimmed, never
+  // removed; criticality is a measure on transitions, never an election
+  // of "the real path".
+  function computeCone() {
+    const omega = (state.graph.omega || []).filter((id) => getNode(id));
+    if (!Cone || !omega.length) return null;
+    try {
+      const support = Cone.support(state.graph, omega);
+      const rim = Cone.rim(state.graph, omega);
+      if (!support.has(state.graph.root)) {
+        return { omega, support, rim, unreachable: true, waists: [], waistNodeIds: new Set(), edgeCrit: {}, width: 0, maxCrit: 0 };
+      }
+      const waists = Cone.waists(state.graph, omega);
+      const edgeCrit = Cone.edgeCriticalities(state.graph, omega);
+      return {
+        omega,
+        support,
+        rim,
+        unreachable: false,
+        waists,
+        waistNodeIds: new Set(waists.flatMap((w) => w.nodes)),
+        edgeCrit,
+        width: Cone.mengerWidth(state.graph, omega),
+        maxCrit: Math.max(0, ...Object.values(edgeCrit))
+      };
+    } catch (error) {
+      console.warn("Cone derivation failed", error);
+      return null;
+    }
   }
 
   function visibleNodeIds() {
@@ -264,7 +310,9 @@
       .merge(edgeSelection)
       .attr("stroke", (item) => EDGE_COLORS[item.type] || EDGE_COLORS.causes)
       .attr("stroke-dasharray", (item) => item.type === "rejoins" ? "7 5" : item.canonical ? null : "3 4")
-      .classed("dimmed", (item) => isDimmedEdge(item));
+      .classed("dimmed", (item) => isDimmedEdge(item))
+      .classed("rim", (item) => isRimEdge(item))
+      .style("stroke-width", (item) => edgeStrokeWidth(item));
 
     edgeLabelSelection = labelLayer.selectAll("text.edge-label").data(state.edges, (item) => item.id);
     edgeLabelSelection.exit().remove();
@@ -292,7 +340,10 @@
     nodeSelection = entering.merge(nodeSelection)
       .classed("selected", (item) => item.id === state.selectedId)
       .classed("search-hit", (item) => matchesSearch(item))
-      .classed("dimmed", (item) => state.search && !matchesSearch(item));
+      .classed("dimmed", (item) => state.search && !matchesSearch(item))
+      .classed("rim", (item) => !!state.cone && state.cone.rim.has(item.id))
+      .classed("waist", (item) => !!state.cone && state.cone.waistNodeIds.has(item.id))
+      .classed("omega", (item) => !!state.cone && state.cone.omega.includes(item.id));
 
     nodeSelection.select("rect")
       .attr("width", (item) => nodeWidth(item))
@@ -303,7 +354,7 @@
       .attr("stroke", (item) => NODE_COLORS[item.kind] || NODE_COLORS.note);
     nodeSelection.select(".node-label").text((item) => truncate(item.label, 33));
     nodeSelection.select(".node-state").text((item) => truncate(item.state, 42));
-    nodeSelection.select(".node-meta").text((item) => `${item.kind} · r${item.rank} · ${(item.tags || []).slice(0, 3).join(", ")}`);
+    nodeSelection.select(".node-meta").text((item) => `${item.kind} · r${item.rank}${coneMarker(item)} · ${(item.tags || []).slice(0, 3).join(", ")}`);
     nodeSelection.call(d3.drag()
       .on("start", (event, item) => {
         if (!event.active) simulation.alphaTarget(0.18).restart();
@@ -374,6 +425,7 @@
     el.branchCount.textContent = graph.nodes.filter((item) => item.kind === "branch").length;
     el.joinCount.textContent = graph.edges.filter((item) => item.type === "rejoins").length;
     renderSelects();
+    renderConePanel();
     renderSelected(selected);
     renderPhiPanel(selected);
     renderHeuristics(selected);
@@ -402,7 +454,14 @@
     }
 
     el.phiSummary.className = "phi-summary good";
-    el.phiSummary.textContent = `${candidates.length} candidate${candidates.length === 1 ? "" : "s"} across ${byEntry.size} L entr${byEntry.size === 1 ? "y" : "ies"} at this node.`;
+    let summaryText = `${candidates.length} candidate${candidates.length === 1 ? "" : "s"} across ${byEntry.size} L entr${byEntry.size === 1 ? "y" : "ies"} at this node.`;
+    if (data.rimNode) {
+      el.phiSummary.className = "phi-summary warn";
+      summaryText += " This node is on the cone's rim — no continuation reaches Ω (§8.3.2); showing the combinatorial Φ.";
+    } else if (data.droppedByCone > 0) {
+      summaryText += ` ${data.droppedByCone} rim-matching candidate${data.droppedByCone === 1 ? "" : "s"} dropped (Φ ∩ cone, §7.8).`;
+    }
+    el.phiSummary.textContent = summaryText;
 
     if (state.phiGroupByEntry) {
       const groups = Array.from(byEntry.entries()).sort((a, b) => b[1].length - a[1].length);
@@ -466,16 +525,33 @@
     if (!nodeState) {
       return { ok: false, message: "No typed state available at this node (no action annotation upstream)." };
     }
+    const combinatorial = Phi.phi({
+      lexicon: fx.lexicon,
+      scope: fx.scope,
+      state: nodeState,
+      downstreamExprs: new Set(),
+    });
+    // §7.8 realized frontier = Phi(v) ∩ cone. Conservative: only what
+    // is provably outside the cone is dropped (rim-matching candidates;
+    // everything, when v itself is on the rim).
+    let candidates = combinatorial;
+    let droppedByCone = 0;
+    let rimNode = false;
+    if (state.cone && Cone && !state.cone.unreachable) {
+      if (state.cone.rim.has(selected.id)) {
+        rimNode = true;
+      } else if (state.cone.support.has(selected.id)) {
+        candidates = Cone.realizedFrontier(state.graph, state.cone.omega, selected.id, combinatorial);
+        droppedByCone = combinatorial.length - candidates.length;
+      }
+    }
     return {
       ok: true,
       fixture: fx,
       nodeState,
-      candidates: Phi.phi({
-        lexicon: fx.lexicon,
-        scope: fx.scope,
-        state: nodeState,
-        downstreamExprs: new Set(),
-      }),
+      candidates,
+      droppedByCone,
+      rimNode,
     };
   }
 
@@ -651,6 +727,7 @@
       pathEntryNames,
       canonicalCandidate: canonicalCandidateAfter(source, candidatesWithEffects),
       relevanceFacts: relevanceFactsFor(source, nodeState),
+      influenceWeight: influenceWeightFor(source),
     });
 
     const chosen = [];
@@ -665,6 +742,24 @@
       if (chosen.length >= limit) break;
     }
     return chosen;
+  }
+
+  // §7.9 influence_weight for frontier candidates. Criticality is
+  // defined on existing transitions (§8.3.3), so a candidate inherits
+  // the weight of an already-materialized edge source→node whose expr
+  // matches it; otherwise 0 (unknown — a fresh transition's criticality
+  // exists only after it joins the raw graph).
+  function influenceWeightFor(source) {
+    if (!state.cone || state.cone.unreachable) return null;
+    const byExpr = new Map();
+    for (const edgeItem of state.graph.edges) {
+      if (edgeItem.from !== source.id) continue;
+      const crit = state.cone.edgeCrit[edgeItem.id];
+      if (crit === undefined) continue;
+      const expr = getNode(edgeItem.to)?.expr;
+      if (expr) byExpr.set(expr, Math.max(byExpr.get(expr) || 0, crit));
+    }
+    return (candidate) => byExpr.get(candidate.expr) || 0;
   }
 
   function entryPathTo(nodeId) {
@@ -759,6 +854,65 @@
     el.manualFrom.innerHTML = options;
     el.manualTo.innerHTML = `<option value="__new__">New node</option>${options}`;
     el.rejoinSelect.innerHTML = `<option value="">No rejoin yet</option>${targetOptions}`;
+    if (el.omegaSelect) {
+      const current = (state.graph.omega || [])[0] || "";
+      el.omegaSelect.innerHTML = `<option value="">No Ω designated</option>` + state.graph.nodes
+        .map((item) => `<option value="${escapeHtml(item.id)}" ${item.id === current ? "selected" : ""}>${escapeHtml(item.label)}</option>`)
+        .join("");
+    }
+  }
+
+  function renderConePanel() {
+    if (!el.coneSummary) return;
+    if (!state.cone) {
+      el.coneSummary.className = "muted cone-summary";
+      el.coneSummary.textContent = Cone
+        ? "Designate Ω (the story's destination) to derive support, rim, waists and influence (§8.3)."
+        : "cone.js did not load; cone overlay unavailable.";
+      if (el.waistList) el.waistList.innerHTML = "";
+      return;
+    }
+    const c = state.cone;
+    const omegaLabels = c.omega.map((id) => escapeHtml(getNode(id)?.label || id)).join(", ");
+    if (c.unreachable) {
+      el.coneSummary.className = "cone-summary warn";
+      el.coneSummary.innerHTML = `Ω (<strong>${omegaLabels}</strong>) is unreachable from the root — the cone is empty (§8.3.2).`;
+      if (el.waistList) el.waistList.innerHTML = "";
+      return;
+    }
+    el.coneSummary.className = "cone-summary good";
+    el.coneSummary.innerHTML = `Cone toward <strong>${omegaLabels}</strong>: `
+      + `${c.support.size} node${c.support.size === 1 ? "" : "s"} in support, `
+      + `${c.rim.size} on the rim, Menger width ${c.width}.`;
+    if (el.waistList) {
+      el.waistList.innerHTML = c.waists.length
+        ? c.waists.map((w) => `<div class="waist-row">waist @ phase ${w.level} · width ${w.width} · ${w.nodes.map((id) => escapeHtml(getNode(id)?.label || id)).join(", ")}</div>`).join("")
+        : `<div class="muted">No interior waists (§8.3.3): the width profile has no clean local minimum.</div>`;
+    }
+  }
+
+  // §8.3.4 (deriving Ω) is `open`: this is a labeled conjecture, shown
+  // as a suggestion only — it NEVER applies the choice. Proxy used:
+  // terminal node (no outgoing transitions) reachable from the root
+  // with the highest transition in-degree; the meaning half of the
+  // §8.3.4 candidate (§8.2 template participation) is unimplemented.
+  function suggestOmega() {
+    if (!Cone) return toast("cone.js did not load", true);
+    const transitions = Cone.transitionEdges(state.graph);
+    const outCount = new Map();
+    const inCount = new Map();
+    transitions.forEach((edgeItem) => {
+      outCount.set(edgeItem.from, (outCount.get(edgeItem.from) || 0) + 1);
+      inCount.set(edgeItem.to, (inCount.get(edgeItem.to) || 0) + 1);
+    });
+    const terminals = state.graph.nodes.filter((item) =>
+      !outCount.get(item.id) && Cone.support(state.graph, [item.id]).has(state.graph.root));
+    if (!terminals.length) return toast("No terminal node is reachable from the root", true);
+    const best = terminals.sort((a, b) => (inCount.get(b.id) || 0) - (inCount.get(a.id) || 0))[0];
+    if (el.coneSummary) {
+      el.coneSummary.innerHTML += ` <span class="cone-conjecture">Suggested Ω (conjectural — §8.3.4 is open): ${escapeHtml(best.label)}. Not applied; pick it above if you agree.</span>`;
+    }
+    toast(`Conjectural Ω suggestion: ${best.label} (§8.3.4 open — not applied)`);
   }
 
   function renderSelected(selected) {
@@ -773,10 +927,12 @@
     const actionLine = selected.action
       ? `<div class="action-row"><strong>Action:</strong> <code>${escapeHtml(selected.action.entry)}(${escapeHtml(Object.values(selected.action.binding || {}).join(", "))})</code></div>`
       : "";
+    const coneLine = coneStatusLine(selected);
     el.selectedNode.innerHTML = `
       <h3>${escapeHtml(selected.label)}</h3>
       <div class="expr">${escapeHtml(selected.expr)}</div>
       ${actionLine}
+      ${coneLine}
       <div>${escapeHtml(selected.state || "No state note.")}</div>
       ${selected.delta ? `<div><strong>Changed:</strong> ${escapeHtml(selected.delta)}</div>` : ""}
       ${selected.invariants ? `<div><strong>Invariant:</strong> ${escapeHtml(selected.invariants)}</div>` : ""}
@@ -787,7 +943,20 @@
 
   function edgeSummary(edgeItem) {
     const other = getNode(edgeItem.from === state.selectedId ? edgeItem.to : edgeItem.from);
-    return `<span style="color:${EDGE_COLORS[edgeItem.type] || EDGE_COLORS.causes}">${escapeHtml(edgeItem.type)}</span> ${escapeHtml(other?.label || "?")} ${edgeItem.label ? `· ${escapeHtml(edgeItem.label)}` : ""}`;
+    const crit = state.cone ? state.cone.edgeCrit[edgeItem.id] : undefined;
+    const influence = crit !== undefined ? ` · influence ${crit}` : "";
+    return `<span style="color:${EDGE_COLORS[edgeItem.type] || EDGE_COLORS.causes}">${escapeHtml(edgeItem.type)}</span> ${escapeHtml(other?.label || "?")} ${edgeItem.label ? `· ${escapeHtml(edgeItem.label)}` : ""}${influence}`;
+  }
+
+  function coneStatusLine(selected) {
+    if (!state.cone) return "";
+    let status;
+    if (state.cone.omega.includes(selected.id)) status = "Ω — the designated attractor (§8.3.1)";
+    else if (state.cone.waistNodeIds.has(selected.id)) status = "in support, on a waist (§8.3.3)";
+    else if (state.cone.support.has(selected.id)) status = "in support (§8.3.2)";
+    else if (state.cone.rim.has(selected.id)) status = "rim — precondition-satisfiable but cannot reach Ω (§8.3.2)";
+    else status = "outside the forward reach of the source";
+    return `<div><strong>Cone:</strong> ${escapeHtml(status)}</div>`;
   }
 
   function renderHeuristics(selected) {
@@ -891,6 +1060,7 @@
     if (selected.id === state.graph.root) return toast("The root node cannot be deleted", true);
     state.graph.nodes = state.graph.nodes.filter((item) => item.id !== selected.id);
     state.graph.edges = state.graph.edges.filter((item) => item.from !== selected.id && item.to !== selected.id);
+    if (Array.isArray(state.graph.omega)) state.graph.omega = state.graph.omega.filter((id) => id !== selected.id);
     state.selectedId = state.graph.root;
     renderAll();
     toast("Selected node deleted");
@@ -924,6 +1094,13 @@
       if (item.id !== graph.root && !graph.edges.some((edgeItem) => edgeItem.to === item.id)) warnings.push(`Orphan node: ${item.label}`);
       if (item.kind === "branch" && !graph.edges.some((edgeItem) => edgeItem.from === item.id && edgeItem.type === "rejoins")) warnings.push(`Open branch without rejoin: ${item.label}`);
     });
+    if (Array.isArray(graph.omega) && graph.omega.length && Cone) {
+      const missing = graph.omega.filter((id) => !ids.has(id));
+      missing.forEach((id) => warnings.push(`Ω node missing from graph: ${id}`));
+      if (!missing.length && !Cone.support(graph, graph.omega).has(graph.root)) {
+        warnings.push("Ω is unreachable from the root — the cone is empty (§8.3.2)");
+      }
+    }
     return { ok: errors.length === 0, errors: unique(errors), warnings: unique(warnings) };
   }
 
@@ -1219,6 +1396,30 @@
     if (item.kind === "invariant") return "#082f27";
     if (item.kind === "root") return "#0d2a3f";
     return "#0e2035";
+  }
+
+  function coneMarker(item) {
+    if (!state.cone) return "";
+    if (state.cone.omega.includes(item.id)) return " · Ω";
+    if (state.cone.waistNodeIds.has(item.id)) return " · waist";
+    if (state.cone.rim.has(item.id)) return " · rim";
+    return "";
+  }
+
+  // A transition edge with no criticality entry lies outside the
+  // support (§8.3.2). Annotation edges are orthogonal to the cone.
+  function isRimEdge(edgeItem) {
+    if (!state.cone || !Cone) return false;
+    if (!Cone.TRANSITION_EDGE_TYPES.includes(edgeItem.type)) return false;
+    return !(edgeItem.id in state.cone.edgeCrit);
+  }
+
+  // Influence (§8.3.3) is a measure, never an election: width scales
+  // with cut-criticality toward Ω, but no edge is hidden or picked.
+  function edgeStrokeWidth(edgeItem) {
+    if (!state.cone || !state.cone.maxCrit) return null;
+    const crit = state.cone.edgeCrit[edgeItem.id] || 0;
+    return `${2 + 2.5 * (crit / state.cone.maxCrit)}px`;
   }
 
   function isDimmedEdge(edgeItem) {

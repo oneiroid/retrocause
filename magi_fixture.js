@@ -16,6 +16,11 @@
 //   suggested by trying to run the rule. Whether to back-port this
 //   refinement to §1.7.3 is a spec decision deferred until n>=3 worked
 //   rules have been written.
+// - `agent` on an entry names the param that is the entry's agent
+//   argument (§7.8 attribution), metadata for influence aggregation
+//   (§8.3.3, cone.js). `reveal` deliberately has none: it is
+//   world-attributed ("the world" is an agency source with no sigma id
+//   in this lexicon), so its transitions stay unattributed.
 
 (function attachMagiFixture(root) {
 
@@ -36,6 +41,7 @@
 
   const realize = {
     name: "realize",
+    agent: "X",
     params: [
       { name: "X", type: "entity" },
       { name: "F", type: "state_atom" },
@@ -47,6 +53,7 @@
 
   const sacrifice = {
     name: "sacrifice",
+    agent: "X",
     params: [
       { name: "X", type: "entity" },
       { name: "Item", type: "entity" },
@@ -64,6 +71,7 @@
 
   const buy = {
     name: "buy",
+    agent: "X",
     params: [
       { name: "X", type: "entity" },
       { name: "Item", type: "entity" },
@@ -89,6 +97,7 @@
 
   const confess = {
     name: "confess",
+    agent: "X",
     params: [
       { name: "X", type: "entity" },
       { name: "Y", type: "entity" },
@@ -105,6 +114,7 @@
 
   const choose = {
     name: "choose",
+    agent: "X",
     params: [
       { name: "X", type: "entity" },
       { name: "Plan", type: "completion" },
@@ -116,6 +126,7 @@
 
   const recognize = {
     name: "recognize",
+    agent: "X",
     params: [
       { name: "X", type: "entity" },
       { name: "Z", type: "completion" },

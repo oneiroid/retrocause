@@ -10,6 +10,9 @@
 // - "flowers" is added to scope.props because the seed uses it in
 //   delay(red, flowers); §B.2 lists delay as signature-only and this
 //   addition is a faithful expansion.
+// - `agent` on an entry names the param that is the entry's agent
+//   argument (§7.8 attribution). Metadata for influence aggregation
+//   (§8.3.3, cone.js); never structural.
 
 (function attachRedFixture(root) {
 
@@ -32,6 +35,7 @@
 
   const give = {
     name: "give",
+    agent: "Giver",
     params: [
       { name: "Giver", type: "entity" },
       { name: "Receiver", type: "entity" },
@@ -51,6 +55,7 @@
 
   const move = {
     name: "move",
+    agent: "X",
     params: [
       { name: "X", type: "entity" },
       { name: "From", type: "place" },
@@ -69,6 +74,7 @@
 
   const learn_from = {
     name: "learn_from",
+    agent: "L",
     params: [
       { name: "L", type: "entity" },
       { name: "S", type: "entity" },
@@ -86,6 +92,7 @@
 
   const impersonate = {
     name: "impersonate",
+    agent: "X",
     params: [
       { name: "X", type: "entity" },
       { name: "Y", type: "entity" },
@@ -103,6 +110,7 @@
 
   const recognize = {
     name: "recognize",
+    agent: "X",
     params: [
       { name: "X", type: "entity" },
       { name: "Z", type: "completion" },
@@ -115,6 +123,7 @@
 
   const ask_help = {
     name: "ask_help",
+    agent: "Asker",
     params: [
       { name: "Asker", type: "entity" },
       { name: "Helper", type: "entity" },
@@ -129,6 +138,7 @@
 
   const rescue = {
     name: "rescue",
+    agent: "Rescuer",
     params: [
       { name: "Rescuer", type: "entity" },
       { name: "Victim", type: "entity" },
@@ -157,6 +167,7 @@
 
   const delay = {
     name: "delay",
+    agent: "X",
     params: [
       { name: "X", type: "entity" },
       { name: "Distractor", type: "entity" },
@@ -167,6 +178,7 @@
 
   const warn = {
     name: "warn",
+    agent: "Sender",
     params: [
       { name: "Sender", type: "entity" },
       { name: "Receiver", type: "entity" },

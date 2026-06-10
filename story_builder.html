@@ -87,6 +87,19 @@
       </section>
 
       <section class="panel-section">
+        <h2>Possibility cone (&Omega;)</h2>
+        <label>Attractor &Omega; — the story's destination (the one author input, §8.3.1)
+          <select id="omegaSelect"></select>
+        </label>
+        <div class="button-row">
+          <button id="suggestOmegaBtn" type="button" class="secondary"
+            title="Conjectural: §8.3.4 (deriving Ω) is open. Suggests the terminal node most paths arrive at; never applies it for you.">Suggest &Omega; (conjectural)</button>
+        </div>
+        <div id="coneSummary" class="muted cone-summary">Designate &Omega; to derive the cone.</div>
+        <div id="waistList" class="cone-waists"></div>
+      </section>
+
+      <section class="panel-section">
         <h2>Selected state</h2>
         <div id="selectedNode" class="selected-card muted">Select a node in the graph.</div>
         <details class="editor-details">
@@ -163,6 +176,7 @@
 
   <script src="story_builder_engine.js"></script>
   <script src="phi.js"></script>
+  <script src="cone.js"></script>
   <script src="red_fixture.js"></script>
   <script src="magi_fixture.js"></script>
   <script src="seeds.js"></script>
