@@ -1015,7 +1015,8 @@ A weighting on candidates by how load-bearing they are toward the
 attractor. Derived, not author-provided:
 
 ```
-influence_weight(c) = cut-criticality of c's transition toward Ω (§8.3.3)
+influence_weight(c) = cut-criticality (max-flow vitality) of c's transition
+                      toward Ω (§8.3.3)
 ```
 
 An agent's weight aggregates the criticality of the transitions attributed
@@ -1024,10 +1025,12 @@ to it; a meta-agent's aggregates its constituents'. This is a weighting on
 there is no materialization (INTUITIONS claim 9).
 
 The quantity measures **influence** (structural necessity), not
-**capability** (fitness of the agent's simulation). The two coincide only
-in the idealized regime where selection at every meta-level has placed the
-most capable agents on the most critical transitions; empirically they
-diverge (failed states are the standard counterexample). The divergence is
+**capability** (which §8.3.5 splits into epistemic *accuracy* and agentic
+*empowerment*). The two coincide only in the idealized regime where
+selection at every meta-level has placed the most capable agents on the most
+critical transitions; empirically they diverge (failed states are the
+standard counterexample), and the coupling is the selection gradient η of
+§8.3.5. The divergence is
 itself usable data: the capability↔influence gap at a meta-level measures
 how well selection is working there. The influence quantity is `partial`
 (defined; implemented in `cone.js` and surfaced as a Pareto axis in
@@ -1186,18 +1189,101 @@ the §8/§9 empirical bet needs. Cut-criticality measures **influence**, not
 and is `open` — see §7.9, where the capability↔influence gap is itself
 treated as data.
 
-#### 8.3.4 Deriving Ω itself  `open`
+**Standard name and caveats (2026-06-17 research pass; see
+`docs/superpowers/specs/2026-06-17-closing-open-gaps-research.md`).** This
+measure is **max-flow vitality** — the vitality family `V(x)=f(G)−f(G∖x)`
+with `f`=max-flow (Koschützki et al., "Centrality Indices," 2005), and an
+interdiction twin ("most vital edge"; Ratliff 1975, Wood 1993). It is
+*distinct* from flow-betweenness (flow *through* an edge vs. the *drop when
+removed*; Freeman–Borgatti–White 1991, Newman 2005); vitality, not
+betweenness, is the right primitive for throughput toward Ω (Borgatti 2005).
+Two caveats: (a) **marginal, not joint** — max-flow is submodular in the
+removed set, so two parallel edges can each show ~0 vitality yet be jointly
+critical; supplement with multi-edge interdiction or Shapley-value centrality
+where redundancy matters (the gap closes in the bottlenecked DAGs where waists
+exist). (b) **Computation** — `cone.js` currently does the naive
+`base − maxflow(\e)` per transition edge; since every non-saturated edge has
+vitality 0 (one max-flow reveals them) and all-edge vitality needs only
+`2(n−1)` max-flows (Ausiello et al. 2019), `edgeCriticalities` can later be
+made far cheaper.
 
-The chain bottoms out at Ω. A candidate makes even Ω structural: take Ω as
-the **dominant convergence** of R — the terminal-ward node(s) of maximal
-meaning (§8.2, most template participations) and in-degree, i.e. the
-deepest waist the raw cone already funnels toward. This closes the loop as
-a fixed point (the cone needs Ω; Ω is a waist of the cone) and is
-well-founded if seeded from raw in-degree / meaning maxima and iterated to
-stability. It is `open`: it presumes R already *has* a dominant attractor,
-which is the eternal-melody question (INTUITIONS Open-Q 1) in local form.
-Until that is resolved, Ω is the single legitimate author input — a
-destination, not a hand-placed structure.
+#### 8.3.4 Ω is a boundary condition, not a derived attractor  `open`
+
+**Retraction (2026-06-17 research pass).** An earlier version of this
+section proposed deriving Ω as the "dominant convergence" of R via a
+max-entropy-walk fixed point. That is withdrawn, for three reasons (see
+`docs/superpowers/specs/2026-06-17-closing-open-gaps-research.md`):
+(i) "uniform over enabled edges" is *not* the maximum-entropy random walk —
+the MERW is Perron-weighted and non-uniform (Burda et al. 2009);
+(ii) on a DAG, argmax-absorption is a `1/outdeg`-weighted path-count mode,
+which is reparametrization-sensitive — splitting a node changes Ω,
+reintroducing the sand-castle problem (INTUITIONS §8); (iii) decisively,
+**a DAG cannot host an attractor** — attractors require recurrence and
+corrective feedback, and a forward absorbing walk has neither, so its
+terminus is no attractor and the word was borrowed illegitimately.
+
+**Correct status.** Ω is a **boundary condition**, exactly as the endpoint
+of a least-action trajectory is: Hamilton's principle fixes *both* endpoints
+and is silent on which obtains; the path is derived *between* fixed ends.
+Endpoints are derived only under genuinely dissipative dynamics, which a DAG
+walk is not. Narrative planning agrees from the other side (branching story
+graphs / story-MDPs specify the destination as a goal input). So Ω joins
+`initial_state` and L as legitimate problem-statement input — not a fudge.
+`seeds.js` already designates `omega` per story (§8.3.1); that authored-input
+design is now retroactively justified. *Why G has these termini* is Open-Q 1
+(the eternal melody) and is not answerable by any graph computation here.
+
+**Descriptive author-aid (not the attractor).** A "where storylines
+structurally converge" suggestion may still be computed — the unweighted
+source→sink **path-count mode** by one topological-order DP — to help an
+author *choose* Ω. It must be reported with the full hitting distribution and
+its entropy (so a flat plurality is visibly not a convergence), and must
+never be presented as deriving Ω. `open`.
+
+#### 8.3.5 Influence is not capability: three measures and the coupling η  `open`
+
+Influence (§8.3.3) is *realized structural* load toward Ω. It is not an
+agent's **capability**, which splits into two orthogonal measures:
+
+- **Epistemic capability = accuracy.** How well an agent's private simulated
+  cone matches the realized one: `−KL(realized ‖ predicted)`, equivalently
+  the log-score / the Free-Energy *accuracy* term (Good 1952;
+  Gneiting–Raftery 2007; Friston 2010). Does the agent *know* the cone?
+- **Agentic capability = empowerment.** The channel capacity from an agent's
+  actions to its future states, `max_{p(a)} I(A_t; S_{t+n})`
+  (Klyubin–Polani–Nehaniv 2005) — *potential* control, task-independent.
+  Orthogonal to accuracy: a perfect predictor of an uncontrollable future has
+  high accuracy and zero empowerment.
+
+Causal chain: accuracy → (locate the waists) → empowerment → (act at them) →
+influence — **but only as far as a selection regime allows**. Write
+
+```
+η = standardized covariance of capability and influence across agents
+    at a meta-level     (a selection gradient, NOT the additive Price term)
+```
+
+η→1 is meritocratic/inclusive, η→0 extractive/failed. It is a *selection
+gradient* / Robertson–Price-style normalized covariance (Lande–Arnold 1983);
+calling it the additive Price selection term is wrong — normalizing destroys
+the multilevel-partition identity. η is a **novel scalarization** of a
+mechanism shared by inclusive-vs-extractive institutions (Acemoglu–Robinson
+2012), open-vs-limited-access orders (North–Wallis–Weingast 2009),
+talent-misallocation wedges (Hsieh et al. 2019), and the Peter-Principle ABM
+(Pluchino et al. 2010) — present it as our contribution, not a renamed
+coefficient. It is **institution-dependent, not universally low**: Dal Bó et
+al. 2017 measured η>0 (politicians more competent than the population) in
+Sweden. The capability−influence **gap** is therefore the usable diagnostic —
+how well selection works at a meta-level — the operational form of the
+project's "failed states" intuition.
+
+Three holes, all `open`: (i) capability ≠ **alignment** — a capable agent can
+aim at its own ends (agency cost; rent-seeking), so η should range over
+*goal-aligned* capability and is meaningful only once *whose* Ω is fixed;
+(ii) **reverse causation** — holding influence raises *measured* capability,
+so an observed η>0 may be endogenous; (iii) capability has no
+independent, DAG-internal measure here yet — accuracy/empowerment are defined
+but not computable from the current seeds, so η is a framework, not a number.
 
 ---
 
