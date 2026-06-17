@@ -253,7 +253,9 @@ hasn't earned:
   ideal case, plainly false in failed states. The capability↔influence
   *gap* is itself a measurable: how well evolution is working at that
   meta-level. The weighting governs *existence/measure in the cone*, not
-  election of a path.
+  election of a path. (Capability itself splits into epistemic *accuracy*
+  and agentic *empowerment*, and the coupling η is a selection gradient —
+  FORMAL_MODEL §8.3.5.)
 
 - **No materialization `operational` (sharpening of claim 3).** No path in
   the cone is privileged as "the actual one." Two gaps stay separate:
@@ -293,15 +295,18 @@ hasn't earned:
 
 Status, honestly split. The cone, its waists, and the weighting are now
 `partial` — a derivation exists (FORMAL_MODEL §8.3: reachability + Menger
-cut-criticality from an attractor Ω) but is unimplemented and untested.
-What stays `open` is narrower than before: **deriving Ω itself** (§8.3.4
-reduces it to Open-Question 1, the eternal melody) and the
-**capability↔influence bridge** — cut-criticality measures structural
-influence, and equating that with agent capability holds only in an ideal
-selection regime. The progress of
-this whole pass was pushing three fuzzy author-supplied quantities (cone,
-waists, weights) down to one concrete input (Ω) plus two named `open`
-gaps — not earning the claim outright.
+cut-criticality from an attractor Ω) and is implemented in `cone.js`, tested
+on the internal seeds; external validation is still pending. What stays
+`open` narrowed again in the 2026-06-17 research pass: **Ω is a boundary
+condition, not derivable** — a DAG cannot host an attractor, so the earlier
+"derive Ω" candidate is retracted (FORMAL_MODEL §8.3.4); Ω sits beside
+`initial_state` as problem-statement input, and *why G has these termini* is
+just Open-Question 1. The remaining genuine gap is the **capability↔influence
+bridge**: cut-criticality is structural *influence*; *capability* (accuracy +
+empowerment) has no independent DAG-internal measure yet, and the coupling η
+is institution-dependent (§8.3.5). The pass pushed three fuzzy author-supplied
+quantities (cone, waists, weights) down to one boundary condition (Ω) plus the
+capability gap — not earning the claim outright.
 
 ---
 
@@ -341,17 +346,21 @@ for. Listed so the framework cannot quietly pretend it does.
 8. **Template extraction.** Anti-unification on typed DAGs is sketched
    (FORMAL_MODEL §5.5, §7.3) but not implemented. Without it, claim
    §6 stays `partial`.
-9. **The attractor Ω.** FORMAL_MODEL §8.3 now derives the cone, its
-   waists, and the weighting from an attractor Ω, so the open part is no
-   longer "the whole cone" but only Ω: which terminal node(s) the cone
-   funnels toward. §8.3.4 offers a candidate — Ω as the *dominant
-   convergence* (max meaning + in-degree) — but that reduces to Open-Q 1
-   (the eternal melody) in local form. Two further gaps: the closure is
-   unimplemented/untested, and cut-criticality measures *influence* while
-   its identification with agent *capability* holds only in an ideal
-   selection regime (the gap between them — failed states — is itself
-   data). Until these close, the derived quantities are `partial` and must
-   not be rendered as `operational`.
+9. **The capability↔influence bridge** (Ω is no longer the open part).
+   FORMAL_MODEL §8.3 derives the cone, waists, and influence weight *given*
+   an attractor Ω; the closure is implemented (`cone.js`) and tested on
+   internal seeds. Ω itself is **not** derivable here — a DAG cannot host an
+   attractor (no recurrence/feedback), so the earlier "dominant convergence"
+   derivation is retracted (§8.3.4); Ω is a boundary condition like
+   `initial_state`, and *why G has these termini* is Open-Q 1 in local form.
+   The live gap is instead **capability**: influence (max-flow vitality) is
+   structural, while capability splits into *accuracy* (`−KL(realized‖
+   predicted)`) and *empowerment* (channel capacity to the future), neither
+   yet measurable from a DAG; the coupling η (a selection gradient) is
+   institution-dependent, not universally low (Dal Bó et al. 2017 measured
+   η>0), so its *gap* is the diagnostic (§8.3.5). External validation of the
+   whole closure is still pending; until then the derived quantities stay
+   `partial` and must not be rendered `operational`.
 
 The promotion of any open question to `partial` or `operational` is a
 measurable advance for the project. Demoting an `operational` claim to
