@@ -71,3 +71,23 @@ test('§8.3.6 structural alignment correlates B and G against vitality', () => {
   // G=[a:0,b:0.5,s:0], V=[a:1,b:1,s:2] → corr = -0.5
   close(A.align_locality, -0.5);
 });
+
+test('§8.3.6 groupByAgent sums a node metric by the acting agent (overlay)', () => {
+  const g = branchy();
+  const B = cm.branchingCapacity(g);     // a:0, b:1, others 0 / unattributed
+  const byAgent = cm.groupByAgent(B, g, LEX);
+  assert.deepEqual(byAgent, { alice: 0, bob: 1 }); // s/t1/t2/r have no action
+});
+
+test('§8.3.6 bare linear seeds are correctly degenerate (B=0, G=0, alignment null)', () => {
+  for (const name of ['red', 'magi']) {
+    const seed = seeds[name];
+    const B = cm.branchingCapacity(seed);
+    for (const v of Object.values(B)) close(v, 0);          // no agentic control on a determined/reconverging chain
+    const G = cm.localityGap(seed, seed.omega);
+    for (const v of Object.values(G)) close(v, 0);          // no rim → nothing pruned
+    const A = cm.structuralAlignment(seed, seed.omega);
+    assert.equal(A.align_branch, null);                     // B has zero variance
+    assert.equal(A.align_locality, null);                   // G has zero variance
+  }
+});

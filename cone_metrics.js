@@ -127,7 +127,21 @@
     };
   }
 
-  const api = { reachableSinks, branchingCapacity, localityGap, nodeVitality, structuralAlignment };
+  // §8.3.6 agent overlay (metadata, NOT structure): sum a node-keyed
+  // metric by the agent acting at each node (cone.nodeAgent, §8.3.3).
+  // The institutional/meritocracy reading of η lives here and only here;
+  // self-lessly it is unavailable. Mirrors cone.agentInfluence.
+  function groupByAgent(nodeValues, graph, lexicon) {
+    const out = {};
+    for (const [id, value] of Object.entries(nodeValues || {})) {
+      const agent = Cone.nodeAgent(graph, lexicon, id);
+      if (!agent) continue;
+      out[agent] = (out[agent] || 0) + value;
+    }
+    return out;
+  }
+
+  const api = { reachableSinks, branchingCapacity, localityGap, nodeVitality, structuralAlignment, groupByAgent };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   root.RetrocauseConeMetrics = api;
 })(typeof window !== "undefined" ? window : globalThis);
