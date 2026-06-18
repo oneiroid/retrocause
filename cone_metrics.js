@@ -80,7 +80,54 @@
     return out;
   }
 
-  const api = { reachableSinks, branchingCapacity, localityGap };
+  // §8.3.6 node vitality = Σ cut-criticality of a node's transition
+  // out-edges (cone.edgeCriticalities; rim/out-of-support edges = 0).
+  function nodeVitality(graph, omega) {
+    const crit = Cone.edgeCriticalities(graph, omega);
+    const inCone = Cone.support(graph, omega);
+    const out = {};
+    for (const e of Cone.transitionEdges(graph)) {
+      if (!inCone.has(e.from)) continue;
+      out[e.from] = (out[e.from] || 0) + (crit[e.id] || 0);
+    }
+    return out;
+  }
+
+  // Pearson correlation; null when n < 2 or either series is constant.
+  function pearson(xs, ys) {
+    const n = xs.length;
+    if (n < 2) return null;
+    const mean = (a) => a.reduce((s, v) => s + v, 0) / a.length;
+    const mx = mean(xs), my = mean(ys);
+    let sxx = 0, syy = 0, sxy = 0;
+    for (let i = 0; i < n; i++) {
+      const dx = xs[i] - mx, dy = ys[i] - my;
+      sxx += dx * dx; syy += dy * dy; sxy += dx * dy;
+    }
+    if (sxx === 0 || syy === 0) return null;
+    return sxy / Math.sqrt(sxx * syy);
+  }
+
+  // §8.3.6 structural alignment (self-less η): across support nodes that
+  // have a next event (N), correlate branching capacity and locality gap
+  // against node vitality. null when undefined (small-n / zero variance);
+  // illustrative, not statistical, at seed scale.
+  function structuralAlignment(graph, omega) {
+    const B = branchingCapacity(graph);
+    const G = localityGap(graph, omega);
+    const V = nodeVitality(graph, omega);
+    const nodes = Object.keys(V).sort(); // V is keyed exactly by N
+    const perNode = {};
+    for (const id of nodes) perNode[id] = { B: B[id] || 0, G: G[id] || 0, V: V[id] };
+    return {
+      align_branch: pearson(nodes.map((id) => perNode[id].B), nodes.map((id) => perNode[id].V)),
+      align_locality: pearson(nodes.map((id) => perNode[id].G), nodes.map((id) => perNode[id].V)),
+      nodes,
+      perNode,
+    };
+  }
+
+  const api = { reachableSinks, branchingCapacity, localityGap, nodeVitality, structuralAlignment };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   root.RetrocauseConeMetrics = api;
 })(typeof window !== "undefined" ? window : globalThis);

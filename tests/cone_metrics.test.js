@@ -53,3 +53,21 @@ test('§8.3.6 locality gap: rim-bound next events / all next events', () => {
   assert.equal('t2' in G, false);
   assert.equal('r' in G, false);  // rim node, not in support
 });
+
+test('§8.3.6 node vitality sums out-edge criticality over the support', () => {
+  const g = branchy();
+  const V = cm.nodeVitality(g, g.omega);
+  // disjoint paths s-a-t1 and s-b-t2 → each support edge criticality 1;
+  // b→r is rim (criticality 0). V(s)=1+1, V(a)=1, V(b)=1+0.
+  close(V.s, 2); close(V.a, 1); close(V.b, 1);
+});
+
+test('§8.3.6 structural alignment correlates B and G against vitality', () => {
+  const g = branchy();
+  const A = cm.structuralAlignment(g, g.omega);
+  assert.deepEqual(A.nodes, ['a', 'b', 's']); // N sorted
+  // B=[a:0,b:1,s:1], V=[a:1,b:1,s:2]  → corr = +0.5
+  close(A.align_branch, 0.5);
+  // G=[a:0,b:0.5,s:0], V=[a:1,b:1,s:2] → corr = -0.5
+  close(A.align_locality, -0.5);
+});
