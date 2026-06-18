@@ -42,3 +42,14 @@ test('§8.3.6 branching capacity: forks to distinct sink-sets give bits', () => 
   close(B.a, 0);   // single successor
   close(B.t1, 0); close(B.t2, 0); close(B.r, 0); // sinks
 });
+
+test('§8.3.6 locality gap: rim-bound next events / all next events', () => {
+  const g = branchy();
+  const G = cm.localityGap(g, g.omega);
+  close(G.s, 0);     // both successors in support
+  close(G.a, 0);     // single successor in support
+  close(G.b, 0.5);   // b→t2 (support) + b→r (rim) → 1/2
+  assert.equal('t1' in G, false); // sink: no next event, omitted
+  assert.equal('t2' in G, false);
+  assert.equal('r' in G, false);  // rim node, not in support
+});

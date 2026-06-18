@@ -60,7 +60,27 @@
     return out;
   }
 
-  const api = { reachableSinks, branchingCapacity };
+  // §8.3.6 locality gap (self-less accuracy / non-locality of the
+  // next-event constraint): the fraction of a support node's locally-
+  // possible next events that knowing Ω forbids. Operationalizes the
+  // project thesis "knowing the destination constrains the routes" as a
+  // per-node number, at the 1-step next-event grain. Reuses cone.rim.
+  function localityGap(graph, omega) {
+    const inCone = Cone.support(graph, omega);
+    const rimSet = Cone.rim(graph, omega);
+    const outdeg = new Map();
+    const rimOut = new Map();
+    for (const e of Cone.transitionEdges(graph)) {
+      if (!inCone.has(e.from)) continue;          // only support nodes have a constrained next event
+      outdeg.set(e.from, (outdeg.get(e.from) || 0) + 1);
+      if (rimSet.has(e.to)) rimOut.set(e.from, (rimOut.get(e.from) || 0) + 1);
+    }
+    const out = {};
+    for (const [id, deg] of outdeg) out[id] = (rimOut.get(id) || 0) / deg;
+    return out;
+  }
+
+  const api = { reachableSinks, branchingCapacity, localityGap };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   root.RetrocauseConeMetrics = api;
 })(typeof window !== "undefined" ? window : globalThis);
