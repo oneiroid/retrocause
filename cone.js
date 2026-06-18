@@ -237,6 +237,19 @@
     return out;
   }
 
+  // §8.3.3 attribution: the agent that acts at a node = the entry's
+  // agent argument bound by the node's `action` (§7.8). Attribution is
+  // metadata, never structure. Shared by agentInfluence and the
+  // self-less overlay groupByAgent (cone_metrics.js, §8.3.6).
+  function nodeAgent(graph, lexicon, nodeId) {
+    const node = (graph.nodes || []).find((n) => n.id === nodeId);
+    const action = node && node.action;
+    if (!action) return null;
+    const entry = (lexicon || []).find((e) => e.name === action.entry);
+    if (!entry || !entry.agent) return null;
+    return (action.binding || {})[entry.agent] || null;
+  }
+
   // §8.3.3 agent weight = aggregate criticality of the transitions
   // attributed to the agent. Attribution is the entry's agent argument
   // (§7.8): an edge's transition is its target node's `action`, the
@@ -245,16 +258,11 @@
   // world-attributed `reveal`) stay unattributed — attribution is
   // metadata, never structure.
   function agentInfluence(graph, omega, lexicon) {
-    const entryByName = new Map((lexicon || []).map((e) => [e.name, e]));
-    const nodeById = new Map((graph.nodes || []).map((n) => [n.id, n]));
     const crit = edgeCriticalities(graph, omega);
     const weights = {};
     for (const e of transitionEdges(graph)) {
       if (!(e.id in crit)) continue;
-      const action = (nodeById.get(e.to) || {}).action;
-      if (!action) continue;
-      const entry = entryByName.get(action.entry);
-      const agent = entry && entry.agent ? (action.binding || {})[entry.agent] : null;
+      const agent = nodeAgent(graph, lexicon, e.to);
       if (!agent) continue;
       weights[agent] = (weights[agent] || 0) + crit[e.id];
     }
@@ -293,7 +301,7 @@
     TRANSITION_EDGE_TYPES, transitionEdges, support, rim,
     widthProfile, waists,
     maxflow, mengerWidth, criticality, edgeCriticalities,
-    agentInfluence, metaAgentInfluence, realizedFrontier,
+    agentInfluence, metaAgentInfluence, realizedFrontier, nodeAgent,
   };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   root.RetrocauseCone = api;

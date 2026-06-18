@@ -188,6 +188,16 @@ test('meta-agent influence aggregates its constituents', () => {
     { couple: 4 });
 });
 
+// --- §8.3.3 nodeAgent: who acts at a node (attribution helper) ----------
+
+test('nodeAgent returns the acting agent or null', () => {
+  const { lexicon: redLex } = require('../red_fixture');
+  assert.equal(cone.nodeAgent(seeds.red, redLex, 'red_wolf'), 'wolf');
+  assert.equal(cone.nodeAgent(seeds.red, redLex, 'red_grandma'), 'wolf');
+  assert.equal(cone.nodeAgent(seeds.red, redLex, 'red_recognition'), null); // no action
+  assert.equal(cone.nodeAgent(seeds.red, redLex, 'nope'), null);            // no such node
+});
+
 // --- §7.8 realized frontier = Phi(v) ∩ cone -----------------------------
 
 test('realized frontier drops candidates that match rim nodes, keeps support and novel ones', () => {
