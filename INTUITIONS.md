@@ -256,6 +256,14 @@ hasn't earned:
   election of a path. (Capability itself splits into epistemic *accuracy*
   and agentic *empowerment*, and the coupling η is a selection gradient —
   FORMAL_MODEL §8.3.5.)
+  **Self-less recast (2026-06-18, FORMAL_MODEL §8.3.6):** these capability
+  measures are now derived on *structural loci* — branching capacity `B(v)`
+  (self-less empowerment), locality gap `G(v)` (the local slope of *this*
+  simulation gradient), and structural alignment (self-less η) — with agents
+  surviving only as a metadata overlay. This is the simulation gradient's own
+  base case (non-agent = bare least-action), so it is no conflict; but it
+  *inverts the primacy* of the agent-first phrasing above, recorded here as data
+  per the CLAUDE.md conflict rule, not silently rewritten.
 
 - **No materialization `operational` (sharpening of claim 3).** No path in
   the cone is privileged as "the actual one." Two gaps stay separate:
@@ -361,6 +369,12 @@ for. Listed so the framework cannot quietly pretend it does.
    η>0), so its *gap* is the diagnostic (§8.3.5). External validation of the
    whole closure is still pending; until then the derived quantities stay
    `partial` and must not be rendered `operational`.
+   **Update (2026-06-18):** capability now has self-less, measure-free,
+   DAG-internal proxies (`cone_metrics.js`, §8.3.6): branching capacity, locality
+   gap, structural alignment. The independent-measurability hole moves to
+   `partial`; capability ≠ alignment and reverse causation stay `open`. η as a
+   self-less *alignment* is a number on widened cones; η as an institutional
+   selection gradient remains an agent-overlay reading.
 
 The promotion of any open question to `partial` or `operational` is a
 measurable advance for the project. Demoting an `operational` claim to

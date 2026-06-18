@@ -1285,6 +1285,59 @@ so an observed η>0 may be endogenous; (iii) capability has no
 independent, DAG-internal measure here yet — accuracy/empowerment are defined
 but not computable from the current seeds, so η is a framework, not a number.
 
+**Self-less recast (2026-06-18; see
+`docs/superpowers/specs/2026-06-18-self-less-cone-metrics-design.md` and
+§8.3.6).** The three measures above are phrased as *agent* properties. They are
+now derived **self-lessly on structural loci**, with agents surviving only as an
+optional metadata overlay — consistent with this model's stance that attribution
+is metadata, not structure, and with INTUITIONS claim 9's *simulation gradient*
+(the non-agent case is the base; an agent adds a model on top). **Data-flag (per
+the CLAUDE.md conflict rule):** this *inverts the primacy* of §8.3.5's
+agent-first phrasing (structural loci primary, agents derived) without deleting
+the agentic reading — it returns as the overlay. Hole (iii) "no independent
+DAG-internal measure" thereby moves from `open` to `partial`; holes (i)
+capability ≠ alignment and (ii) reverse causation remain `open`.
+
+#### 8.3.6 Self-less reformulation: branching, locality, alignment  `partial`
+
+The capability apparatus of §8.3.5, recast onto structural loci, measure-free
+(no probability measure over paths — avoids §8.3.4's reparametrization trap).
+Implemented in `cone_metrics.js`, tested on a synthetic branchy DAG and asserted
+degenerate on the bare seeds.
+
+- **Branching capacity `B(v)` (self-less empowerment).** Over the raw graph R,
+  off-Ω: `B(v) = log₂(# distinct downstream sink-sets across v's successors)`.
+  Out-degree ≤ 1, or successors that reconverge to the same sinks → 0. It
+  measures how much the next-event selection *at v* diversifies the reachable
+  future, with no chooser named. Off-Ω is what decouples it from influence
+  (which is Ω-gated): a locus at a width-1 Ω-waist can have `B = 0`.
+- **Locality gap `G(v)`.** Per support node: `G(v) = |out-edges → rim| /
+  |out-edges|` — the fraction of v's locally-possible next events that knowing Ω
+  forbids. This operationalizes the thesis "knowing the destination constrains
+  the routes" (INTUITIONS §5) as a per-node number, at the 1-step next-event
+  grain. It is the **local slope of the simulation gradient**: where `G = 0`
+  bare least-action suffices (a model buys nothing); where `G` is high the
+  constraint is non-local and carrying a model would pay. Self-less, yet it
+  explains where agency emerges.
+- **Structural alignment (self-less η).** Across the support nodes that have a
+  next event: `align_branch = corr(B, V)` and `align_locality = corr(G, V)`,
+  with `V(v)` = node vitality (Σ out-edge cut-criticality, §8.3.3). `null` when
+  undefined (small-n / zero variance). It asks whether forking and
+  non-local-constraint loci coincide with load-bearing loci; B and V may
+  *anti*-correlate by construction (forced waists vs. slack forks) — a
+  structural signature, not a defect. **Illustrative, not statistical, at seed
+  scale.**
+- **Agents = overlay only.** `groupByAgent` sums any per-node metric by the agent
+  acting at each node (`cone.nodeAgent`). The institutional / meritocracy
+  ("failed states") reading of η lives here and only here; self-lessly it is
+  unavailable, because "the capable were denied power" needs a self to be
+  capable.
+
+On the bare seeds every locus is degenerate (`B = 0`, `G = 0`, alignment
+`null`) — correctly: a determined or parallel-reconverging chain affords no
+agentic control and prunes no next event. The metrics come alive only on a
+*widened* cone (counterfactual branches), which is the tool's purpose.
+
 ---
 
 ## 9. What is still missing
