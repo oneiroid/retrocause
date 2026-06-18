@@ -137,6 +137,13 @@ align_locality = corr_v( G(v), V(v) )
 per-node gap   = z(B(v)) − z(V(v))   and   z(G(v)) − z(V(v))   (standardized; the diagnostic)
 ```
 
+> **Deferred as implemented (2026-06-18).** `structuralAlignment` ships the
+> two corpus-level correlations plus a raw `perNode[id] = { B, G, V }`; the
+> *standardized per-node z-gap* above was intentionally not materialized as a
+> field. The raw `perNode` map is the flexible primitive — a caller computes
+> `z(B)−z(V)` / `z(G)−z(V)` over the returned node set when it wants the
+> per-node diagnostic. Recorded here so the spec matches the shipped code.
+
 - `corr` = Pearson correlation across nodes (a standardized covariance ∈
   [−1,1]). **Node set:** `align_branch` runs over support nodes where both
   `B(v)` and `V(v)` are defined; `align_locality` over support nodes where both

@@ -1326,7 +1326,10 @@ degenerate on the bare seeds.
   non-local-constraint loci coincide with load-bearing loci; B and V may
   *anti*-correlate by construction (forced waists vs. slack forks) — a
   structural signature, not a defect. **Illustrative, not statistical, at seed
-  scale.**
+  scale.** `structuralAlignment` returns the two correlations plus a raw
+  `perNode = { B, G, V }`; the standardized per-node z-gap (`z(B)−z(V)`,
+  `z(G)−z(V)`) is left to the caller to derive from `perNode` rather than
+  materialized as a field.
 - **Agents = overlay only.** `groupByAgent` sums any per-node metric by the agent
   acting at each node (`cone.nodeAgent`). The institutional / meritocracy
   ("failed states") reading of η lives here and only here; self-lessly it is
