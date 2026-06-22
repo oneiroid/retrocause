@@ -1114,6 +1114,14 @@
     if (wouldCreateCycle(edgeItem.from, edgeItem.to)) return { ok: false, message: "Rejected because that edge would create a cycle" };
     edgeItem.id = edgeItem.id || uniqueId(`edge_${edgeItem.type}`);
     state.graph.edges.push(edgeItem);
+    // R8: a new canonical parent changes a merged node's predecessor set,
+    // so its pinned state (§1.6 commitment) no longer reflects one agreed
+    // world; clear it so the walker recomputes from the new parents.
+    const target = getNode(edgeItem.to);
+    if (target && Array.isArray(target.mergedState)
+        && (edgeItem.canonical === true || (edgeItem.canonical === undefined && edgeItem.type === "causes"))) {
+      delete target.mergedState;
+    }
     return { ok: true };
   }
 
@@ -1137,6 +1145,9 @@
     selected.state = el.editState.value.trim();
     selected.tags = el.editTags.value.split(",").map((tag) => tag.trim()).filter(Boolean);
     selected.createdBy = selected.createdBy === "seed" ? "human-edited" : selected.createdBy;
+    // R8: an explicit edit overrides the merged-state commitment so the
+    // editor's own state/expr fields govern the walker again.
+    if (Array.isArray(selected.mergedState)) delete selected.mergedState;
     renderAll();
     toast("Node updated");
   }
