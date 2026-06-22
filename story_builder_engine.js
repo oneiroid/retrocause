@@ -212,7 +212,9 @@
     const survivorSet = new Set();
 
     for (const rawGroup of groups) {
-      const ids = rawGroup.filter((id) =>
+      const entryIds = Array.isArray(rawGroup) ? rawGroup : (rawGroup.ids || []);
+      const pinnedState = Array.isArray(rawGroup) ? null : (rawGroup.state || null);
+      const ids = entryIds.filter((id) =>
         graph.nodes.some((node) => node.id === id) && (!eligible || eligible.has(id)));
       if (ids.length < 2) continue;
       // R3: survivor = smallest canonical depth, tie by node order.
@@ -239,6 +241,7 @@
       if (absorbed.length) {
         survivor.tags = Array.from(new Set([...(survivor.tags || []), "merged"]));
         survivor.mergedFrom = [...(survivor.mergedFrom || []), ...absorbed];
+        if (pinnedState) survivor.mergedState = pinnedState.slice();
         survivorSet.add(survivorId);
       }
     }

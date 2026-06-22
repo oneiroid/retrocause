@@ -81,6 +81,12 @@
     const post = new Map();
     for (const nodeId of order) {
       const node = graph.nodes.find(n => n.id === nodeId);
+      // R7 / §1.6: a merged convergence node declares its committed
+      // post-state; use it verbatim, bypassing predecessor-union + action.
+      if (node && Array.isArray(node.mergedState)) {
+        post.set(nodeId, new Set(node.mergedState));
+        continue;
+      }
       const preds = canonicalIn(graph, nodeId);
       let pre;
       if (preds.length === 0) {

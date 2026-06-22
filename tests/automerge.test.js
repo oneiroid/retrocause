@@ -215,6 +215,93 @@ test("multi-victim group (>=3): three equal-state nodes collapse to one survivor
   assert.deepEqual(inEdges, ["pA", "pB", "pC"]);
 });
 
+// -------- Task 4: pinned merged-state (R7) --------
+
+test("engine pins mergedState on survivor from {ids,state} group (R7)", () => {
+  const g = convergentGraph();
+  const res = engine.mergeEquivalentStates(g, {
+    groups: [{ ids: ["x", "y"], state: ["common"] }],
+    eligibleIds: new Set(["pA", "pB", "x", "y"]),
+  });
+  assert.equal(res.merged, 1);
+  const survivor = g.nodes.find((n) => n.id === res.survivors[0]);
+  assert.deepEqual(survivor.mergedState, ["common"]);
+});
+
+test("bare-array group merges without stamping mergedState", () => {
+  const g = convergentGraph();
+  const res = engine.mergeEquivalentStates(g, { groups: [["x", "y"]] });
+  assert.equal(res.merged, 1);
+  const survivor = g.nodes.find((n) => n.id === res.survivors[0]);
+  assert.equal(survivor.mergedState, undefined);
+});
+
+test("walker treats node.mergedState as a state source (R7, §1.6)", () => {
+  const Red = require("../red_fixture.js");
+  const g = engine.normalizeGraph({
+    root: "r",
+    nodes: [
+      { id: "pA", expr: "a()" },
+      { id: "pB", expr: "b()" },
+      { id: "m", expr: "merged()", mergedState: ["pinned_fact"] },
+    ],
+    edges: [
+      { id: "e1", from: "pA", to: "m", type: "causes" },
+      { id: "e2", from: "pB", to: "m", type: "causes" },
+    ],
+  });
+  const post = Walker.computeAllPostStates(g, Red, Phi);
+  assert.deepEqual([...post.get("m")], ["pinned_fact"]);
+});
+
+test("pinned merge is state-preserving for distinct-parent/distinct-action convergence", () => {
+  const tinyFx = {
+    scope: { initial_state: new Set(), derivations: [] },
+    entries: {
+      setA: { name: "setA", params: [], effects: () => ({ add: ["a"] }) },
+      setB: { name: "setB", params: [], effects: () => ({ add: ["b"] }) },
+      aToC: { name: "aToC", params: [], effects: () => ({ add: ["common"], remove: ["a"] }) },
+      bToC: { name: "bToC", params: [], effects: () => ({ add: ["common"], remove: ["b"] }) },
+    },
+  };
+  const makeGraph = () => engine.normalizeGraph({
+    root: "r",
+    nodes: [
+      { id: "r", expr: "start()" },
+      { id: "pA", expr: "a()", action: { entry: "setA", binding: {} } },
+      { id: "pB", expr: "b()", action: { entry: "setB", binding: {} } },
+      { id: "x", expr: "toC()", action: { entry: "aToC", binding: {} } },
+      { id: "y", expr: "toC()", action: { entry: "bToC", binding: {} } },
+    ],
+    edges: [
+      { id: "e1", from: "r", to: "pA", type: "causes" },
+      { id: "e2", from: "r", to: "pB", type: "causes" },
+      { id: "e3", from: "pA", to: "x", type: "causes" },
+      { id: "e4", from: "pB", to: "y", type: "causes" },
+    ],
+  });
+
+  // Precondition: x and y are genuinely state-equivalent ({common}).
+  const g0 = makeGraph();
+  const pre = Walker.computeAllPostStates(g0, tinyFx, Phi);
+  assert.deepEqual([...pre.get("x")].sort(), ["common"]);
+  assert.deepEqual([...pre.get("y")].sort(), ["common"]);
+
+  // Naive (bare-array) merge is NOT preserving — documents the bug.
+  const gNaive = makeGraph();
+  engine.mergeEquivalentStates(gNaive, { groups: [["x", "y"]] });
+  const naive = Walker.computeAllPostStates(gNaive, tinyFx, Phi);
+  const naiveSurvivor = gNaive.nodes.find((n) => n.id === "x");
+  assert.notDeepEqual([...naive.get(naiveSurvivor.id)].sort(), ["common"]); // {b, common}
+
+  // Pinned merge IS preserving.
+  const gPin = makeGraph();
+  const sharedState = [...pre.get("x")].sort();
+  engine.mergeEquivalentStates(gPin, { groups: [{ ids: ["x", "y"], state: sharedState }] });
+  const after = Walker.computeAllPostStates(gPin, tinyFx, Phi);
+  assert.deepEqual([...after.get("x")].sort(), ["common"]);
+});
+
 // -------- Task 2: state-preservation integration test --------
 
 const Phi = require("../phi.js");
