@@ -34,7 +34,7 @@ This is the invariant the whole design rests on, and a test asserts it.
 |---|------|
 | R1 | **Equivalence = identical post-state Set.** Two nodes are mergeable iff their `state_walker` post-states are equal as closed-world sets (same elements). `expr` / `label` / `tags` do not affect mergeability. |
 | R2 | **Eligibility.** Only nodes created by the current auto-branch run (`createdBy: "phi-auto"`) participate. Hand-authored / canonical nodes are never deleted or rewired by default. |
-| R3 | **Survivor selection.** Within an equal-state group, the survivor is the earliest-created node (stable order — by position in `graph.nodes`). All others are victims merged into it. |
+| R3 | **Survivor selection.** Within an equal-state group, the survivor is the node **closest to a root** — the smallest canonical depth, where depth = fewest canonical edges from any root (a node with no canonical parents). Ties are broken deterministically by position in `graph.nodes`. All others are victims merged into it. |
 | R4 | **Cycle safety.** A victim `V` is not merged into survivor `S` if `S` is a canonical ancestor of `V` or `V` is a canonical ancestor of `S` (merging would create a cycle). Such pairs are left intact and reported. |
 | R5 | **Edge rewiring.** For each victim `V` merged into `S`: repoint every edge with `from === V` to `from = S` and every edge with `to === V` to `to = S`; drop resulting self-loops (`from === to`); dedup parallel edges sharing `(from, to, type)`, preferring to keep a canonical edge over a non-canonical one. Then remove `V` from `graph.nodes`. |
 | R6 | **Provenance & selection.** The survivor gains a `"merged"` tag and a `mergedFrom: [victimIds...]` field. If the currently selected node was a victim, selection moves to the survivor. |
@@ -56,9 +56,11 @@ mergeEquivalentStates(graph, opts) -> { ok, merged, skipped, survivors }
   matches the existing seeds-vs-fixtures separation.
 - `opts.eligibleIds` — `Set` limiting which ids may be victims/survivors
   (R2). Ids outside the set are filtered out of every group.
-- The engine enforces R3 (survivor = earliest in `graph.nodes`), R4
-  (uses `reachable` for the ancestor check), R5 (rewire + dedup + delete),
-  and R6's `mergedFrom`/tag bookkeeping on the graph object.
+- The engine enforces R3 (survivor = smallest canonical depth, ties by
+  `graph.nodes` position; depth via a BFS over canonical edges from the
+  roots — pure topology, no fixture needed), R4 (uses `reachable` for the
+  ancestor check), R5 (rewire + dedup + delete), and R6's
+  `mergedFrom`/tag bookkeeping on the graph object.
 - Returns counts: `merged` (victims absorbed), `skipped` (pairs left for
   cycle-safety), and the survivor ids (so the app can fix selection).
 
@@ -123,7 +125,10 @@ function directly plus one walker round-trip:
    `(from,to,type)` keeps one (canonical preferred); a rewire that would
    make `from === to` drops the edge.
 4. **Eligibility.** Ids outside `eligibleIds` are never merged.
-5. **State preservation.** Build a small typed graph (Red or Magi
+5. **Survivor by root distance.** A 3-node equal-state group at differing
+   canonical depths collapses onto the shallowest; an equal-depth tie
+   falls back to `graph.nodes` order.
+6. **State preservation.** Build a small typed graph (Red or Magi
    fixture), run `computeAllPostStates` before and after a merge of two
    genuinely equal-state nodes; assert every surviving node's post-state
    is unchanged.
