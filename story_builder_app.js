@@ -781,22 +781,28 @@
       const st = postStates.get(id);
       if (!st) continue;
       const key = Phi.stateKey(st);
-      if (!buckets.has(key)) buckets.set(key, []);
-      buckets.get(key).push(id);
+      if (!buckets.has(key)) buckets.set(key, { ids: [], state: st });
+      buckets.get(key).ids.push(id);
     }
-    const groups = Array.from(buckets.values()).filter((g) => g.length >= 2);
+    // Group entries carry the shared post-state so the engine can pin it
+    // onto the survivor as `mergedState` (R7 / §1.6 convergence resolution).
+    const groups = Array.from(buckets.values())
+      .filter((b) => b.ids.length >= 2)
+      .map((b) => ({ ids: b.ids, state: Array.from(b.state).sort() }));
     if (!groups.length) return { merged: 0, skipped: 0, victimToSurvivor: new Map() };
 
     const result = Engine.mergeEquivalentStates(state.graph, { groups, eligibleIds: runNodeIds });
 
-    // Recover victim→survivor from the groups: the survivor is the one id
-    // in each group still present after the merge.
+    // victim→survivor: the survivor is the group id the engine reports as a
+    // survivor that is still present after the merge; remaining absent group
+    // ids mapped to it (used to repair selection when lastMadeId was merged).
+    const survivorsSet = new Set(result.survivors);
     const present = new Set(state.graph.nodes.map((n) => n.id));
     const victimToSurvivor = new Map();
-    for (const g of groups) {
-      const survivor = g.find((id) => present.has(id));
+    for (const grp of groups) {
+      const survivor = grp.ids.find((id) => survivorsSet.has(id) && present.has(id));
       if (!survivor) continue;
-      for (const id of g) if (id !== survivor && !present.has(id)) victimToSurvivor.set(id, survivor);
+      for (const id of grp.ids) if (id !== survivor && !present.has(id)) victimToSurvivor.set(id, survivor);
     }
     return { merged: result.merged, skipped: result.skipped, victimToSurvivor };
   }
