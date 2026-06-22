@@ -214,3 +214,57 @@ test("multi-victim group (>=3): three equal-state nodes collapse to one survivor
   const inEdges = canonicalIn(g, "x").map((e) => e.from).sort();
   assert.deepEqual(inEdges, ["pA", "pB", "pC"]);
 });
+
+// -------- Task 2: state-preservation integration test --------
+
+const Phi = require("../phi.js");
+const Walker = require("../state_walker.js");
+const { seeds } = require("../seeds.js");
+require("../red_fixture.js");
+require("../magi_fixture.js");
+
+// Same shape coercion the app/walker rely on.
+function normalizeSeed(graph) {
+  return engine.normalizeGraph(JSON.parse(JSON.stringify(graph)));
+}
+
+test("merging two genuinely equal-state nodes preserves all post-states", () => {
+  // Build a tiny typed graph by hand using the red fixture's lexicon so we
+  // control which nodes share a state. Two no-op-after children of one
+  // parent are state-equivalent; merging them must not move any state.
+  const Red = require("../red_fixture.js");
+  const fx = Red; // red_fixture exports the LEntry table + scope
+  // Find a node with an action whose effects are already satisfied -> its
+  // child shares the parent state. Simplest robust check: build a graph
+  // where two sibling children carry NO action (pure derivation closure),
+  // so both equal the parent's closed state.
+  const g = engine.normalizeGraph({
+    root: "r",
+    nodes: [
+      { id: "r", expr: "start()" },          // root -> initial_state closure
+      { id: "c1", expr: "noop1()" },          // no action -> closure(initial)
+      { id: "c2", expr: "noop2()" },          // no action -> closure(initial)
+    ],
+    edges: [
+      { id: "e1", from: "r", to: "c1", type: "causes" },
+      { id: "e2", from: "r", to: "c2", type: "causes" },
+    ],
+  });
+
+  const before = Walker.computeAllPostStates(g, fx, Phi);
+  const kc1 = Phi.stateKey(before.get("c1"));
+  const kc2 = Phi.stateKey(before.get("c2"));
+  assert.equal(kc1, kc2, "c1 and c2 must be state-equivalent for this test");
+
+  const res = engine.mergeEquivalentStates(g, { groups: [["c1", "c2"]] });
+  assert.equal(res.merged, 1);
+
+  const after = Walker.computeAllPostStates(g, fx, Phi);
+  for (const node of g.nodes) {
+    assert.equal(
+      Phi.stateKey(after.get(node.id)),
+      Phi.stateKey(before.get(node.id)),
+      `post-state of ${node.id} changed across merge`
+    );
+  }
+});
