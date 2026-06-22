@@ -621,11 +621,14 @@
     const maxDepth = clampNumber(el.autoDepth?.value, 1, 4, 2);
     const perNode = clampNumber(el.autoWidth?.value, 1, 4, 2);
     const maxNodes = clampNumber(el.autoMaxNodes?.value, 1, 40, 12);
+    const mergeEnabled = !!(el.autoMergeToggle && el.autoMergeToggle.checked);
+    const runNodeIds = new Set();
     const queue = [{ id: root.id, depth: 0, pathEntryNames: entryPathTo(root.id) }];
     const autoSeenStateKeys = new Set();
     let made = 0;
     let skipped = 0;
     let lastMadeId = null;
+    let mergeSummary = null;
 
     state.autoBranchRunning = true;
     state.stopAutoBranch = false;
@@ -646,7 +649,7 @@
         const candidates = chooseAutoCandidates(source, data.candidates, data.nodeState, {
           fixture: data.fixture,
           limit: perNode,
-          seenStateKeys: autoSeenStateKeys,
+          seenStateKeys: mergeEnabled ? new Set() : autoSeenStateKeys,
           pathEntryNames,
         });
         if (!candidates.length) {
@@ -668,12 +671,19 @@
           }
           made += 1;
           lastMadeId = newNode.id;
+          runNodeIds.add(newNode.id);
           if (candidate.autoPostStateKey) autoSeenStateKeys.add(candidate.autoPostStateKey);
           queue.push({ id: newNode.id, depth: depth + 1, pathEntryNames: [...pathEntryNames, candidate.entry.name] });
           setAutoBranchStatus(`Auto branching: ${made}/${maxNodes} nodes, queue ${queue.length}.`);
           state.selectedId = newNode.id;
           renderAll();
           await yieldToBrowser();
+        }
+      }
+      if (mergeEnabled && runNodeIds.size) {
+        mergeSummary = runAutoMerge(runNodeIds);
+        if (mergeSummary && lastMadeId && mergeSummary.victimToSurvivor.has(lastMadeId)) {
+          lastMadeId = mergeSummary.victimToSurvivor.get(lastMadeId);
         }
       }
     } finally {
@@ -684,7 +694,10 @@
       renderAll();
       syncAutoBranchControls();
       const suffix = skipped ? ` ${skipped} expansion point${skipped === 1 ? "" : "s"} had no usable candidates.` : "";
-      setAutoBranchStatus(`${stopped ? "Stopped" : "Finished"}: created ${made} node${made === 1 ? "" : "s"}.${suffix}`);
+      const mergeSuffix = mergeSummary && mergeSummary.merged
+        ? ` Merged ${mergeSummary.merged} convergent node${mergeSummary.merged === 1 ? "" : "s"}.${mergeSummary.skipped ? ` ${mergeSummary.skipped} pair${mergeSummary.skipped === 1 ? "" : "s"} skipped (would cycle).` : ""}`
+        : "";
+      setAutoBranchStatus(`${stopped ? "Stopped" : "Finished"}: created ${made} node${made === 1 ? "" : "s"}.${suffix}${mergeSuffix}`);
       toast(`${stopped ? "Stopped" : "Finished"} auto branching: ${made} node${made === 1 ? "" : "s"}`);
     }
   }
@@ -742,6 +755,50 @@
       if (chosen.length >= limit) break;
     }
     return chosen;
+  }
+
+  // Post-pass for auto-branch: bucket this run's nodes by post-state and
+  // collapse each ≥2-node bucket via the engine (spec R1-R6). Returns
+  // { merged, skipped, victimToSurvivor } or null when prerequisites are
+  // missing (no Phi/walker/fixture or walker error) — caller no-ops then.
+  function runAutoMerge(runNodeIds) {
+    const Phi = (typeof window !== "undefined" && window.RetrocausePhi) || null;
+    const Walker = (typeof window !== "undefined" && window.RetrocauseStateWalker) || null;
+    const Engine = (typeof window !== "undefined" && window.StoryDagEngine) || null;
+    const binding = state.activeSeed ? phiBindings[state.activeSeed] : null;
+    const fx = binding && binding.fixture && binding.fixture();
+    if (!Phi || !Walker || !Engine || !fx) return null;
+
+    let postStates;
+    try {
+      postStates = Walker.computeAllPostStates(state.graph, fx, Phi);
+    } catch (err) {
+      return null;
+    }
+
+    const buckets = new Map();
+    for (const id of runNodeIds) {
+      const st = postStates.get(id);
+      if (!st) continue;
+      const key = Phi.stateKey(st);
+      if (!buckets.has(key)) buckets.set(key, []);
+      buckets.get(key).push(id);
+    }
+    const groups = Array.from(buckets.values()).filter((g) => g.length >= 2);
+    if (!groups.length) return { merged: 0, skipped: 0, victimToSurvivor: new Map() };
+
+    const result = Engine.mergeEquivalentStates(state.graph, { groups, eligibleIds: runNodeIds });
+
+    // Recover victim→survivor from the groups: the survivor is the one id
+    // in each group still present after the merge.
+    const present = new Set(state.graph.nodes.map((n) => n.id));
+    const victimToSurvivor = new Map();
+    for (const g of groups) {
+      const survivor = g.find((id) => present.has(id));
+      if (!survivor) continue;
+      for (const id of g) if (id !== survivor && !present.has(id)) victimToSurvivor.set(id, survivor);
+    }
+    return { merged: result.merged, skipped: result.skipped, victimToSurvivor };
   }
 
   // §7.9 influence_weight for frontier candidates. Criticality is
