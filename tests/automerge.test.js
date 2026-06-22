@@ -219,21 +219,14 @@ test("multi-victim group (>=3): three equal-state nodes collapse to one survivor
 
 const Phi = require("../phi.js");
 const Walker = require("../state_walker.js");
-const { seeds } = require("../seeds.js");
-require("../red_fixture.js");
 require("../magi_fixture.js");
-
-// Same shape coercion the app/walker rely on.
-function normalizeSeed(graph) {
-  return engine.normalizeGraph(JSON.parse(JSON.stringify(graph)));
-}
 
 test("merging two genuinely equal-state nodes preserves all post-states", () => {
   // Build a tiny typed graph by hand using the red fixture's lexicon so we
   // control which nodes share a state. Two no-op-after children of one
   // parent are state-equivalent; merging them must not move any state.
   const Red = require("../red_fixture.js");
-  const fx = Red; // red_fixture exports the LEntry table + scope
+  const fx = Red; // red_fixture: a fixture object with scope.initial_state + derivations, valid as the walker's fixture arg
   // Find a node with an action whose effects are already satisfied -> its
   // child shares the parent state. Simplest robust check: build a graph
   // where two sibling children carry NO action (pure derivation closure),
