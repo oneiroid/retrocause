@@ -18,15 +18,35 @@ We want an option that instead **collapses** such convergences: when two
 distinct nodes (from distinct parents) represent the *same* world-state,
 they become a single node with multiple incoming canonical edges.
 
-## Why this is safe
+## Why this is safe (pinned merged-state)
 
-`state_walker` already supports a node with multiple canonical parents:
-`preds.length > 1` → `pre = Phi.mergeStates(...predStates)`
-([`state_walker.js:91-93`](../../../state_walker.js#L91)). Because we
-only ever merge nodes whose post-states are **identical**,
-`mergeStates` over equal states returns that same state. Therefore the
-merge is **state-preserving**: no downstream node's post-state changes.
-This is the invariant the whole design rests on, and a test asserts it.
+`state_walker` supports a node with multiple canonical parents by
+*set-union* of predecessor post-states: `pre = Phi.mergeStates(...predStates)`
+([`state_walker.js:91-93`](../../../state_walker.js#L91), `mergeStates` =
+union, [`phi.js:59`](../../../phi.js#L59)).
+
+**A naive collapse is NOT state-preserving.** Two children can reach the
+*same* post-state from *different* parent states via *different* actions
+(e.g. `{a}` --remove a,+common--> `{common}` and `{b}` --remove b,+common-->
+`{common}`). If we merge them and let the walker recompute the survivor as
+`apply(survivorAction, union(parents))`, the survivor's single action only
+undoes one parent's path: `apply(-a,+common, {a,b}) = {b, common}` ≠
+`{common}`. The downstream state silently shifts, and `validateGraph` does
+not catch it. This is exactly the §1.6 **convergence-conflict** OPEN in
+`FORMAL_MODEL.md`: when branches feed a convergence node, plain union is
+ill-defined.
+
+**Resolution: the merged node declares its committed post-state.** Because
+all members of a merge group share an identical post-state by R1, the
+collapse pins that agreed state onto the survivor as an explicit
+`mergedState`, and the walker uses it verbatim — skipping the
+union+action recomputation for that node. This *realizes* the resolution
+the formal model anticipated for §1.6 ("the convergence node [declares]
+which branch's facts it commits to"). With pinning, the merge is
+**state-preserving by construction**: the survivor's post-state equals the
+shared pre-merge post-state, so every downstream node is unchanged. A test
+asserts this on a distinct-parent / distinct-action graph (the case a
+naive collapse breaks).
 
 ## Merge rules
 
@@ -38,6 +58,7 @@ This is the invariant the whole design rests on, and a test asserts it.
 | R4 | **Cycle safety.** A victim `V` is not merged into survivor `S` if `S` is a canonical ancestor of `V` or `V` is a canonical ancestor of `S` (merging would create a cycle). Such pairs are left intact and reported. |
 | R5 | **Edge rewiring.** For each victim `V` merged into `S`: repoint every edge with `from === V` to `from = S` and every edge with `to === V` to `to = S`; drop resulting self-loops (`from === to`); dedup parallel edges sharing `(from, to, type)`, preferring to keep a canonical edge over a non-canonical one. Then remove `V` from `graph.nodes`. |
 | R6 | **Provenance & selection.** The survivor gains a `"merged"` tag and a `mergedFrom: [victimIds...]` field. If the currently selected node was a victim, selection moves to the survivor. |
+| R7 | **Pinned merged-state (convergence-conflict resolution, §1.6).** The survivor is stamped with `mergedState: string[]` = the sorted atoms of the group's shared post-state. `state_walker` treats any node with a `mergedState` as a **state source**: its post-state is `new Set(node.mergedState)` verbatim, bypassing the predecessor-union + action recompute. This makes the collapse state-preserving by construction. The engine stamps `mergedState` from a per-group `state` payload supplied by the caller (opaque to the engine — it does not compute or interpret states). |
 
 ## Architecture
 
@@ -49,20 +70,33 @@ New pure function in [`story_builder_engine.js`](../../../story_builder_engine.j
 mergeEquivalentStates(graph, opts) -> { ok, merged, skipped, survivors }
 ```
 
-- `opts.groups` — array of arrays of node ids that are state-equivalent
-  (R1). The engine does **not** compute states itself (states require the
-  fixture + Phi, which live in the app layer); the caller supplies the
-  equivalence groups. This keeps the engine free of fixture coupling and
+- `opts.groups` — array of group entries. Each entry is either a bare
+  `string[]` of state-equivalent node ids (R1) **or** an object
+  `{ ids: string[], state?: string[] }` where `state` is the group's
+  shared post-state as sorted atoms. The engine does **not** compute
+  states (states need the fixture + Phi, which live in the app layer); the
+  caller supplies the equivalence groups and, for pinning, the opaque
+  `state` payload. This keeps the engine free of fixture coupling and
   matches the existing seeds-vs-fixtures separation.
 - `opts.eligibleIds` — `Set` limiting which ids may be victims/survivors
   (R2). Ids outside the set are filtered out of every group.
 - The engine enforces R3 (survivor = smallest canonical depth, ties by
   `graph.nodes` position; depth via a BFS over canonical edges from the
   roots — pure topology, no fixture needed), R4 (uses `reachable` for the
-  ancestor check), R5 (rewire + dedup + delete), and R6's
-  `mergedFrom`/tag bookkeeping on the graph object.
+  ancestor check), R5 (rewire + dedup + delete), R6's `mergedFrom`/tag
+  bookkeeping, and R7 (stamps `survivor.mergedState = state.slice()` when
+  the group entry carries a `state`, treating it as opaque data).
 - Returns counts: `merged` (victims absorbed), `skipped` (pairs left for
   cycle-safety), and the survivor ids (so the app can fix selection).
+
+### Walker (state source for merged nodes)
+
+In [`state_walker.js`](../../../state_walker.js) `computeAllPostStates`,
+before computing pre-state/applying an action, check for a pinned state:
+if `Array.isArray(node.mergedState)`, set `post = new Set(node.mergedState)`
+and continue. This is R7's read side — a merged node is a declared state
+source, the §1.6 convergence-conflict resolution. A walker test asserts a
+node with `mergedState` returns it verbatim regardless of parents/action.
 
 `reachable` and the edge-canonical predicate already exist in the engine;
 `mergeEquivalentStates` reuses them.
@@ -85,11 +119,15 @@ In [`story_builder_app.js`](../../../story_builder_app.js):
      fixture for the active seed),
    - bucket auto-created node ids by post-state key (the same canonical
      key form already used for `autoPostStateKey`),
-   - keep buckets with ≥2 ids → `groups`,
+   - keep buckets with ≥2 ids → `groups`, each as
+     `{ ids, state: Array.from(sharedPostState).sort() }` so the engine can
+     pin `mergedState` (R7),
    - call `mergeEquivalentStates(state.graph, { groups, eligibleIds })`,
+   - derive victim→survivor from the engine's returned `survivors` (not by
+     re-deriving from node presence),
    - `renderAll()` and fold the merge counts into the status/toast text.
-4. **Selection.** If `state.selectedId` was merged away, set it to the
-   reported survivor.
+4. **Selection.** If `state.selectedId` (or `lastMadeId`) was merged away,
+   set it to the reported survivor.
 
 ### UI
 

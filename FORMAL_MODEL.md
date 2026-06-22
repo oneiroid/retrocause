@@ -204,6 +204,17 @@ from another). A principled resolution probably requires the
 convergence node to declare which branch's facts it commits to, or
 equivalently to declare its own pre-state preconditions.
 
+*Partially realized (auto-merge).* When the builder collapses
+state-equivalent counterfactual nodes into one convergence node
+(`mergeEquivalentStates`, design doc
+`docs/superpowers/specs/2026-06-22-auto-merge-design.md`), the merged
+node is stamped with an explicit committed post-state (`mergedState`)
+and `state_walker` treats it as a state source — bypassing the
+ill-defined union. This is the "convergence node declares its committed
+state" resolution above, instantiated for the case where the branches
+provably agree on the post-state (so there is no collision to
+adjudicate, only a union to short-circuit).
+
 **OPEN: predicate vocabulary growth.** P, like L, is meant to grow
 with analysis. We do not commit to a fixed P. Whatever predicates a
 story's `requires` clauses mention are the predicates that story
