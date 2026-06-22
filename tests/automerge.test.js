@@ -142,3 +142,75 @@ test("eligibility: ids outside eligibleIds are never merged", () => {
   assert.equal(res.merged, 0);
   assert.equal(g.nodes.length, 5);
 });
+
+test("omega remap (R5): victim ids in omega are remapped to survivor and deduped", () => {
+  // Two equal-state nodes x and y off distinct parents; omega references both.
+  // After merge: omega should contain only the survivor id once.
+  const g = engine.normalizeGraph({
+    root: "root",
+    meta: { title: "omega-remap fixture", version: 2 },
+    nodes: [
+      { id: "root", label: "root", expr: "start()" },
+      { id: "pA", label: "A", expr: "a()", createdBy: "phi-auto" },
+      { id: "pB", label: "B", expr: "b()", createdBy: "phi-auto" },
+      { id: "x", label: "X", expr: "same()", createdBy: "phi-auto" },
+      { id: "y", label: "Y", expr: "same()", createdBy: "phi-auto" },
+    ],
+    edges: [
+      { id: "e1", from: "root", to: "pA", type: "causes" },
+      { id: "e2", from: "root", to: "pB", type: "causes" },
+      { id: "e3", from: "pA", to: "x", type: "causes" },
+      { id: "e4", from: "pB", to: "y", type: "causes" },
+    ],
+  });
+  g.omega = ["y", "x"]; // both victims listed; y comes first but x is the survivor (same depth, earlier order)
+  const res = engine.mergeEquivalentStates(g, { groups: [["x", "y"]] });
+  assert.equal(res.merged, 1);
+  // x has canonical depth 2, y has canonical depth 2; x is first in node order -> x survives.
+  const survivorId = res.survivors[0];
+  assert.equal(survivorId, "x");
+  // omega should now contain only the survivor id, no duplicates.
+  assert.deepEqual(g.omega, ["x"]);
+});
+
+test("multi-victim group (>=3): three equal-state nodes collapse to one survivor", () => {
+  // Three equal-state nodes x, y, z each hanging off distinct parents at the same canonical depth.
+  const g = engine.normalizeGraph({
+    root: "root",
+    meta: { title: "multi-victim fixture", version: 2 },
+    nodes: [
+      { id: "root", label: "root", expr: "start()" },
+      { id: "pA", label: "A", expr: "a()", createdBy: "phi-auto" },
+      { id: "pB", label: "B", expr: "b()", createdBy: "phi-auto" },
+      { id: "pC", label: "C", expr: "c()", createdBy: "phi-auto" },
+      { id: "x", label: "X", expr: "same()", createdBy: "phi-auto" },
+      { id: "y", label: "Y", expr: "same()", createdBy: "phi-auto" },
+      { id: "z", label: "Z", expr: "same()", createdBy: "phi-auto" },
+    ],
+    edges: [
+      { id: "e1", from: "root", to: "pA", type: "causes" },
+      { id: "e2", from: "root", to: "pB", type: "causes" },
+      { id: "e3", from: "root", to: "pC", type: "causes" },
+      { id: "e4", from: "pA", to: "x", type: "causes" },
+      { id: "e5", from: "pB", to: "y", type: "causes" },
+      { id: "e6", from: "pC", to: "z", type: "causes" },
+    ],
+  });
+  const res = engine.mergeEquivalentStates(g, { groups: [["x", "y", "z"]] });
+  // Two victims (y and z) absorbed into survivor (x).
+  assert.equal(res.merged, 2);
+  // Exactly one of x/y/z survives in the graph.
+  const ids = g.nodes.map((n) => n.id);
+  assert.ok(ids.includes("x"), "x must survive (earliest node order at equal depth)");
+  assert.ok(!ids.includes("y"), "y must be removed");
+  assert.ok(!ids.includes("z"), "z must be removed");
+  // survivors list has exactly one entry (no duplicates even though one survivor absorbed multiple victims).
+  assert.equal(res.survivors.length, 1);
+  assert.equal(res.survivors[0], "x");
+  // mergedFrom records both victims.
+  const survivorNode = g.nodes.find((n) => n.id === "x");
+  assert.equal(survivorNode.mergedFrom.length, 2);
+  // Survivor has 3 incoming canonical edges: from pA, pB, pC.
+  const inEdges = canonicalIn(g, "x").map((e) => e.from).sort();
+  assert.deepEqual(inEdges, ["pA", "pB", "pC"]);
+});

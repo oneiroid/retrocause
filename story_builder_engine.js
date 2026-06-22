@@ -209,7 +209,7 @@
     const orderIndex = new Map(graph.nodes.map((node, idx) => [node.id, idx]));
     let merged = 0;
     let skipped = 0;
-    const survivors = [];
+    const survivorSet = new Set();
 
     for (const rawGroup of groups) {
       const ids = rawGroup.filter((id) =>
@@ -239,10 +239,10 @@
       if (absorbed.length) {
         survivor.tags = Array.from(new Set([...(survivor.tags || []), "merged"]));
         survivor.mergedFrom = [...(survivor.mergedFrom || []), ...absorbed];
-        survivors.push(survivorId);
+        survivorSet.add(survivorId);
       }
     }
-    return { ok: true, merged, skipped, survivors };
+    return { ok: true, merged, skipped, survivors: Array.from(survivorSet) };
   }
 
   const api = { EDGE_TYPES, normalizeGraph, reachable, wouldCreateCycle, addEdge, addBranch, validateGraph, topoRanks, exportGraph, importGraph, mergeEquivalentStates };
