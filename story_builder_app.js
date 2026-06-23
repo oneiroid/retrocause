@@ -2,6 +2,51 @@
 (() => {
   const EDGE_TYPES = ["causes", "enables", "blocks", "choice", "rejoins", "parallels", "foreshadows"];
   const STORAGE_KEY = "retrocause.storyDagBuilder.v2";
+
+  // ── Force-layout tuning ───────────────────────────────────────────────
+  // Every graph-layout magic number lives here, named and explained, instead
+  // of being scattered through the simulation code. Adjust layout feel here.
+  // (Declared up top so the force functions can read it during first render.)
+  const LAYOUT = {
+    // Resting forces (a settled graph nobody is dragging).
+    charge: -1200,           // base node repulsion; more negative = more spread
+    chargeDistanceMax: 1200, // px — ignore repulsion beyond this range (perf + locality)
+    dragCharge: -3000,       // repulsion of the node under the cursor: a wider
+                             //   "bubble" so neighbours give way as it's dragged
+    linkDistance: 160,       // px — preferred length of a causal / choice edge
+    rejoinLinkDistance: 200, // px — rejoins edges sit a little looser
+    linkStrength: 0.25,      // how stiffly an edge holds its preferred length (0..1)
+    collidePadding: 30,      // px added to each node's half-width as collision radius
+    collideIterations: 3,    // collision passes per tick; higher = firmer non-overlap
+    laneGapMin: 92,          // px — min vertical gap when fanning same-rank siblings
+    laneGapMax: 150,         // px — max vertical gap (caps very tall fan-outs)
+    yStrength: 0.08,         // gentle vertical organising pull (low = plastic, not rigid)
+    edgeMinDx: 60,           // px — an edge's end node is kept at least this far to the
+                             //   RIGHT of its start node, so edges never point left (§LTR)
+    edgeCorrection: 0.5,     // fraction of an LTR overshoot fixed per tick: a soft
+                             //   relaxation rather than a hard snap, so dragging past a
+                             //   neighbour eases into order instead of shocking the graph
+    dragAlphaTarget: 0.35,   // simulation "heat" held while a drag is in progress (lower =
+                             //   calmer give-way, the node sits more still where dropped)
+    restAlphaDecay: 0.0228,  // d3's default cooling rate, restored after a reheat
+
+    // Reheat = an "untangle" pass: shake out of the current local minimum,
+    // stretch hard, cool slowly, then relax back to the resting forces.
+    reheat: {
+      jitter: 520,           // px — random shake applied to each free node
+      charge: -2400,         // stronger repulsion during the untangle pass
+      chargeDistanceMax: 1600,
+      linkDistance: 210,
+      rejoinLinkDistance: 260,
+      linkStrength: 0.18,
+      alphaDecay: 0.022,     // slow cooling = more time to reorganize
+      settleMs: 2400,        // length of the energetic pass before relaxing
+      fitDelayMs: 700,       // re-frame the result this long after relaxing
+    },
+  };
+  // Temporarily limited to the Red seed for QA. To re-enable the others,
+  // restore the full key list (or drop the renderSeeds filter).
+  const ENABLED_SEEDS = ["red"];
   const NODE_COLORS = {
     root: "#38bdf8",
     canonical: "#38bdf8",
@@ -43,9 +88,9 @@
   };
 
   const state = {
-    graph: makeGraph(seeds.magi),
-    activeSeed: "magi",
-    selectedId: "magi_start",
+    graph: makeGraph(seeds.red),
+    activeSeed: "red",
+    selectedId: "red_start",
     nodes: [],
     edges: [],
     ranks: {},
@@ -55,21 +100,29 @@
     promptText: "",
     phiGroupByEntry: true,
     phiHideNoop: false,
+    draggingId: null,
     autoBranchRunning: false,
     stopAutoBranch: false,
-    cone: null
+    cone: null,
+    lockedIds: new Set(),
+    // Nodes a drag dropped in place (kept fx/fy so they STAY put). Distinct
+    // from lockedIds (dblclick hard-lock): soft pins are released by Reheat.
+    softPinnedIds: new Set()
   };
 
   const el = Object.fromEntries(Array.from(document.querySelectorAll("[id]")).map((item) => [item.id, item]));
   const svg = d3.select("#graphSvg");
   const defs = svg.append("defs");
+  // Arrow placed at the midpoint of each edge (marker-mid) so node boxes
+  // never obscure it. refX/refY center the marker on the path vertex that
+  // curvedPath() injects at t=0.5.
   defs.append("marker")
     .attr("id", "arrow")
     .attr("viewBox", "0 0 10 10")
-    .attr("refX", 25)
+    .attr("refX", 5)
     .attr("refY", 5)
-    .attr("markerWidth", 7)
-    .attr("markerHeight", 7)
+    .attr("markerWidth", 8)
+    .attr("markerHeight", 8)
     .attr("orient", "auto")
     .append("path")
     .attr("d", "M0,0 L10,5 L0,10 z")
@@ -79,7 +132,6 @@
   glow.append("feMerge").selectAll("feMergeNode").data(["blur", "SourceGraphic"]).join("feMergeNode").attr("in", (d) => d);
 
   const graphLayer = svg.append("g");
-  const rankLayer = graphLayer.append("g").attr("class", "rank-layer");
   const edgeLayer = graphLayer.append("g").attr("class", "edge-layer");
   const labelLayer = graphLayer.append("g").attr("class", "edge-label-layer");
   const nodeLayer = graphLayer.append("g").attr("class", "node-layer");
@@ -87,6 +139,7 @@
   svg.call(zoom);
 
   let simulation;
+  let reheatTimer;
   let nodeSelection = nodeLayer.selectAll("g.node");
   let edgeSelection = edgeLayer.selectAll("path.link");
   let edgeLabelSelection = labelLayer.selectAll("text.edge-label");
@@ -121,6 +174,10 @@
       version: 2,
       savedAt: null
     };
+    // Default to "no Ω defined" on load. The seed's omega (§8.3.1) stays
+    // selectable in the dropdown, but the possibility cone stays off until
+    // the user designates one.
+    graph.omega = [];
     return normalizeGraph(graph);
   }
 
@@ -149,7 +206,7 @@
 
   function renderSeeds() {
     el.seedList.innerHTML = "";
-    Object.entries(seeds).forEach(([key, seed]) => {
+    Object.entries(seeds).filter(([key]) => ENABLED_SEEDS.includes(key)).forEach(([key, seed]) => {
       const button = document.createElement("button");
       button.type = "button";
       button.className = `seed-button${key === state.activeSeed ? " active" : ""}`;
@@ -179,7 +236,7 @@
     el.deleteSelectedBtn.addEventListener("click", deleteSelectedNode);
     el.validateBtn.addEventListener("click", () => showValidation(validateGraph()));
     el.fitBtn.addEventListener("click", fitGraph);
-    el.reheatBtn.addEventListener("click", () => simulation?.alpha(0.8).restart());
+    el.reheatBtn.addEventListener("click", untangleReheat);
     el.toggleLabelsBtn.addEventListener("click", () => { state.showEdgeLabels = !state.showEdgeLabels; renderGraph(); });
     el.searchInput.addEventListener("input", () => { state.search = el.searchInput.value.trim().toLowerCase(); renderGraph(); });
     el.viewMode.addEventListener("change", () => { state.viewMode = el.viewMode.value; renderAll(); });
@@ -274,31 +331,46 @@
     const visible = visibleNodeIds();
     const oldPositions = new Map(state.nodes.map((item) => [item.id, { x: item.x, y: item.y }]));
     const maxRank = Math.max(1, ...Object.values(state.ranks));
+    // Count visible nodes per causal rank so same-rank siblings can be
+    // fanned out vertically — the old kind-based lanes piled every
+    // same-kind node onto one y-band, which is what overlapped the edges.
+    const rankCounts = {};
+    state.graph.nodes.forEach((item) => {
+      if (!visible.has(item.id)) return;
+      const rank = state.ranks[item.id] || 0;
+      rankCounts[rank] = (rankCounts[rank] || 0) + 1;
+    });
     const rankBuckets = new Map();
 
     state.nodes = state.graph.nodes
       .filter((item) => visible.has(item.id))
-      .map((item, index) => {
+      .map((item) => {
         const rank = state.ranks[item.id] || 0;
-        const bucketIndex = rankBuckets.get(rank) || 0;
-        rankBuckets.set(rank, bucketIndex + 1);
+        const rankIndex = rankBuckets.get(rank) || 0;
+        rankBuckets.set(rank, rankIndex + 1);
         const old = oldPositions.get(item.id);
-        return {
-          ...item,
-          rank,
-          x: old?.x ?? 120 + (rank / maxRank) * (dimensions.width - 240),
-          y: old?.y ?? 120 + bucketIndex * 86 + (index % 2) * 18
-        };
+        const x = old?.x ?? 120 + (rank / maxRank) * (dimensions.width - 240);
+        // laneY: the simulation's vertical target (per-rank fan-out). x is
+        // governed separately by a strong rank force (left→right causal order).
+        const laneY = laneTargetY(rankIndex, rankCounts[rank], dimensions.height);
+        const y = old?.y ?? laneY;
+        const node = { ...item, rank, rankIndex, laneY, x, y };
+        // Re-pin position-locked nodes (§dblclick lock) so a re-render
+        // doesn't let the simulation drift them back.
+        if (state.lockedIds.has(item.id)) {
+          node.fx = x;
+          node.fy = y;
+        }
+        return node;
       });
     const nodeById = new Map(state.nodes.map((item) => [item.id, item]));
     state.edges = state.graph.edges
       .filter((item) => nodeById.has(item.from) && nodeById.has(item.to))
       .map((item) => ({ ...item, source: nodeById.get(item.from), target: nodeById.get(item.to) }));
 
-    drawRankGuides(dimensions, maxRank);
     if (simulation) simulation.stop();
     simulation = d3.forceSimulation(state.nodes);
-    applyForces(maxRank);
+    applyForces();
     simulation.on("tick", ticked).alpha(0.9).restart();
 
     edgeSelection = edgeLayer.selectAll("path.link").data(state.edges, (item) => item.id);
@@ -306,7 +378,7 @@
     edgeSelection = edgeSelection.enter()
       .append("path")
       .attr("class", "link")
-      .attr("marker-end", "url(#arrow)")
+      .attr("marker-mid", "url(#arrow)")
       .merge(edgeSelection)
       .attr("stroke", (item) => EDGE_COLORS[item.type] || EDGE_COLORS.causes)
       .attr("stroke-dasharray", (item) => item.type === "rejoins" ? "7 5" : item.canonical ? null : "3 4")
@@ -330,8 +402,15 @@
       .attr("class", "node")
       .on("click", (event, item) => {
         event.stopPropagation();
-        state.selectedId = item.id;
-        renderAll();
+        // Selection only changes highlight + panels — no topology change,
+        // so update in place instead of re-heating the simulation (which
+        // is what made clicked nodes jump).
+        selectNode(item.id);
+      })
+      .on("dblclick", (event, item) => {
+        event.stopPropagation();
+        event.preventDefault();
+        toggleLock(item);
       });
     entering.append("rect").attr("rx", 12).attr("ry", 12);
     entering.append("text").attr("class", "node-label").attr("text-anchor", "middle").attr("dy", "-0.65em");
@@ -343,7 +422,8 @@
       .classed("dimmed", (item) => state.search && !matchesSearch(item))
       .classed("rim", (item) => !!state.cone && state.cone.rim.has(item.id))
       .classed("waist", (item) => !!state.cone && state.cone.waistNodeIds.has(item.id))
-      .classed("omega", (item) => !!state.cone && state.cone.omega.includes(item.id));
+      .classed("omega", (item) => !!state.cone && state.cone.omega.includes(item.id))
+      .classed("locked", (item) => state.lockedIds.has(item.id));
 
     nodeSelection.select("rect")
       .attr("width", (item) => nodeWidth(item))
@@ -357,7 +437,11 @@
     nodeSelection.select(".node-meta").text((item) => `${item.kind} · r${item.rank}${coneMarker(item)} · ${(item.tags || []).slice(0, 3).join(", ")}`);
     nodeSelection.call(d3.drag()
       .on("start", (event, item) => {
-        if (!event.active) simulation.alphaTarget(0.18).restart();
+        // Mark the dragged node so it repels harder (give-way), and
+        // reassign the charge force so d3 re-reads the per-node strengths.
+        state.draggingId = item.id;
+        simulation.force("charge", d3.forceManyBody().strength(chargeStrengthFor).distanceMax(LAYOUT.chargeDistanceMax));
+        if (!event.active) simulation.alphaTarget(LAYOUT.dragAlphaTarget).restart();
         item.fx = item.x;
         item.fy = item.y;
       })
@@ -366,42 +450,154 @@
         item.fy = event.y;
       })
       .on("end", (event, item) => {
+        // Drop the give-way boost and re-read uniform charge strengths.
+        state.draggingId = null;
+        simulation.force("charge", d3.forceManyBody().strength(chargeStrengthFor).distanceMax(LAYOUT.chargeDistanceMax));
         if (!event.active) simulation.alphaTarget(0);
-        item.fx = null;
-        item.fy = null;
+        // Plasticity: a dragged node STAYS where it was dropped — keep its
+        // fx/fy so the forces can't spring it back. Tracked as a soft pin
+        // (Reheat releases these; a dblclick hard-lock keeps its own fx).
+        if (!state.lockedIds.has(item.id)) {
+          item.fx = event.x;
+          item.fy = event.y;
+          state.softPinnedIds.add(item.id);
+        }
       }));
   }
 
-  function applyForces(maxRank = Math.max(1, ...Object.values(state.ranks))) {
-    const dimensions = graphDimensions();
+  // Lightweight selection update: restyle nodes + refresh panels without
+  // rebuilding the graph or restarting the force simulation.
+  function selectNode(id) {
+    state.selectedId = id;
+    nodeSelection.classed("selected", (item) => item.id === state.selectedId);
+    renderPanels();
+  }
+
+  // Toggle a position lock (dblclick). Locked nodes get fixed coordinates
+  // (fx/fy) so the simulation can't move them; the id is tracked in
+  // state.lockedIds so the lock survives re-renders.
+  function toggleLock(item) {
+    if (state.lockedIds.has(item.id)) {
+      state.lockedIds.delete(item.id);
+      item.fx = null;
+      item.fy = null;
+    } else {
+      state.lockedIds.add(item.id);
+      item.fx = item.x;
+      item.fy = item.y;
+    }
+    nodeSelection.classed("locked", (node) => state.lockedIds.has(node.id));
+    toast(state.lockedIds.has(item.id) ? "Node locked in place" : "Node unlocked");
+  }
+
+  // The node currently under the cursor repels harder so neighbouring nodes
+  // (and therefore their edges) slide out of the way as it is dragged.
+  function chargeStrengthFor(item) {
+    return item.id === state.draggingId ? LAYOUT.dragCharge : LAYOUT.charge;
+  }
+
+  // §LTR constraint (per-edge): the end node of every edge is kept to the
+  // RIGHT of its start node by at least LAYOUT.edgeMinDx, so an edge can never
+  // point leftward. Whichever endpoint is free gives way; an endpoint being
+  // dragged or locked (fx set) holds, and the other end moves around it.
+  //
+  // The pushes are one-sided (a fixed endpoint can't move, so only its partner
+  // shifts), which would translate the whole graph — every parent of a node
+  // dragged leftward gets nudged left, cascading into a runaway leftward drift
+  // while the drag holds the simulation hot. To prevent that, we snapshot the
+  // centroid of the FREE (non-fx) nodes and restore it afterward: the
+  // constraint then RESHAPES the graph around the dragged/locked anchors
+  // without translating it. (Charge/link/collide are already internal forces
+  // that conserve the centroid; this makes the LTR correction internal too.)
+  function enforceEdgeDirection() {
+    let sumBefore = 0, freeCount = 0;
+    for (const node of state.nodes) {
+      if (node.fx == null) { sumBefore += node.x; freeCount++; }
+    }
+    for (let pass = 0; pass < 2; pass++) {
+      for (const edge of state.edges) {
+        const s = edge.source, t = edge.target;
+        if (!s || !t) continue;
+        const overshoot = (s.x + LAYOUT.edgeMinDx) - t.x; // > 0 ⇒ end is too far left
+        if (overshoot <= 0) continue;
+        const sFixed = s.fx != null, tFixed = t.fx != null;
+        if (sFixed && tFixed) continue;            // can't move either; leave it
+        const fix = overshoot * LAYOUT.edgeCorrection; // soft relaxation, not a snap
+        if (sFixed) t.x += fix;                    // push the end right
+        else if (tFixed) s.x -= fix;               // push the start left
+        else { s.x -= fix / 2; t.x += fix / 2; }   // both free: split
+      }
+    }
+    // Restore the free-node centroid so the corrections above don't drift the
+    // whole graph; the dragged/locked (fx) anchors are excluded by design.
+    if (freeCount > 0) {
+      let sumAfter = 0;
+      for (const node of state.nodes) if (node.fx == null) sumAfter += node.x;
+      const shift = (sumAfter - sumBefore) / freeCount;
+      if (shift) for (const node of state.nodes) if (node.fx == null) node.x -= shift;
+    }
+  }
+
+  // "Reheat" is an untangle pass: shake nodes out of their current
+  // (possibly tangled) local minimum, then stretch the graph with stronger
+  // repulsion + longer links and slow cooling so crossing edges have room
+  // and time to pull apart. After the energetic pass it relaxes back to the
+  // resting forces and re-frames the untangled, stretched DAG.
+  function untangleReheat() {
+    if (!simulation) return;
+    state.nodes.forEach((node) => {
+      if (state.lockedIds.has(node.id)) return; // respect hard locks (dblclick)
+      // Release soft pins (drag-drop) so the shake can actually move them —
+      // an fx would otherwise override the jittered x every tick.
+      if (state.softPinnedIds.has(node.id)) { node.fx = null; node.fy = null; }
+      node.x += (Math.random() - 0.5) * LAYOUT.reheat.jitter;
+      node.y += (Math.random() - 0.5) * LAYOUT.reheat.jitter;
+    });
+    state.softPinnedIds.clear();
     simulation
-      .force("link", d3.forceLink(state.edges).id((item) => item.id).distance((item) => item.type === "rejoins" ? 130 : 95).strength(0.45))
-      .force("charge", d3.forceManyBody().strength(-520).distanceMax(650))
-      .force("collide", d3.forceCollide((item) => nodeWidth(item) / 2 + 18))
-      .force("x", d3.forceX((item) => 120 + ((item.rank || 0) / maxRank) * (dimensions.width - 240)).strength(0.58))
-      .force("y", d3.forceY((item) => laneY(item, dimensions.height)).strength(0.08));
+      .force("charge", d3.forceManyBody().strength(LAYOUT.reheat.charge).distanceMax(LAYOUT.reheat.chargeDistanceMax))
+      .force("link", d3.forceLink(state.edges).id((item) => item.id)
+        .distance((item) => item.type === "rejoins" ? LAYOUT.reheat.rejoinLinkDistance : LAYOUT.reheat.linkDistance)
+        .strength(LAYOUT.reheat.linkStrength))
+      .alpha(1)
+      .alphaDecay(LAYOUT.reheat.alphaDecay)
+      .restart();
+    clearTimeout(reheatTimer);
+    reheatTimer = setTimeout(() => {
+      if (!simulation) return;
+      applyForces();                                 // restore the resting force balance
+      simulation.alphaDecay(LAYOUT.restAlphaDecay);  // d3 default cooling rate
+      setTimeout(fitGraph, LAYOUT.reheat.fitDelayMs); // re-frame the stretched result
+    }, LAYOUT.reheat.settleMs);
   }
 
-  function laneY(item, height) {
-    if (item.kind === "branch") return height * 0.68;
-    if (item.kind === "convergence") return height * 0.46;
-    if (item.kind === "invariant") return height * 0.28;
-    return height * 0.38;
+  function applyForces() {
+    // Left→right order is enforced by enforceEdgeDirection (§LTR, a hard
+    // per-edge constraint), NOT by pinning nodes to rank columns — so a node
+    // stays where it is dragged instead of snapping back to a column. The
+    // forces below only spread nodes apart (charge/collide), hold edge
+    // lengths (link), and give a gentle vertical organisation (y). There is
+    // deliberately no x-force.
+    simulation
+      .force("link", d3.forceLink(state.edges).id((item) => item.id)
+        .distance((item) => item.type === "rejoins" ? LAYOUT.rejoinLinkDistance : LAYOUT.linkDistance)
+        .strength(LAYOUT.linkStrength))
+      .force("charge", d3.forceManyBody().strength(chargeStrengthFor).distanceMax(LAYOUT.chargeDistanceMax))
+      .force("collide", d3.forceCollide((item) => nodeWidth(item) / 2 + LAYOUT.collidePadding).strength(1).iterations(LAYOUT.collideIterations))
+      .force("x", null) // no rank-column pull — removed; it made the DAG rigid
+      .force("y", d3.forceY((item) => (item.laneY != null ? item.laneY : graphDimensions().height / 2)).strength(LAYOUT.yStrength));
   }
 
-  function drawRankGuides(dimensions, maxRank) {
-    const data = d3.range(maxRank + 1).map((rank) => ({ rank, x: 120 + (rank / maxRank) * (dimensions.width - 240) }));
-    const lines = rankLayer.selectAll("line.rank-line").data(data, (item) => item.rank);
-    lines.exit().remove();
-    lines.enter().append("line").attr("class", "rank-line").merge(lines)
-      .attr("x1", (item) => item.x).attr("x2", (item) => item.x).attr("y1", 75).attr("y2", dimensions.height - 36);
-    const labels = rankLayer.selectAll("text.rank-label").data(data, (item) => item.rank);
-    labels.exit().remove();
-    labels.enter().append("text").attr("class", "rank-label").attr("text-anchor", "middle").merge(labels)
-      .attr("x", (item) => item.x).attr("y", 68).text((item) => `r${item.rank}`);
+  // Vertical target for a node: fan same-rank siblings out around the
+  // canvas center so neither the nodes nor their edges pile onto one line.
+  function laneTargetY(rankIndex, rankCount, height) {
+    const count = Math.max(1, rankCount || 1);
+    const gap = Math.max(LAYOUT.laneGapMin, Math.min(LAYOUT.laneGapMax, (height - 160) / count));
+    return height / 2 + (rankIndex - (count - 1) / 2) * gap;
   }
 
   function ticked() {
+    enforceEdgeDirection(); // §LTR: keep every edge pointing left→right
     edgeSelection.attr("d", (item) => curvedPath(item.source, item.target, item.type));
     edgeLabelSelection
       .attr("x", (item) => (item.source.x + item.target.x) / 2)
@@ -409,12 +605,27 @@
     nodeSelection.attr("transform", (item) => `translate(${item.x},${item.y})`);
   }
 
+  // Returns a path split into two cubic segments meeting at the curve's
+  // t=0.5 point (De Casteljau). That shared vertex is where `marker-mid`
+  // draws the direction arrow — centered on the branch, clear of nodes.
   function curvedPath(source, target, type) {
     const dx = target.x - source.x;
     const dy = target.y - source.y;
     const curve = type === "rejoins" ? 0.45 : type === "choice" ? 0.25 : 0.14;
     const mx = source.x + dx / 2;
-    return `M${source.x},${source.y} C${mx},${source.y + dy * curve} ${mx},${target.y - dy * curve} ${target.x},${target.y}`;
+    const p0 = [source.x, source.y];
+    const p1 = [mx, source.y + dy * curve];
+    const p2 = [mx, target.y - dy * curve];
+    const p3 = [target.x, target.y];
+    const mid = (a, b) => [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2];
+    const a = mid(p0, p1);
+    const b = mid(p1, p2);
+    const c = mid(p2, p3);
+    const d = mid(a, b);
+    const e = mid(b, c);
+    const f = mid(d, e); // point on the curve at t=0.5
+    const pt = (q) => `${q[0]},${q[1]}`;
+    return `M${pt(p0)} C${pt(a)} ${pt(d)} ${pt(f)} C${pt(e)} ${pt(c)} ${pt(p3)}`;
   }
 
   function renderPanels() {

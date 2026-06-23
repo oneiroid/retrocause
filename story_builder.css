@@ -119,10 +119,9 @@ label { display: grid; gap: 5px; color: var(--muted); font-size: 12px; line-heig
 .link.dimmed { stroke-opacity: .15; }
 .edge-label { font-size: 10px; fill: #cbd5e1; paint-order: stroke; stroke: #09111f; stroke-width: 4px; stroke-linejoin: round; opacity: .9; }
 .edge-label.hidden { display: none; }
-.rank-line { stroke: rgba(148, 163, 184, .14); stroke-width: 1; stroke-dasharray: 3 7; }
-.rank-label { fill: rgba(148, 163, 184, .35); font-size: 11px; }
 .node { cursor: pointer; }
 .node rect { stroke-width: 1.5; }
+.node.locked rect { stroke-dasharray: 2 3; stroke-width: 2.5; }
 .node.selected rect { stroke-width: 3; filter: url(#glow); }
 .node.search-hit rect { stroke-width: 3; stroke: #fef08a; }
 .node.dimmed { opacity: .25; }
