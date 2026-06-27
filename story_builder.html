@@ -126,6 +126,11 @@
           </label>
         </div>
         <div id="autoBranchStatus" class="muted auto-branch-status">Bounded recursive branching starts at the selected node.</div>
+        <div class="auto-branch-row">
+          <button id="frontierSimBtn" type="button" class="secondary" title="Unroll auto-branch + auto-merge from the fixture's initial state to build the derived possibility cone, then run the cone analysis on it.">Frontier sim</button>
+          <label>Max depth<input id="frontierSimDepth" type="number" min="2" max="60" value="40"></label>
+        </div>
+        <div id="frontierSimStatus" class="muted auto-branch-status"></div>
         <div class="phi-controls">
           <label class="inline-label">
             <input id="phiGroupToggle" type="checkbox" checked>
@@ -136,7 +141,7 @@
             <span>Hide signature-only entries</span>
           </label>
         </div>
-        <div id="phiSummary" class="muted phi-summary">Select a node with a typed fixture (Red or Magi) to see &Phi;.</div>
+        <div id="phiSummary" class="muted phi-summary">Select a node with a typed fixture (Red, Magi, or Torgsin) to see &Phi;.</div>
         <div id="phiList" class="phi-list"></div>
       </section>
 
@@ -183,8 +188,10 @@
   <script src="cone.js"></script>
   <script src="red_fixture.js"></script>
   <script src="magi_fixture.js"></script>
+  <script src="torgsin_fixture.js"></script>
   <script src="seeds.js"></script>
   <script src="state_walker.js"></script>
+  <script src="frontier_sim.js"></script>
   <script src="story_builder_app.js"></script>
 </body>
 </html>

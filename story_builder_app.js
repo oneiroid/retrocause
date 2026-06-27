@@ -46,7 +46,7 @@
   };
   // Temporarily limited to the Red seed for QA. To re-enable the others,
   // restore the full key list (or drop the renderSeeds filter).
-  const ENABLED_SEEDS = ["red"];
+  const ENABLED_SEEDS = ["red", "magi", "torgsin"];
   const NODE_COLORS = {
     root: "#38bdf8",
     canonical: "#38bdf8",
@@ -84,6 +84,9 @@
     },
     magi: {
       fixture: () => (typeof window !== "undefined" ? window.RetrocauseMagiFixture : null),
+    },
+    torgsin: {
+      fixture: () => (typeof window !== "undefined" ? window.RetrocauseTorgsinFixture : null),
     },
   };
 
@@ -243,6 +246,7 @@
     if (el.phiGroupToggle) el.phiGroupToggle.addEventListener("change", () => { state.phiGroupByEntry = el.phiGroupToggle.checked; renderPhiPanel(getNode(state.selectedId)); });
     if (el.phiHideNoopToggle) el.phiHideNoopToggle.addEventListener("change", () => { state.phiHideNoop = el.phiHideNoopToggle.checked; renderPhiPanel(getNode(state.selectedId)); });
     if (el.autoBranchBtn) el.autoBranchBtn.addEventListener("click", autoBranchFromSelected);
+    if (el.frontierSimBtn) el.frontierSimBtn.addEventListener("click", runFrontierSim);
     if (el.stopAutoBranchBtn) el.stopAutoBranchBtn.addEventListener("click", () => {
       state.stopAutoBranch = true;
       setAutoBranchStatus("Stopping after the current insert...");
@@ -432,7 +436,7 @@
       .attr("y", -32)
       .attr("fill", (item) => nodeFill(item))
       .attr("stroke", (item) => NODE_COLORS[item.kind] || NODE_COLORS.note);
-    nodeSelection.select(".node-label").text((item) => truncate(item.label, 33));
+    nodeSelection.select(".node-label").text((item) => truncate(displayLabel(item), 33));
     nodeSelection.select(".node-state").text((item) => truncate(item.state, 42));
     nodeSelection.select(".node-meta").text((item) => `${item.kind} · r${item.rank}${coneMarker(item)} · ${(item.tags || []).slice(0, 3).join(", ")}`);
     nodeSelection.call(d3.drag()
@@ -665,7 +669,12 @@
     }
 
     el.phiSummary.className = "phi-summary good";
-    let summaryText = `${candidates.length} candidate${candidates.length === 1 ? "" : "s"} across ${byEntry.size} L entr${byEntry.size === 1 ? "y" : "ies"} at this node.`;
+    // Meaningful frontier width (§9 / FRONTIER_SIM.md): auto-branch +
+    // auto-merge at this node — distinct post-WORLDS among effectful
+    // candidates, not raw candidate count. This is the founding measurement.
+    const width = meaningfulFrontierWidth(candidates, nodeState, data.fixture);
+    let summaryText = `Frontier width: ${width} meaningful continuation${width === 1 ? "" : "s"} `
+      + `(${candidates.length} raw candidate${candidates.length === 1 ? "" : "s"}, ${byEntry.size} L entr${byEntry.size === 1 ? "y" : "ies"}).`;
     if (data.rimNode) {
       el.phiSummary.className = "phi-summary warn";
       summaryText += " This node is on the cone's rim — no continuation reaches Ω (§8.3.2); showing the combinatorial Φ.";
@@ -701,6 +710,72 @@
     });
   }
 
+  // Meaningful frontier width at a state: enumerate-then-merge. Apply each
+  // candidate, drop non-effectful ones, group post-states by Phi.stateKey,
+  // count distinct worlds. This is the per-node auto-branch+auto-merge census.
+  function meaningfulFrontierWidth(candidates, nodeState, fx) {
+    const Phi = (typeof window !== "undefined" && window.RetrocausePhi) || null;
+    if (!Phi || !nodeState) return candidates.length;
+    const rules = (fx && fx.scope && fx.scope.derivations) || [];
+    const worlds = new Set();
+    for (const c of candidates) {
+      let post;
+      try { post = Phi.step(nodeState, c.entry, c.binding, rules); }
+      catch { continue; }
+      if (Phi.statesEqual(nodeState, post)) continue;
+      worlds.add(Phi.stateKey(post));
+    }
+    return worlds.size;
+  }
+
+  // Build the DERIVED possibility cone (frontier_sim) from the active
+  // fixture's initial state, run cone.js on it, and report the breathing
+  // width profile + waist + Menger width into the sim status line.
+  function runFrontierSim() {
+    const Sim = (typeof window !== "undefined" && window.RetrocauseFrontierSim) || null;
+    const out = el.frontierSimStatus;
+    const binding = state.activeSeed ? phiBindings[state.activeSeed] : null;
+    const fx = binding && binding.fixture && binding.fixture();
+    if (!Sim || !Cone || !fx) {
+      if (out) { out.className = "muted auto-branch-status warn"; out.textContent = "Frontier sim needs a typed seed (Red, Magi, or Torgsin)."; }
+      return;
+    }
+    const maxDepth = Math.max(2, Number(el.frontierSimDepth && el.frontierSimDepth.value) || 40);
+    // Terminal = where to stop expanding a world: the fixture's explicit
+    // terminalMarker (the scene complete) if it declares one, else any Ω
+    // marker, else never (the depth bound stops it).
+    const markers = fx.omegaMarkers || [];
+    const isTerminal = fx.terminalMarker
+      ? (s) => s.has(fx.terminalMarker)
+      : (s) => markers.length > 0 && markers.some((m) => s.has(m));
+    let res;
+    try {
+      res = Sim.simulate({ lexicon: fx.lexicon, scope: fx.scope, isTerminal, maxDepth });
+    } catch (err) {
+      if (out) { out.className = "muted auto-branch-status warn"; out.textContent = `Frontier sim failed: ${err.message}`; }
+      return;
+    }
+    const { graph, info } = res;
+    // Ω = terminal worlds (or, if none, the deepest worlds).
+    let omega = graph.nodes.map((n) => n.id).filter((id) => info.get(id).terminal);
+    if (!omega.length) {
+      const maxd = Math.max(...[...info.values()].map((i) => i.depth));
+      omega = graph.nodes.map((n) => n.id).filter((id) => info.get(id).depth === maxd);
+    }
+    const profile = Cone.widthProfile(graph, omega).map((p) => p.width);
+    const waists = Cone.waists(graph, omega);
+    const menger = Cone.mengerWidth(graph, omega);
+    if (out) {
+      out.className = "phi-summary good";
+      out.innerHTML = `Derived cone: <strong>${graph.nodes.length}</strong> worlds, ${graph.edges.length} transitions`
+        + `${res.truncated ? " (truncated)" : ""}.<br>`
+        + `Width profile: <code>${profile.join(" ")}</code><br>`
+        + `Menger width ${menger} · ${waists.length} waist${waists.length === 1 ? "" : "s"}`
+        + `${waists.length ? ` (narrowest at level${waists.length === 1 ? "" : "s"} ${waists.map((w) => w.level).join(", ")})` : ""}.`;
+    }
+    toast(`Frontier sim: ${graph.nodes.length} worlds, peak width ${Math.max(...profile)}`);
+  }
+
   function hasAnyEffects(entry, binding, state) {
     if (!entry.effects) return false;
     try {
@@ -713,7 +788,7 @@
     const Phi = (typeof window !== "undefined" && window.RetrocausePhi) || null;
     const binding = state.activeSeed ? phiBindings[state.activeSeed] : null;
     if (!Phi || !binding) {
-      return { ok: false, message: "No typed fixture for this seed. Phi available only for Red and Magi." };
+      return { ok: false, message: "No typed fixture for this seed. Φ available for Red, Magi, and Torgsin." };
     }
     const fx = binding.fixture && binding.fixture();
     if (!fx) {
@@ -827,7 +902,7 @@
     if (state.autoBranchRunning) return;
     const root = getNode(state.selectedId);
     if (!root) return toast("Select a node first", true);
-    if (!phiBindings[state.activeSeed]) return toast("Auto branching needs a typed seed; Magi or Red are supported.", true);
+    if (!phiBindings[state.activeSeed]) return toast("Auto branching needs a typed seed: Red, Magi, or Torgsin.", true);
 
     const maxDepth = clampNumber(el.autoDepth?.value, 1, 4, 2);
     const perNode = clampNumber(el.autoWidth?.value, 1, 4, 2);
@@ -1202,10 +1277,12 @@
       ? `<div class="action-row"><strong>Action:</strong> <code>${escapeHtml(selected.action.entry)}(${escapeHtml(Object.values(selected.action.binding || {}).join(", "))})</code></div>`
       : "";
     const coneLine = coneStatusLine(selected);
+    const mergedLine = mergedDetail(selected);
     el.selectedNode.innerHTML = `
       <h3>${escapeHtml(selected.label)}</h3>
       <div class="expr">${escapeHtml(selected.expr)}</div>
       ${actionLine}
+      ${mergedLine}
       ${coneLine}
       <div>${escapeHtml(selected.state || "No state note.")}</div>
       ${selected.delta ? `<div><strong>Changed:</strong> ${escapeHtml(selected.delta)}</div>` : ""}
@@ -1220,6 +1297,25 @@
     const crit = state.cone ? state.cone.edgeCrit[edgeItem.id] : undefined;
     const influence = crit !== undefined ? ` · influence ${crit}` : "";
     return `<span style="color:${EDGE_COLORS[edgeItem.type] || EDGE_COLORS.causes}">${escapeHtml(edgeItem.type)}</span> ${escapeHtml(other?.label || "?")} ${edgeItem.label ? `· ${escapeHtml(edgeItem.label)}` : ""}${influence}`;
+  }
+
+  // Detail-panel block for a merged (join) node: the composed join-title, the
+  // distinct moves it spans, and the pinned joint state (§1.6 / R7). Empty for
+  // ordinary nodes. This is where the full truth lives — the card only shows
+  // the short composed title.
+  function mergedDetail(selected) {
+    if (!selected || !Array.isArray(selected.mergedActions) || !selected.mergedActions.length) return "";
+    const Engine = (typeof window !== "undefined" && window.StoryDagEngine) || null;
+    const title = Engine && Engine.composeMergedLabel ? Engine.composeMergedLabel(selected) : null;
+    const moves = [selected.action, ...selected.mergedActions]
+      .filter((a) => a && a.entry)
+      .map((a) => `${a.entry}(${Object.values(a.binding || {}).join(", ")})`)
+      .map((text) => `<code>${escapeHtml(text)}</code>`)
+      .join(" + ");
+    const stateRows = Array.isArray(selected.mergedState) && selected.mergedState.length
+      ? `<div class="muted">Joint state: ${selected.mergedState.map((atom) => `<code>${escapeHtml(atom)}</code>`).join(" ")}</div>`
+      : "";
+    return `<div class="merged-row"><strong>Join${title ? ` (${escapeHtml(title)})` : ""}:</strong> ${moves}</div>${stateRows}`;
   }
 
   function coneStatusLine(selected) {
@@ -1736,6 +1832,16 @@
   function truncate(text, length) {
     const value = String(text || "");
     return value.length > length ? `${value.slice(0, length - 1)}…` : value;
+  }
+
+  // Card title for a node. Merged (join) nodes get an action-set title
+  // ("red: warn + give → woodcutter") from the engine so the convergence
+  // reads as a join, not a duplicate of one parent. Falls back to the
+  // stored label (which the detail panel still shows verbatim).
+  function displayLabel(item) {
+    const Engine = (typeof window !== "undefined" && window.StoryDagEngine) || null;
+    const joined = Engine && Engine.composeMergedLabel ? Engine.composeMergedLabel(item) : null;
+    return joined || item.label || item.type || "";
   }
 
   function escapeHtml(value) {

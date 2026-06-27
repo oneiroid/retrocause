@@ -302,6 +302,73 @@ test("pinned merge is state-preserving for distinct-parent/distinct-action conve
   assert.deepEqual([...after.get("x")].sort(), ["common"]);
 });
 
+// -------- Join-label: absorbed actions + composed title --------
+
+// Convergent graph whose two equal-state children carry distinct actions,
+// so a merge has something to compose a join-title from. x survives
+// (depth 2, earliest order); y (the give) is absorbed.
+function actionConvergentGraph() {
+  return engine.normalizeGraph({
+    root: "root",
+    meta: { title: "join-label fixture", version: 2 },
+    nodes: [
+      { id: "root", label: "root", expr: "start()" },
+      { id: "pA", label: "A", expr: "a()", createdBy: "phi-auto" },
+      { id: "pB", label: "B", expr: "b()", createdBy: "phi-auto" },
+      { id: "x", label: "red warns woodcutter about destination", expr: "warn(red,woodcutter,destination)", createdBy: "phi-auto",
+        action: { entry: "warn", binding: { Sender: "red", Receiver: "woodcutter", Topic: "destination" } } },
+      { id: "y", label: "red gives basket to woodcutter", expr: "give(red,woodcutter,basket)", createdBy: "phi-auto",
+        action: { entry: "give", binding: { Giver: "red", Receiver: "woodcutter", Item: "basket" } } },
+    ],
+    edges: [
+      { id: "e1", from: "root", to: "pA", type: "causes" },
+      { id: "e2", from: "root", to: "pB", type: "causes" },
+      { id: "e3", from: "pA", to: "x", type: "causes" },
+      { id: "e4", from: "pB", to: "y", type: "causes" },
+    ],
+  });
+}
+
+test("merge records absorbed nodes' actions on survivor.mergedActions", () => {
+  const g = actionConvergentGraph();
+  const res = engine.mergeEquivalentStates(g, { groups: [["x", "y"]] });
+  assert.equal(res.merged, 1);
+  const survivor = g.nodes.find((n) => n.id === res.survivors[0]);
+  assert.equal(survivor.id, "x");
+  assert.equal(survivor.mergedActions.length, 1);
+  assert.equal(survivor.mergedActions[0].entry, "give");
+  assert.equal(survivor.mergedActions[0].binding.Item, "basket");
+});
+
+test("composeMergedLabel builds 'actor: verb + verb -> target' from the merged action set", () => {
+  const g = actionConvergentGraph();
+  engine.mergeEquivalentStates(g, { groups: [["x", "y"]] });
+  const survivor = g.nodes.find((n) => n.id === "x");
+  assert.equal(engine.composeMergedLabel(survivor), "red: warn + give → woodcutter");
+});
+
+test("composeMergedLabel returns null for a non-merged node (no mergedActions)", () => {
+  const plain = { action: { entry: "warn", binding: { Sender: "red", Receiver: "woodcutter" } } };
+  assert.equal(engine.composeMergedLabel(plain), null);
+});
+
+test("composeMergedLabel drops actor/target affixes when they disagree", () => {
+  const node = {
+    action: { entry: "warn", binding: { Sender: "red", Receiver: "woodcutter", Topic: "t" } },
+    mergedActions: [{ entry: "flee", binding: { X: "wolf", To: "den" } }],
+  };
+  // actors red/wolf differ, second args woodcutter/den differ -> bare verb set.
+  assert.equal(engine.composeMergedLabel(node), "warn + flee");
+});
+
+test("composeMergedLabel dedups repeated verbs", () => {
+  const node = {
+    action: { entry: "warn", binding: { Sender: "red", Receiver: "woodcutter" } },
+    mergedActions: [{ entry: "warn", binding: { Sender: "red", Receiver: "woodcutter" } }],
+  };
+  assert.equal(engine.composeMergedLabel(node), "red: warn → woodcutter");
+});
+
 // -------- Task 2: state-preservation integration test --------
 
 const Phi = require("../phi.js");

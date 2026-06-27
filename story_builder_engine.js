@@ -227,6 +227,7 @@
       const survivorId = ids[0];
       const survivor = graph.nodes.find((node) => node.id === survivorId);
       const absorbed = [];
+      const absorbedActions = [];
       for (const victimId of ids.slice(1)) {
         // R4: skip if either reaches the other via canonical edges (merge would create a cycle).
         const canonEdges = graph.edges.filter(isCanonicalEdge);
@@ -234,6 +235,10 @@
           skipped += 1;
           continue;
         }
+        // Capture the victim's action before absorbNode deletes the node, so
+        // the survivor can render a join-title spanning all merged moves.
+        const victim = graph.nodes.find((node) => node.id === victimId);
+        if (victim && victim.action) absorbedActions.push(victim.action);
         absorbNode(graph, victimId, survivorId);
         absorbed.push(victimId);
         merged += 1;
@@ -241,6 +246,7 @@
       if (absorbed.length) {
         survivor.tags = Array.from(new Set([...(survivor.tags || []), "merged"]));
         survivor.mergedFrom = [...(survivor.mergedFrom || []), ...absorbed];
+        if (absorbedActions.length) survivor.mergedActions = [...(survivor.mergedActions || []), ...absorbedActions];
         if (pinnedState) survivor.mergedState = pinnedState.slice();
         survivorSet.add(survivorId);
       }
@@ -248,7 +254,32 @@
     return { ok: true, merged, skipped, survivors: Array.from(survivorSet) };
   }
 
-  const api = { EDGE_TYPES, normalizeGraph, reachable, wouldCreateCycle, addEdge, addBranch, validateGraph, topoRanks, exportGraph, importGraph, mergeEquivalentStates };
+  // A merged (join) node is semantically a converged *state*, not a single
+  // move, but it still wears one absorbed action's label. Compose a title
+  // spanning the whole merged action set — "actor: v1 + v2 → target" — so the
+  // join stops masquerading as a duplicate of one of its parents. Returns null
+  // for non-merged nodes (caller falls back to node.label).
+  // Binding-value order = declaration order (see materializeCandidate / fixture
+  // params): [0] is the actor, [1] the receiver/target.
+  function composeMergedLabel(node) {
+    if (!node || !Array.isArray(node.mergedActions) || !node.mergedActions.length) return null;
+    const actions = [node.action, ...node.mergedActions]
+      .filter((a) => a && a.entry && a.binding);
+    if (actions.length < 2) return null;
+    const verbs = [];
+    for (const a of actions) if (!verbs.includes(a.entry)) verbs.push(a.entry);
+    const nth = (a, i) => Object.values(a.binding)[i];
+    const actors = new Set(actions.map((a) => nth(a, 0)));
+    const targets = actions.map((a) => nth(a, 1));
+    const actor = actors.size === 1 ? [...actors][0] : null;
+    const target = targets.every((t) => t != null) && new Set(targets).size === 1 ? targets[0] : null;
+    let title = verbs.join(" + ");
+    if (actor != null) title = `${actor}: ${title}`;
+    if (target != null) title = `${title} → ${target}`;
+    return title;
+  }
+
+  const api = { EDGE_TYPES, normalizeGraph, reachable, wouldCreateCycle, addEdge, addBranch, validateGraph, topoRanks, exportGraph, importGraph, mergeEquivalentStates, composeMergedLabel };
 
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   root.StoryDagEngine = api;

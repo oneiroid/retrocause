@@ -203,7 +203,162 @@
     ],
   };
 
-  const seeds = { red, magi, necklace, tortoise };
+  // ---------------------------------------------------------------
+  // Master and Margarita — the ending (ch. 29–32): Yeshua's verdict
+  // through the eternal refuge. Untyped (no fixture yet); built as a
+  // cone test-subject, NOT a state-walker subject.
+  //
+  // METHODOLOGY (INTUITIONS §8 sand-castle problem): the structure is
+  // encoded from the novel's causal order, then cone.js is run on it.
+  // The graph is NOT tuned to produce a particular waist.
+  //
+  // ONE modeling decision, declared: the ending is encoded as TWO arms
+  // converging at `mm_release` — the FRAME thread (the Master &
+  // Margarita's death-and-flight, mm_dispatch…mm_reveal) and the
+  // PILATE/novel thread (mm_pilate_waits). This mirrors the book's
+  // novel-within-a-novel architecture. The single edge
+  // mm_pilate_waits → mm_release is Pilate's inert ~2000-year wait: one
+  // long span with no intermediate events, exactly as written.
+  //
+  // Ω = mm_refuge (the Master's peace). Note mm_ascend (Pilate → Yeshua)
+  // deliberately does NOT reach Ω: Pilate's destination is not the
+  // Master's, so the cone places it on the rim — a faithful consequence,
+  // not a stipulation.
+  // ---------------------------------------------------------------
+  const mm = {
+    title: "Master and Margarita — the ending",
+    summary: "Two-arm convergence (frame + Pilate/novel) onto the release; funnel to the eternal refuge. Cone test-subject.",
+    root: "mm_levi",
+    omega: ["mm_refuge"],
+    nodes: [
+      node("mm_levi", "Matthew Levi brings the verdict", "petition(levi, woland, peace)",
+        "Yeshua's judgment: the Master has earned peace, not light. The destination is fixed here.",
+        "root", ["verdict", "boundary"]),
+      // Frame arm: the Master & Margarita's death and flight.
+      node("mm_dispatch", "Woland sends Azazello", "dispatch(woland, azazello)",
+        "The verdict is handed to an agent who will arrange the crossing.",
+        "canonical", ["errand"]),
+      node("mm_wine", "Azazello brings the poisoned wine", "poison(azazello, wine)",
+        "The instrument of the crossing arrives at the basement.",
+        "canonical", ["threshold", "poison"]),
+      node("mm_death", "Master and Margarita die in the world", "die(master, margarita)",
+        "The real-world deaths: the gate every path of their liberation must pass.",
+        "canonical", ["death", "gate"]),
+      node("mm_liberation", "Freed as spirits", "free(azazello, master, margarita)",
+        "Death on one side becomes release on the other.",
+        "canonical", ["liberation"]),
+      node("mm_burn", "The basement is burned", "burn(azazello, basement)",
+        "The last material tie to Moscow is severed.",
+        "canonical", ["severance"]),
+      node("mm_flight", "Farewell to Moscow from Sparrow Hills", "depart(retinue, moscow)",
+        "The city is taken leave of; the ride out of the world begins.",
+        "canonical", ["farewell"]),
+      node("mm_transfigure", "The retinue resumes true forms", "transfigure(retinue)",
+        "Koroviev, Behemoth, Azazello, Woland drop their Moscow masks.",
+        "canonical", ["unmasking"]),
+      node("mm_cliff", "They reach the rocky place", "arrive(retinue, rocky_place)",
+        "The threshold where the two threads of the book are about to meet.",
+        "canonical", ["threshold"]),
+      node("mm_reveal", "Woland reveals Pilate's punishment", "reveal(woland, pilate_sentence)",
+        "Pilate is shown: sleepless, longing to finish the interrupted conversation.",
+        "canonical", ["recognition"]),
+      // Pilate/novel arm: one inert span of ~2000 years.
+      node("mm_pilate_waits", "Pilate waits in the stone chair", "await(pilate, release)",
+        "Two thousand years of remorse, holding a single unfinished sentence open.",
+        "canonical", ["pilate", "persistence", "boundary"]),
+      // Convergence: the frame and the novel join here.
+      node("mm_release", "The Master frees Pilate with the novel's last line", "finish_novel(master, free(pilate))",
+        "'Free!' — the author's final sentence terminates a 2000-year sentence. The book's two arms meet.",
+        "convergence", ["convergence", "retrocause", "freedom"]),
+      node("mm_ascend", "Pilate ascends the moonbeam to Yeshua", "ascend(pilate, yeshua)",
+        "The interrupted conversation resumes — Pilate's destination, not the Master's.",
+        "canonical", ["resolution"]),
+      node("mm_refuge", "Master and Margarita pass to the eternal refuge", "rest(master, margarita, peace)",
+        "The house, the garden, the candles, Schubert — peace, the attractor the whole arc fell toward.",
+        "canonical", ["peace", "attractor"]),
+    ],
+    edges: [
+      // Frame arm spine.
+      ...pathEdges(["mm_levi", "mm_dispatch", "mm_wine", "mm_death", "mm_liberation",
+                    "mm_burn", "mm_flight", "mm_transfigure", "mm_cliff", "mm_reveal", "mm_release"]),
+      // Pilate/novel arm — the long 2000-year span into the convergence.
+      edge("mm_levi", "mm_pilate_waits", "causes", "the Pilate thread comes due"),
+      edge("mm_pilate_waits", "mm_release", "causes", "2000-year wait ends at the last sentence"),
+      // After the convergence: Pilate exits (off-Ω), the Master goes to peace.
+      edge("mm_release", "mm_ascend", "causes", "Pilate goes to Yeshua"),
+      edge("mm_release", "mm_refuge", "causes", "the Master is let go to peace"),
+    ],
+  };
+
+  // ---------------------------------------------------------------
+  // Master and Margarita — the Torgsin (currency-store) scene, ch. 28:
+  // Koroviev & Behemoth's hooliganism, ending in the fire and their
+  // vanishing. A deliberately SINGLE world-path (one thread, no
+  // parallel plots) — chosen to test what the apparatus says about a
+  // realized world-line per se, with no branching to manufacture.
+  //
+  // Untyped (cone needs no actions). Ω = tg_escape: the vanishing the
+  // whole escalation bends toward.
+  // ---------------------------------------------------------------
+  const torgsin = {
+    title: "Master and Margarita — the Torgsin scene",
+    summary: "Single world-path: Koroviev & Behemoth's escalation to fire and escape. Tests the apparatus on a non-branching thread.",
+    root: "tg_invite",
+    omega: ["tg_escape"],
+    nodes: [
+      // Actions name torgsin_fixture entries (all fixed-agent, binding {}).
+      // Effect-only beats (herring, whistle, sympathy, exposed) carry NO
+      // action: the walker passes their pre-state through + runs closure, so
+      // tg_exposed surfaces the fraud_reveal derivation without an entry.
+      node("tg_invite", "Koroviev: 'Eat, Behemoth'", "invite(koroviev, behemoth, eat)",
+        "The provocation is licensed; the scene is set in motion.", "root", ["provocation"]),
+      node("tg_devour", "Behemoth devours the fruit and chocolate", "consume(behemoth, goods)",
+        "Open theft of display goods — the norm is broken in plain sight.", "canonical", ["transgression"],
+        { entry: "gorge", binding: {} }),
+      node("tg_demand", "The saleswoman demands a receipt", "demand(saleswoman, payment)",
+        "The institution asserts its rule: pay in currency or stop.", "canonical", ["rule", "alarm"],
+        { entry: "demand", binding: {} }),
+      node("tg_smooth", "Koroviev's soothing patter", "placate(koroviev, saleswoman)",
+        "The rule is met not with compliance but with charming evasion.", "canonical", ["evasion"],
+        { entry: "placate", binding: {} }),
+      node("tg_call", "'Palosich!' — the staff raise the alarm", "summon(saleswoman, manager)",
+        "Escalation past the counter: authority is called in.", "canonical", ["alarm"],
+        { entry: "summon", binding: {} }),
+      node("tg_herring", "Behemoth eats the Kerch herring", "consume(behemoth, herring)",
+        "The transgression continues, unhurried, while the alarm spreads.", "canonical", ["transgression"]),
+      node("tg_pavel", "Pavel Iosifovich commands 'Whistle!'", "command(pavel, whistle)",
+        "The competent manager reads the scene and calls the apparatus of order.", "canonical", ["authority"],
+        { entry: "command_whistle", binding: {} }),
+      node("tg_whistle", "The doorman whistles; the crowd encircles", "signal(doorman, alarm)",
+        "The mechanism of capture engages; the public closes in.", "canonical", ["encirclement"]),
+      node("tg_speech", "Koroviev's demagogic speech", "incite(koroviev, crowd)",
+        "He redirects the crowd: the hungry primus-mender against the currency-swollen foreigner.", "canonical", ["demagogy", "inversion"],
+        { entry: "incite", binding: {} }),
+      node("tg_sympathy", "The crowd's sympathy turns", "shift(crowd, sympathy)",
+        "Against expectation, the mob's feeling swings toward the thieves.", "canonical", ["reversal"]),
+      node("tg_oldman", "The meek old man's 'miracle'", "strike(old_man, foreigner)",
+        "A timid stranger is transfigured by the speech and assaults the foreigner — 'Pravda!'", "convergence", ["miracle", "eruption"],
+        { entry: "erupt_truth", binding: {} }),
+      node("tg_exposed", "The foreigner screams in pure Russian", "expose(foreigner, fraud)",
+        "The accent vanishes under shock: the 'foreigner' was a fraud all along.", "canonical", ["recognition", "irony"]),
+      node("tg_police", "Police helmets approach", "arrive(police)",
+        "Order nearly closes on the scene.", "canonical", ["capture"],
+        { entry: "arrive_police", binding: {} }),
+      node("tg_fire", "Behemoth ignites the counter with benzine", "ignite(behemoth, store)",
+        "The escape hatch: chaos manufactured to dissolve the trap.", "canonical", ["fire", "dissolution"],
+        { entry: "ignite", binding: {} }),
+      node("tg_escape", "Koroviev and Behemoth vanish", "vanish(koroviev, behemoth)",
+        "The scene's attractor: the two slip the closing net and are gone.", "canonical", ["escape", "attractor"],
+        { entry: "vanish", binding: {} }),
+    ],
+    edges: [
+      ...pathEdges(["tg_invite", "tg_devour", "tg_demand", "tg_smooth", "tg_call",
+                    "tg_herring", "tg_pavel", "tg_whistle", "tg_speech", "tg_sympathy",
+                    "tg_oldman", "tg_exposed", "tg_police", "tg_fire", "tg_escape"]),
+    ],
+  };
+
+  const seeds = { red, magi, necklace, tortoise, mm, torgsin };
 
   const api = { seeds, node, edge, pathEdges };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
