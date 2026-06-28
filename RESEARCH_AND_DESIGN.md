@@ -40,7 +40,7 @@ Node = {
   id, label,
   expr,              // free-form expression, e.g. meet(red, wolf)
   state,             // prose note: what is true in the story world here
-  kind,              // root | story | branch | convergence | note
+  kind,              // root | story | branch | note  (bottleneck is derived, not a kind)
   tags,              // motifs, actors, values, risks
   delta,             // branch metadata: what changed from the original
   invariants,        // branch metadata: facts that must stay true

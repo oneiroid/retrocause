@@ -48,13 +48,16 @@
     root: "#38bdf8",
     story: "#38bdf8",
     branch: "#f472b6",
-    convergence: "#f59e0b",
+    bottleneck: "#f59e0b",
     note: "#94a3b8"
   };
-  // A node counts as a convergence only when strictly more than two paths
-  // merge into it AND it has exactly one way out — i.e. in-degree > 2 and
-  // out-degree === 1. It is derived from topology, never authored as a kind.
-  const CONVERGENCE_MIN_INPUTS = 3;
+  // A bottleneck is a waist: strictly more than two paths merge into it AND
+  // the flow re-widens — it forks again at the node (out-degree >= 2) or at
+  // some descendant later. A many-in node that just dead-ends or runs to a
+  // single terminating line is a sink, not a bottleneck. Derived from
+  // topology, never authored as a kind.
+  const BOTTLENECK_MIN_INPUTS = 3;
+  const BRANCH_MIN_OUTPUTS = 2;
   const EDGE_COLORS = {
     causes: "#64748b",
     leads_to: "#38bdf8",
@@ -221,31 +224,50 @@
 
   function renderAll() {
     state.ranks = topoRanks(state.graph);
-    state.convergence = computeConvergence();
+    state.bottlenecks = computeBottlenecks();
     renderGraph();
     renderPanels();
     el.jsonText.value = exportJson();
   }
 
-  // Set of node ids that are convergences: in-degree > 2 and out-degree
-  // exactly 1 (CONVERGENCE_MIN_INPUTS). Derived each render from the edges.
-  function computeConvergence() {
+  // Set of node ids that are bottlenecks: in-degree > 2 (BOTTLENECK_MIN_INPUTS)
+  // AND the flow re-widens at or below the node — it forks here, or a
+  // descendant forks later (out-degree >= BRANCH_MIN_OUTPUTS). A many-in node
+  // that only dead-ends or runs to a single line is a sink, not a bottleneck.
+  // Derived each render from the edges.
+  function computeBottlenecks() {
     const indeg = new Map();
     const outdeg = new Map();
-    state.graph.nodes.forEach((item) => { indeg.set(item.id, 0); outdeg.set(item.id, 0); });
+    const children = new Map();
+    state.graph.nodes.forEach((item) => { indeg.set(item.id, 0); outdeg.set(item.id, 0); children.set(item.id, []); });
     state.graph.edges.forEach((edgeItem) => {
-      if (outdeg.has(edgeItem.from)) outdeg.set(edgeItem.from, outdeg.get(edgeItem.from) + 1);
+      if (outdeg.has(edgeItem.from)) { outdeg.set(edgeItem.from, outdeg.get(edgeItem.from) + 1); children.get(edgeItem.from).push(edgeItem.to); }
       if (indeg.has(edgeItem.to)) indeg.set(edgeItem.to, indeg.get(edgeItem.to) + 1);
     });
+    // Does this node, or any descendant, fork (>= BRANCH_MIN_OUTPUTS out)?
+    // Memoized DFS over the acyclic graph.
+    const widensMemo = new Map();
+    function widensAtOrBelow(id) {
+      if (widensMemo.has(id)) return widensMemo.get(id);
+      widensMemo.set(id, false); // cycle guard (graph is a DAG)
+      let widens = (outdeg.get(id) || 0) >= BRANCH_MIN_OUTPUTS;
+      if (!widens) {
+        for (const next of children.get(id) || []) {
+          if (widensAtOrBelow(next)) { widens = true; break; }
+        }
+      }
+      widensMemo.set(id, widens);
+      return widens;
+    }
     const ids = new Set();
     state.graph.nodes.forEach((item) => {
-      if (indeg.get(item.id) >= CONVERGENCE_MIN_INPUTS && outdeg.get(item.id) === 1) ids.add(item.id);
+      if (indeg.get(item.id) >= BOTTLENECK_MIN_INPUTS && widensAtOrBelow(item.id)) ids.add(item.id);
     });
     return ids;
   }
 
-  function isConvergence(id) {
-    return !!state.convergence && state.convergence.has(id);
+  function isBottleneck(id) {
+    return !!state.bottlenecks && state.bottlenecks.has(id);
   }
 
   function visibleNodeIds() {
@@ -253,7 +275,7 @@
     if (state.viewMode === "spine") {
       return new Set(state.graph.nodes.filter((item) => item.kind !== "branch" || item.id === state.selectedId).map((item) => item.id));
     }
-    const ids = new Set(state.graph.nodes.filter((item) => item.kind === "branch" || isConvergence(item.id) || item.id === state.selectedId).map((item) => item.id));
+    const ids = new Set(state.graph.nodes.filter((item) => item.kind === "branch" || isBottleneck(item.id) || item.id === state.selectedId).map((item) => item.id));
     state.graph.edges.forEach((edgeItem) => {
       if (edgeItem.type === "choice" || edgeItem.type === "rejoins") {
         ids.add(edgeItem.from);
@@ -363,10 +385,10 @@
       .attr("x", (item) => -nodeWidth(item) / 2)
       .attr("y", -32)
       .attr("fill", (item) => nodeFill(item))
-      .attr("stroke", (item) => isConvergence(item.id) ? NODE_COLORS.convergence : (NODE_COLORS[item.kind] || NODE_COLORS.note));
+      .attr("stroke", (item) => isBottleneck(item.id) ? NODE_COLORS.bottleneck : (NODE_COLORS[item.kind] || NODE_COLORS.note));
     nodeSelection.select(".node-label").text((item) => truncate(item.label, 33));
     nodeSelection.select(".node-state").text((item) => truncate(item.state, 42));
-    nodeSelection.select(".node-meta").text((item) => `${isConvergence(item.id) ? "convergence" : item.kind} · r${item.rank} · ${(item.tags || []).slice(0, 3).join(", ")}`);
+    nodeSelection.select(".node-meta").text((item) => `${isBottleneck(item.id) ? "bottleneck" : item.kind} · r${item.rank} · ${(item.tags || []).slice(0, 3).join(", ")}`);
     nodeSelection.call(d3.drag()
       .on("start", (event, item) => {
         // Mark the dragged node so it repels harder (give-way), and
@@ -566,7 +588,7 @@
     el.nodeCount.textContent = graph.nodes.length;
     el.edgeCount.textContent = graph.edges.length;
     el.branchCount.textContent = graph.nodes.filter((item) => item.kind === "branch").length;
-    el.convergeCount.textContent = state.convergence ? state.convergence.size : 0;
+    el.bottleneckCount.textContent = state.bottlenecks ? state.bottlenecks.size : 0;
     renderSelects();
     renderSelected(selected);
     syncEditor(selected);
@@ -981,7 +1003,7 @@
   }
 
   function nodeFill(item) {
-    if (isConvergence(item.id)) return "#3b2608";
+    if (isBottleneck(item.id)) return "#3b2608";
     if (item.kind === "branch") return "#3a1230";
     if (item.kind === "root") return "#0d2a3f";
     return "#0e2035";

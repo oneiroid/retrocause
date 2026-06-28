@@ -3,6 +3,6 @@
   "private": true,
   "version": "0.1.0",
   "scripts": {
-    "test": "node --check story_builder_app.js && node --check story_builder_engine.js && node --check seeds.js && node --test tests/story_builder_engine.test.js"
+    "test": "node --check story_builder_app.js && node --check story_builder_engine.js && node --check seeds.js && node --check merge_predicate.js && node --test tests/story_builder_engine.test.js tests/merge_predicate.test.js"
   }
 }

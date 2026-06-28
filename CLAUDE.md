@@ -44,8 +44,10 @@ side. See `CONCEPT.md` §"What each layer commits to".
   "canonical" class of edge — they are all the same kind of object,
   distinguished only by type and color.
 - **Nodes.** A node has an `id`, `label`, a free-form `expr`, a prose
-  `state` note, `kind` (`root` / `story` / `branch` / `convergence` /
-  `note`), `tags`, and optional branch metadata (`delta`, `invariants`).
+  `state` note, `kind` (`root` / `story` / `branch` / `note`), `tags`, and
+  optional branch metadata (`delta`, `invariants`). "Bottleneck" is **not**
+  a kind — it is derived from topology each render (in-degree > 2 and the
+  flow re-widens at or below the node).
 
 ## Gotchas
 
