@@ -1,10 +1,10 @@
 (function attachStoryDagEngine(root) {
-  const EDGE_TYPES = ["causes", "enables", "blocks", "choice", "rejoins", "parallels", "foreshadows"];
+  const EDGE_TYPES = ["causes", "leads_to", "choice", "rejoins"];
 
   function normalizeGraph(graph) {
     const clone = JSON.parse(JSON.stringify(graph));
     clone.nodes = (clone.nodes || []).map((node) => ({
-      kind: "canonical",
+      kind: "story",
       tags: [],
       state: "",
       expr: "event(?)",
@@ -17,7 +17,6 @@
       id: edge.id || `e_${edge.from}_${edge.to}_${index}`,
       type: edge.type || "causes",
       label: edge.label || edge.type || "edge",
-      canonical: edge.canonical ?? edge.type === "causes",
       ...edge
     }));
     clone.root = clone.root || clone.nodes[0]?.id || "root";
@@ -50,7 +49,6 @@
       id: edge.id || `e_${edge.from}_${edge.to}_${edge.type || "edge"}_${graph.edges.length}`,
       type: edge.type || "causes",
       label: edge.label || edge.type || "edge",
-      canonical: edge.canonical ?? false,
       ...edge
     });
     return { ok: true };
@@ -71,13 +69,13 @@
       ...branch
     };
     graph.nodes.push(newNode);
-    const choice = addEdge(graph, { from: sourceId, to: newNode.id, type: "choice", label: newNode.delta || "alternative branch", canonical: false, branchId: newNode.id });
+    const choice = addEdge(graph, { from: sourceId, to: newNode.id, type: "choice", label: newNode.delta || "alternative branch", branchId: newNode.id });
     if (!choice.ok) {
       graph.nodes = graph.nodes.filter((node) => node.id !== newNode.id);
       return choice;
     }
     if (rejoinTargetId) {
-      const rejoin = addEdge(graph, { from: newNode.id, to: rejoinTargetId, type: "rejoins", label: "rejoins canonical path", canonical: false, branchId: newNode.id });
+      const rejoin = addEdge(graph, { from: newNode.id, to: rejoinTargetId, type: "rejoins", label: "rejoins the story", branchId: newNode.id });
       if (!rejoin.ok) return rejoin;
     }
     return { ok: true, node: newNode };
@@ -141,114 +139,7 @@
     return graph;
   }
 
-  // ---- Auto-merge (spec 2026-06-22): collapse state-equivalent nodes. ----
-
-  function isCanonicalEdge(edge) {
-    return edge.canonical === true || (edge.canonical === undefined && edge.type === "causes");
-  }
-
-  // Shortest canonical distance from any root (node with no canonical
-  // in-edges). Pure topology — no fixture needed (spec R3).
-  function canonicalDepths(graph) {
-    const depth = new Map();
-    const indeg = new Map();
-    const adj = new Map();
-    graph.nodes.forEach((node) => { indeg.set(node.id, 0); adj.set(node.id, []); });
-    graph.edges.forEach((edge) => {
-      if (!isCanonicalEdge(edge)) return;
-      if (!indeg.has(edge.to) || !adj.has(edge.from)) return;
-      indeg.set(edge.to, indeg.get(edge.to) + 1);
-      adj.get(edge.from).push(edge.to);
-    });
-    const queue = [];
-    graph.nodes.forEach((node) => {
-      if (indeg.get(node.id) === 0) { depth.set(node.id, 0); queue.push(node.id); }
-    });
-    while (queue.length) {
-      const id = queue.shift();
-      for (const next of adj.get(id)) {
-        const cand = depth.get(id) + 1;
-        depth.set(next, Math.min(depth.has(next) ? depth.get(next) : Infinity, cand));
-        indeg.set(next, indeg.get(next) - 1);
-        if (indeg.get(next) === 0) queue.push(next);
-      }
-    }
-    return depth;
-  }
-
-  // Absorb victim into survivor: rewire edges, drop self-loops, dedup
-  // parallel edges (canonical wins), remap omega, delete victim (R5/R6).
-  function absorbNode(graph, victimId, survivorId) {
-    graph.edges.forEach((edge) => {
-      if (edge.from === victimId) edge.from = survivorId;
-      if (edge.to === victimId) edge.to = survivorId;
-    });
-    graph.edges = graph.edges.filter((edge) => edge.from !== edge.to);
-    const kept = [];
-    const byKey = new Map();
-    for (const edge of graph.edges) {
-      const key = `${edge.from} ${edge.to} ${edge.type}`;
-      if (!byKey.has(key)) { byKey.set(key, edge); kept.push(edge); }
-      else if (isCanonicalEdge(edge) && !isCanonicalEdge(byKey.get(key))) {
-        byKey.get(key).canonical = true; // keep the canonical incarnation
-      }
-    }
-    graph.edges = kept;
-    if (Array.isArray(graph.omega)) {
-      graph.omega = Array.from(new Set(graph.omega.map((id) => (id === victimId ? survivorId : id))));
-    }
-    graph.nodes = graph.nodes.filter((node) => node.id !== victimId);
-  }
-
-  function mergeEquivalentStates(graph, opts = {}) {
-    const groups = opts.groups || [];
-    const eligible = opts.eligibleIds
-      ? (opts.eligibleIds instanceof Set ? opts.eligibleIds : new Set(opts.eligibleIds))
-      : null;
-    const depths = canonicalDepths(graph);
-    const orderIndex = new Map(graph.nodes.map((node, idx) => [node.id, idx]));
-    let merged = 0;
-    let skipped = 0;
-    const survivorSet = new Set();
-
-    for (const rawGroup of groups) {
-      const entryIds = Array.isArray(rawGroup) ? rawGroup : (rawGroup.ids || []);
-      const pinnedState = Array.isArray(rawGroup) ? null : (rawGroup.state || null);
-      const ids = entryIds.filter((id) =>
-        graph.nodes.some((node) => node.id === id) && (!eligible || eligible.has(id)));
-      if (ids.length < 2) continue;
-      // R3: survivor = smallest canonical depth, tie by node order.
-      ids.sort((a, b) => {
-        const da = depths.has(a) ? depths.get(a) : Infinity;
-        const db = depths.has(b) ? depths.get(b) : Infinity;
-        if (da !== db) return da - db;
-        return (orderIndex.get(a) ?? 0) - (orderIndex.get(b) ?? 0);
-      });
-      const survivorId = ids[0];
-      const survivor = graph.nodes.find((node) => node.id === survivorId);
-      const absorbed = [];
-      for (const victimId of ids.slice(1)) {
-        // R4: skip if either reaches the other via canonical edges (merge would create a cycle).
-        const canonEdges = graph.edges.filter(isCanonicalEdge);
-        if (reachable(graph, survivorId, victimId, canonEdges) || reachable(graph, victimId, survivorId, canonEdges)) {
-          skipped += 1;
-          continue;
-        }
-        absorbNode(graph, victimId, survivorId);
-        absorbed.push(victimId);
-        merged += 1;
-      }
-      if (absorbed.length) {
-        survivor.tags = Array.from(new Set([...(survivor.tags || []), "merged"]));
-        survivor.mergedFrom = [...(survivor.mergedFrom || []), ...absorbed];
-        if (pinnedState) survivor.mergedState = pinnedState.slice();
-        survivorSet.add(survivorId);
-      }
-    }
-    return { ok: true, merged, skipped, survivors: Array.from(survivorSet) };
-  }
-
-  const api = { EDGE_TYPES, normalizeGraph, reachable, wouldCreateCycle, addEdge, addBranch, validateGraph, topoRanks, exportGraph, importGraph, mergeEquivalentStates };
+  const api = { EDGE_TYPES, normalizeGraph, reachable, wouldCreateCycle, addEdge, addBranch, validateGraph, topoRanks, exportGraph, importGraph };
 
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   root.StoryDagEngine = api;

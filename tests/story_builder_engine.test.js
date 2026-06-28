@@ -8,8 +8,8 @@ function sampleGraph() {
     meta: { title: 'Test Story', version: 2 },
     nodes: [
       { id: 'start', label: 'Start', expr: 'start(story)', kind: 'root' },
-      { id: 'middle', label: 'Middle', expr: 'change(story)', kind: 'canonical' },
-      { id: 'end', label: 'End', expr: 'finish(story)', kind: 'convergence' }
+      { id: 'middle', label: 'Middle', expr: 'change(story)', kind: 'story' },
+      { id: 'end', label: 'End', expr: 'finish(story)', kind: 'story' }
     ],
     edges: [
       { id: 'e1', from: 'start', to: 'middle', type: 'causes' },
