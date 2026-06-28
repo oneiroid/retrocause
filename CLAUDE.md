@@ -1,31 +1,27 @@
 # Retrocause — Branching Narrative DAG Builder
 
-Browser-only D3 lab for editing canonical story DAGs and expanding any state
-node into counterfactual branches.
+Browser-only D3 lab for editing a story DAG and branching any state node
+into counterfactual alternatives.
 
 **Doc stack (philosophy-first ordering — read in this order):**
 
-1. `CONCEPT.md` — the project's thesis (narrative-as-substrate) and
-   the dependency between layers: intuitions → formalism → code.
-2. `INTUITIONS.md` — philosophical core. Each claim tagged
-   `operational` / `partial` / `open`.
-3. `FORMAL_MODEL.md` — the apparatus the intuitions require. Rebased
-   on Lessard & Levison (`prior_research/W13-1408.md`). The v1 model
-   is archived at `prior_research/FORMAL_MODEL_v1.md`.
-4. `RESEARCH_AND_DESIGN.md` — product spec; defers to FORMAL_MODEL
-   for what nodes / edges / state mean.
-5. `DAG_ILIAD.md`, `DAG_ODYSSEY.md` — worked DAGs.
+1. `CONCEPT.md` — the project's thesis (narrative-as-substrate) and the
+   dependency between layers: intuitions → code.
+2. `INTUITIONS.md` — the philosophical core. Each claim tagged
+   `operational` / `partial` / `open` by how far the app actually
+   exercises it.
+3. `RESEARCH_AND_DESIGN.md` — product spec and the interactive-narrative
+   research it draws on.
 
-**Conflict resolution:** when code conflicts with the formal model, the
-model wins. When the formal model and intuitions conflict, the
-disagreement is data — flag it in both docs, don't silently absorb
-either side. See `CONCEPT.md` §"What each layer commits to".
+**Conflict resolution:** when the intuitions and the code disagree, the
+disagreement is data — flag it in both, don't silently absorb either
+side. See `CONCEPT.md` §"What each layer commits to".
 
 ## Run
 
 - App: open `story_builder.html` directly in a browser (no bundler; loads
-  D3 from CDN, reads `seeds.js` / fixtures via `window.*`).
-- Tests: `npm test` — syntax-checks every source file via `node --check`,
+  D3 from CDN, reads `seeds.js` via `window.*`).
+- Tests: `npm test` — syntax-checks the source files via `node --check`,
   then runs `node --test tests/*.test.js`.
 
 ## Module map
@@ -34,11 +30,7 @@ either side. See `CONCEPT.md` §"What each layer commits to".
 |------|------|
 | `story_builder.html` / `.css` / `story_builder_app.js` | D3 UI shell |
 | `story_builder_engine.js` | Graph ops: add/remove nodes & edges, cycle checks, branch composition |
-| `phi.js` | Frontier enumerator (§7.8) + derivation closure (§1.7) + Pareto helpers incl. influence axis (§7.9) |
-| `cone.js` | Possibility cone (§8.3): support/rim, width profile, waists, cut-criticality, agent influence, realized frontier |
-| `state_walker.js` | Topo-replay of canonical edges → per-node post-state |
-| `seeds.js` | Visual canonical DAGs (red, magi, …) with optional `action: {entry, binding}` and per-story `omega` (§8.3.1) |
-| `red_fixture.js`, `magi_fixture.js` | Typed L-lexicons (Appendices B / C) |
+| `seeds.js` | The Red story DAG (nodes + edges) |
 | `tests/*.test.js` | `node --test` unit tests |
 
 ## Conventions
@@ -47,21 +39,15 @@ either side. See `CONCEPT.md` §"What each layer commits to".
   `(function attachX(root){ … })(typeof window !== "undefined" ? window : global)`
   so the same file loads via `<script>` in the browser and `require()` in
   Node tests. New modules must follow this pattern.
-- **Seeds vs fixtures.** `seeds.js` carries *graph shape*; fixtures carry
-  *typed semantics* (entries with `requires` / `effects`). The walker only
-  replays `action` annotations on canonical (`type:"causes"`) edges;
-  non-canonical edges (choice / rejoins / parallels / foreshadows) are
-  visual and contribute no state.
-- **State representation.** A state is `Set<string>` of canonical fact
-  atoms like `"at(red,woods)"`, closed-world. Don't add spaces in atoms;
-  argument order follows the entry declaration.
-- **Section anchors.** When implementing or reviewing formal behavior,
-  cite section numbers from `FORMAL_MODEL.md` in code comments — the
-  existing code does this (`phi.js` headers, `seeds.js` Magi note, etc.).
+- **Edges are plain narrative relations.** Edge `type` is one of
+  `causes`, `leads_to`, `choice`, `rejoins`. There is no privileged
+  "canonical" class of edge — they are all the same kind of object,
+  distinguished only by type and color.
+- **Nodes.** A node has an `id`, `label`, a free-form `expr`, a prose
+  `state` note, `kind` (`root` / `story` / `branch` / `convergence` /
+  `note`), `tags`, and optional branch metadata (`delta`, `invariants`).
 
 ## Gotchas
 
-See top-of-file comments in `seeds.js` and `magi_fixture.js` for
-non-obvious deviations from `FORMAL_MODEL.md` (parallel-chain layout
-in the magi seed, refined `useless_pairing` form). Preserve those
-headers if you touch the rules they document.
+- `seeds.js` carries only the Red story. Branches are not shipped in the
+  seed; they are created in the UI by the user.

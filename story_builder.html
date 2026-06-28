@@ -17,25 +17,23 @@
       </header>
 
       <section class="panel-section">
-        <h2>1 · Story seed</h2>
+        <h2>Story seed</h2>
         <div id="seedList" class="seed-list"></div>
         <div class="button-row">
           <button id="blankGraphBtn" type="button" class="secondary">Blank DAG</button>
-          <button id="loadLocalBtn" type="button" class="secondary">Restore local</button>
         </div>
       </section>
 
-      <details class="panel-section disclosure">
+      <details class="panel-section disclosure" open>
         <summary>Branch selected state</summary>
-        <label>Branch title<input id="branchLabel" placeholder="Red asks a woodcutter for help"></label>
-        <label>Semantic expression<input id="branchExpr" placeholder="ask_help(red, woodcutter)"></label>
-        <label>State after branch<textarea id="branchState" placeholder="What becomes true in the story world?"></textarea></label>
-        <label>Changed condition<textarea id="branchDelta" placeholder="What differs from the canonical path?"></textarea></label>
-        <label>Invariant facts<textarea id="branchInvariants" placeholder="Facts that must remain true for a fair counterfactual"></textarea></label>
+        <label>Branch title<input id="branchLabel"></label>
+        <label>Expression<input id="branchExpr"></label>
+        <label>State after branch<textarea id="branchState"></textarea></label>
+        <label>Changed condition<textarea id="branchDelta"></textarea></label>
+        <label>Invariant facts<textarea id="branchInvariants"></textarea></label>
         <label>Optional rejoin target<select id="rejoinSelect"></select></label>
         <div class="button-row">
           <button id="addBranchBtn" type="button" class="primary">Add branch</button>
-          <button id="suggestBranchBtn" type="button" class="secondary">Prefill suggestion</button>
         </div>
       </details>
 
@@ -65,7 +63,7 @@
           <input id="searchInput" placeholder="Search nodes, tags, expressions" aria-label="Search graph">
           <select id="viewMode" aria-label="View mode">
             <option value="all">All nodes</option>
-            <option value="canonical">Canonical only</option>
+            <option value="spine">Story spine only</option>
             <option value="branches">Branches + joins</option>
           </select>
         </div>
@@ -81,22 +79,9 @@
           <div><strong id="nodeCount">0</strong><span>Nodes</span></div>
           <div><strong id="edgeCount">0</strong><span>Edges</span></div>
           <div><strong id="branchCount">0</strong><span>Branches</span></div>
-          <div><strong id="joinCount">0</strong><span>Rejoins</span></div>
+          <div><strong id="convergeCount">0</strong><span>Converge</span></div>
         </div>
         <div id="validationReport" class="report muted">Validation has not run yet.</div>
-      </section>
-
-      <section class="panel-section">
-        <h2>Possibility cone (&Omega;)</h2>
-        <label>Attractor &Omega; — the story's destination (the one author input, §8.3.1)
-          <select id="omegaSelect"></select>
-        </label>
-        <div class="button-row">
-          <button id="suggestOmegaBtn" type="button" class="secondary"
-            title="Conjectural: §8.3.4 (deriving Ω) is open. Suggests the terminal node most paths arrive at; never applies it for you.">Suggest &Omega; (conjectural)</button>
-        </div>
-        <div id="coneSummary" class="muted cone-summary">Designate &Omega; to derive the cone.</div>
-        <div id="waistList" class="cone-waists"></div>
       </section>
 
       <section class="panel-section">
@@ -112,42 +97,9 @@
         </details>
       </section>
 
-      <section class="panel-section">
-        <h2>Allowed continuations (&Phi;)</h2>
-        <div class="auto-branch-row">
-          <button id="autoBranchBtn" type="button" class="primary">Auto branch</button>
-          <button id="stopAutoBranchBtn" type="button" class="secondary" disabled>Stop</button>
-          <label>Depth<input id="autoDepth" type="number" min="1" max="4" value="2"></label>
-          <label>Width<input id="autoWidth" type="number" min="1" max="4" value="2"></label>
-          <label>Max<input id="autoMaxNodes" type="number" min="1" max="40" value="12"></label>
-          <label class="inline-label">
-            <input id="autoMergeToggle" type="checkbox">
-            <span>Auto-merge convergent states</span>
-          </label>
-        </div>
-        <div id="autoBranchStatus" class="muted auto-branch-status">Bounded recursive branching starts at the selected node.</div>
-        <div class="phi-controls">
-          <label class="inline-label">
-            <input id="phiGroupToggle" type="checkbox" checked>
-            <span>Group by L entry</span>
-          </label>
-          <label class="inline-label">
-            <input id="phiHideNoopToggle" type="checkbox">
-            <span>Hide signature-only entries</span>
-          </label>
-        </div>
-        <div id="phiSummary" class="muted phi-summary">Select a node with a typed fixture (Red or Magi) to see &Phi;.</div>
-        <div id="phiList" class="phi-list"></div>
-      </section>
-
-      <details class="panel-section disclosure">
-        <summary>Branch heuristics</summary>
-        <div id="heuristicList" class="card-list"></div>
-      </details>
-
       <details class="panel-section disclosure">
         <summary>LLM assist</summary>
-        <label>Instruction<textarea id="assistInstruction">Generate three causally plausible alternative branches from the selected state. Preserve invariant facts, make the changed condition explicit, and choose a rejoin target when possible.</textarea></label>
+        <label>Instruction<textarea id="assistInstruction"></textarea></label>
         <div class="button-row">
           <button id="buildPromptBtn" type="button" class="secondary">Build prompt</button>
           <button id="copyPromptBtn" type="button" class="secondary">Copy prompt</button>
@@ -162,6 +114,7 @@
           <button id="exportJsonBtn" type="button" class="secondary">Show JSON</button>
           <button id="downloadJsonBtn" type="button" class="secondary">Download JSON</button>
           <button id="saveLocalBtn" type="button" class="secondary">Save local</button>
+          <button id="loadLocalBtn" type="button" class="secondary">Restore local</button>
         </div>
         <textarea id="jsonText" class="json-box" aria-label="Graph JSON"></textarea>
       </details>
@@ -179,12 +132,7 @@
   </dialog>
 
   <script src="story_builder_engine.js"></script>
-  <script src="phi.js"></script>
-  <script src="cone.js"></script>
-  <script src="red_fixture.js"></script>
-  <script src="magi_fixture.js"></script>
   <script src="seeds.js"></script>
-  <script src="state_walker.js"></script>
   <script src="story_builder_app.js"></script>
 </body>
 </html>
