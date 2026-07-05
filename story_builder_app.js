@@ -637,6 +637,17 @@
     el.editTags.value = (selected?.tags || []).join(", ");
   }
 
+  // Auto-merge on insert: if the freshly added node is the same state in
+  // context as an existing one (same content, parallel paths — see
+  // merge_predicate.js), collapse it into that node so the graph converges
+  // instead of sprouting a duplicate. Returns the merge result or null.
+  function tryAutoMerge(nodeId) {
+    const growth = typeof window !== "undefined" ? window.StoryDagGrowth : null;
+    if (!growth) return null;
+    const result = growth.collapseIfSame(state.graph, nodeId);
+    return result.merged ? result : null;
+  }
+
   function addBranchFromForm() {
     const source = getNode(state.selectedId);
     if (!source) return toast("Select a source node first", true);
@@ -666,9 +677,12 @@
       if (!rejoin.ok) toast(rejoin.message, true);
     }
     [el.branchLabel, el.branchExpr, el.branchState, el.branchDelta, el.branchInvariants].forEach((input) => { input.value = ""; });
-    state.selectedId = id;
+    const merged = tryAutoMerge(id);
+    state.selectedId = merged ? merged.into : id;
     renderAll();
-    toast("Branch added");
+    toast(merged
+      ? `Same state in context — merged into “${getNode(merged.into)?.label || merged.into}”`
+      : "Branch added");
   }
 
   function addManualEdit() {
@@ -693,7 +707,14 @@
       });
       const result = addEdge({ from, to: id, type, label });
       if (!result.ok) return toast(result.message, true);
-      state.selectedId = id;
+      const merged = tryAutoMerge(id);
+      state.selectedId = merged ? merged.into : id;
+      if (merged) {
+        el.manualNodeLabel.value = "";
+        el.manualEdgeLabel.value = "";
+        renderAll();
+        return toast(`Same state in context — merged into “${getNode(merged.into)?.label || merged.into}”`);
+      }
     } else {
       const result = addEdge({ from, to, type, label });
       if (!result.ok) return toast(result.message, true);

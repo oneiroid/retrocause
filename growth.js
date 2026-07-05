@@ -28,6 +28,32 @@
     return `grow_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 7)}`;
   }
 
+  // If `nodeId` is the same state in context as an existing node, collapse it:
+  // remove it and rewire ALL its edges (incoming and outgoing) to the survivor,
+  // skipping rewires the survivor already has. Safe for the same reason the
+  // simple merge is: a rewired edge could only cycle if its far endpoint were
+  // reachable from / could reach the survivor through the victim — which would
+  // have made victim and survivor comparable and blocked the merge.
+  // Returns { merged:true, into } or { merged:false }.
+  function collapseIfSame(graph, nodeId) {
+    const survivor = graph.nodes.find(
+      (other) => other.id !== nodeId && Predicate.sameInContext(graph, nodeId, other.id),
+    );
+    if (!survivor) return { merged: false };
+
+    const touched = graph.edges.filter((e) => e.from === nodeId || e.to === nodeId);
+    graph.edges = graph.edges.filter((e) => e.from !== nodeId && e.to !== nodeId);
+    graph.nodes = graph.nodes.filter((n) => n.id !== nodeId);
+    touched.forEach((e) => {
+      const { id, from: oldFrom, to: oldTo, ...rest } = e;
+      const from = oldFrom === nodeId ? survivor.id : oldFrom;
+      const to = oldTo === nodeId ? survivor.id : oldTo;
+      const duplicate = graph.edges.some((other) => other.from === from && other.to === to);
+      if (!duplicate) Engine.addEdge(graph, { ...rest, from, to });
+    });
+    return { merged: true, into: survivor.id };
+  }
+
   // Insert one continuation. Returns:
   //   { merged:true,  into, edge }  — collapsed into an existing parallel state
   //   { merged:false, node, edge }  — kept as a genuinely new state
@@ -47,16 +73,9 @@
     }
     const edge = graph.edges[graph.edges.length - 1];
 
-    const survivor = graph.nodes.find(
-      (other) => other.id !== node.id && Predicate.sameInContext(graph, node.id, other.id),
-    );
-    if (!survivor) return { merged: false, node, edge };
-
-    // Collapse the candidate into the existing state: drop it, rewire the edge.
-    graph.nodes = graph.nodes.filter((n) => n.id !== node.id);
-    graph.edges = graph.edges.filter((e) => e.id !== edge.id);
-    const rewired = Engine.addEdge(graph, { from, to: survivor.id, type, label });
-    return { merged: true, into: survivor.id, edge: rewired.ok ? graph.edges[graph.edges.length - 1] : edge };
+    const collapsed = collapseIfSame(graph, node.id);
+    if (!collapsed.merged) return { merged: false, node, edge };
+    return { merged: true, into: collapsed.into, edge: graph.edges[graph.edges.length - 1] };
   }
 
   // Apply several continuations in order. Order is significant: a later
@@ -65,7 +84,7 @@
     return (continuations || []).map((c) => insertContinuation(graph, c));
   }
 
-  const api = { insertContinuation, grow };
+  const api = { insertContinuation, grow, collapseIfSame };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   root.StoryDagGrowth = api;
 })(typeof window !== "undefined" ? window : globalThis);

@@ -1,6 +1,6 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { insertContinuation, grow } = require('../growth');
+const { insertContinuation, grow, collapseIfSame } = require('../growth');
 const Engine = require('../story_builder_engine');
 
 // Tiny graph builder. nodes: [id, expr]  edges: [from, to]
@@ -95,6 +95,54 @@ test('an id generated when the candidate omits one', () => {
   const r = insertContinuation(graph, { from: 'root', node: { expr: 'enter(red, woods)' } });
   assert.equal(r.merged, false);
   assert.ok(r.node.id, 'expected a generated id');
+});
+
+// ── COLLAPSE AFTER ARBITRARY INSERTS (UI path) ─────────────────────────────
+// The UI's branch form can attach edges in BOTH directions (choice in, rejoin
+// out) before any merge check runs. collapseIfSame must rewire all of them.
+
+test('collapseIfSame rewires both incoming and outgoing edges to the survivor', () => {
+  // Existing: root─►x─►goal, plus survivor s (arrive) reached from x.
+  // Victim v duplicates s's content, hangs off root, and rejoins goal.
+  const graph = g(
+    [['root', 'start'], ['x', 'a'], ['s', 'arrive(red, grandmother_house)'], ['goal', 'end']],
+    [['root', 'x'], ['x', 's'], ['x', 'goal']],
+  );
+  graph.nodes.push({ id: 'v', expr: 'arrive(red, grandmother_house)', kind: 'branch' });
+  graph.edges.push({ id: 'root_v', from: 'root', to: 'v', type: 'choice' });
+  graph.edges.push({ id: 'v_goal', from: 'v', to: 'goal', type: 'rejoins' });
+
+  const r = collapseIfSame(graph, 'v');
+
+  assert.equal(r.merged, true);
+  assert.equal(r.into, 's');
+  assert.ok(!graph.nodes.some((n) => n.id === 'v'));
+  assert.ok(graph.edges.some((e) => e.from === 'root' && e.to === 's'), 'incoming rewired');
+  assert.ok(graph.edges.some((e) => e.from === 's' && e.to === 'goal'), 'outgoing rewired');
+  assert.equal(Engine.validateGraph(graph).ok, true);
+});
+
+test('collapseIfSame does not duplicate an edge the survivor already has', () => {
+  // Victim's parent already points at the survivor → rewire must be skipped.
+  const graph = g(
+    [['root', 'start'], ['s', 'arrive(red, grandmother_house)']],
+    [['root', 's']],
+  );
+  graph.nodes.push({ id: 'v', expr: 'arrive(red, grandmother_house)', kind: 'story' });
+  graph.edges.push({ id: 'root_v', from: 'root', to: 'v', type: 'causes' });
+
+  const r = collapseIfSame(graph, 'v');
+
+  assert.equal(r.merged, true);
+  assert.equal(graph.edges.filter((e) => e.from === 'root' && e.to === 's').length, 1);
+});
+
+test('collapseIfSame is a no-op when nothing matches', () => {
+  const graph = g([['root', 'start'], ['u', 'unique(thing)']], [['root', 'u']]);
+  const before = JSON.stringify(graph);
+  const r = collapseIfSame(graph, 'u');
+  assert.equal(r.merged, false);
+  assert.equal(JSON.stringify(graph), before);
 });
 
 // ── BAD INPUT ───────────────────────────────────────────────────────────────
