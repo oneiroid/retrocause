@@ -74,16 +74,23 @@ test('unknown node id → not the same', () => {
   assert.equal(sameInContext(graph, 'p', 'nope'), false);
 });
 
-// ── OPEN DESIGN QUESTION (forward-consistency) ─────────────────────────────
-// v0 calls these the same (same content, parallel). But their futures diverge:
-// one leads to rescue, the other to death. Should a divergent future reveal a
-// hidden difference in the present and BLOCK the merge? Decide this only after
-// growing a real DAG and looking — not before.
-test('same content, diverging futures — forward-consistency', { skip: 'v1: not yet decided — look at real output first' }, () => {
+// ── RESOLVED: forward-consistency rejected (2026-07-05) ────────────────────
+// The question was: should a divergent future (rescue vs death) reveal a
+// hidden difference in the present and BLOCK the merge? Growing a real DAG
+// answered no, twice over:
+//   1. In the growth loop the candidate is always a childless leaf at merge
+//      time — the divergence doesn't exist yet, so a merge-time forward check
+//      has nothing to look at. Enforcing it would need post-hoc un-merge.
+//   2. A merge whose futures then diverge is exactly a convergence that
+//      re-widens — the bottleneck shape the project derives from topology,
+//      and the mechanism behind INTUITIONS §5 (non-local influence). Blocking
+//      it would suppress the structure the app exists to expose.
+// If two same-content states are *genuinely* different in the present, the
+// lever is a richer contentKey (already swappable), never the future.
+test('same content, diverging futures — still the same state (merge forms a bottleneck)', () => {
   const graph = g(
     [['root', 'start'], ['s1', 'sleep(wolf)'], ['s2', 'sleep(wolf)'], ['rescue', 'rescue(red)'], ['death', 'eaten(red)']],
     [['root', 's1'], ['root', 's2'], ['s1', 'rescue'], ['s2', 'death']],
   );
-  // The verdict we'd WANT if we adopt forward-consistency:
-  assert.equal(sameInContext(graph, 's1', 's2'), false);
+  assert.equal(sameInContext(graph, 's1', 's2'), true);
 });

@@ -16,11 +16,13 @@
 //     look-alike in a changed world → NOT the same, and merging would make a
 //     cycle anyway.
 //
-// What v0 deliberately does NOT yet decide (the first thing to revisit after
-// looking at real output): two same-content parallel nodes whose *futures*
-// diverge. v0 calls them the same; whether a divergent future should reveal a
-// hidden difference in the present is the `forward-consistency` question,
-// left open on purpose. See the skipped case in tests/merge_predicate.test.js.
+// Forward-consistency (should a divergent future block the merge?) was probed
+// on a real grown DAG and REJECTED (2026-07-05): at merge time the candidate
+// is a childless leaf, so the future isn't there to consult; and a merge whose
+// futures later diverge is precisely a bottleneck — the structure the app
+// exists to expose (INTUITIONS §5). If two same-content states really differ
+// in the present, express that in a richer contentKey; never consult the
+// future. See the resolved case in tests/merge_predicate.test.js.
 
 (function attachMergePredicate(root) {
   const Engine = (typeof require !== "undefined")

@@ -109,3 +109,23 @@ After the tests pass, grow the Red DAG with a few hand-fed parallel
 continuations in a throwaway script, export the JSON, and look at the
 convergence structure that forms. No new metrics or vocabulary until that look
 shows something worth naming.
+
+## Post-experiment addendum (2026-07-05)
+
+Both experiments were run. Results:
+
+**Growth on the Red seed** (5 hand-fed continuations): both halves of the
+predicate fired on a real graph — two counterfactual routes out of
+`red_woods` converged on `arrive(red, grandmother_house)` (survivor in-degree
+2), while a re-entry of `enter(red, woods)` correctly stayed split as
+recurrence. `validateGraph` clean; the merge-implies-acyclicity argument held.
+
+**Forward-consistency probe:** the question dissolved. (1) In the growth loop
+the candidate is a childless leaf at merge time — the divergent future does
+not exist yet, so a merge-time forward check is structurally impossible
+without a post-hoc un-merge mechanism. (2) A merge whose futures then diverge
+is in-degree>1 ∧ out-degree>1 — exactly the bottleneck shape, and the
+mechanism behind INTUITIONS §5. **Decision: forward-consistency rejected.**
+The skipped test was rewritten as an affirmative one. Present-tense
+differences between look-alike states belong in a richer `contentKey`, never
+in a forward check.
