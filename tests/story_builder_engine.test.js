@@ -35,6 +35,16 @@ test('adds branch with rejoin and keeps graph acyclic', () => {
   assert.deepEqual(engine.validateGraph(graph).errors, []);
 });
 
+test('normalizeGraph defaults a missing label (unlabeled imports must not crash the UI)', () => {
+  const graph = engine.normalizeGraph({
+    root: 'a',
+    nodes: [{ id: 'a', expr: 'start' }, { id: 'b', expr: 'end' }],
+    edges: [{ from: 'a', to: 'b' }]
+  });
+  graph.nodes.forEach((node) => assert.equal(typeof node.label, 'string'));
+  assert.equal(graph.nodes[0].label, 'a');
+});
+
 test('rejects cyclic edges', () => {
   const graph = sampleGraph();
   const result = engine.addEdge(graph, { from: 'end', to: 'start', type: 'causes' });

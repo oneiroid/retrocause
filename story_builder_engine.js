@@ -11,7 +11,8 @@
       createdBy: "human",
       delta: "",
       invariants: "",
-      ...node
+      ...node,
+      label: node.label || node.id || "unnamed"
     }));
     clone.edges = (clone.edges || []).map((edge, index) => ({
       id: edge.id || `e_${edge.from}_${edge.to}_${index}`,
