@@ -30,7 +30,9 @@ side. See `CONCEPT.md` §"What each layer commits to".
 |------|------|
 | `story_builder.html` / `.css` / `story_builder_app.js` | D3 UI shell |
 | `story_builder_engine.js` | Graph ops: add/remove nodes & edges, cycle checks, branch composition |
-| `seeds.js` | The Red story DAG (nodes + edges) |
+| `merge_predicate.js` | `sameInContext`: same content + parallel paths ⇒ same state (merge) |
+| `growth.js` | Merge-on-insert: continuations collapse into same-in-context states |
+| `seeds.js` | Seed story DAGs (nodes + edges) |
 | `tests/*.test.js` | `node --test` unit tests |
 
 ## Conventions
@@ -51,5 +53,7 @@ side. See `CONCEPT.md` §"What each layer commits to".
 
 ## Gotchas
 
-- `seeds.js` carries only the Red story. Branches are not shipped in the
-  seed; they are created in the UI by the user.
+- `seeds.js` carries three stories (Red, The Boy Who Cried Wolf, The Trojan
+  Horse), chosen to share schemas — and, for criedWolf, the `wolf` entity —
+  so their possibility spaces overlap. Branches are not shipped in seeds;
+  they are created in the UI by the user.

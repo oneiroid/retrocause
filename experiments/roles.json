@@ -1,0 +1,11 @@
+{
+  "roles": {
+    "mother": "agent", "red": "agent", "basket": "thing", "woods": "place",
+    "wolf": "agent", "flowers": "thing", "grandmother_house": "place",
+    "grandmother": "agent", "late": "quality", "woodcutter": "agent",
+    "villagers": "agent", "boy": "agent", "flock": "agent", "greeks": "agent",
+    "horse": "thing", "troy": "place", "sinon": "agent", "trojans": "agent",
+    "cassandra": "agent", "early": "quality"
+  },
+  "notes": "Entity role classes for induced positional typing. Labeled by a delegated LLM oracle (one-time pass per batch, 2026-07-13); the class vocabulary and the typing rule are mechanism, only these labels are LLM semantics. Batch 1 (red): flowers borderline scenery-vs-object -> thing; late = temporal circumstance -> quality. Batch 2 (criedWolf, trojanHorse): flock animate -> agent despite being handled like property; horse = the wooden construct -> thing."
+}
