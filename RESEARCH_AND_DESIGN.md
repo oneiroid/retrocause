@@ -16,12 +16,13 @@ This implementation is grounded in a few recurring findings from interactive nar
 
 ## Product vision
 
-The builder should feel like a semi-manual laboratory rather than a fully automatic generator:
+The builder — the page you open — should feel like a semi-manual laboratory rather than a fully automatic generator. Bulk generation is a separate tool you run deliberately, not something the editor does while you work in it:
 
 - **Known story seed:** Start from a familiar short story laid out as a single path of state nodes.
 - **Inspectable causality:** Click a node to see its expression, state note, incoming causes, outgoing effects, and motif tags.
 - **Branch from anywhere:** Pick any node, describe an alternate choice or condition, optionally choose a rejoin target, and add one or more branch nodes.
-- **LLM-assisted but human-owned:** The browser-only app cannot call a model directly, but it produces a structured prompt that can be pasted into an LLM. The returned JSON can be imported after human review.
+- **LLM-assisted, on two surfaces.** The page itself still does not call a model: it produces a structured prompt to paste into an LLM, and imports the returned JSON after human review. A Node-side grower is designed but not yet built (`LOCAL_LLM.md`): it would call a small local model through `llama.cpp` and emit a graph the page imports through that same path. The page stays openable from disk with no server and no key; automation is to live beside it, not inside it.
+- **Reproducible by verification, not by assumption.** A machine-grown graph is only useful as evidence if re-running the same configuration yields the same graph. Growth is therefore specified to use content-addressed node ids, canonical export, pinned traversal orderings, and a run manifest recording model hash, server build, sampler settings, and prompt version — with replay checked rather than presumed. Note that the current code cannot meet this bar: ids are minted from `Date.now()` and `Math.random()`, and every export stamps `savedAt`, so no two runs agree today.
 - **Research-aligned constraints:** DAG validation prevents cycles and highlights orphan nodes and open branches.
 - **Reusable artifact:** Export/import JSON so a story DAG can become input for later analysis, model prompting, or another visualization.
 
@@ -44,7 +45,8 @@ Node = {
   tags,              // motifs, actors, values, risks
   delta,             // branch metadata: what changed from the original
   invariants,        // branch metadata: facts that must stay true
-  createdBy          // seed | human | human-edited | assist
+  createdBy          // seed | human | human-edited | assist | grown
+  runId              // grown nodes only: which growth run produced this
 }
 
 Edge = {

@@ -12,6 +12,9 @@ into counterfactual alternatives.
    exercises it.
 3. `RESEARCH_AND_DESIGN.md` — product spec and the interactive-narrative
    research it draws on.
+4. `LOCAL_LLM.md` — design (not yet implemented) for the Node-side
+   grower: automatic DAG growth via a small local model through
+   `llama.cpp`, and what it takes to make those runs reproducible.
 
 **Conflict resolution:** when the intuitions and the code disagree, the
 disagreement is data — flag it in both, don't silently absorb either

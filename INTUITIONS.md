@@ -123,7 +123,10 @@ on a small finite set of archetypes would be evidence that the
 templates correspond to genuine topological features of G rather than
 cultural conventions, and the framework predicts the same instrument
 pointed at non-narrative DAGs should find templates of similar count.
-It cannot yet do so.
+It cannot yet do so — one hand-built eight-node story is not a corpus,
+and no extraction procedure exists. `LOCAL_LLM.md` addresses the corpus
+half of that gap only; §6 stays `open` regardless, and would still be
+`open` with a thousand grown graphs and no extractor.
 
 The number ~7 (Booker), ~6 (Vonnegut), 1 (Campbell) is *not* a claim
 the framework defends. The framework claims only: the count is small
@@ -145,6 +148,14 @@ The app exercises a fragment: the user *is* the agency function,
 choosing which node to branch and which path to follow. Resolution and
 an explicit agency model are not implemented, which is why this is
 `partial`, not `operational`.
+
+A second agency function is now designed but not built (`LOCAL_LLM.md`):
+a local model that selects continuations at branch points, with
+traversal depth and width as an explicit, tunable *resolution* — the
+first time §7's "resolution" would be a parameter rather than a word.
+The tag stays `partial` until that code exists and its runs are shown to
+replay. An agency function whose choices cannot be re-derived is not an
+implementation of §7; it is noise wearing the shape of one.
 
 Free will, in these terms, is the agency function — whether it is
 determined by G's structure (the appearance of choice is an artifact
@@ -171,6 +182,17 @@ Two consequences the project takes seriously:
   where the structure (if any) was not put there by the experimenter.
   The current seed (the Red story) is a familiar narrative used to
   exercise the editor, not yet such a test.
+
+  Machine-grown graphs (`LOCAL_LLM.md`) do **not** escape this. A model
+  trained on human text carries human narrative priors — plausibly a
+  compressed average of exactly the assumptions this section warns
+  about. Automating growth *launders* the sand-castle problem rather
+  than removing it: finding a monomyth in graphs grown by a model
+  trained on monomyth criticism would prove nothing. What it does buy is
+  that the assumptions stop being *this* analyst's, become legible
+  (pinned weights, versioned prompts, replayable runs), and get cheap
+  enough to vary deliberately — which is a precondition for the external
+  test, not a substitute for it.
 
 - **Observable-domain insight.** Domains that show clear convergence
   patterns (ecology, markets, gene networks) do so because their
@@ -219,6 +241,10 @@ for. Listed so the framework cannot quietly pretend it does.
    frames the question.
 8. **Template extraction.** Can recurring subgraph templates be found
    in a corpus automatically? Until they can, claim §6 stays `open`.
+   The blocker has two halves, and only one is now addressed: there is
+   no extractor, *and* there was no corpus to point one at. The grower
+   (`LOCAL_LLM.md`) is aimed at the second half. The extractor remains
+   unbuilt and undesigned.
 
 The promotion of any open question to `partial` or `operational` is a
 measurable advance for the project. Demoting an `operational` claim to
