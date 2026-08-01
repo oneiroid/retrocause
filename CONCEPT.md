@@ -51,10 +51,27 @@ attached: every claim is tagged `operational` (the app exercises it),
 discipline prevents the philosophy from drifting into free-form
 speculation.
 
-**CODE / APP** commits to direct manipulability. A browser, D3, one
-story DAG, branch from any node, export JSON. No backend, no LLM call
-from inside the page. The artifact is a reusable story-world object,
-not a generator.
+**CODE / APP** commits to direct manipulability, and splits across two
+surfaces that commit to different things.
+
+*The page* — a browser, D3, one story DAG, branch from any node, export
+JSON. Opened from disk: no backend, no key, and no model call from
+inside the page. This commitment is unchanged.
+
+*The grower* — designed, not yet built (`LOCAL_LLM.md`): a Node-side
+module that grows the DAG automatically by calling a small local model
+through `llama.cpp`, emitting a graph the page imports through its
+existing path. It is planned because the project's own open questions
+need a *corpus* of graphs, and hand-building them one form submission at
+a time does not get there.
+
+What this changes is the **commitment**, ahead of the code. The project
+previously ruled a generator out; it no longer does. It rules out a
+generator *in the page*. The artifact is still a reusable story-world
+object — there will simply be two ways to produce one, and
+machine-produced graphs are required to carry a run manifest saying
+exactly how, so that a grown graph can be re-derived rather than taken
+on trust.
 
 ## How to read this repository
 
@@ -63,6 +80,7 @@ not a generator.
 | The thesis | `CONCEPT.md` (this file) |
 | The philosophy, disciplined | `INTUITIONS.md` |
 | The product spec | `RESEARCH_AND_DESIGN.md` |
+| The automatic grower | `LOCAL_LLM.md` |
 
 When the code and the intuitions disagree, the **disagreement is the
 data** — it tells you either the intuition is wrong, or the code is
@@ -71,7 +89,11 @@ defeats the point of the project.
 
 ## What this project is not
 
-- Not a generative-narrative engine. It does not write stories.
+- Not a prose generator. It does not write stories. The grower, when it
+  exists, is to propose *structure* — nodes, edges, what changed, what
+  stayed true — and every proposal is a graph operation the editor could
+  equally have received from a human. Nothing in the project produces
+  narrative text, and that constraint is not up for revision.
 - Not a literary-theory contribution. It does not claim to settle
   questions about narrative ontology; it claims those questions
   are sharp enough to build instruments for.
