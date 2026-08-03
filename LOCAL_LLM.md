@@ -174,6 +174,19 @@ in plain JS so the module stays dependency-free and dual-mode. On
 collision, append `_2`, `_3` — deterministic, unlike the existing
 `do…while` random retry.
 
+Two rules the formula leaves implicit, stated here because both are
+load-bearing:
+
+- **`normalizedExpr` must be defined, once.** It feeds the id hash, the
+  dedup key (§5.5.4), and two eval metrics (§6). Definition: trim,
+  collapse internal whitespace runs to one space, lowercase. Nothing
+  smarter — anything semantic belongs to a future equivalence layer, not
+  to an id.
+- **Multi-parent nodes hash one parent.** `parentId` is the parent the
+  node was *created under*. A later `rejoins` edge adds a second parent
+  without rehashing — ids are birth certificates, not live summaries of
+  topology.
+
 The `edge()` factory in `seeds.js` already uses `e_${from}_${to}_${type}`
 — the only content-derived id scheme in the codebase. Extend that idea
 rather than inventing a second one. Note its known weakness: it collides
@@ -268,6 +281,13 @@ from that manifest and diffs canonical JSON. A run that does not replay
 is a reported failure, not a silent one. That is a weaker claim than
 "deterministic" and it is the true one.
 
+**The replay check runs cache-cold.** With the response cache (§5.7)
+enabled, every request is served from disk and the "replay" is vacuous —
+it exercises Layers 0–2 and never touches the model. `grow:replay`
+therefore bypasses the cache by default; a `--cached` flag exists
+precisely because the vacuous mode is useful for debugging traversal,
+but a cached replay is never reported as a model-replay success.
+
 ---
 
 ## 5. Architecture
@@ -350,7 +370,15 @@ This is a larger reproducibility win than seeding, because it converts
 "did the output parse" from a probabilistic question into a structural
 guarantee. Malformed JSON stops being a failure mode.
 
-Two documented gotchas, both load-bearing:
+Three documented gotchas, all load-bearing:
+
+- **Grammar does not survive truncation.** The grammar constrains which
+  token comes next; `n_predict` still cuts generation off mid-structure,
+  and a length-stopped completion is invalid JSON with the grammar
+  working perfectly. The client must check the response's stop reason
+  and treat `length` as a hard failure, counted in the manifest — not
+  retried with a bigger cap mid-run, which would make the run
+  irreproducible.
 
 - **The schema is not injected into the prompt.** llama.cpp uses it only
   to constrain sampling. The prompt template must *also* describe the
@@ -372,7 +400,7 @@ Every run emits `growth_manifest.json` alongside the graph:
 
 ```json
 {
-  "runId": "<hash of everything below>",
+  "runId": "<hash of the configuration fields only — see below>",
   "createdAt": "2026-08-01T00:00:00Z",
   "profile": "reference",
   "model":  { "file": "Qwen3-1.7B-Q8_0.gguf", "sha256": "…" },
@@ -385,6 +413,13 @@ Every run emits `growth_manifest.json` alongside the graph:
   "result": { "created": 19, "rejectedCycles": 1, "mergedDuplicates": 3 }
 }
 ```
+
+`runId` hashes `profile`, `model`, `server`, `sampling`, `prompt`,
+`traversal`, and `input` — **not** `createdAt` and not `result`. A
+timestamp in the hash would give two byte-identical runs different
+runIds, contradicting this document's own definition of replay; `result`
+is an outcome, and an outcome inside the id of the configuration that
+produced it is circular.
 
 `build_info` and `system_fingerprint` come from llama-server's `/props`
 endpoint, which exists for exactly this purpose. Record them; §4.2 is
@@ -441,6 +476,15 @@ graph imports through `importGraph()`.
 **No UI change is required to consume grown output.** That is a
 deliberate constraint on this design, not a coincidence.
 
+One asterisk on "existing contract": the branches path assigns ids via
+`uniqueId()` (`story_builder_app.js:623`) — one of the three
+nondeterminism sites §3 exists to remove. Until Phase 0 replaces the
+app's `uniqueId` with the content-addressed scheme, a grown payload
+imported through the form path gets fresh random ids and the round trip
+is not reproducible. Whole-graph import (`importGraph()`) preserves ids
+and is safe either way. This is why Phase 0's scope includes the app's
+id sites, not just the engine's.
+
 ### 5.7 The response cache is the practical mechanism
 
 An on-disk cache keyed by `hash(prompt + sampling params + model
@@ -481,7 +525,7 @@ sweep N seeds × M configurations and score each run on
 
 | Metric | Why |
 |---|---|
-| JSON validity | Should be 100% under §5.3. Anything less means the grammar is not applied — a bug, not a quality signal. |
+| JSON validity | Should be 100% under §5.3. Anything less means the grammar is not applied or `n_predict` is truncating (check the stop reason) — a bug or a budget error, not a quality signal. |
 | Acyclicity acceptance rate | How often proposals are structurally usable |
 | Duplicate-`expr` rate | Prompt collapse into one idea |
 | `rejoinTargetId` validity | Whether the model can actually reference real nodes |
