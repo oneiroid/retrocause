@@ -1,10 +1,17 @@
 # Local LLM: Reproducible DAG Growth
 
-**Status:** design. No code in this document is implemented.
+**Status:** design, revised against `main` (2026-08-04). Phase 0 in
+progress; Phases 1–3 unimplemented.
 **Scope:** a Node-side module that grows the story DAG automatically by
 calling a small local model through `llama.cpp`, in a way that replays.
 **Out of scope:** fine-tuning (Phase 3, §9), prose generation, any model
 call from inside `story_builder.html`.
+
+This document was first written against `79e0fe4` and has been revised
+against `main`, which since added `merge_predicate.js`, `growth.js`,
+two seed stories and `experiments/gen_probe.js`. Where the revision
+contradicts the original the change is marked in place rather than
+silently absorbed — §5.5.4 is the substantive one.
 
 ---
 
@@ -19,11 +26,15 @@ templates) and open question 8 (template extraction) are both tagged
 > Can recurring subgraph templates be found in a corpus automatically?
 > Until they can, claim §6 stays `open`.
 
-A corpus. The repo ships one eight-node story. You cannot find recurring
-shapes in a single hand-built path, and you cannot hand-build enough
-paths to change that.
+A corpus. The repo ships three seed stories (Red, The Boy Who Cried
+Wolf, The Trojan Horse), deliberately chosen to share schemas so their
+possibility spaces overlap. Three is enough to ask whether a generator
+produces the same shape twice; it is not a corpus. You cannot
+hand-build enough paths to change that.
 
-### 1.1 This was tried once, and the failure is the design input
+### 1.1 This was tried twice, and both failures are the design input
+
+#### Attempt 1 — the symbolic fixture (deleted)
 
 Commit `79e0fe4` ("Cleanse") deleted a working automatic brancher —
 `autoBranchFromSelected()`, a bounded BFS with depth/width/cap controls,
@@ -52,7 +63,38 @@ A language model is that successor for one specific reason: **it is a
 general transition proposer.** It needs no fixture, no action schema, no
 per-seed authoring. Point it at any state node in any story and it can
 propose what else could have followed. The fixture bottleneck — the
-thing that actually killed the last attempt — disappears.
+thing that actually killed the first attempt — disappears.
+
+#### Attempt 2 — the induced grammar (`experiments/gen_probe.js`, kept)
+
+The successor was in fact built, without a model, and it is on `main`.
+`gen_probe.js` grows the DAG by recombining the seeds' **own** lexicon
+under constraints that are *induced from the seeds*, never authored:
+argument continuity, a schema-bigram grammar read off seed edges, and
+positional role typing (`experiments/roles.json`). Every insert goes
+through the real merge-on-insert semantics.
+
+Its three-pole result (2026-07-13) is the sharpest design input this
+document has, and it is not a corpus-scale complaint:
+
+| Constraints | Outcome |
+|---|---|
+| continuity only | statistical noise — Poisson in-degree, word-salad states |
+| + bigram grammar | structure, still salad |
+| + role typing | **readable** states, but in-degree layer-uniform: no gradient |
+
+Read that last row carefully. Adding constraints bought *structure* and
+then *readability*, and never bought **meaning** — the closure of an
+induced grammar is too symmetric to have interesting shape. The probe
+exhausted what can be induced from three stories' surface form.
+
+This relocates the model's job. It is not primarily a volume machine.
+**It is the only available source of the semantics the induced grammar
+cannot reach** — which of the grammatically-legal continuations
+actually follow from the state. §6's eval harness therefore has a
+baseline it must beat, and `gen_probe.js` is that baseline: same seeds,
+same budgets, same merge semantics, no model. A grower that scores like
+the probe has bought nothing but latency.
 
 ---
 
@@ -68,9 +110,13 @@ seed plus a traversal budget produces a graph in seconds, and a sweep
 over seeds and parameters produces hundreds. That is the precondition
 for template extraction, and therefore for §6 ever moving off `open`.
 
-**Caveat.** Volume is necessary, not sufficient. Nothing here extracts
-templates. This module produces the corpus that a later extractor would
-consume; it does not bring §6 to `partial` on its own.
+**Caveat.** Volume is necessary, not sufficient — and `gen_probe.js`
+(§1.1) already proves the sufficiency half is the hard one. It can
+already emit graphs at volume; what it emits has layer-uniform
+in-degree, i.e. no template to extract. Nothing here extracts
+templates either. This module produces the corpus that a later
+extractor would consume; it does not bring §6 to `partial` on its own,
+and volume alone would not even be new.
 
 ### 2.2 It partially attacks the sand-castle problem
 
@@ -136,10 +182,23 @@ transition proposal**: given one node plus its immediate neighborhood,
 emit one to three typed alternatives as JSON. Under grammar-constrained
 decoding (§5.3), format compliance is enforced by the sampler rather
 than requested from the model, which removes the main reason to want a
-large model. Qwen3 1.7B in GGUF is the reference target. Small also
-means a depth-4 traversal completes fast enough to run the *same
-configuration many times*, which is what stability testing actually
-requires.
+large model. Small also means a depth-4 traversal completes fast enough
+to run the *same configuration many times*, which is what stability
+testing actually requires.
+
+**The reference target is what is actually on this machine:**
+`Qwen/Qwen3-1.7B-Base`, already downloaded in the sibling
+`llmfinetune` workspace, exported to GGUF by its `export_gguf.py` and
+served by its CPU-only `llama.cpp` build (`f5b9bd3`). Two consequences
+the rest of this document must respect:
+
+- **It is a *base* model, not an instruct model.** No chat template, no
+  instruction tuning, no thinking mode. Prompting is few-shot
+  completion (§5.3), and grammar is not merely convenient — it is doing
+  *all* of the format work, because there is no instruction-following
+  to fall back on.
+- **The GGUF does not exist yet.** Producing and hashing it is a Phase 1
+  prerequisite step (§9), not an assumption.
 
 ---
 
@@ -147,18 +206,23 @@ requires.
 
 The instinct is to start with sampler settings. That is the wrong end.
 **Retrocause today cannot produce two identical graphs from two identical
-runs, and no model configuration would change that.** Three sites:
+runs, and no model configuration would change that.** Four sites:
 
 | Site | What it does |
 |---|---|
-| `story_builder_engine.js:60` | `branch_${Date.now().toString(36)}_${Math.random().toString(36).slice(2,7)}` |
-| `story_builder_app.js:1000` (`uniqueId`) | `${prefix}_${Date.now().toString(36)}_${Math.random().toString(36).slice(2,6)}` |
-| `story_builder_engine.js:127`, `story_builder_app.js:871` | `meta.savedAt = new Date().toISOString()` on every export |
+| `growth.js:28` (`newId`) | `grow_${Date.now().toString(36)}_${Math.random().toString(36).slice(2,7)}` |
+| `story_builder_engine.js:61` (`addBranch`) | `branch_${Date.now().toString(36)}_${Math.random().toString(36).slice(2,7)}` |
+| `story_builder_app.js:1043` (`uniqueId`) | `${prefix}_${Date.now().toString(36)}_${Math.random().toString(36).slice(2,6)}` |
+| `story_builder_engine.js:128`, `story_builder_app.js:914` | `meta.savedAt = new Date().toISOString()` on every export |
 
 Wall-clock and `Math.random()` in every generated id; a timestamp in
 every export. Two runs of a perfectly deterministic grower produce JSON
 that differs on every single node id. Fix this first or nothing
 downstream is measurable.
+
+`growth.js:28` heads the list on purpose: it is the id minted on *every
+continuation the grower inserts*, so it is the one that fires most and
+the one this design depends on most directly.
 
 ### 3.1 Content-addressed ids
 
@@ -177,15 +241,27 @@ collision, append `_2`, `_3` — deterministic, unlike the existing
 Two rules the formula leaves implicit, stated here because both are
 load-bearing:
 
-- **`normalizedExpr` must be defined, once.** It feeds the id hash, the
-  dedup key (§5.5.4), and two eval metrics (§6). Definition: trim,
-  collapse internal whitespace runs to one space, lowercase. Nothing
-  smarter — anything semantic belongs to a future equivalence layer, not
-  to an id.
+- **`normalizedExpr` must be defined once — and it already is.** Trim,
+  collapse internal whitespace runs to one space, lowercase. That is
+  character-for-character `MergePredicate.defaultContentKey`
+  (`merge_predicate.js:35`). `ids.js` **imports** it rather than
+  restating it: the same string feeds the id hash and the merge
+  decision, and two copies that drift apart would mean nodes that merge
+  but hash differently. Nothing smarter belongs here — anything
+  semantic is the `contentKey` parameter `sameInContext` already
+  accepts, not an id.
 - **Multi-parent nodes hash one parent.** `parentId` is the parent the
   node was *created under*. A later `rejoins` edge adds a second parent
   without rehashing — ids are birth certificates, not live summaries of
   topology.
+- **A merged node keeps the survivor's id, so ids are order-dependent
+  by design.** `collapseIfSame` deletes the victim and rewires to the
+  survivor (`growth.js:38`), so which of two equal-content parallel
+  states keeps its id depends on which was inserted first. This is
+  deterministic — insertion order is pinned by §5.5 — but it does mean
+  a node's id is not a pure function of its own content. It is a
+  function of content *and* the traversal that found it, which is the
+  honest description of what a birth certificate is.
 
 The `edge()` factory in `seeds.js` already uses `e_${from}_${to}_${type}`
 — the only content-derived id scheme in the codebase. Extend that idea
@@ -237,10 +313,15 @@ A grower makes many requests sharing a long common prefix — precisely
 the shape that triggers KV-cache reuse, and so precisely the shape where
 this default silently destroys replay.
 
-**`--parallel 1`.** Multi-slot serving is nondeterministic even at
-temperature 0. [Issue #7052](https://github.com/ggml-org/llama.cpp/issues/7052)
+**`--parallel 1`, and it must be stated explicitly.** Multi-slot serving
+is nondeterministic even at temperature 0.
+[Issue #7052](https://github.com/ggml-org/llama.cpp/issues/7052)
 reports eight slots given the same prompt returning five to eight
-distinct completions. A grower has no use for slots; take the single one.
+distinct completions. A grower has no use for slots; take the single
+one. On the build in `llmfinetune/vendor/llama.cpp` (`f5b9bd3`) the
+flag's default is **`-1` (auto)**, not `1` — so the slot count is
+chosen by the server from the machine it is on, which is precisely a
+hidden hyperparameter. Never rely on the default.
 
 **`--no-cont-batching`.** Continuous batching mixes batch sizes, which
 is the same numerical hazard as above by another route.
@@ -260,6 +341,13 @@ manifest:
 |---|---|---|
 | `reference` | CPU only, `--parallel 1`, `--no-cont-batching`, `cache_prompt:false`, fixed `--threads`, fixed `--ctx-size` | Anything whose output is claimed to replay |
 | `explore` | GPU permitted, caching on | Interactive poking. **Never** cited as reproducible. |
+
+Convenient here: the `llama.cpp` in `llmfinetune` is a **CPU-only
+build** (no `nvcc` on this machine), so the reference profile is the
+only profile available and `--n-gpu-layers` is moot. `explore` becomes
+reachable only after a CUDA rebuild — at which point it must be
+recorded as a distinct `server.build_info` in the manifest, because it
+is a different backend, not a flag.
 
 **Fixed `--ctx-size`, never sliding.** If the context window fills and
 the server truncates, the prompt the model saw is not the prompt you
@@ -299,12 +387,13 @@ but a cached replay is never reported as a model-replay success.
         ▲
         │  HTTP, Node only
         │
-  tools/grow.js  ──►  growth.js  ──►  StoryDagEngine
-        │                                    │
-        │                            grown_graph.json
-        │                            + growth_manifest.json
-        ▼                                    │
-   npm run grow                              ▼
+  tools/grow.js ──► grower.js ──► growth.js ──► StoryDagEngine
+        │           (traversal)   (merge-on-      │
+        │                          insert)        │
+        │                                 grown_graph.json
+        │                               + growth_manifest.json
+        ▼                                         │
+   npm run grow                                   ▼
                                   story_builder.html  (import)
 ```
 
@@ -321,19 +410,31 @@ exists.
 |---|---|
 | `ids.js` | `shortHash`, `nodeId`, `edgeId`, `canonicalJson` (§3) |
 | `llm_client.js` | llama-server transport; `/completion`, `/props`; owns the determinism profile and the response cache |
-| `growth.js` | The deterministic traversal; consumes the engine; returns `{ graph, manifest }` |
+| `grower.js` | The deterministic traversal; proposes via `llm_client`, inserts via `growth.js`; returns `{ graph, manifest }` |
 | `tools/grow.js` | CLI entry point |
 | `prompts/branch.v1.txt` | Versioned prompt template |
 | `tests/*.test.js` | Fixture replay, no network |
 
-All follow the repo's dual-mode IIFE convention:
+**The traversal module is `grower.js`, not `growth.js`.** `growth.js` is
+taken: it is the merge-on-insert layer that landed after this document
+was first drafted, it is loaded in the browser
+(`story_builder.html:136`), and the app calls it
+(`story_builder_app.js:645`). The two are a stack, not alternatives —
+`grower.js` decides *what to propose and in what order*, `growth.js`
+decides *whether the proposal is a new state or an existing one*.
+`grower.js` is Node-only (it does HTTP), so it is the first module in
+the repo that legitimately breaks the dual-mode convention; it still
+exports via `module.exports` and is simply never added to the page.
+
+The remaining new modules that *are* dual-mode (`ids.js`) follow the
+repo convention:
 
 ```js
-(function attachGrowth(root) {
+(function attachIds(root) {
   /* … */
-  const api = { grow, growOnce };
+  const api = { shortHash, nodeId, edgeId, canonicalJson };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
-  root.RetrocauseGrowth = api;
+  root.StoryDagIds = api;
 })(typeof window !== "undefined" ? window : globalThis);
 ```
 
@@ -385,9 +486,20 @@ Three documented gotchas, all load-bearing:
   shape, or the model fills a valid structure with confused content.
 - **Grammar enforcement has been reported broken when thinking is
   enabled** ([issue #20345](https://github.com/ggml-org/llama.cpp/issues/20345)).
-  For Qwen3, disable it — `/no_think`, or `enable_thinking: false`.
-  Thinking tokens are also a determinism liability in their own right:
-  more sampled tokens, more chances to diverge.
+  This one **does not apply to the reference target** and the reason
+  matters: `Qwen3-1.7B-Base` has no thinking mode and no chat template
+  to carry `/no_think` or `enable_thinking: false`. The gotcha returns
+  the moment anyone swaps in an instruct checkpoint, so it stays
+  recorded here rather than deleted. Thinking tokens are a determinism
+  liability in their own right: more sampled tokens, more chances to
+  diverge.
+- **A base model needs a few-shot completion prompt, not an
+  instruction.** `branch.v1.txt` is therefore not "You are a helpful
+  assistant…" — it is *k* worked examples of `state → JSON` drawn from
+  the seeds, ending in the target state and an open brace. The examples
+  are part of the versioned prompt and part of its hash; changing which
+  seeds they come from is a new prompt version, because it changes what
+  the model is imitating.
 
 `rejoinTargetId` cannot be constrained to existing node ids by JSON
 Schema. It is validated after the fact (§5.5) and dropped when invalid —
@@ -447,23 +559,55 @@ unordered iteration is as fatal to replay as a random seed.
 3. **Candidate ordering.** Sort returned branches by a deterministic key
    (`normalizedExpr`, then `label`) before applying the `width` cap.
    Never trust the model's output order to be stable.
-4. **Deduplication.** Two candidates collapse when their content hashes
-   match. This is the honest replacement for the deleted approach, and
-   it is **weaker**: the old grower compared computed post-states via
-   `state_walker.js` and merged genuinely convergent timelines. Without a
-   fixture there are no post-states, so equivalence is defined on
-   normalized `expr` — surface identity, not semantic identity. Two
-   nodes that mean the same thing in different words will not merge.
-   Stated plainly so no one mistakes this for parity with the old
-   `mergeEquivalentStates`.
-5. **Acyclicity.** Every insertion goes through `StoryDagEngine.addEdge`,
-   which already refuses cycle-creating edges
-   (`story_builder_engine.js:47`). Rejections are counted in the
-   manifest, never silently swallowed.
+4. **Convergence is not the grower's job.** Every candidate is inserted
+   through `Growth.insertContinuation`, which applies
+   `MergePredicate.sameInContext` and collapses the node when it turns
+   out to be an existing state. `grower.js` does **no** deduplication
+   of its own; a second dedup pass with a different key would be a
+   silent second definition of "same state".
+
+   *This supersedes an earlier draft of this section*, which proposed
+   content-hash dedup and apologised for it as "weaker than the deleted
+   `mergeEquivalentStates`". That apology is now wrong twice over.
+   `sameInContext` is **stronger** than content-hash dedup: it requires
+   same content **and** mutual unreachability, so it distinguishes a
+   genuine convergence (two parallel paths arriving at one state) from
+   a recurrence (a later look-alike in a changed world) — a distinction
+   content hashing cannot make at all. And the draft's premise, that
+   post-states are unavailable without a fixture, was answered on `main`
+   by a rejection, not a workaround: consulting the future was probed on
+   a real grown DAG and rejected (`7c1ce9c`), because at merge time the
+   candidate is a childless leaf and because a merge whose futures
+   diverge is exactly the bottleneck the app exists to expose. Do not
+   re-open it here.
+
+   What remains genuinely weak is the **content key**, not the
+   predicate. `defaultContentKey` is surface form, so two states that
+   mean the same thing in different words still will not merge. The
+   fix, if grown graphs turn out shallow, is a richer `contentKey`
+   passed into `sameInContext` — the parameter exists for this — never
+   a change to the predicate's incomparability clause.
+5. **Acyclicity comes free with the merge.** Every insertion goes
+   through `StoryDagEngine.addEdge`, which refuses cycle-creating edges
+   (`story_builder_engine.js:48`). Rejections are counted in the
+   manifest, never silently swallowed. Note that the rewire on merge
+   needs no separate cycle guard: it could only cycle if the survivor
+   already reached the source, which is the very condition that makes
+   the two nodes comparable and blocks the merge (`growth.js:9-13`).
 6. **`rejoinTargetId` validation.** Drop the rejoin when the id does not
    exist, or when the edge would cycle. The branch node is still
    created — an open branch is a legitimate outcome that
    `validateGraph` already warns about rather than rejects.
+
+**Most of this exists.** `experiments/gen_probe.js` already implements a
+pinned frontier traversal with a seeded RNG, `K`/`D` budgets,
+merge-on-insert semantics, and a `contentKey` index for speed — plus a
+startup assertion that its fast path is equivalent to real
+`Growth.grow` on a small config. `grower.js` should lift that traversal
+and replace only the candidate source: the probe's lexicon recombiner
+becomes an `llm_client` call. Keeping the two swappable behind one
+interface is what makes the probe usable as the eval baseline (§6)
+rather than a fork.
 
 ### 5.6 Output lands on an existing contract
 
@@ -477,7 +621,7 @@ graph imports through `importGraph()`.
 deliberate constraint on this design, not a coincidence.
 
 One asterisk on "existing contract": the branches path assigns ids via
-`uniqueId()` (`story_builder_app.js:623`) — one of the three
+`uniqueId()` (`story_builder_app.js:656`) — one of the four
 nondeterminism sites §3 exists to remove. Until Phase 0 replaces the
 app's `uniqueId` with the content-addressed scheme, a grown payload
 imported through the form path gets fresh random ids and the round trip
@@ -530,10 +674,21 @@ sweep N seeds × M configurations and score each run on
 | Duplicate-`expr` rate | Prompt collapse into one idea |
 | `rejoinTargetId` validity | Whether the model can actually reference real nodes |
 | Branch diversity | Distinct normalized `expr` per expansion point |
+| In-degree distribution | The probe's failure mode: layer-uniform in-degree means no convergence gradient, i.e. no template to find |
 | Replay rate | Fraction of runs whose canonical JSON matches on re-run |
 
 Replay rate is the metric the rest of this document exists to make
 meaningful. Scoring is deterministic and its output is a table.
+
+**Every metric is reported against a baseline, and the baseline is
+`gen_probe.js`.** Run the same seeds, budgets and merge semantics with
+the lexicon recombiner instead of the model. The probe's known scores
+(§1.1) set the bar: readable states, in-degree flat across layers. An
+LLM grower that also produces flat in-degree has demonstrated that the
+bottleneck was never the candidate source, and the design should be
+reconsidered rather than tuned. This is the one comparison that can
+falsify this document's premise, which is why it is a required column
+and not an appendix.
 
 ---
 
@@ -544,33 +699,54 @@ meaningful. Scoring is deterministic and its output is a table.
 - `tests/llm_client.test.js` — stubbed transport; asserts the request
   body carries `cache_prompt: false`, `temperature: 0`, an explicit
   `seed`, and the `json_schema`; asserts cache hit/miss keying.
-- `tests/growth.test.js` — full grower against checked-in fixtures:
+- `tests/grower.test.js` — full grower against checked-in fixtures:
   same input twice yields byte-identical canonical JSON; cycle-creating
   proposals are rejected and counted; invalid `rejoinTargetId` is
   dropped without losing the node; the `width` cap is respected.
+  (`tests/growth.test.js` is taken — it covers merge-on-insert.)
 
 No test touches the network. `package.json:6` hardcodes both the
-`node --check` list and a single test path — it needs a `--check` entry
+`node --check` list and every test path — it needs a `--check` entry
 per new module and a glob (`node --test tests/`) for the test paths.
 
 ---
 
 ## 8. Known risks
 
-**The app does not use the engine.** `story_builder.html` loads
-`story_builder_engine.js`, but `story_builder_app.js` is a closed IIFE
-that privately re-implements `normalizeGraph` (`:149`), `addEdge`
-(`:685`), `validateGraph` (`:716`), `topoRanks` (`:743`), and `reachable`
-(`:957`). `StoryDagEngine` is never referenced. **The two
-`normalizeGraph`s differ** — the engine defaults edge `label` to
-`edge.type || "edge"`, the app defaults it to `""` — and the engine
-clones while the app mutates in place.
+**The app forks the engine, and the fork has widened.**
+`story_builder.html` loads `story_builder_engine.js`, but
+`story_builder_app.js` is a closed IIFE that privately re-implements
+`normalizeGraph` (`:152`), `addEdge`, `validateGraph`, `topoRanks` and
+`reachable`. `StoryDagEngine` is still never referenced *by name*.
 
-A Node grower validating against the engine can therefore emit a graph
-the page normalizes differently on import. Either unify the two as a
-prerequisite (preferred; the app's copies are the accidental fork), or
-have the grower assert its output through both code paths. This is the
-largest correctness risk in the design and it predates it.
+The two `normalizeGraph`s now differ in **two** places, not one:
+
+| Field | Engine | App |
+|---|---|---|
+| edge `label` | `edge.type \|\| "edge"` | `""` |
+| node `label` | `node.label \|\| node.id \|\| "unnamed"` | *no default* |
+| graph | clones | mutates in place |
+
+The node-`label` divergence is new and it is a direct hit on this
+design. Commit `9b49a4f` added the default **to the engine only**,
+and its message names how it was found: *"Found importing a generated
+139-node graph: `nodeWidth` reads `label.length`."* A generated graph
+is precisely what this module emits. A grower that validates against
+the engine and hands the file to the page can therefore ship nodes the
+page crashes on.
+
+**And the fork is already live at runtime.** The app reaches the engine
+*indirectly*: `tryAutoMerge` (`story_builder_app.js:644`) calls
+`window.StoryDagGrowth.collapseIfSame`, which calls
+`Engine.addEdge`. So in the browser today, edges created by a merge are
+built by the engine's rules while every other edge is built by the
+app's. This is no longer a risk the grower would introduce; it is a
+defect the grower would amplify.
+
+Either unify the two as a prerequisite (preferred; the app's copies are
+the accidental fork), or have the grower assert its output through both
+code paths. This is the largest correctness risk in the design, it
+predates the design, and it has grown since the design was written.
 
 **`validateGraph` is O(E²·V).** For each edge it removes that edge and
 runs a full reachability search (`story_builder_engine.js:92-95`).
@@ -588,9 +764,21 @@ architecture is model-size agnostic; only the manifest changes.
 **Growth is not understanding.** A grown DAG is a hypothesis about what
 could have followed, generated by a system with no model of the story
 world — the thing the deleted `phi.js` did have. This design trades
-semantic grounding for generality, deliberately. §5.5's weakened
-convergence detection is where that trade is visible, and it is the
-first place to revisit if grown graphs turn out to be shallow.
+semantic grounding for generality, deliberately. The visible edge of
+that trade is `defaultContentKey`: convergence is decided on surface
+form, so states that mean the same thing in different words stay
+separate. That is the first thing to revisit if grown graphs turn out
+shallow — a richer `contentKey`, not a different predicate (§5.5.4).
+
+**The probe already ruled out one hypothesis, and it may rule out
+this one.** `gen_probe.js` showed that adding constraints to a
+lexicon recombiner buys structure and readability but not meaning.
+The bet here is that the missing ingredient is semantics and that a
+1.7B base model has enough of it. If the eval (§6) shows LLM-grown
+graphs with the same layer-uniform in-degree, the bet is lost and the
+right response is to question whether *any* single-node-lookahead
+proposer can produce shape — not to try a bigger model. Record that
+before running it, so the result cannot be reinterpreted afterwards.
 
 ---
 
@@ -598,10 +786,11 @@ first place to revisit if grown graphs turn out to be shallow.
 
 | Phase | Contents |
 |---|---|
-| **0** | §3 only — content-addressed ids, canonical export, tests. No model. Independently valuable; unblocks everything else. |
-| **1** | `llm_client.js` + `growth.js` + `tools/grow.js`, reference profile, fixture-replay tests. |
-| **2** | Eval harness, prompt versions, corpus sweep. |
-| **3** | *Deferred.* LoRA via `llama-finetune`, GGUF adapters, `--lora` hot-swap on the server, trained on accepted branches. Determinism gets harder — the adapter joins the manifest as a hashed artifact. Not designed here. |
+| **0** | §3 only — `ids.js`, content-addressed ids at all four sites, canonical export, tests. No model. Independently valuable; unblocks everything else. |
+| **0.5** | Export `Qwen3-1.7B-Base` to GGUF (`llmfinetune/export_gguf.py`), record its sha256, stand up `llama-server` on the reference profile, confirm `/props` and `json_schema` behave. Prerequisite, not design. |
+| **1** | `llm_client.js` + `grower.js` + `tools/grow.js`, reference profile, fixture-replay tests. |
+| **2** | Eval harness against the `gen_probe.js` baseline (§6), prompt versions, corpus sweep. |
+| **3** | *Deferred.* LoRA via the sibling `llmfinetune` workspace, GGUF adapters, `--lora` hot-swap on the server, trained on accepted branches. Determinism gets harder — the adapter joins the manifest as a hashed artifact. Not designed here. |
 
 Phase 0 is worth doing whether or not any model is ever wired up.
 
