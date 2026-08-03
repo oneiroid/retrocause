@@ -32,6 +32,7 @@ side. See `CONCEPT.md` §"What each layer commits to".
 | File | Role |
 |------|------|
 | `story_builder.html` / `.css` / `story_builder_app.js` | D3 UI shell |
+| `ids.js` | Content-addressed ids (`nodeId`, `edgeId`) + `canonicalJson`; owns `normalizedContent`, the one content key. Requires nothing — it is the leaf everything else imports |
 | `story_builder_engine.js` | Graph ops: add/remove nodes & edges, cycle checks, branch composition |
 | `merge_predicate.js` | `sameInContext`: same content + parallel paths ⇒ same state (merge) |
 | `growth.js` | Merge-on-insert: continuations collapse into same-in-context states |
@@ -48,6 +49,12 @@ side. See `CONCEPT.md` §"What each layer commits to".
   `causes`, `leads_to`, `choice`, `rejoins`. There is no privileged
   "canonical" class of edge — they are all the same kind of object,
   distinguished only by type and color.
+- **Ids are content-addressed, never wall-clock.** `ids.nodeId` hashes
+  `parentId | normalizedContent(expr) | normalizedContent(label)`;
+  collisions get a deterministic `_2` suffix. Never mint an id from
+  `Date.now()` or `Math.random()` — two identical sessions must produce
+  byte-identical graphs, which is what `ids.canonicalJson` (sorted, fixed
+  key order, no `savedAt`) exists to let you assert. See `LOCAL_LLM.md` §3.
 - **Nodes.** A node has an `id`, `label`, a free-form `expr`, a prose
   `state` note, `kind` (`root` / `story` / `branch` / `note`), `tags`, and
   optional branch metadata (`delta`, `invariants`). "Bottleneck" is **not**

@@ -23,10 +23,9 @@
   const Predicate = (typeof require !== "undefined")
     ? require("./merge_predicate.js")
     : root.MergePredicate;
-
-  function newId() {
-    return `grow_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 7)}`;
-  }
+  const Ids = (typeof require !== "undefined")
+    ? require("./ids.js")
+    : root.StoryDagIds;
 
   // If `nodeId` is the same state in context as an existing node, collapse it:
   // remove it and rewire ALL its edges (incoming and outgoing) to the survivor,
@@ -63,7 +62,10 @@
       return { ok: false, message: `Source node ${from} is missing` };
     }
     if (!node) return { ok: false, message: "Continuation has no node" };
-    if (!node.id) node.id = newId();
+    // Content-addressed, hashing the node `from` was reached under. This is
+    // the id site that fires most — once per inserted continuation — so it is
+    // the one that decides whether a grown graph replays at all (§3).
+    if (!node.id) node.id = Ids.nodeId({ parentId: from, expr: node.expr, label: node.label }, graph);
 
     graph.nodes.push(node);
     const result = Engine.addEdge(graph, { from, to: node.id, type, label });

@@ -241,15 +241,28 @@ collision, append `_2`, `_3` — deterministic, unlike the existing
 Two rules the formula leaves implicit, stated here because both are
 load-bearing:
 
-- **`normalizedExpr` must be defined once — and it already is.** Trim,
-  collapse internal whitespace runs to one space, lowercase. That is
-  character-for-character `MergePredicate.defaultContentKey`
-  (`merge_predicate.js:35`). `ids.js` **imports** it rather than
-  restating it: the same string feeds the id hash and the merge
-  decision, and two copies that drift apart would mean nodes that merge
-  but hash differently. Nothing smarter belongs here — anything
-  semantic is the `contentKey` parameter `sameInContext` already
-  accepts, not an id.
+- **`normalizedExpr` must be defined once.** Trim, collapse internal
+  whitespace runs to one space, lowercase — character-for-character what
+  `MergePredicate.defaultContentKey` was already doing. The same string
+  feeds the id hash and the merge decision, and two copies that drift
+  apart would mean nodes that merge but hash differently.
+
+  **Built with the dependency inverted from what this section first
+  proposed.** The draft had `ids.js` import the key from
+  `merge_predicate.js`; that closes a require cycle, because
+  `merge_predicate` → `engine` and `engine` needs `ids` to mint branch
+  ids. CommonJS resolves a cycle by handing the second module the
+  first's *partial* `module.exports`, and every module here **reassigns**
+  `module.exports = api` at the end rather than mutating it — so
+  `merge_predicate` would have captured a permanently empty object and
+  `Engine.reachable` would be `undefined` at call time. `ids.js` is
+  therefore a **leaf that requires nothing**, it owns
+  `normalizedContent`, and `merge_predicate.js` re-exports it as
+  `defaultContentKey` (preserving the name `gen_probe.js` already uses).
+  One definition either way; only the arrow changed.
+
+  Nothing smarter belongs here — anything semantic is the `contentKey`
+  parameter `sameInContext` already accepts, not an id.
 - **Multi-parent nodes hash one parent.** `parentId` is the parent the
   node was *created under*. A later `rejoins` edge adds a second parent
   without rehashing — ids are birth certificates, not live summaries of

@@ -28,12 +28,19 @@
   const Engine = (typeof require !== "undefined")
     ? require("./story_builder_engine.js")
     : root.StoryDagEngine;
+  const Ids = (typeof require !== "undefined")
+    ? require("./ids.js")
+    : root.StoryDagIds;
 
   // Default reading of "what is true / what happens here": the node's `expr`,
   // normalized for case and whitespace. Swappable so the caller can supply a
   // richer key later without touching the predicate.
+  //
+  // The normalization itself lives in ids.js because the SAME string feeds
+  // the content-addressed node id. Two copies that drifted apart would mean
+  // nodes that merge but hash differently.
   function defaultContentKey(node) {
-    return String(node.expr || "").trim().toLowerCase().replace(/\s+/g, " ");
+    return Ids.normalizedContent(node.expr);
   }
 
   function sameInContext(graph, aId, bId, contentKey = defaultContentKey) {

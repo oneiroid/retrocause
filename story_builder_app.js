@@ -3,6 +3,10 @@
   const EDGE_TYPES = ["causes", "leads_to", "choice", "rejoins"];
   const STORAGE_KEY = "retrocause.storyDagBuilder.v2";
 
+  // Content-addressed ids and canonical export (ids.js, LOCAL_LLM.md §3).
+  // Loaded as a plain script before this one; the page has no module system.
+  const ids = window.StoryDagIds;
+
   // ── Force-layout tuning ───────────────────────────────────────────────
   // Every graph-layout magic number lives here, named and explained, instead
   // of being scattered through the simulation code. Adjust layout feel here.
@@ -653,11 +657,12 @@
     if (!source) return toast("Select a source node first", true);
     const label = el.branchLabel.value.trim();
     if (!label) return toast("Branch title is required", true);
-    const id = uniqueId("branch");
+    const expr = el.branchExpr.value.trim() || `alternate(${source.id})`;
+    const id = contentId({ parentId: source.id, expr, label });
     const branch = {
       id,
       label,
-      expr: el.branchExpr.value.trim() || `alternate(${source.id})`,
+      expr,
       state: el.branchState.value.trim(),
       delta: el.branchDelta.value.trim(),
       invariants: el.branchInvariants.value.trim(),
@@ -693,11 +698,12 @@
     if (to === "__new__") {
       const nodeLabel = el.manualNodeLabel.value.trim();
       if (!nodeLabel) return toast("New node label is required", true);
-      const id = uniqueId("node");
+      const expr = `event(${slug(nodeLabel)})`;
+      const id = contentId({ parentId: from, expr, label: nodeLabel });
       state.graph.nodes.push({
         id,
         label: nodeLabel,
-        expr: `event(${slug(nodeLabel)})`,
+        expr,
         state: "",
         kind: "story",
         tags: [],
@@ -728,7 +734,7 @@
   function addEdge(edgeItem) {
     if (!getNode(edgeItem.from) || !getNode(edgeItem.to)) return { ok: false, message: "Edge endpoint is missing" };
     if (wouldCreateCycle(edgeItem.from, edgeItem.to)) return { ok: false, message: "Rejected because that edge would create a cycle" };
-    edgeItem.id = edgeItem.id || uniqueId(`edge_${edgeItem.type}`);
+    edgeItem.id = edgeItem.id || ids.edgeId({ from: edgeItem.from, to: edgeItem.to, type: edgeItem.type }, state.graph);
     state.graph.edges.push(edgeItem);
     return { ok: true };
   }
@@ -909,10 +915,7 @@
   }
 
   function exportJson() {
-    return JSON.stringify({
-      ...state.graph,
-      meta: { ...state.graph.meta, savedAt: new Date().toISOString() }
-    }, null, 2);
+    return ids.canonicalJson(state.graph);
   }
 
   function showExportJson() {
@@ -1040,12 +1043,13 @@
     return [item.label, item.expr, item.state, ...(item.tags || [])].join(" ").toLowerCase().includes(state.search);
   }
 
-  function uniqueId(prefix) {
-    let id;
-    do {
-      id = `${prefix}_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 6)}`;
-    } while (getNode(id) || state.graph.edges.some((item) => item.id === id));
-    return id;
+  // Content-addressed node id, against the live graph so collisions get a
+  // deterministic `_2` suffix. Replaces the old `uniqueId`, which retried with
+  // a fresh `Date.now()` + `Math.random()` draw — meaning two identical
+  // editing sessions produced graphs that differed on every id and could not
+  // be compared at all (LOCAL_LLM.md §3).
+  function contentId({ parentId, expr, label }) {
+    return ids.nodeId({ parentId, expr, label }, state.graph);
   }
 
   function unique(items) {

@@ -1,4 +1,8 @@
 (function attachStoryDagEngine(root) {
+  const Ids = (typeof require !== "undefined")
+    ? require("./ids.js")
+    : root.StoryDagIds;
+
   const EDGE_TYPES = ["causes", "leads_to", "choice", "rejoins"];
 
   function normalizeGraph(graph) {
@@ -14,12 +18,16 @@
       ...node,
       label: node.label || node.id || "unnamed"
     }));
-    clone.edges = (clone.edges || []).map((edge, index) => ({
-      id: edge.id || `e_${edge.from}_${edge.to}_${index}`,
-      type: edge.type || "causes",
-      label: edge.label || edge.type || "edge",
-      ...edge
-    }));
+    // Minted ids accumulate into `taken` so a second edge between the same
+    // pair gets `_2` rather than colliding — index-free, so the id survives a
+    // reordering of the edge list (LOCAL_LLM.md §3.1).
+    const taken = new Set((clone.edges || []).map((edge) => edge.id).filter(Boolean));
+    clone.edges = (clone.edges || []).map((edge) => {
+      const type = edge.type || "causes";
+      const id = edge.id || Ids.edgeId({ from: edge.from, to: edge.to, type }, taken);
+      taken.add(id);
+      return { id, type, label: edge.label || edge.type || "edge", ...edge };
+    });
     clone.root = clone.root || clone.nodes[0]?.id || "root";
     clone.meta = clone.meta || { title: clone.title || "Untitled Story DAG", version: 2 };
     return clone;
@@ -47,7 +55,7 @@
     if (!ids.has(edge.from) || !ids.has(edge.to)) return { ok: false, message: "Edge endpoint is missing" };
     if (wouldCreateCycle(graph, edge.from, edge.to)) return { ok: false, message: "Rejected because that edge would create a cycle" };
     graph.edges.push({
-      id: edge.id || `e_${edge.from}_${edge.to}_${edge.type || "edge"}_${graph.edges.length}`,
+      id: edge.id || Ids.edgeId({ from: edge.from, to: edge.to, type: edge.type }, graph),
       type: edge.type || "causes",
       label: edge.label || edge.type || "edge",
       ...edge
@@ -58,7 +66,6 @@
   function addBranch(graph, sourceId, branch, rejoinTargetId = "") {
     const source = graph.nodes.find((node) => node.id === sourceId);
     if (!source) return { ok: false, message: "Source node is missing" };
-    if (!branch.id) branch.id = `branch_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 7)}`;
     const newNode = {
       kind: "branch",
       tags: ["counterfactual"],
@@ -69,6 +76,9 @@
       invariants: "",
       ...branch
     };
+    // Minted AFTER the defaults are applied, so the id hashes the `expr` the
+    // node actually ends up with rather than an absent one (LOCAL_LLM.md §3.1).
+    if (!newNode.id) newNode.id = Ids.nodeId({ parentId: sourceId, expr: newNode.expr, label: newNode.label }, graph);
     graph.nodes.push(newNode);
     const choice = addEdge(graph, { from: sourceId, to: newNode.id, type: "choice", label: newNode.delta || "alternative branch", branchId: newNode.id });
     if (!choice.ok) {
@@ -124,8 +134,12 @@
     return ranks;
   }
 
+  // Canonical, not chronological: sorted, fixed key order, no `savedAt`. Two
+  // identical graphs must export to identical bytes, which is the whole
+  // definition of "this run reproduced" (LOCAL_LLM.md §3.2). A wall-clock
+  // stamp is provenance and belongs in the run manifest, not in the content.
   function exportGraph(graph) {
-    return JSON.stringify({ ...graph, meta: { ...graph.meta, savedAt: new Date().toISOString() } }, null, 2);
+    return Ids.canonicalJson(graph);
   }
 
   function importGraph(json) {
