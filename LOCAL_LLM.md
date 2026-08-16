@@ -520,6 +520,22 @@ today, while the project as a whole gains a generator. `CONCEPT.md` is
 amended to describe this split rather than to deny that a generator
 exists.
 
+**Amendment (2026-08-16): the page can now *trigger* the grower.**
+`tools/grow_server.js` (`npm run grow:serve`, loopback :8081) accepts
+`POST /grow { graph, from, depth, width }`, runs `growGraph` Node-side
+against llama-server, persists a run directory through the same
+`buildConfig`/manifest machinery as the CLI (plus `input_graph.json`,
+because a UI graph has no seed name — such manifests carry
+`input.seed: null` and cannot be replayed via `grow:replay`), and
+returns the grown graph. The page's Auto-grow button POSTs the current
+graph and imports the reply through the ordinary import path. The
+claim that survives unchanged: the page never calls the *model*, and
+without either server it is exactly the file-import editor above — the
+button just fails with a toast. What is genuinely weaker: "it receives
+a file" became "it receives the same artifact, over loopback fetch,
+on the user's click". UI runs are capped at 64 created nodes
+(`MAX_UI_NODES`) so a click cannot fan out into a corpus sweep.
+
 ### 5.2 Modules
 
 | File | Role |
@@ -527,7 +543,8 @@ exists.
 | `ids.js` | `shortHash`, `nodeId`, `edgeId`, `canonicalJson` (§3) |
 | `llm_client.js` | llama-server transport; `/completion`, `/props`; owns the determinism profile and the response cache |
 | `grower.js` | The deterministic traversal; proposes via `llm_client`, inserts via `growth.js`; returns `{ graph, manifest }` |
-| `tools/grow.js` | CLI entry point |
+| `tools/grow.js` | CLI entry point; exports the config/manifest machinery the grow server reuses |
+| `tools/grow_server.js` | Loopback bridge: the page POSTs "grow from this node", the model call stays Node-side (§5.1 amendment) |
 | `prompts/branch.v1.txt` | Versioned prompt template |
 | `tests/*.test.js` | Fixture replay, no network |
 

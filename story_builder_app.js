@@ -3,6 +3,12 @@
   const EDGE_TYPES = ["causes", "leads_to", "choice", "rejoins"];
   const STORAGE_KEY = "retrocause.storyDagBuilder.v2";
 
+  // The Node-side grow bridge (tools/grow_server.js). The page never calls
+  // the model itself — it POSTs "grow from this node" here and imports the
+  // grown graph the bridge returns. Optional: without the bridge running,
+  // Auto-grow fails with a toast and everything else works as before.
+  const GROW_SERVER_URL = "http://127.0.0.1:8081";
+
   // Content-addressed ids and canonical export (ids.js, LOCAL_LLM.md §3).
   // Loaded as a plain script before this one; the page has no module system.
   const ids = window.StoryDagIds;
@@ -138,6 +144,7 @@
       exportJson,
       importGraph,
       validateGraph,
+      autoGrow,
       selectNode: (id) => { state.selectedId = id; renderAll(); }
     };
   }
@@ -214,6 +221,7 @@
     el.buildPromptBtn.addEventListener("click", () => showPrompt(true));
     el.copyPromptBtn.addEventListener("click", copyPrompt);
     el.importJsonBtn.addEventListener("click", importFromTextArea);
+    el.autoGrowBtn.addEventListener("click", autoGrow);
     el.exportJsonBtn.addEventListener("click", showExportJson);
     el.downloadJsonBtn.addEventListener("click", downloadJson);
     el.saveLocalBtn.addEventListener("click", saveLocal);
@@ -912,6 +920,40 @@
     renderAll();
     showValidation(result);
     toast("Graph JSON restored");
+  }
+
+  // Auto-grow: hand the current graph to the grow bridge, which drives the
+  // local model Node-side and answers with the grown graph — the same
+  // artifact `npm run grow` writes, arriving over fetch instead of paste.
+  // The reply goes through importGraph, so it passes the same validation as
+  // any hand-pasted JSON.
+  async function autoGrow() {
+    const from = state.selectedId;
+    if (!from) return toast("Select a node to grow from", true);
+    el.autoGrowBtn.disabled = true;
+    try {
+      const response = await fetch(`${GROW_SERVER_URL}/grow`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          graph: state.graph,
+          from,
+          depth: +el.growDepth.value || 1,
+          width: +el.growWidth.value || 1
+        })
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || `grow server returned ${response.status}`);
+      importGraph(data.graph);
+      state.selectedId = from;
+      renderAll();
+      toast(`Grown: +${data.stats.created} nodes, ${data.stats.mergedDuplicates} merged (run ${data.runId})`);
+    } catch (error) {
+      const offline = error instanceof TypeError;
+      toast(offline ? "Grow bridge not reachable — run: npm run grow:serve" : `Auto-grow failed: ${error.message}`, true);
+    } finally {
+      el.autoGrowBtn.disabled = false;
+    }
   }
 
   function exportJson() {

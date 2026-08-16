@@ -52,7 +52,12 @@ function sha256(buffer) {
 // hash exactly these fields — not `createdAt` (two identical runs would get
 // different ids) and not `result` (an outcome inside the id of the
 // configuration that produced it is circular). §5.4.
-async function buildConfig({ story, from, depth, width, maxNodes, samplingSeed, client }) {
+//
+// `story` may be null: the grow server (tools/grow_server.js) grows graphs
+// the UI sends over, which have no seed name. The graph hash still pins the
+// input; such manifests carry `input.seed: null` plus an input_graph.json
+// beside them, and `grow:replay` cannot re-run them from the seed table.
+async function buildConfig({ story = null, graph = null, from, depth, width, maxNodes, client }) {
   const props = await client.props();
 
   const modelPath = props.model_path || "";
@@ -77,7 +82,7 @@ async function buildConfig({ story, from, depth, width, maxNodes, samplingSeed, 
   };
 
   const promptText = fs.readFileSync(PROMPT_PATH, "utf8");
-  const inputGraph = Engine.normalizeGraph(seeds[story]);
+  const inputGraph = Engine.normalizeGraph(graph || seeds[story]);
 
   const config = {
     profile: PROFILE,
@@ -88,7 +93,7 @@ async function buildConfig({ story, from, depth, width, maxNodes, samplingSeed, 
     traversal: { from, depth, width, maxNodes },
     input: { seed: story, graphSha256: sha256(Ids.canonicalJson(inputGraph)) },
   };
-  return { config, promptText, inputGraph, samplingSeed };
+  return { config, promptText, inputGraph };
 }
 
 function runIdOf(config) {
@@ -113,7 +118,7 @@ async function grow(args) {
     sampling: { seed: samplingSeed },
   });
   const { config, promptText, inputGraph } = await buildConfig({
-    story, from, depth, width, maxNodes, samplingSeed, client,
+    story, from, depth, width, maxNodes, client,
   });
   const runId = runIdOf(config);
 
@@ -175,7 +180,6 @@ async function replay(args) {
     depth: manifest.traversal.depth,
     width: manifest.traversal.width,
     maxNodes: manifest.traversal.maxNodes,
-    samplingSeed: manifest.sampling.seed,
     client,
   });
 
@@ -218,8 +222,15 @@ async function replay(args) {
   process.exit(1);
 }
 
-const args = parseArgs(process.argv.slice(2));
-(args.replay ? replay(args) : grow(args)).catch((error) => {
-  console.error(error.message);
-  process.exit(1);
-});
+if (require.main === module) {
+  const args = parseArgs(process.argv.slice(2));
+  (args.replay ? replay(args) : grow(args)).catch((error) => {
+    console.error(error.message);
+    process.exit(1);
+  });
+}
+
+// The grow server reuses the config/manifest machinery so UI-triggered runs
+// are provenanced by the same instrument as CLI runs — a second manifest
+// writer would drift.
+module.exports = { buildConfig, runIdOf, DEFAULTS, GRAPH_FILE, MANIFEST_FILE };

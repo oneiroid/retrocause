@@ -34,6 +34,9 @@ side. See `CONCEPT.md` §"What each layer commits to".
   weights live outside this repo, in the sibling `llmfinetune` workspace;
   the script verifies the GGUF hash before serving and pins the whole
   reference profile. Nothing in the app or the tests needs it.
+- UI Auto-grow (LLM assist panel) needs both servers:
+  `./tools/serve_reference.sh` and `npm run grow:serve`. Without them the
+  button toasts an error and the rest of the page is unaffected.
 
 ## Module map
 
@@ -49,6 +52,8 @@ side. See `CONCEPT.md` §"What each layer commits to".
 | `grower.js` | The deterministic traversal: proposes via `llm_client`, inserts via `growth.js`, pins every ordering. Node-only |
 | `prompts/branch.v1.txt` | Versioned few-shot prompt; its sha256 goes in the run manifest. Edits are a new version, never in-place |
 | `tools/grow.js` | CLI: `npm run grow -- --story red …` emits `runs/<runId>/grown_graph.json` + manifest; `npm run grow:replay -- <manifest>` diffs canonical JSON cache-cold |
+| `tools/grow_server.js` | `npm run grow:serve` — loopback bridge (:8081) behind the UI's Auto-grow button; runs the grower Node-side, persists the run, returns the grown graph. UI runs get `input.seed: null` manifests and are not `grow:replay`-able |
+| `tools/eval.js` | `npm run eval` — §6 metric table over model runs, recorded run dirs, and the `gen_probe.js` baseline (probe candidate source through the grower's own traversal) |
 | `tools/serve_reference.sh` | Starts `llama-server` on the reproducible reference profile (`LOCAL_LLM.md` §4.1). Every flag in it is part of that profile |
 | `experiments/gen_probe.js` | Lexicon-recombiner probe; the traversal `grower.js` will lift and the eval baseline it must beat |
 | `tests/*.test.js` | `node --test` unit tests |
