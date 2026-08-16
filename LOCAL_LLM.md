@@ -15,6 +15,74 @@ silently absorbed — §5.5.4 is the substantive one.
 
 ---
 
+## 0. Where the work stands, and how to resume it
+
+Written for a session starting cold on branch `claude/local-llm-phase0`.
+Verified 2026-08-16.
+
+**Done.** Phase 0 (`2e78d78`): `ids.js`, all four id sites, canonical
+export, `tests/ids.test.js`. Phase 0.5 (`4088db3`): the GGUF, the
+reference profile, the prompting result in §8. `npm test` → 40 pass.
+
+**Not started.** Phase 1. No `llm_client.js`, no `grower.js`, no
+`tools/grow.js` exists; `tools/` holds only the launcher below.
+
+**The model is not in this repo.** It is an artifact in the sibling
+`llmfinetune` workspace, and the server is not running between sessions:
+
+```bash
+./tools/serve_reference.sh          # verifies the GGUF hash, then serves §4.1
+```
+
+Smoke-check it — this is the whole stack Phase 1 builds on, and it
+passed on 2026-08-16 (`{ "expr": "walk(red, redberry field)" }`, stopped
+at `eos`, byte-identical across two requests):
+
+```bash
+curl -s http://127.0.0.1:8080/props | head -c 400
+```
+
+**Build Phase 1 in this order.** Each step is testable before the next
+exists:
+
+1. `llm_client.js` — one `complete(prompt, schema, sampling)` over
+   `/completion`. Pins every sampler field in §5.4's `sampling` block,
+   `cache_prompt: false` included. Reads `/props` once per run for the
+   manifest. Node-only; never loaded by the page.
+2. The versioned prompt — few-shot completion, because zero-shot
+   instruction prompting *echoes* on this base model (§8). The examples
+   are part of the prompt and therefore part of its hash.
+3. `grower.js` — BFS per §5.5, lifting the traversal from
+   `experiments/gen_probe.js` and swapping only the candidate source.
+   Emits through `Engine.addBranch`/`addEdge` (§5.6) and lets
+   `growth.js`'s merge-on-insert handle convergence; it does **no** dedup
+   of its own (§5.5.4).
+4. `tools/grow.js` + `npm run grow` / `grow:replay` — manifest out,
+   replay diffs canonical JSON cache-cold (§4.2).
+5. Fixture-replay tests (§7) with recorded responses, so `npm test`
+   stays model-free.
+
+**Four traps already paid for, worth not re-discovering.**
+
+- `growth.js` is **taken** by merge-on-insert. The traversal module is
+  `grower.js`.
+- `ids.js` **requires nothing**, deliberately — importing the content key
+  from `merge_predicate.js` closes a require cycle that, because every
+  module here reassigns `module.exports`, hands `merge_predicate` an
+  empty `Engine`.
+- The engine/app fork in §8 is real and live in the browser; read it
+  before touching `story_builder_app.js`.
+- `validateGraph` is O(E²·V) (§8). Validate once per run, not per insert.
+
+**The open finding Phase 2's eval must catch:** the model proposes
+plausible transitions but does not keep one branch's fields consistent
+with each other — it copies `delta` into `invariants`, and produced a
+branch whose `state` said the child was eaten while `invariants` said the
+child was alive. Nothing downstream reads `invariants` today. Add the
+per-branch contradiction check (§6) before anything does.
+
+---
+
 ## 1. The problem this solves
 
 Retrocause can branch a DAG, but only by hand, one form submission at a
@@ -197,8 +265,10 @@ the rest of this document must respect:
   completion (§5.3), and grammar is not merely convenient — it is doing
   *all* of the format work, because there is no instruction-following
   to fall back on.
-- **The GGUF does not exist yet.** Producing and hashing it is a Phase 1
-  prerequisite step (§9), not an assumption.
+- **The GGUF exists as of Phase 0.5** (2026-08-04):
+  `llmfinetune/models/qwen3-1.7b-base-Q8_0.gguf`, 1.83 GB, sha256
+  `8a0dbbf6…5b7cba`. It is an artifact on disk outside this repo, so
+  Phase 1 verifies its hash rather than assuming its presence (§5.4).
 
 ---
 
@@ -552,9 +622,11 @@ produced it is circular.
 
 `build_info` comes from llama-server's `/props`. **`system_fingerprint`
 does not exist on this build** (`f5b9bd3`) — `/props` returns
-`build_info`, `model_path`, `model_ftype`, `total_slots`, `n_ctx`,
-`chat_template` and `default_generation_settings`, and nothing named
-`system_fingerprint`. Record what is actually there:
+`build_info`, `model_path`, `model_alias`, `model_ftype`, `total_slots`,
+`chat_template`, `bos_token`/`eos_token` and
+`default_generation_settings`, and nothing named `system_fingerprint`.
+**`n_ctx` is not top-level either** (re-verified 2026-08-16): it sits at
+`default_generation_settings.n_ctx`. Record what is actually there:
 
 ```json
 "server": { "build_info": "b1-f5b9bd3", "model_ftype": "Q8_0",
@@ -563,10 +635,19 @@ does not exist on this build** (`f5b9bd3`) — `/props` returns
 
 `default_generation_settings` is worth capturing wholesale, because it
 is the record of every sampler default the request did *not* override —
-which is exactly the class of hidden hyperparameter §4.2 is about. On
-this build those defaults include `temperature: 0.8`, `top_k: 40`,
-`seed: 4294967295`, so a request that forgets to pin one is not
-neutral, it is at a sampling temperature of 0.8.
+which is exactly the class of hidden hyperparameter §4.2 is about. The
+samplers live one level down, in `default_generation_settings.params`,
+and on this build they include `temperature: 0.8`, `top_k: 40`,
+`seed: 4294967295`, `repeat_penalty: 1.0`, `n_predict: -1` and a nine-
+stage `samplers` order — so a request that forgets to pin one is not
+neutral, it is at a sampling temperature of 0.8. The list also carries
+`backend_sampling` and an `adaptive_*` family absent from the design's
+original reading, which is the argument for capturing the block whole
+rather than enumerating fields.
+
+**`cache_prompt` is not in `/props` at all.** It is request-only, so the
+one flag §4.1 ranks as most dangerous cannot be audited from the server.
+The manifest must record it from the request the client actually sent.
 
 Node-level provenance reuses the existing `createdBy` field, already
 typed `seed | human | human-edited | assist` in
@@ -838,7 +919,7 @@ before running it, so the result cannot be reinterpreted afterwards.
 
 | Phase | Contents |
 |---|---|
-| **0** | §3 only — `ids.js`, content-addressed ids at all four sites, canonical export, tests. No model. Independently valuable; unblocks everything else. |
+| **0** | ✅ **done 2026-08-04** (`2e78d78`). §3 only — `ids.js`, content-addressed ids at all four sites, canonical export, tests. No model. Independently valuable; unblocks everything else. |
 | **0.5** | ✅ **done 2026-08-04.** `qwen3-1.7b-base-Q8_0.gguf` (1.83 GB, sha256 `8a0dbbf6…5b7cba`) exported from the HF cache via `llmfinetune/export_gguf.py`; `llama-server` stands up on the reference profile; `/props`, `json_schema` and byte-identical repeat requests all confirmed. Findings folded into §4.1, §5.3, §5.4, §8. |
 | **1** | `llm_client.js` + `grower.js` + `tools/grow.js`, reference profile, fixture-replay tests. |
 | **2** | Eval harness against the `gen_probe.js` baseline (§6), prompt versions, corpus sweep. |

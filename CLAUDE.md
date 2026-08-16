@@ -12,9 +12,11 @@ into counterfactual alternatives.
    exercises it.
 3. `RESEARCH_AND_DESIGN.md` — product spec and the interactive-narrative
    research it draws on.
-4. `LOCAL_LLM.md` — design (not yet implemented) for the Node-side
-   grower: automatic DAG growth via a small local model through
-   `llama.cpp`, and what it takes to make those runs reproducible.
+4. `LOCAL_LLM.md` — the Node-side grower: automatic DAG growth via a
+   small local model through `llama.cpp`, and what it takes to make those
+   runs reproducible. Phases 0 and 0.5 have landed (`ids.js`, the GGUF,
+   the reference profile); the grower itself is still design. **§0 is the
+   resume point** — read it before picking the work up.
 
 **Conflict resolution:** when the intuitions and the code disagree, the
 disagreement is data — flag it in both, don't silently absorb either
@@ -25,7 +27,12 @@ side. See `CONCEPT.md` §"What each layer commits to".
 - App: open `story_builder.html` directly in a browser (no bundler; loads
   D3 from CDN, reads `seeds.js` via `window.*`).
 - Tests: `npm test` — syntax-checks the source files via `node --check`,
-  then runs `node --test tests/*.test.js`.
+  then runs `node --test tests/*.test.js`. Model-free: nothing in the
+  suite talks to a server.
+- Model server (only for grower work): `./tools/serve_reference.sh`. The
+  weights live outside this repo, in the sibling `llmfinetune` workspace;
+  the script verifies the GGUF hash before serving and pins the whole
+  reference profile. Nothing in the app or the tests needs it.
 
 ## Module map
 
@@ -37,6 +44,8 @@ side. See `CONCEPT.md` §"What each layer commits to".
 | `merge_predicate.js` | `sameInContext`: same content + parallel paths ⇒ same state (merge) |
 | `growth.js` | Merge-on-insert: continuations collapse into same-in-context states |
 | `seeds.js` | Seed story DAGs (nodes + edges) |
+| `tools/serve_reference.sh` | Starts `llama-server` on the reproducible reference profile (`LOCAL_LLM.md` §4.1). Every flag in it is part of that profile |
+| `experiments/gen_probe.js` | Lexicon-recombiner probe; the traversal `grower.js` will lift and the eval baseline it must beat |
 | `tests/*.test.js` | `node --test` unit tests |
 
 ## Conventions
