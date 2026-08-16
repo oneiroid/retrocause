@@ -1,7 +1,8 @@
 # Local LLM: Reproducible DAG Growth
 
 **Status:** Phases 0, 0.5 (2026-08-04) and 1 (2026-08-16) implemented.
-Phases 2–3 are still design.
+Phase 2's harness landed 2026-08-16 (`tools/eval.js`); its corpus-scale
+sweep and prompt versions are still open. Phase 3 is design.
 **Scope:** a Node-side module that grows the story DAG automatically by
 calling a small local model through `llama.cpp`, in a way that replays.
 **Out of scope:** fine-tuning (Phase 3, §9), prose generation, any model
@@ -35,12 +36,29 @@ letter: the prompt ends after the `Alternatives:` cue with no open
 brace, because `json_schema` grammar generates the complete JSON object
 itself — an open brace in the prompt would double it.
 
-**Not started.** Phase 2 (`tools/eval.js` against the `gen_probe.js`
-baseline, §6) is the next work. First qualitative read of the Phase 1
-run confirms §8's open finding: exprs are story-shaped
+**Phase 2 harness done, 2026-08-16.** `tools/eval.js` (`npm run eval`)
+scores the §6 metric table — contradiction check included — over model
+runs, recorded run directories (`score runs/<runId>`, model-free), and
+the `gen_probe.js` baseline. The baseline is the probe's own candidate
+source (now requirable behind a `require.main` guard) run through
+`growGraph` itself as a client-shaped recombiner, so "same seeds,
+budgets and merge semantics" holds by construction. First sweep
+(3 stories × both sources, depth 2 / width 2 / max 8, `--replay`):
+every row replayed byte-identically cache-cold, JSON validity 1.0
+throughout, and `rankSpread` near-flat for both sources — expected at
+smoke budgets per the pre-registered rule in §6, which only binds at
+corpus scale. Early signal: the model's duplicate-`expr` rate hit 0.5
+on criedWolf (prompt collapse); the baseline's stayed 0.
+
+**Not started.** The rest of Phase 2: the corpus-scale sweep that the
+§6 decision rule actually binds on (needs the topological-sort cycle
+check from §8 first — `validateGraph`'s O(E²·V) is the blocker), and
+prompt versions beyond `branch.v1`. First qualitative read of the
+Phase 1 run confirms §8's open finding: exprs are story-shaped
 (`stay(red, path)`, `run(red, grandmother)`) but `delta`/`invariants`
 are weakly consistent — `delta` often names something that did *not*
-change. The per-branch contradiction check (§6) is not optional.
+change. The eval's `contradictionRate` catches only the copy failure;
+the delta-names-a-non-change failure still needs eyes (`--show`).
 
 **The model is not in this repo.** It is an artifact in the sibling
 `llmfinetune` workspace, and the server is not running between sessions:
@@ -817,6 +835,29 @@ reconsidered rather than tuned. This is the one comparison that can
 falsify this document's premise, which is why it is a required column
 and not an appendix.
 
+**Pre-registered decision rule (recorded 2026-08-16, before the first
+model sweep).** The falsification signal is made countable as
+`maxRankSpread`: the maximum over topological ranks of (max − min)
+in-degree within the rank. The probe's failure mode — layer-uniform
+in-degree, no convergence gradient — is `maxRankSpread` staying at the
+baseline's level as budgets grow. If model rows do not beat baseline
+rows on this number at equal budgets, the bet that a 1.7B model supplies
+the missing semantics is lost, and the response is to question
+single-node lookahead itself — not to tune prompts or try a bigger
+model. (Small budgets are expected to show spread ≈ 0 for both sources:
+a depth-2 growth of a chain-shaped seed is nearly a tree. The rule
+binds at corpus-scale budgets, not smoke tests.)
+
+**Per-branch contradiction check** (added from the §8 finding before
+anything reads `invariants`): a grown branch whose non-empty normalized
+`delta` equals its normalized `invariants` claims the same sentence
+changed and stayed the same — the observed copy failure. Reported as
+`contradictionRate`; `--show` lists the offending branches. This is the
+raw mechanism only — deeper semantic contradiction (state says eaten,
+invariants say alive) needs machinery the repo has deliberately not
+built — the same restraint that deleted `phi.js` (§1.1); look at the
+flagged branches before naming any richer measurement.
+
 ---
 
 ## 7. Testing
@@ -937,7 +978,7 @@ before running it, so the result cannot be reinterpreted afterwards.
 | **0** | ✅ **done 2026-08-04** (`2e78d78`). §3 only — `ids.js`, content-addressed ids at all four sites, canonical export, tests. No model. Independently valuable; unblocks everything else. |
 | **0.5** | ✅ **done 2026-08-04.** `qwen3-1.7b-base-Q8_0.gguf` (1.83 GB, sha256 `8a0dbbf6…5b7cba`) exported from the HF cache via `llmfinetune/export_gguf.py`; `llama-server` stands up on the reference profile; `/props`, `json_schema` and byte-identical repeat requests all confirmed. Findings folded into §4.1, §5.3, §5.4, §8. |
 | **1** | ✅ **done 2026-08-16.** `llm_client.js` + `grower.js` + `tools/grow.js` + `prompts/branch.v1.txt`, reference profile, fixture-replay tests. First real run replayed byte-identically cache-cold (§0). |
-| **2** | Eval harness against the `gen_probe.js` baseline (§6), prompt versions, corpus sweep. |
+| **2** | ⏳ **harness done 2026-08-16** — `tools/eval.js` scores the §6 table against the `gen_probe.js` baseline; first 3-story sweep replayed byte-identically. Open: prompt versions, the corpus-scale sweep (blocked on the §8 topological-sort cycle check). |
 | **3** | *Deferred.* LoRA via the sibling `llmfinetune` workspace, GGUF adapters, `--lora` hot-swap on the server, trained on accepted branches. Determinism gets harder — the adapter joins the manifest as a hashed artifact. Not designed here. |
 
 Phase 0 is worth doing whether or not any model is ever wired up.

@@ -3,8 +3,9 @@
   "private": true,
   "version": "0.1.0",
   "scripts": {
-    "test": "node --check ids.js && node --check story_builder_app.js && node --check story_builder_engine.js && node --check seeds.js && node --check merge_predicate.js && node --check growth.js && node --check llm_client.js && node --check grower.js && node --check tools/grow.js && node --test tests/*.test.js",
+    "test": "node --check ids.js && node --check story_builder_app.js && node --check story_builder_engine.js && node --check seeds.js && node --check merge_predicate.js && node --check growth.js && node --check llm_client.js && node --check grower.js && node --check tools/grow.js && node --check tools/eval.js && node --check experiments/gen_probe.js && node --test tests/*.test.js",
     "grow": "node tools/grow.js",
+    "eval": "node tools/eval.js",
     "grow:replay": "node tools/grow.js --replay"
   }
 }

@@ -281,6 +281,20 @@ function spearman(xs, ys) {
   return num / Math.sqrt(dx * dy);
 }
 
+// ── requirable surface ──────────────────────────────────────────────────────
+// tools/eval.js runs the recombiner as the §6 baseline through the grower's
+// own traversal. It must be THIS code — a copied candidate source would drift
+// into a second definition of the baseline. Everything below the guard only
+// executes when the probe is run directly.
+if (typeof module !== "undefined" && module.exports) {
+  // candCache keys on flags+expr only, not on WHICH graph induced the
+  // grammar — valid within one run, wrong across runs on different stories
+  // (they share exprs by design). Callers switching graphs must clear it.
+  const clearCandidateCache = () => candCache.clear();
+  module.exports = { parseExpr, extractLexicon, induceBigrams, induceTyping, candidatesFor, mulberry32, unionGraph, clearCandidateCache };
+}
+if (typeof require !== "undefined" && require.main === module) {
+
 // ── equivalence check: fast path vs real growth module ──────────────────────
 {
   const shape = (g) => JSON.stringify({
@@ -360,3 +374,5 @@ const outName = `gen_${STORIES.length > 1 ? "union" : STORIES[0]}_K${K}_D${D}${B
 const outPath = path.join(process.env.OUT || __dirname, outName);
 fs.writeFileSync(outPath, Engine.exportGraph(graph));
 console.log(`\ngraph written: ${outPath}`);
+
+} // require.main guard
