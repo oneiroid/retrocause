@@ -1,2 +1,7 @@
 .claude/*
 experiments/gen_*.json
+
+# LOCAL_LLM.md §5.7: the response cache is per-machine state; only the small
+# tests/fixtures/ set is checked in. runs/ holds grown graphs + manifests.
+cache/
+runs/

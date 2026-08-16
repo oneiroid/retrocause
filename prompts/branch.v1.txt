@@ -1,0 +1,15 @@
+Story states are events written as schema(arguments). After each state, the alternatives that could have followed instead are listed as JSON: each alternative has a short label, its event expr, a state note describing what is now true, a delta naming the one thing that changed from the original story, and invariants naming what stayed the same.
+
+State: deceive(wolf, red)
+Note: The wolf gains enough information to race ahead and construct a trap.
+Alternatives:
+{"branches": [{"label": "Red refuses to talk", "expr": "refuse(red, wolf)", "state": "Red keeps her destination secret and the wolf learns nothing.", "delta": "the wolf does not know the destination", "invariants": "Red is still on the path to grandmother's house"}, {"label": "Wolf attacks at once", "expr": "attack(wolf, red)", "state": "The wolf abandons deception and strikes in the open woods.", "delta": "the attack happens in the woods, not the house", "invariants": "the wolf is still the aggressor"}]}
+
+State: deceive(boy, villagers)
+Note: The alarm channel is spent on a joke; trust takes its first debit.
+Alternatives:
+{"branches": [{"label": "Boy stays honest", "expr": "watch(boy, flock)", "state": "The boy keeps watching in silence and the alarm stays trusted.", "delta": "no false cry is raised", "invariants": "the boy is still alone with the flock"}, {"label": "Villagers ignore the first cry", "expr": "dismiss(villagers, boy)", "state": "Nobody comes; the joke falls flat and the flock is briefly unguarded.", "delta": "the rescue never happens", "invariants": "the wolf has not yet appeared"}]}
+
+State: {{expr}}
+Note: {{state}}
+Alternatives:

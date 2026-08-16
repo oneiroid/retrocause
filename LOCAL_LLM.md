@@ -1,7 +1,7 @@
 # Local LLM: Reproducible DAG Growth
 
-**Status:** Phases 0 and 0.5 implemented (2026-08-04). Phases 1–3 are
-still design.
+**Status:** Phases 0, 0.5 (2026-08-04) and 1 (2026-08-16) implemented.
+Phases 2–3 are still design.
 **Scope:** a Node-side module that grows the story DAG automatically by
 calling a small local model through `llama.cpp`, in a way that replays.
 **Out of scope:** fine-tuning (Phase 3, §9), prose generation, any model
@@ -22,10 +22,25 @@ Verified 2026-08-16.
 
 **Done.** Phase 0 (`2e78d78`): `ids.js`, all four id sites, canonical
 export, `tests/ids.test.js`. Phase 0.5 (`4088db3`): the GGUF, the
-reference profile, the prompting result in §8. `npm test` → 40 pass.
+reference profile, the prompting result in §8. Phase 1 (2026-08-16):
+`llm_client.js`, `grower.js`, `tools/grow.js`, `prompts/branch.v1.txt`,
+fixture-replay tests. `npm test` → 57 pass, model-free.
 
-**Not started.** Phase 1. No `llm_client.js`, no `grower.js`, no
-`tools/grow.js` exists; `tools/` holds only the launcher below.
+**Verified end-to-end on the reference profile, 2026-08-16:**
+`npm run grow -- --story red --depth 2 --width 2 --max-nodes 8` grew 6
+branches (run `run_76f1787d2145280f`), the graph round-trips through
+`Engine.importGraph`, and `npm run grow:replay` cache-cold reported
+**byte-identical canonical JSON**. One deliberate deviation from §5.3's
+letter: the prompt ends after the `Alternatives:` cue with no open
+brace, because `json_schema` grammar generates the complete JSON object
+itself — an open brace in the prompt would double it.
+
+**Not started.** Phase 2 (`tools/eval.js` against the `gen_probe.js`
+baseline, §6) is the next work. First qualitative read of the Phase 1
+run confirms §8's open finding: exprs are story-shaped
+(`stay(red, path)`, `run(red, grandmother)`) but `delta`/`invariants`
+are weakly consistent — `delta` often names something that did *not*
+change. The per-branch contradiction check (§6) is not optional.
 
 **The model is not in this repo.** It is an artifact in the sibling
 `llmfinetune` workspace, and the server is not running between sessions:
@@ -42,8 +57,8 @@ at `eos`, byte-identical across two requests):
 curl -s http://127.0.0.1:8080/props | head -c 400
 ```
 
-**Build Phase 1 in this order.** Each step is testable before the next
-exists:
+**Phase 1 was built in this order** (kept as the map of what exists —
+each numbered item below is now a real module):
 
 1. `llm_client.js` — one `complete(prompt, schema, sampling)` over
    `/completion`. Pins every sampler field in §5.4's `sampling` block,
@@ -921,7 +936,7 @@ before running it, so the result cannot be reinterpreted afterwards.
 |---|---|
 | **0** | ✅ **done 2026-08-04** (`2e78d78`). §3 only — `ids.js`, content-addressed ids at all four sites, canonical export, tests. No model. Independently valuable; unblocks everything else. |
 | **0.5** | ✅ **done 2026-08-04.** `qwen3-1.7b-base-Q8_0.gguf` (1.83 GB, sha256 `8a0dbbf6…5b7cba`) exported from the HF cache via `llmfinetune/export_gguf.py`; `llama-server` stands up on the reference profile; `/props`, `json_schema` and byte-identical repeat requests all confirmed. Findings folded into §4.1, §5.3, §5.4, §8. |
-| **1** | `llm_client.js` + `grower.js` + `tools/grow.js`, reference profile, fixture-replay tests. |
+| **1** | ✅ **done 2026-08-16.** `llm_client.js` + `grower.js` + `tools/grow.js` + `prompts/branch.v1.txt`, reference profile, fixture-replay tests. First real run replayed byte-identically cache-cold (§0). |
 | **2** | Eval harness against the `gen_probe.js` baseline (§6), prompt versions, corpus sweep. |
 | **3** | *Deferred.* LoRA via the sibling `llmfinetune` workspace, GGUF adapters, `--lora` hot-swap on the server, trained on accepted branches. Determinism gets harder — the adapter joins the manifest as a hashed artifact. Not designed here. |
 

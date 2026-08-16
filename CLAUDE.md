@@ -14,9 +14,10 @@ into counterfactual alternatives.
    research it draws on.
 4. `LOCAL_LLM.md` — the Node-side grower: automatic DAG growth via a
    small local model through `llama.cpp`, and what it takes to make those
-   runs reproducible. Phases 0 and 0.5 have landed (`ids.js`, the GGUF,
-   the reference profile); the grower itself is still design. **§0 is the
-   resume point** — read it before picking the work up.
+   runs reproducible. Phases 0–1 have landed (`ids.js`, the GGUF, the
+   reference profile, `llm_client.js`/`grower.js`/`tools/grow.js`); the
+   eval harness (Phase 2) is still design. **§0 is the resume point** —
+   read it before picking the work up.
 
 **Conflict resolution:** when the intuitions and the code disagree, the
 disagreement is data — flag it in both, don't silently absorb either
@@ -44,6 +45,10 @@ side. See `CONCEPT.md` §"What each layer commits to".
 | `merge_predicate.js` | `sameInContext`: same content + parallel paths ⇒ same state (merge) |
 | `growth.js` | Merge-on-insert: continuations collapse into same-in-context states |
 | `seeds.js` | Seed story DAGs (nodes + edges) |
+| `llm_client.js` | llama-server transport; owns the pinned sampling profile and the response cache. **Node-only** — never loaded by the page |
+| `grower.js` | The deterministic traversal: proposes via `llm_client`, inserts via `growth.js`, pins every ordering. Node-only |
+| `prompts/branch.v1.txt` | Versioned few-shot prompt; its sha256 goes in the run manifest. Edits are a new version, never in-place |
+| `tools/grow.js` | CLI: `npm run grow -- --story red …` emits `runs/<runId>/grown_graph.json` + manifest; `npm run grow:replay -- <manifest>` diffs canonical JSON cache-cold |
 | `tools/serve_reference.sh` | Starts `llama-server` on the reproducible reference profile (`LOCAL_LLM.md` §4.1). Every flag in it is part of that profile |
 | `experiments/gen_probe.js` | Lexicon-recombiner probe; the traversal `grower.js` will lift and the eval baseline it must beat |
 | `tests/*.test.js` | `node --test` unit tests |

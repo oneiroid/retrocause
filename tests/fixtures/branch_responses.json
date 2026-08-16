@@ -1,0 +1,79 @@
+{
+  "comment": "Recorded-response fixtures for tests/grower.test.js (LOCAL_LLM.md §5.7 payoff 3, §7). `props` stands in for GET /props; `completions` maps the target state's expr — the last `State:` line of the rendered prompt — to the branch payload the stub transport returns. Shapes match what the reference server actually emits (stop_type eos, stopped_limit null). Designed to exercise: the width cap (three proposals at the root), a valid rejoin (red_woods), an invalid rejoin (no_such_node), a cycle-creating rejoin (red_start from its own descendant), and a same-content merge (arrive(red, grandmother_house) proposed on two parallel paths).",
+  "props": {
+    "build_info": "b1-f5b9bd3-fixture",
+    "model_path": "/fixtures/qwen3-1.7b-base-Q8_0.gguf",
+    "model_ftype": "Q8_0",
+    "total_slots": 1,
+    "default_generation_settings": {
+      "n_ctx": 4096,
+      "params": { "temperature": 0.8, "top_k": 40, "seed": 4294967295 }
+    }
+  },
+  "completions": {
+    "send(mother, red, basket)": {
+      "branches": [
+        {
+          "label": "Filler beyond the width cap",
+          "expr": "zzz_filler(red)",
+          "state": "This proposal sorts last and must be cut by width=2.",
+          "delta": "nothing",
+          "invariants": "nothing"
+        },
+        {
+          "label": "Mother comes along",
+          "expr": "escort(mother, red)",
+          "state": "Mother walks with Red; the woods hold no unsupervised stranger contact.",
+          "delta": "Red is not alone",
+          "invariants": "the errand still happens",
+          "rejoinTargetId": "red_woods"
+        },
+        {
+          "label": "Red refuses the errand",
+          "expr": "refuse(red, mother)",
+          "state": "Red stays home; the basket never enters the woods.",
+          "delta": "the errand is abandoned",
+          "invariants": "the wolf has not seen Red",
+          "rejoinTargetId": "no_such_node"
+        }
+      ]
+    },
+    "escort(mother, red)": {
+      "branches": [
+        {
+          "label": "They arrive together",
+          "expr": "arrive(red, grandmother_house)",
+          "state": "Red reaches the house before any predator does.",
+          "delta": "arrival precedes the wolf",
+          "invariants": "grandmother is unharmed",
+          "rejoinTargetId": "red_start"
+        },
+        {
+          "label": "They turn back",
+          "expr": "turn_back(red, home)",
+          "state": "The pair abandons the trip at the treeline.",
+          "delta": "the visit never happens",
+          "invariants": "everyone is safe at home"
+        }
+      ]
+    },
+    "refuse(red, mother)": {
+      "branches": [
+        {
+          "label": "Red relents and arrives",
+          "expr": "arrive(red, grandmother_house)",
+          "state": "Red reaches the house before any predator does.",
+          "delta": "arrival precedes the wolf",
+          "invariants": "grandmother is unharmed"
+        },
+        {
+          "label": "Red watches mother go instead",
+          "expr": "watch(red, mother)",
+          "state": "Mother takes the basket herself while Red stays behind.",
+          "delta": "the traveler is mother, not Red",
+          "invariants": "the basket still travels"
+        }
+      ]
+    }
+  }
+}
