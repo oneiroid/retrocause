@@ -47,7 +47,7 @@ side. See `CONCEPT.md` §"What each layer commits to".
 | `story_builder_engine.js` | Graph ops: add/remove nodes & edges, cycle checks, branch composition |
 | `merge_predicate.js` | `sameInContext`: same content + parallel paths ⇒ same state (merge) |
 | `growth.js` | Merge-on-insert: continuations collapse into same-in-context states |
-| `seeds.js` | Seed story DAGs (nodes + edges) |
+| `seeds.js` | Seed story DAGs (nodes + edges). v2: one node = one event, `state` is world state (the model reads it), `reading` is the authored gloss (nothing renders it into a prompt) |
 | `llm_client.js` | llama-server transport; owns the pinned sampling profile and the response cache. **Node-only** — never loaded by the page |
 | `grower.js` | The deterministic traversal: proposes via `llm_client`, inserts via `growth.js`, pins every ordering. Node-only |
 | `prompts/branch.v*.txt` | Versioned few-shot prompts; the sha256 goes in the run manifest. Edits are a new version, never in-place. `branch.v2` (default) carries the told story + ancestor path; `branch.v1` (one node only) is kept selectable via `--prompt` so its manifests stay replayable |
@@ -79,6 +79,15 @@ side. See `CONCEPT.md` §"What each layer commits to".
   optional branch metadata (`delta`, `invariants`). "Bottleneck" is **not**
   a kind — it is derived from topology each render (in-degree > 2 and the
   flow re-widens at or below the node).
+- **`state` is world state, `reading` is commentary.** `state` says what
+  is true in the story after the event, in the story's own terms — it is
+  what the grower puts after `Note:` in the prompt, so a gloss there
+  teaches the model to produce gloss (`LOCAL_LLM.md` §8). The
+  interpretive layer lives in the optional `reading` field, which has no
+  default and is never rendered into a prompt.
+- **One node, one event.** If a node's `label` and `expr` disagree, it is
+  usually bundling several events and wants splitting — that mismatch is
+  exactly how the v1 seeds' overloading was found.
 
 ## Gotchas
 

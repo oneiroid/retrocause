@@ -1,5 +1,5 @@
 {
-  "comment": "Recorded-response fixtures for tests/grower.test.js (LOCAL_LLM.md §5.7 payoff 3, §7). `props` stands in for GET /props; `completions` maps the target state's expr — the last `State:` line of the rendered prompt — to the branch payload the stub transport returns. Shapes match what the reference server actually emits (stop_type eos, stopped_limit null). Designed to exercise: the width cap (three proposals at the root), a valid rejoin (red_woods), an invalid rejoin (no_such_node), a cycle-creating rejoin (red_start from its own descendant), and a same-content merge (arrive(red, grandmother_house) proposed on two parallel paths).",
+  "comment": "Recorded-response fixtures for tests/grower.test.js (LOCAL_LLM.md §5.7 payoff 3, §7). `props` stands in for GET /props; `completions` maps the target state's expr — the last `State:` line of the rendered prompt — to the branch payload the stub transport returns. Shapes match what the reference server actually emits (stop_type eos, stopped_limit null). Designed to exercise: the width cap (three proposals at the root), a valid rejoin (red_woods), an invalid rejoin (no_such_node), a cycle-creating rejoin (red_start from its own descendant), a grown-to-grown merge (shelter(red, cottage) proposed on two parallel paths), and a grown-to-SEED merge (arrive(red, grandmother_house) is red_arrive's own expr). The two merge cases use different exprs on purpose: seeds v2 made arrive(red, grandmother_house) a real seed node, which silently turned the old grown-to-grown case into a grown-to-seed one and cost the test its subject. shelter(red, cottage) appears in no seed and must stay that way.",
   "props": {
     "build_info": "b1-f5b9bd3-fixture",
     "model_path": "/fixtures/qwen3-1.7b-base-Q8_0.gguf",
@@ -41,19 +41,19 @@
     "escort(mother, red)": {
       "branches": [
         {
-          "label": "They arrive together",
-          "expr": "arrive(red, grandmother_house)",
-          "state": "Red reaches the house before any predator does.",
-          "delta": "arrival precedes the wolf",
-          "invariants": "grandmother is unharmed",
-          "rejoinTargetId": "red_start"
+          "label": "They wait out the day",
+          "expr": "shelter(red, cottage)",
+          "state": "The pair stops at a woodsman's cottage until the light is better.",
+          "delta": "the crossing is postponed",
+          "invariants": "the basket still travels"
         },
         {
           "label": "They turn back",
           "expr": "turn_back(red, home)",
           "state": "The pair abandons the trip at the treeline.",
           "delta": "the visit never happens",
-          "invariants": "everyone is safe at home"
+          "invariants": "everyone is safe at home",
+          "rejoinTargetId": "red_start"
         }
       ]
     },
@@ -67,10 +67,10 @@
           "invariants": "grandmother is unharmed"
         },
         {
-          "label": "Red watches mother go instead",
-          "expr": "watch(red, mother)",
-          "state": "Mother takes the basket herself while Red stays behind.",
-          "delta": "the traveler is mother, not Red",
+          "label": "Red waits it out instead",
+          "expr": "shelter(red, cottage)",
+          "state": "Red stops at a woodsman's cottage until the light is better.",
+          "delta": "the crossing is postponed",
           "invariants": "the basket still travels"
         }
       ]

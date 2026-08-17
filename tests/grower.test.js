@@ -70,19 +70,23 @@ test("renderPrompt substitutes the target node deterministically", () => {
 
 test("v2 renders the told story with ids and the ancestor path", () => {
   const graph = require("../story_builder_engine.js").normalizeGraph(seeds.red);
-  const target = graph.nodes.find((n) => n.id === "red_delay");
+  const target = graph.nodes.find((n) => n.id === "red_flowers");
   const rendered = renderPrompt(templateOf("branch.v2"), target, promptContext(graph, target));
 
   assert.ok(rendered.includes("[red_start] send(mother, red, basket)"));
-  assert.ok(rendered.includes("[red_rescue] rescue(woodcutter, red, grandmother)"));
+  assert.ok(rendered.includes("[red_rescue] free(woodcutter, red, grandmother)"));
   assert.ok(rendered.includes(
-    "Path: send(mother, red, basket) → enter(red, woods) → deceive(wolf, red) → delay(red, flowers)",
+    "Path: send(mother, red, basket) → warn(mother, red, path) → enter(red, woods) → "
+    + "meet(wolf, red) → tell(red, wolf, grandmother_house) → leave(red, path) → gather(red, flowers)",
   ));
+  // `reading` is the authored gloss and must never reach the model.
+  assert.ok(target.reading);
+  assert.ok(!rendered.includes(target.reading));
   // The fixture transport and the eval baseline both recover the target expr
   // as the LAST `State:` line; the story block must never come after it.
   assert.strictEqual(
     [...rendered.matchAll(/^State: (.*)$/gm)].at(-1)[1],
-    "delay(red, flowers)",
+    "gather(red, flowers)",
   );
   assert.ok(rendered.trimEnd().endsWith("Alternatives:"));
 });
@@ -141,16 +145,35 @@ test("the width cap is applied after deterministic candidate sort", async () => 
 
 test("same-content proposals on parallel paths merge instead of duplicating", async () => {
   const { graph, stats } = await growGraph({ ...CONFIG, graph: seeds.red, client: client() });
-  // Both round-2 expansion points propose arrive(red, grandmother_house);
-  // merge-on-insert must collapse the second into the first (§5.5.4 — the
-  // grower itself does no dedup).
+  // Both round-2 expansion points propose shelter(red, cottage); merge-on-
+  // insert must collapse the second into the first (§5.5.4 — the grower
+  // itself does no dedup).
+  const shelters = graph.nodes.filter(
+    (n) => Ids.normalizedContent(n.expr) === "shelter(red, cottage)",
+  );
+  assert.strictEqual(shelters.length, 1);
+  assert.strictEqual(stats.created, 4); // escort, refuse, shelter, turn_back
+  assert.strictEqual(stats.mergedDuplicates, 2); // the second shelter + arrive→red_arrive
+  assert.strictEqual(stats.expansions, 3); // red_start + the two round-1 branches
+});
+
+test("a proposal that is a seed state collapses INTO the told story", async () => {
+  // The behaviour branch.v2 unlocked in the real runs: once a proposal names
+  // a state the story already has, sameInContext collapses it into the seed
+  // node and the grown branch reconnects to the spine. `arrive(red,
+  // grandmother_house)` is red_arrive's own expr.
+  const { graph } = await growGraph({ ...CONFIG, graph: seeds.red, client: client() });
   const arrivals = graph.nodes.filter(
     (n) => Ids.normalizedContent(n.expr) === "arrive(red, grandmother_house)",
   );
-  assert.strictEqual(arrivals.length, 1);
-  assert.strictEqual(stats.mergedDuplicates, 1);
-  assert.strictEqual(stats.created, 5); // escort, refuse, arrive, turn_back, watch
-  assert.strictEqual(stats.expansions, 3); // red_start + the two round-1 branches
+  assert.deepStrictEqual(arrivals.map((n) => n.id), ["red_arrive"]);
+
+  const grownIds = new Set(graph.nodes.filter((n) => n.createdBy === "grown").map((n) => n.id));
+  const intoSpine = graph.edges.filter((e) => grownIds.has(e.from) && e.to === "red_arrive");
+  assert.strictEqual(intoSpine.length, 1);
+  // The survivor is the seed node, unstamped: a merge must not rewrite the
+  // told story's provenance with the run that happened to reach it.
+  assert.strictEqual(graph.nodes.find((n) => n.id === "red_arrive").createdBy, "seed");
 });
 
 test("rejoins: valid kept; missing target and cycle-creating both dropped, node kept", async () => {

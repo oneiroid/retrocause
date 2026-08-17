@@ -102,11 +102,22 @@ the first run where the probe visibly leads, and the honest reading is
 that the §6 decision rule is now live rather than hypothetical. Do not
 let a later sweep reinterpret it.
 
+**`seeds.js` v2 landed 2026-08-17** — the second of §8's three
+follow-ons. One node = one event, `state` is world state, and the
+authorial gloss moved to a new optional `reading` field that no prompt
+renders. Red 8 → 14 nodes, criedWolf 7 → 11, Trojan 7 → 11; details and
+the two gotchas in §8. **This invalidates every recorded run**: the
+input graph hash changed, so pre-v2 manifests replay against a graph
+that no longer exists. Re-baseline before comparing anything to the
+numbers in the v1-vs-v2 table above.
+
 **Not started.** The rest of Phase 2: the corpus-scale sweep that the
 §6 decision rule actually binds on (needs the topological-sort cycle
 check from §8 first — `validateGraph`'s O(E²·V) is the blocker), and
-the two follow-ons §8 schedules behind v2 — seed atomicity, then the
-closed vocabulary, each alone and scored. First qualitative read of the
+the last of §8's follow-ons — the closed vocabulary as a grammar enum,
+which must go in alone and be scored against `maxRankSpread` because it
+moves the grower toward the probe it is supposed to beat. First
+qualitative read of the
 Phase 1 run confirms §8's open finding: exprs are story-shaped
 (`stay(red, path)`, `run(red, grandmother)`) but `delta`/`invariants`
 are weakly consistent — `delta` often names something that did *not*
@@ -1074,12 +1085,68 @@ attribute each:
    plus the pinned ancestor path. The few-shot moved to a story that is
    *not* in `seeds.js` (the Tortoise and the Hare), so future
    contamination stays detectable by entity name rather than blending in.
-2. **Seed atomicity** (open): seed `state` is authorial commentary —
-   "The safe endpoint becomes compromised before Red arrives" — not a
-   world state, and each seed node bundles several events. Asking a 1.7B
-   model to continue a critical gloss returns more gloss. Re-cutting
-   seeds changes every node id and invalidates recorded runs, so it is a
-   deliberate seed v2 with a re-baseline.
+2. **Seed atomicity** (done 2026-08-17 — `seeds.js` v2). Two defects,
+   both visible in v1's own data. `state` was authorial commentary —
+   "The safe endpoint becomes compromised before Red arrives" — and that
+   string is what the grower puts after `Note:`, so the model was being
+   asked to continue a critical gloss and returned more gloss. And nodes
+   bundled several events: `deceive(wolf, red)` was labelled "Wolf learns
+   destination" because it was really *meet* + *ask* + *tell*, so a
+   counterfactual had no way to say which of the three it attached to.
+   A label that disagrees with its expr is the tell for a bundled node.
+
+   v2 splits both. `state` is now what is true in the story world after
+   the event, in the story's own terms; the gloss moved to a new
+   optional `reading` field which nothing renders into a prompt. Red
+   went 8 → 14 nodes, criedWolf 7 → 11, Trojan 7 → 11. `reading` has no
+   default in `normalizeGraph` — absent means absent, so grown nodes do
+   not carry an empty one, and `canonicalJson` emits it from the
+   declared key order without any other module needing to know it exists.
+
+   Two consequences worth recording. Prompt cost rose to ~1440 tokens
+   for red against `--ctx-size 4096`, which is fine and is half the
+   budget already (see §5.5.7's ceiling note). And the re-cut made
+   `arrive(red, grandmother_house)` a real seed node, which silently
+   converted `tests/grower.test.js`'s grown-to-grown merge case into a
+   grown-to-seed one — the test still passed its headline assertion
+   while no longer testing its subject. The fixture now uses
+   `shelter(red, cottage)` for grown-to-grown and keeps
+   `arrive(red, grandmother_house)` for a dedicated merge-into-the-spine
+   test. **Recorded runs from before this commit are not comparable**:
+   the input graph hash changed, so v1-seed manifests replay against a
+   graph that no longer exists.
+
+   **Spot check only** (red, depth 2 / width 2 / max 8 — three
+   expansions, deliberately cheap; no re-baseline sweep has been run).
+   Two things transferred and one did not:
+
+   - *Register transferred.* Grown `state` came back as world-state prose
+     rather than gloss — "Red has left the basket behind", not "the
+     predator's route becomes causally prior to hers". The model copies
+     the register of what it is shown, which is the whole reason the
+     gloss was the wrong thing to show it.
+   - *Vocabulary transferred.* Proposals reuse seed predicates
+     (`leave(...)`, from `leave(red, path)`), and one merged into the
+     spine at `warn(mother, red, path)`.
+   - *Sense did not.* `leave(red, woods)` was proposed as a continuation
+     of `send(mother, red, basket)` — Red leaves woods she has not
+     entered — with the state "Red has left the woods and is now in the
+     house". And `leave(red, basket)` carries the self-contradiction
+     "has left the basket behind and is carrying it alone". Better
+     predicates, no better world model. Nothing here argues against
+     follow-on 3; it is the same gap.
+
+   **A separate defect this made legible.** One edge came back as
+   `leave(red, basket) → leave(red, basket)`: the model proposed the
+   state it was given as its own continuation. `sameInContext` correctly
+   refuses to merge those (each reaches the other — recurrence, not
+   convergence), so the result is a degenerate chain of identical states.
+   The same shape produced `watch(red, woods)` four times in the run that
+   started this work. A guard — reject a proposal whose normalized expr
+   equals its source's — is cheap and is *not* built here on purpose:
+   it would be a second rule about state identity living outside
+   `merge_predicate.js`, which is exactly what §5.5.4 forbids. Decide
+   where it belongs before writing it.
 3. **Closed vocabulary** (open, and it must come last): a lexicon of
    allowed predicates and arguments, enforced as an `enum` in the
    grammar rather than requested in prose. Note the tension — this is

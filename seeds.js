@@ -6,10 +6,37 @@
 // (`causes`, `leads_to`, `choice`, `rejoins`) — there is no privileged
 // "canonical" class of edge. Seeds do not ship premade counterfactual
 // branches; branches are created in the UI by the user.
+//
+// ── v2, 2026-08-17: one node = one event, and `state` is not commentary ──
+//
+// v1 nodes were overloaded in two ways at once, and both showed up as
+// grower failures (LOCAL_LLM.md §8, "context starvation"):
+//
+//   1. Each node bundled several events. `deceive(wolf, red)` was labelled
+//      "Wolf learns destination" — expr and label disagreed because the node
+//      was really *meet* + *ask* + *tell*. A counterfactual can attach to any
+//      one of those, and nothing in the schema let a proposal say which.
+//   2. `state` was authorial commentary, not a world state: "The safe
+//      endpoint becomes compromised before Red arrives." That is a reading of
+//      the node, and it is what the grower puts after `Note:` in the prompt.
+//      Asking a 1.7B model to continue a critical gloss returns more gloss —
+//      "Red runs to the woods and the wolf is still unseen."
+//
+// So v2 splits both:
+//
+//   `state`   — what is true in the story world after this event, in the
+//               story's own terms. This is what the model is shown.
+//   `reading` — the interpretive gloss, kept because it is the layer
+//               CONCEPT.md and INTUITIONS.md actually work in. Optional, and
+//               deliberately NOT rendered into any prompt.
+//
+// `reading` has no default in `normalizeGraph`: absent means absent, so grown
+// nodes do not carry an empty one. `canonicalJson` emits it after the
+// declared keys, sorted, without needing to know about it.
 
 (function attachSeeds(root) {
 
-  function node(id, label, expr, state, kind, tags) {
+  function node(id, label, expr, state, reading, kind, tags) {
     return {
       id, label, expr, state,
       kind: kind || "story",
@@ -17,6 +44,7 @@
       createdBy: "seed",
       delta: "",
       invariants: "",
+      ...(reading ? { reading } : {}),
     };
   }
 
@@ -37,39 +65,76 @@
   // ---------------------------------------------------------------
   // Little Red Riding Hood
   // ---------------------------------------------------------------
+  // `red_start` and `red_woods` keep their v1 ids: the app selects
+  // `red_start` on load and tests/fixtures/branch_responses.json keys on
+  // both. Everything else is re-cut.
   const red = {
     title: "Little Red Riding Hood",
     summary: "Clean warning → temptation → disguise → rescue structure; good for early-detection branches.",
     root: "red_start",
     nodes: [
-      node("red_start", "Mother gives errand", "send(mother, red, basket)",
-        "Red has a mission, a destination, and a warning to stay on the path.",
-        "root", ["warning", "quest"]),
+      node("red_start", "Mother gives the basket", "send(mother, red, basket)",
+        "Red has a basket to carry to her grandmother's house, on the other side of the woods.",
+        "The errand is the engine: it puts a child on a route with a fixed destination.",
+        "root", ["quest"]),
+      node("red_warn", "Mother warns her to keep to the path", "warn(mother, red, path)",
+        "Red has been told to stay on the path. She is still at home and has not agreed or refused.",
+        "The rule arrives before the temptation, which is what makes the later delay a choice rather than an accident.",
+        "story", ["warning"]),
       node("red_woods", "Red enters the woods", "enter(red, woods)",
+        "Red is on the path in the woods, alone, carrying the basket.",
         "Red crosses from domestic safety into a place where strangers can intervene.",
         "story", ["threshold"]),
-      node("red_wolf", "Wolf learns destination", "deceive(wolf, red)",
+      node("red_meet", "The wolf stops her on the path", "meet(wolf, red)",
+        "The wolf and Red are face to face on the path. He has not threatened her and she is not afraid.",
+        "The predator's first move is conversation, not violence — the danger is legible only in hindsight.",
+        "story", ["predator"]),
+      node("red_tell", "Red says where she is going", "tell(red, wolf, grandmother_house)",
+        "The wolf knows Red's destination, that her grandmother is alone there, and that she is expected.",
         "The wolf gains enough information to race ahead and construct a trap.",
-        "story", ["deception", "predator"]),
-      node("red_delay", "Red gathers flowers", "delay(red, flowers)",
+        "story", ["deception"]),
+      node("red_leave", "Red steps off the path", "leave(red, path)",
+        "Red is among the trees, off the route her mother named. Nobody is between the wolf and the house.",
+        "The warning is spent here, one node before the delay it was meant to prevent.",
+        "story", ["disobedience"]),
+      node("red_flowers", "Red stops to gather flowers", "gather(red, flowers)",
+        "Red is standing still and picking. Time passes and she gets no closer to the house.",
         "Red loses time; the predator's route becomes causally prior to hers.",
         "story", ["temptation", "delay"]),
-      node("red_grandma", "Wolf reaches grandmother", "arrive(wolf, grandmother_house)",
-        "The safe endpoint becomes compromised before Red arrives.",
+      node("red_grandma", "The wolf reaches the house first", "arrive(wolf, grandmother_house)",
+        "The wolf is at the grandmother's door. Red is still in the woods.",
+        "The safe endpoint is reached by the wrong party — the trap is now ahead of the victim.",
         "story", ["inversion"]),
-      node("red_disguise", "Wolf impersonates grandmother", "impersonate(wolf, grandmother)",
+      node("red_eat_grandmother", "The wolf swallows the grandmother", "swallow(wolf, grandmother)",
+        "The grandmother is inside the wolf. Nobody in the house can warn Red.",
+        "The one adult who could break the deception is removed before the deception starts.",
+        "story", ["predation"]),
+      node("red_disguise", "The wolf takes her place in the bed", "impersonate(wolf, grandmother)",
+        "The wolf is in the grandmother's bed wearing her cap. From the doorway it reads as the grandmother.",
         "A trusted role now hides a threat inside a trusted house.",
         "story", ["disguise"]),
-      node("red_recognition", "Red recognizes danger too late", "recognize(red, wolf, late)",
-        "The deception collapses after Red has entered the trap.",
+      node("red_arrive", "Red reaches the house", "arrive(red, grandmother_house)",
+        "Red is inside the house, at the bedside, and believes she is with her grandmother.",
+        "The destination she was sent to is the trap she was warned about, and the warning named the wrong hazard.",
+        "story", ["threshold"]),
+      node("red_recognition", "Red sees it is the wolf", "recognize(red, wolf)",
+        "Red knows it is the wolf. She is inside the house and within its reach.",
+        "The deception collapses after Red has entered the trap — recognition without escape.",
         "story", ["recognition"]),
-      node("red_rescue", "Rescue restores household", "rescue(woodcutter, red, grandmother)",
+      node("red_eat_red", "The wolf swallows Red", "swallow(wolf, red)",
+        "Red is inside the wolf with her grandmother. The house is quiet and nobody outside knows.",
+        "The predator-prey path closes; from inside the story there is no remaining move.",
+        "story", ["predation"]),
+      node("red_rescue", "A woodcutter cuts them free", "free(woodcutter, red, grandmother)",
+        "Red and her grandmother are out of the wolf and alive. The wolf is dead.",
         "Outside intervention reverses the closed predator-prey path.",
         "story", ["rescue", "restoration"]),
     ],
     edges: [
-      ...pathEdges(["red_start", "red_woods", "red_wolf", "red_delay",
-                    "red_grandma", "red_disguise", "red_recognition", "red_rescue"]),
+      ...pathEdges(["red_start", "red_warn", "red_woods", "red_meet", "red_tell",
+                    "red_leave", "red_flowers", "red_grandma", "red_eat_grandmother",
+                    "red_disguise", "red_arrive", "red_recognition", "red_eat_red",
+                    "red_rescue"]),
     ],
   };
 
@@ -77,38 +142,66 @@
   // The Boy Who Cried Wolf
   // ---------------------------------------------------------------
   // Shares the `wolf` entity with Red, so the two possibility spaces braid.
-  // Carries a real in-story recurrence: the second false cry is the same
-  // state content in a changed world (trust already spent).
+  // Carries a real in-story recurrence: `cry(boy, wolf)` appears three times
+  // on one chain — the same state content in a changed world (trust already
+  // spent). `sameInContext` must refuse to merge those, since each reaches
+  // the next; that refusal is the predicate's whole point (merge_predicate.js
+  // :12-17), and the eval's dupExpr metric counts grown nodes only, so a
+  // deliberate seed recurrence does not pollute it.
   const criedWolf = {
     title: "The Boy Who Cried Wolf",
     summary: "Deception by the protagonist; rescue arrives mid-story and trust erodes until recognition fails.",
     root: "cw_watch",
     nodes: [
-      node("cw_watch", "Boy set to watch the flock", "send(villagers, boy, flock)",
+      node("cw_watch", "The boy is set to watch the flock", "send(villagers, boy, flock)",
+        "The boy is alone on the hillside with the sheep. The village is within earshot.",
         "The village delegates its vigilance to a single bored watcher.",
         "root", ["duty", "trust"]),
-      node("cw_cry1", "Boy cries wolf for fun", "deceive(boy, villagers)",
+      node("cw_cry1", "The boy cries wolf for fun", "cry(boy, wolf)",
+        "The boy has raised the alarm. There is no wolf.",
         "The alarm channel is spent on a joke; trust takes its first debit.",
         "story", ["deception"]),
-      node("cw_rescue1", "Villagers rush to the rescue", "rescue(villagers, boy, flock)",
+      node("cw_run1", "The villagers come running", "arrive(villagers, flock)",
+        "The villagers are at the flock, armed, and there is nothing to fight.",
         "The system works exactly as designed — for a false signal.",
         "story", ["rescue", "false-alarm"]),
-      node("cw_cry2", "Boy cries wolf again", "deceive(boy, villagers)",
+      node("cw_laugh", "The boy laughs at them", "mock(boy, villagers)",
+        "The villagers know they were called out for a joke. The sheep are unharmed.",
+        "The cost is made explicit to the people who paid it, which is what converts an error into a grudge.",
+        "story", ["derision"]),
+      node("cw_cry2", "The boy cries wolf again", "cry(boy, wolf)",
+        "The boy has raised the alarm a second time. There is still no wolf.",
         "The same act in a changed world: this time belief is thinner.",
         "story", ["deception", "recurrence"]),
-      node("cw_wolf", "A real wolf arrives", "arrive(wolf, flock)",
+      node("cw_run2", "They come a second time", "arrive(villagers, flock)",
+        "The villagers are at the flock again and again find nothing.",
+        "The channel still carries — but it is now being read as noise, not signal.",
+        "story", ["false-alarm", "recurrence"]),
+      node("cw_doubt", "The villagers stop believing him", "distrust(villagers, boy)",
+        "The villagers have decided the boy's cry means nothing. The boy does not know this.",
+        "The alarm is disconnected at the receiving end, silently, while the sender assumes it still works.",
+        "story", ["erosion"]),
+      node("cw_wolf", "A real wolf comes", "arrive(wolf, flock)",
+        "A wolf is at the flock. The boy is alone with it.",
         "The threat the alarm was built for finally appears.",
         "story", ["threat"]),
-      node("cw_dismiss", "True cry dismissed as another lie", "recognize(villagers, boy, late)",
+      node("cw_cry3", "The boy cries wolf truthfully", "cry(boy, wolf)",
+        "The boy has raised the alarm a third time, and this time it is true.",
+        "The same words, now accurate, and the accuracy makes no difference — content was never what was being read.",
+        "story", ["recurrence", "inversion"]),
+      node("cw_dismiss", "Nobody comes", "ignore(villagers, boy)",
+        "The villagers hear the cry and stay where they are.",
         "The villagers correctly recognize the boy — as a liar — and are wrong about the wolf.",
         "story", ["recognition", "inversion"]),
       node("cw_loss", "The flock is lost", "devour(wolf, flock)",
+        "The sheep are dead. The boy is unhurt and alone.",
         "The cost of the spent alarm channel is paid all at once.",
         "story", ["loss"]),
     ],
     edges: [
-      ...pathEdges(["cw_watch", "cw_cry1", "cw_rescue1", "cw_cry2",
-                    "cw_wolf", "cw_dismiss", "cw_loss"]),
+      ...pathEdges(["cw_watch", "cw_cry1", "cw_run1", "cw_laugh", "cw_cry2",
+                    "cw_run2", "cw_doubt", "cw_wolf", "cw_cry3", "cw_dismiss",
+                    "cw_loss"]),
     ],
   };
 
@@ -122,31 +215,55 @@
     summary: "Deception through a gift; recognition comes early, is ignored, and the city falls.",
     root: "th_build",
     nodes: [
-      node("th_build", "Greeks build the horse", "build(greeks, horse)",
+      node("th_build", "The Greeks build a wooden horse", "build(greeks, horse)",
+        "A hollow wooden horse stands on the plain outside Troy.",
         "A weapon is disguised as an offering.",
         "root", ["deception", "artifact"]),
-      node("th_gift", "Horse left at the gates", "send(greeks, horse, troy)",
+      node("th_hide", "Armed men climb inside it", "hide(greeks, horse)",
+        "Soldiers are sealed inside the horse. From outside it is a wooden statue.",
+        "The threat is made invisible by being placed inside the object everyone is looking at.",
+        "story", ["concealment"]),
+      node("th_sail", "The fleet sails out of sight", "depart(greeks, troy)",
+        "The Greek ships are gone from the shore. The siege appears to be over.",
+        "The absence of the enemy is the strongest part of the lie.",
+        "story", ["feint"]),
+      node("th_gift", "The Trojans find the horse", "find(trojans, horse)",
+        "The Trojans are outside their walls, around an abandoned horse, deciding what to do with it.",
         "The trap is delivered by the enemy's own curiosity.",
         "story", ["gift", "trap"]),
       node("th_lie", "Sinon sells the lie", "deceive(sinon, trojans)",
+        "The Trojans have been told the horse is an offering, and that taking it in will protect the city.",
         "A planted defector supplies the story the trap needs.",
         "story", ["deception"]),
-      node("th_seer", "Cassandra sees through it", "recognize(cassandra, horse, early)",
+      node("th_seer", "Cassandra names it a trap", "recognize(cassandra, horse)",
+        "Cassandra has said out loud, in front of the city, that the horse holds armed men.",
         "The deception is correctly identified — before it can do harm.",
         "story", ["recognition", "warning"]),
-      node("th_ignore", "Her warning is dismissed", "ignore(trojans, cassandra)",
+      node("th_ignore", "Her warning is set aside", "ignore(trojans, cassandra)",
+        "The Trojans have heard the warning and decided against it. Nothing about the horse has changed.",
         "Recognition without authority changes nothing.",
         "story", ["dismissal"]),
-      node("th_enter", "Horse brought inside the walls", "enter(horse, troy)",
+      node("th_enter", "The horse is brought inside", "enter(horse, troy)",
+        "The horse is within the walls and the gates are shut behind it.",
         "The city carries the threat across its own threshold.",
         "story", ["threshold", "inversion"]),
-      node("th_fall", "Troy falls in the night", "destroy(greeks, troy)",
+      node("th_night", "The city celebrates and sleeps", "sleep(trojans, troy)",
+        "Troy is asleep. The horse stands unwatched inside the walls.",
+        "The defence is stood down by the same belief that carried the horse in.",
+        "story", ["complacency"]),
+      node("th_open", "The gates are opened from inside", "open(greeks, gates)",
+        "The men are out of the horse and the gates of Troy stand open.",
         "The closed system is opened from within.",
+        "story", ["betrayal"]),
+      node("th_fall", "Troy falls in the night", "destroy(greeks, troy)",
+        "Troy is burning and the war is over.",
+        "Recognition happened, in time, to the right object, and the city fell anyway.",
         "story", ["catastrophe"]),
     ],
     edges: [
-      ...pathEdges(["th_build", "th_gift", "th_lie", "th_seer",
-                    "th_ignore", "th_enter", "th_fall"]),
+      ...pathEdges(["th_build", "th_hide", "th_sail", "th_gift", "th_lie",
+                    "th_seer", "th_ignore", "th_enter", "th_night", "th_open",
+                    "th_fall"]),
     ],
   };
 
