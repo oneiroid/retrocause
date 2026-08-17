@@ -4,6 +4,7 @@
 //
 //   npm run grow -- --story red [--from red_start] [--depth 3] [--width 2]
 //                   [--max-nodes 24] [--seed 7] [--out runs]
+//                   [--prompt branch.v2]
 //   npm run grow:replay -- runs/<runId>/growth_manifest.json [--cached]
 //
 // Replay re-runs from the manifest and diffs canonical JSON. It is
@@ -25,8 +26,11 @@ const { createClient } = require(path.join(REPO, "llm_client.js"));
 const { growGraph } = require(path.join(REPO, "grower.js"));
 const { seeds } = require(path.join(REPO, "seeds.js"));
 
-const PROMPT_VERSION = "branch.v1";
-const PROMPT_PATH = path.join(REPO, "prompts", `${PROMPT_VERSION}.txt`);
+// v2 carries the told story and the ancestor path; v1 carried one node and is
+// kept selectable because §6 scores prompt versions against each other, and a
+// deleted template makes its recorded manifests unreplayable.
+const DEFAULT_PROMPT_VERSION = "branch.v2";
+const promptPathOf = (version) => path.join(REPO, "prompts", `${version}.txt`);
 const PROFILE = "reference";
 const DEFAULTS = { depth: 3, width: 2, maxNodes: 24, seed: 7, out: "runs" };
 const GRAPH_FILE = "grown_graph.json";
@@ -57,7 +61,10 @@ function sha256(buffer) {
 // the UI sends over, which have no seed name. The graph hash still pins the
 // input; such manifests carry `input.seed: null` plus an input_graph.json
 // beside them, and `grow:replay` cannot re-run them from the seed table.
-async function buildConfig({ story = null, graph = null, from, depth, width, maxNodes, client }) {
+async function buildConfig({
+  story = null, graph = null, from, depth, width, maxNodes, client,
+  promptVersion = DEFAULT_PROMPT_VERSION,
+}) {
   const props = await client.props();
 
   const modelPath = props.model_path || "";
@@ -81,7 +88,7 @@ async function buildConfig({ story = null, graph = null, from, depth, width, max
     default_generation_settings: generationDefaults,
   };
 
-  const promptText = fs.readFileSync(PROMPT_PATH, "utf8");
+  const promptText = fs.readFileSync(promptPathOf(promptVersion), "utf8");
   const inputGraph = Engine.normalizeGraph(graph || seeds[story]);
 
   const config = {
@@ -89,7 +96,7 @@ async function buildConfig({ story = null, graph = null, from, depth, width, max
     model,
     server,
     sampling: client.sampling,
-    prompt: { template: PROMPT_VERSION, sha256: sha256(promptText) },
+    prompt: { template: promptVersion, sha256: sha256(promptText) },
     traversal: { from, depth, width, maxNodes },
     input: { seed: story, graphSha256: sha256(Ids.canonicalJson(inputGraph)) },
   };
@@ -119,6 +126,7 @@ async function grow(args) {
   });
   const { config, promptText, inputGraph } = await buildConfig({
     story, from, depth, width, maxNodes, client,
+    promptVersion: args.prompt || DEFAULT_PROMPT_VERSION,
   });
   const runId = runIdOf(config);
 
@@ -181,6 +189,10 @@ async function replay(args) {
     width: manifest.traversal.width,
     maxNodes: manifest.traversal.maxNodes,
     client,
+    // From the manifest, never the current default: rebuilding a v1 run with
+    // v2 would trip the prompt-hash guard below and report a template swap as
+    // a replay failure.
+    promptVersion: manifest.prompt.template,
   });
 
   // A replay against a drifted configuration would diff graphs grown by two

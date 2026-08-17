@@ -12,16 +12,22 @@ const path = require("node:path");
 
 const Ids = require("../ids.js");
 const { createClient } = require("../llm_client.js");
-const { growGraph, renderPrompt, BRANCH_SCHEMA } = require("../grower.js");
+const {
+  growGraph, renderPrompt, promptContext, ancestorPath, BRANCH_SCHEMA,
+} = require("../grower.js");
 const { seeds } = require("../seeds.js");
 
 const FIXTURES = JSON.parse(
   fs.readFileSync(path.join(__dirname, "fixtures", "branch_responses.json"), "utf8"),
 );
-const PROMPT_TEMPLATE = fs.readFileSync(
-  path.join(__dirname, "..", "prompts", "branch.v1.txt"),
+const templateOf = (version) => fs.readFileSync(
+  path.join(__dirname, "..", "prompts", `${version}.txt`),
   "utf8",
 );
+// The traversal tests run on v1 — they assert graph shape, which the template
+// does not touch, and v1 is the shortest thing that renders. v2's added
+// context has its own tests below.
+const PROMPT_TEMPLATE = templateOf("branch.v1");
 
 // The stub transport keys on the target state's expr — the LAST `State:`
 // line of the rendered prompt (the few-shot examples contribute earlier
@@ -58,6 +64,63 @@ test("renderPrompt substitutes the target node deterministically", () => {
   const rendered = renderPrompt(PROMPT_TEMPLATE, seeds.red.nodes[0]);
   assert.ok(rendered.includes("State: send(mother, red, basket)"));
   assert.ok(rendered.trimEnd().endsWith("Alternatives:"));
+});
+
+// ── branch.v2 context (LOCAL_LLM.md §5.5.7) ─────────────────────────────────
+
+test("v2 renders the told story with ids and the ancestor path", () => {
+  const graph = require("../story_builder_engine.js").normalizeGraph(seeds.red);
+  const target = graph.nodes.find((n) => n.id === "red_delay");
+  const rendered = renderPrompt(templateOf("branch.v2"), target, promptContext(graph, target));
+
+  assert.ok(rendered.includes("[red_start] send(mother, red, basket)"));
+  assert.ok(rendered.includes("[red_rescue] rescue(woodcutter, red, grandmother)"));
+  assert.ok(rendered.includes(
+    "Path: send(mother, red, basket) → enter(red, woods) → deceive(wolf, red) → delay(red, flowers)",
+  ));
+  // The fixture transport and the eval baseline both recover the target expr
+  // as the LAST `State:` line; the story block must never come after it.
+  assert.strictEqual(
+    [...rendered.matchAll(/^State: (.*)$/gm)].at(-1)[1],
+    "delay(red, flowers)",
+  );
+  assert.ok(rendered.trimEnd().endsWith("Alternatives:"));
+});
+
+test("the spine excludes grown nodes, so it is stable across a run", async () => {
+  const { graph } = await growGraph({ ...CONFIG, graph: seeds.red, client: client() });
+  const spine = promptContext(graph, graph.nodes[0]).story;
+  for (const grown of graph.nodes.filter((n) => n.createdBy === "grown")) {
+    assert.ok(!spine.includes(`[${grown.id}]`));
+  }
+  assert.ok(spine.includes("[red_start]"));
+});
+
+test("the ancestor path is pinned when several paths reach a node", () => {
+  // A diamond: two shortest root→d paths. The pinned choice is the
+  // lexicographically-first one, not whichever edge order happens to yield.
+  const diamond = {
+    root: "a",
+    nodes: ["a", "b_second", "b_first", "d"].map((id) => ({ id, expr: id, label: id })),
+    edges: [
+      { from: "a", to: "b_second" }, { from: "a", to: "b_first" },
+      { from: "b_second", to: "d" }, { from: "b_first", to: "d" },
+    ],
+  };
+  const graph = require("../story_builder_engine.js").normalizeGraph(diamond);
+  assert.deepStrictEqual(ancestorPath(graph, "d"), ["a", "b_first", "d"]);
+
+  const reversed = require("../story_builder_engine.js").normalizeGraph({
+    ...diamond, edges: [...diamond.edges].reverse(),
+  });
+  assert.deepStrictEqual(ancestorPath(reversed, "d"), ["a", "b_first", "d"]);
+});
+
+test("v1 still renders without context, and v2 degrades to blanks", () => {
+  const node = seeds.red.nodes[0];
+  assert.ok(renderPrompt(PROMPT_TEMPLATE, node).includes("State: send(mother, red, basket)"));
+  const bare = renderPrompt(templateOf("branch.v2"), node);
+  assert.ok(!bare.includes("{{story}}") && !bare.includes("{{path}}"));
 });
 
 test("same input twice yields byte-identical canonical JSON", async () => {

@@ -55,13 +55,97 @@ const BRANCH_SCHEMA = {
 };
 
 // Deterministic template rendering: pure string substitution on the node's
-// resolved fields. The rendered prompt is a cache key (§5.7), so nothing
-// non-deterministic may enter it.
-function renderPrompt(template, node) {
+// resolved fields plus the graph context below. The rendered prompt is a
+// cache key (§5.7), so nothing non-deterministic may enter it.
+//
+// `context` is optional so `branch.v1.txt` — which has no {{story}} or
+// {{path}} — still renders exactly as it did.
+function renderPrompt(template, node, context = {}) {
   return String(template)
     .replaceAll("{{label}}", node.label || "")
     .replaceAll("{{expr}}", node.expr || "")
-    .replaceAll("{{state}}", node.state || "");
+    .replaceAll("{{state}}", node.state || "")
+    .replaceAll("{{title}}", context.title || "")
+    .replaceAll("{{story}}", context.story || "")
+    .replaceAll("{{path}}", context.path || "");
+}
+
+// ── prompt context (branch.v2) ──────────────────────────────────────────────
+//
+// Everything the model is told about the graph is derived here, and every
+// ordering in it is pinned for the same reason the traversal's orderings are:
+// the rendered prompt IS the cache key, so a context that reordered between
+// runs would be a different prompt for the same state and replay would fail.
+//
+// v1 gave the model one node — no story, no ancestors. The observed failure
+// was not drift but contamination: with nothing else to condition on, the
+// strongest signal in the window was the few-shot, and by depth 3 the model
+// was completing the demonstration instead of the story.
+
+// The told story: every node this run did not grow, in topological order.
+// Ids are exposed because `rejoinTargetId` is unusable without them — the
+// model cannot name a target it has never been shown, which is why v1
+// produced zero rejoins edges despite the schema accepting them.
+function storySpine(graph) {
+  const ranks = Engine.topoRanks(graph);
+  return graph.nodes
+    .filter((n) => n.createdBy !== "grown")
+    .sort((a, b) => (ranks[a.id] - ranks[b.id]) || String(a.id).localeCompare(String(b.id)))
+    .map((n) => `  [${n.id}] ${n.expr}${n.state ? ` — ${n.state}` : ""}`)
+    .join("\n");
+}
+
+// The lexicographically-first shortest path from the graph's root to `to`.
+// A node in a DAG can be reached several ways, and "whichever path we found"
+// is not a pinned choice — two runs that picked differently would render
+// different prompts for the same node.
+function ancestorPath(graph, to) {
+  const from = graph.root;
+  if (!from || from === to) return [to];
+
+  // Distance to the target over REVERSED edges, so the forward walk can tell
+  // which successors still lead there without a second search per step.
+  const distance = { [to]: 0 };
+  for (let queue = [to]; queue.length;) {
+    const next = [];
+    for (const id of queue) {
+      for (const edge of graph.edges) {
+        if (edge.to !== id || distance[edge.from] !== undefined) continue;
+        distance[edge.from] = distance[id] + 1;
+        next.push(edge.from);
+      }
+    }
+    queue = next;
+  }
+  // An unreachable node still gets a prompt; it just has no story behind it.
+  if (distance[from] === undefined) return [to];
+
+  const path = [from];
+  for (let cur = from; cur !== to;) {
+    // distance[cur] > 0 guarantees such a step exists: that is how BFS
+    // assigned it. Ties broken by id, the same rule orderFrontier uses.
+    const [step] = graph.edges
+      .filter((e) => e.from === cur && distance[e.to] === distance[cur] - 1)
+      .map((e) => e.to)
+      .sort((a, b) => String(a).localeCompare(String(b)));
+    path.push(step);
+    cur = step;
+  }
+  return path;
+}
+
+// Computed at expansion time, which is a pinned point in a pinned order: the
+// spine is stable across a run (grown nodes are filtered out), while the path
+// reflects the graph as the traversal has left it.
+function promptContext(graph, node) {
+  const byId = new Map(graph.nodes.map((n) => [n.id, n]));
+  return {
+    title: graph.title || (graph.meta && graph.meta.title) || "the told story",
+    story: storySpine(graph),
+    path: ancestorPath(graph, node.id)
+      .map((id) => (byId.get(id) || {}).expr || id)
+      .join(" → "),
+  };
 }
 
 // §5.5.3 — sort returned branches by a deterministic key before the width
@@ -123,7 +207,7 @@ async function growGraph({
       let proposed;
       try {
         const { content } = await client.complete(
-          renderPrompt(promptTemplate, source),
+          renderPrompt(promptTemplate, source, promptContext(graph, source)),
           BRANCH_SCHEMA,
           { bypassCache },
         );
@@ -196,4 +280,4 @@ async function growGraph({
   return { graph, stats, validation };
 }
 
-module.exports = { growGraph, renderPrompt, BRANCH_SCHEMA };
+module.exports = { growGraph, renderPrompt, promptContext, ancestorPath, storySpine, BRANCH_SCHEMA };

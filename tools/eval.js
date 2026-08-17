@@ -40,9 +40,13 @@ const { createClient } = require(path.join(REPO, "llm_client.js"));
 const { growGraph } = require(path.join(REPO, "grower.js"));
 const { seeds } = require(path.join(REPO, "seeds.js"));
 
-const PROMPT_PATH = path.join(REPO, "prompts", "branch.v1.txt");
+const promptPathOf = (version) => path.join(REPO, "prompts", `${version}.txt`);
 const ROLES_PATH = path.join(REPO, "experiments", "roles.json");
-const DEFAULTS = { depth: 2, width: 2, maxNodes: 8, seed: 7 };
+// `prompt` is a swept dimension, not a constant: comparing v1 (one node) with
+// v2 (told story + ancestor path) at equal budgets is the whole point of
+// changing the template, and the baseline is unaffected either way — the
+// recombiner reads only the last `State:` line.
+const DEFAULTS = { depth: 2, width: 2, maxNodes: 8, seed: 7, prompt: "branch.v2" };
 // The grower's schema allows at most 3 branches per expansion (§5.3); the
 // baseline offers the same number so neither source gets a wider funnel.
 const PROPOSALS_PER_EXPANSION = 3;
@@ -176,9 +180,12 @@ function createBaselineClient({ inputGraph, seed, proposals = PROPOSALS_PER_EXPA
 
 // ── run + score one (source, story) cell ────────────────────────────────────
 
-async function evalRun({ source, story, depth, width, maxNodes, seed, replay, baseUrl }) {
+async function evalRun({
+  source, story, depth, width, maxNodes, seed, replay, baseUrl,
+  prompt = DEFAULTS.prompt,
+}) {
   const inputGraph = Engine.normalizeGraph(seeds[story]);
-  const promptTemplate = fs.readFileSync(PROMPT_PATH, "utf8");
+  const promptTemplate = fs.readFileSync(promptPathOf(prompt), "utf8");
   const makeClient = source === "baseline"
     ? () => createBaselineClient({ inputGraph, seed })
     : () => createClient({ baseUrl, cacheDir: path.join(REPO, "cache"), sampling: { seed } });
@@ -197,7 +204,7 @@ async function evalRun({ source, story, depth, width, maxNodes, seed, replay, ba
     const second = await growGraph({ ...budget, client: makeClient(), bypassCache: true });
     replayOk = Ids.canonicalJson(second.graph) === Ids.canonicalJson(graph);
   }
-  return { source, story, ...score, replayOk, graph };
+  return { source, story, prompt, ...score, replayOk, graph };
 }
 
 // ── output ──────────────────────────────────────────────────────────────────
@@ -207,6 +214,7 @@ const fmt = (v) => (v === null ? "—" : typeof v === "number" ? +v.toFixed(3) :
 function printReport(rows, { show }) {
   console.table(rows.map((r) => ({
     source: r.source,
+    prompt: r.source === "baseline" ? "—" : r.prompt,
     story: r.story,
     grown: r.grownNodes,
     jsonValid: fmt(r.jsonValidity),
@@ -221,7 +229,8 @@ function printReport(rows, { show }) {
   })));
 
   for (const r of rows) {
-    console.log(`\n${r.source}/${r.story} — in-degree histogram: ${JSON.stringify(r.histogram)}`);
+    const label = r.source === "baseline" ? r.source : `${r.source}:${r.prompt}`;
+    console.log(`\n${label}/${r.story} — in-degree histogram: ${JSON.stringify(r.histogram)}`);
     console.log("  per-rank in-degree (rank: n, min..max):",
       r.spreadByRank.map((s) => `${s.rank}: ${s.n}, ${s.min}..${s.max}`).join("  "));
     if (show && r.contradictions.length) {
@@ -256,6 +265,16 @@ async function sweep(args) {
       process.exit(1);
     }
   }
+  // `--prompt branch.v1,branch.v2` scores template versions side by side at
+  // one budget, which is the only way to attribute a metric move to the
+  // template rather than to the budget.
+  const prompts = String(args.prompt || DEFAULTS.prompt).split(",");
+  for (const p of prompts) {
+    if (!fs.existsSync(promptPathOf(p))) {
+      console.error(`unknown prompt template: ${p}`);
+      process.exit(1);
+    }
+  }
   const budget = {
     depth: +(args.depth || DEFAULTS.depth),
     width: +(args.width || DEFAULTS.width),
@@ -264,15 +283,24 @@ async function sweep(args) {
     replay: !!args.replay,
     baseUrl: args.baseUrl,
   };
-  console.log(`sweep: stories=${stories.join(",")} depth=${budget.depth} width=${budget.width} ` +
+  console.log(`sweep: stories=${stories.join(",")} prompts=${prompts.join(",")} ` +
+    `depth=${budget.depth} width=${budget.width} ` +
     `maxNodes=${budget.maxNodes} seed=${budget.seed} replay=${budget.replay}`);
 
   const rows = [];
   // The baseline is a required column, not an appendix (§6) — it runs first
-  // so a dead model server still leaves the bar on the table.
-  for (const story of stories) rows.push(await evalRun({ source: "baseline", story, ...budget }));
+  // so a dead model server still leaves the bar on the table. It runs ONCE
+  // regardless of --prompt: the recombiner reads only the last `State:` line,
+  // so a per-prompt baseline row would be the same numbers twice.
+  for (const story of stories) {
+    rows.push(await evalRun({ source: "baseline", story, prompt: prompts[0], ...budget }));
+  }
   if (!args.baselineOnly) {
-    for (const story of stories) rows.push(await evalRun({ source: "model", story, ...budget }));
+    for (const prompt of prompts) {
+      for (const story of stories) {
+        rows.push(await evalRun({ source: "model", story, prompt, ...budget }));
+      }
+    }
   }
   printReport(rows, { show: !!args.show });
 }
@@ -290,6 +318,7 @@ function score(args) {
     const manifest = JSON.parse(fs.readFileSync(path.join(dir, "growth_manifest.json"), "utf8"));
     return {
       source: manifest.runId,
+      prompt: manifest.prompt.template,
       story: manifest.input.seed,
       ...scoreGrowth({ graph, stats: manifest.result }),
       replayOk: null,

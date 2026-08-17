@@ -50,10 +50,63 @@ smoke budgets per the pre-registered rule in §6, which only binds at
 corpus scale. Early signal: the model's duplicate-`expr` rate hit 0.5
 on criedWolf (prompt collapse); the baseline's stayed 0.
 
+**`branch.v2` landed 2026-08-17** — the first prompt version beyond v1,
+written against the measured failure in §8 ("context starvation"). v1
+showed the model **one node**; v2 also carries the told story with node
+ids and the pinned ancestor path (§5.5.7), and moves the few-shot to a
+story outside `seeds.js` so contamination stays detectable. v1 is kept
+and selectable — `npm run grow -- --prompt branch.v1`, and
+`npm run eval -- sweep --prompt branch.v1,branch.v2` scores both at one
+budget — because deleting a template makes its recorded manifests
+unreplayable. `grow:replay` now takes the version from the manifest, not
+from the current default.
+
+**v1-vs-v2 measured the same day**, red, depth 4 / width 3 / max 24, on
+the reference profile:
+
+| | baseline | v1 | v2 |
+|---|---|---|---|
+| grown nodes | 24 | 18 | 15 |
+| distinct `delta` / grown | — | 7/18 | **14/15** |
+| most-repeated `delta` | — | 39% of nodes | **13%** |
+| cross-story entities | — | present (`"the wolf attacks the mother and the boy"`) | **none** |
+| merged duplicates | — | 8 | **13** |
+| grown → seed edges | — | **0** | **2** (`red_grandma`, `red_rescue`) |
+| `dupExprRate` | 0 | 0.278 | 0.267 |
+| `contradictionRate` | 0 | 0.111 | **0.133** |
+| `rejoinValidity` | — | none attempted | **0** (attempted, invalid id) |
+| `maxRankSpread` | **4** | 2 | 2 |
+
+What moved is what context predicts: contamination gone, `delta`
+near-fully differentiated, and the model now emits the seed's own exprs
+(`arrive(wolf, grandmother_house)`, `rescue(...)`) — which is what let
+`sameInContext` collapse grown proposals **into seed nodes** and give
+the story spine grown parents for the first time. Convergence back into
+the told story needed no new machinery, only exprs that could collide.
+
+What did not move is equally clear and belongs in the record:
+`dupExprRate` is flat; `contradictionRate` got slightly worse (the §8
+copy failure survives verbatim — `find(grandmother, red)` with
+`delta` = `invariants` = "the grandmother is now the predator"); and
+role sense is still absent — the model acquired the story's entities and
+then slotted them into one template, proposing the woodcutter and the
+grandmother as "now the predator". Entities are grounded; roles are not.
+That is the case for §8's items 2 and 3, unchanged.
+
+**`maxRankSpread`: baseline 4, both model rows 2.** The baseline leads
+on the pre-registered falsification metric (§6). Two things are true and
+neither cancels the other: this is still short of the corpus-scale
+budget the rule binds at, and the baseline also grew 24 nodes to the
+model's 15, so the comparison is not at equal node counts. But this is
+the first run where the probe visibly leads, and the honest reading is
+that the §6 decision rule is now live rather than hypothetical. Do not
+let a later sweep reinterpret it.
+
 **Not started.** The rest of Phase 2: the corpus-scale sweep that the
 §6 decision rule actually binds on (needs the topological-sort cycle
 check from §8 first — `validateGraph`'s O(E²·V) is the blocker), and
-prompt versions beyond `branch.v1`. First qualitative read of the
+the two follow-ons §8 schedules behind v2 — seed atomicity, then the
+closed vocabulary, each alone and scored. First qualitative read of the
 Phase 1 run confirms §8's open finding: exprs are story-shaped
 (`stay(red, path)`, `run(red, grandmother)`) but `delta`/`invariants`
 are weakly consistent — `delta` often names something that did *not*
@@ -760,6 +813,34 @@ unordered iteration is as fatal to replay as a random seed.
    exist, or when the edge would cycle. The branch node is still
    created — an open branch is a legitimate outcome that
    `validateGraph` already warns about rather than rejects.
+7. **Prompt context ordering** (added 2026-08-17 with `branch.v2`). The
+   context the prompt carries about the graph is derived in
+   `grower.js:promptContext` and every ordering in it is pinned, for the
+   same reason as (1)–(3): the rendered prompt *is* the cache key.
+   - *The told story* — every node with `createdBy !== "grown"`, sorted
+     by topological rank then id, each line `[id] expr — state`. Ids
+     are exposed deliberately: `rejoinTargetId` is unusable without
+     them, which is why v1 produced zero `rejoins` edges despite the
+     schema accepting them (§8, "context starvation").
+   - *The ancestor path* — the **lexicographically-first shortest** path
+     from `graph.root` to the expansion point. A DAG node is usually
+     reachable several ways, and "whichever path the search found" is
+     not a pinned choice; reverse-BFS for distances, then walk forward
+     always taking the smallest-id successor that still decreases
+     distance. Ties break by id, the same rule as (1), so the codebase
+     has one notion of "smallest id" rather than two.
+
+   The context is computed at expansion time — a pinned point in a
+   pinned order. The spine is constant across a run (grown nodes are
+   filtered out); the path reflects the graph as the traversal has left
+   it, which is deterministic given (1)–(5).
+
+   **Budget note.** v2 costs ~1000 prompt tokens on an 8-node seed
+   against `--ctx-size 4096` (§4.1). This is fine at seed scale and is a
+   real ceiling at corpus scale: a 40-node story will not fit, and the
+   spine will need truncation — which is itself an ordering decision to
+   pin, not a convenience. Overflow surfaces as a server error that
+   stops the run, not as silent truncation.
 
 **Most of this exists.** `experiments/gen_probe.js` already implements a
 pinned frontier traversal with a seeded RNG, `K`/`D` budgets,
@@ -966,6 +1047,51 @@ Add a per-branch field-contradiction check to §6 before anything starts
 to.
 
 The architecture is model-size agnostic; only the manifest changes.
+
+**Context starvation — measured 2026-08-17, and the cause of `branch.v2`.**
+A UI auto-grow of Red at depth 4 / width 3 (22 grown nodes) failed in a
+way that first read as the model losing the story, and was not:
+
+| Symptom | Count | Cause |
+|---|---|---|
+| `delta` collapsed to one string | 16 / 22 = "the wolf is still unseen" | — |
+| `invariants` = "Red is still on the path to grandmother's house" | 14 / 22 | **copied verbatim from `branch.v1.txt:6`** |
+| entities from another story (`attack(wolf, boy)`, "the alarm is still raised") | 3 nodes | **copied from `branch.v1.txt:8-11`**, the criedWolf few-shot |
+| grown → seed edges, `rejoins` edges | 0, 0 | no node id ever appeared in the prompt |
+| grown nodes with in-degree > 1 | 3 / 22 | free-form exprs never collide with seed exprs |
+
+The whole cluster traces to one fact: `renderPrompt` substituted only
+`label`/`expr`/`state` of a **single node**. With no story to condition
+on, the strongest signal in the window is the demonstration, so by depth
+3 the model completes the demonstration instead of the story. This is
+contamination, not drift, and it is diagnosable rather than mysterious —
+the junk strings are `grep`-able in the template.
+
+Three consequences, fixed or scheduled separately so the eval can
+attribute each:
+
+1. **Context** (done — §5.5.7, `branch.v2.txt`): the told story with ids
+   plus the pinned ancestor path. The few-shot moved to a story that is
+   *not* in `seeds.js` (the Tortoise and the Hare), so future
+   contamination stays detectable by entity name rather than blending in.
+2. **Seed atomicity** (open): seed `state` is authorial commentary —
+   "The safe endpoint becomes compromised before Red arrives" — not a
+   world state, and each seed node bundles several events. Asking a 1.7B
+   model to continue a critical gloss returns more gloss. Re-cutting
+   seeds changes every node id and invalidates recorded runs, so it is a
+   deliberate seed v2 with a re-baseline.
+3. **Closed vocabulary** (open, and it must come last): a lexicon of
+   allowed predicates and arguments, enforced as an `enum` in the
+   grammar rather than requested in prose. Note the tension — this is
+   the `gen_probe.js` grammar pole, which §6 makes the baseline the
+   model must *beat*, so it must be introduced alone and scored. Its
+   real payoff is structural, not cosmetic: `sameInContext` keys on
+   `normalizedContent(expr)`, so free-form exprs (`run(red, house)` vs
+   `arrive(wolf, grandmother_house)`) can never collide, and without
+   collisions `maxRankSpread` has nothing to measure. The claim at
+   `grower.js:30` that `rejoinTargetId` "cannot be constrained to
+   existing ids by JSON Schema" is false once the enum is built per-call
+   from the live graph; correct it there when that lands.
 
 **Growth is not understanding.** A grown DAG is a hypothesis about what
 could have followed, generated by a system with no model of the story

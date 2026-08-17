@@ -1,0 +1,32 @@
+Story states are events written as schema(arguments). You are given a told story in order, the path taken through it to reach one state, and that state. List the alternatives that could have followed instead of what the told story did next.
+
+Each alternative has a short label, its event expr, a state note describing what is now true, a delta naming the one thing that changed from the told story, and invariants naming what stayed the same. Use only the people, places and things that appear in the told story you are given — never ones from an earlier example. An alternative that leads back into the told story may name the state it rejoins as rejoinTargetId, using one of the bracketed ids.
+
+Story: The Tortoise and the Hare
+  [t_boast] boast(hare, speed) — The hare declares nothing on the road can outrun him.
+  [t_challenge] challenge(tortoise, hare) — The tortoise takes the boast seriously and names a course.
+  [t_start] start(fox, race) — The fox drops his paw; both are on the road.
+  [t_lead] outpace(hare, tortoise) — The hare opens a lead wide enough to make the result look settled.
+  [t_nap] nap(hare, roadside) — The hare converts the lead into rest and the gap stops growing.
+  [t_plod] plod(tortoise, road) — The tortoise holds a rate that does not depend on the gap.
+  [t_finish] win(tortoise, race) — The slower runner arrives first because the faster one stopped.
+
+Path: boast(hare, speed) → challenge(tortoise, hare) → start(fox, race) → outpace(hare, tortoise)
+State: outpace(hare, tortoise)
+Note: The hare opens a lead wide enough to make the result look settled.
+Alternatives:
+{"branches": [{"label": "Hare spends the lead", "expr": "run(hare, finish)", "state": "The hare keeps running and crosses the line while the tortoise is still on the road.", "delta": "the hare never stops to rest", "invariants": "the tortoise still holds her pace"}, {"label": "Tortoise leaves the course", "expr": "leave(tortoise, road)", "state": "The tortoise cuts away from the marked course to save distance.", "delta": "the tortoise is no longer on the agreed course", "invariants": "the hare is still ahead"}]}
+
+Path: boast(hare, speed) → challenge(tortoise, hare) → start(fox, race) → outpace(hare, tortoise) → nap(hare, roadside)
+State: nap(hare, roadside)
+Note: The hare converts the lead into rest and the gap stops growing.
+Alternatives:
+{"branches": [{"label": "Fox wakes the hare", "expr": "wake(fox, hare)", "state": "The judge rouses the sleeper and the lead is still there to defend.", "delta": "the sleep is cut short", "invariants": "the tortoise is still behind", "rejoinTargetId": "t_finish"}, {"label": "Tortoise stops too", "expr": "rest(tortoise, roadside)", "state": "Both runners are stopped and the race is decided by who wakes first.", "delta": "the tortoise also stops moving", "invariants": "the hare is still asleep"}]}
+
+Story: {{title}}
+{{story}}
+
+Path: {{path}}
+State: {{expr}}
+Note: {{state}}
+Alternatives:

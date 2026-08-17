@@ -50,7 +50,7 @@ side. See `CONCEPT.md` §"What each layer commits to".
 | `seeds.js` | Seed story DAGs (nodes + edges) |
 | `llm_client.js` | llama-server transport; owns the pinned sampling profile and the response cache. **Node-only** — never loaded by the page |
 | `grower.js` | The deterministic traversal: proposes via `llm_client`, inserts via `growth.js`, pins every ordering. Node-only |
-| `prompts/branch.v1.txt` | Versioned few-shot prompt; its sha256 goes in the run manifest. Edits are a new version, never in-place |
+| `prompts/branch.v*.txt` | Versioned few-shot prompts; the sha256 goes in the run manifest. Edits are a new version, never in-place. `branch.v2` (default) carries the told story + ancestor path; `branch.v1` (one node only) is kept selectable via `--prompt` so its manifests stay replayable |
 | `tools/grow.js` | CLI: `npm run grow -- --story red …` emits `runs/<runId>/grown_graph.json` + manifest; `npm run grow:replay -- <manifest>` diffs canonical JSON cache-cold |
 | `tools/grow_server.js` | `npm run grow:serve` — loopback bridge (:8081) behind the UI's Auto-grow button; runs the grower Node-side, persists the run, returns the grown graph. UI runs get `input.seed: null` manifests and are not `grow:replay`-able |
 | `tools/eval.js` | `npm run eval` — §6 metric table over model runs, recorded run dirs, and the `gen_probe.js` baseline (probe candidate source through the grower's own traversal) |
