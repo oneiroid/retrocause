@@ -1213,6 +1213,57 @@ form, so states that mean the same thing in different words stay
 separate. That is the first thing to revisit if grown graphs turn out
 shallow — a richer `contentKey`, not a different predicate (§5.5.4).
 
+**Accumulated state: why the obvious fix is Attempt 1, and what
+survives of it** (recorded 2026-08-17, before building anything). The
+natural proposal, once `state` is a world state, is to *derive* it:
+fold every change along the path from the root, so a node's state is
+computed rather than written. That is event sourcing, it is how STRIPS
+defines state, and the mechanical version of it **is `phi.js`** — typed
+entries with preconditions and effects, per story, which §1.1 records
+dying on authoring cost rather than on being wrong. Three specific
+blockers, all visible in the depth-4 run's own data:
+
+- **Seeds record states, not changes.** Every seed node's `delta` is
+  empty, so the fold has no input for the first half of any path.
+  Supplying one means giving all three stories effects — the fixture,
+  again.
+- **`delta` is prose, and frequently is not a change.** The deltas along
+  one depth-4 path read "the wolf is still unseen" four times: a
+  statement that nothing happened, aggregating to nothing. Folding
+  English needs the typed vocabulary that is §8's follow-on 3 *plus* an
+  effect semantics on top.
+- **In a DAG the fold is multi-valued, and ambiguous exactly where it
+  matters.** 3 of 30 nodes in that run have several parents, and all
+  three are convergences. `sameInContext` merges on *parallel*
+  reachability, so every successful merge manufactures a node with two
+  accumulated states. Convergence is not a corner case here; it is the
+  structure the app exists to expose.
+
+There is also a quieter cost: seed `state` is authored and grown `state`
+is model-written, so deriving it for one and not the other gives a
+single field two definitions — §5.5.4's failure mode a level up.
+
+**What survives.** The multi-valued objection is the useful part. If two
+paths reach a merged node with different accumulated states, that
+disagreement is a verdict on the *merge*: either the states really
+differ and the merge was wrong, or the difference does not matter to
+what follows — which is what a bottleneck is. So accumulated state
+belongs where the predicate's own comment already points it, as a
+richer `contentKey` (the parameter exists to be swapped), and as a
+diagnostic on merges already made. Not as a replacement for `state`.
+Two narrow uses, in this order:
+
+1. *Accumulated state as an experimental `contentKey`* — an
+   `experiments/` probe over recorded graphs. Model-free: it re-scores
+   runs that exist, and answers "would our merges survive knowing the
+   history?" without a single request.
+2. *Path deltas rendered into the prompt* — cheap, reuses
+   `ancestorPath`, and stays a prompt change rather than machinery. It
+   also opens an error-compounding channel that seed-derived context
+   does not have: v2's deltas are grounded but wrong ("the woodcutter is
+   now the predator"), and feeding those back may be worse than
+   omitting them. The eval adjudicates that, not an argument.
+
 **The probe already ruled out one hypothesis, and it may rule out
 this one.** `gen_probe.js` showed that adding constraints to a
 lexicon recombiner buys structure and readability but not meaning.
