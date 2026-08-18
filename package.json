@@ -3,7 +3,7 @@
   "private": true,
   "version": "0.1.0",
   "scripts": {
-    "test": "node --check ids.js && node --check story_builder_app.js && node --check story_builder_engine.js && node --check seeds.js && node --check merge_predicate.js && node --check growth.js && node --check llm_client.js && node --check grower.js && node --check tools/grow.js && node --check tools/grow_server.js && node --check tools/eval.js && node --check experiments/gen_probe.js && node --test tests/*.test.js",
+    "test": "node --check ids.js && node --check story_builder_app.js && node --check story_builder_engine.js && node --check seeds.js && node --check merge_predicate.js && node --check growth.js && node --check llm_client.js && node --check grower.js && node --check tools/grow.js && node --check tools/grow_server.js && node --check tools/eval.js && node --check experiments/gen_probe.js && node --check experiments/history_key.js && node --test tests/*.test.js",
     "grow": "node tools/grow.js",
     "grow:serve": "node tools/grow_server.js",
     "eval": "node tools/eval.js",

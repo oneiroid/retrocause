@@ -1253,10 +1253,36 @@ richer `contentKey` (the parameter exists to be swapped), and as a
 diagnostic on merges already made. Not as a replacement for `state`.
 Two narrow uses, in this order:
 
-1. *Accumulated state as an experimental `contentKey`* — an
-   `experiments/` probe over recorded graphs. Model-free: it re-scores
-   runs that exist, and answers "would our merges survive knowing the
-   history?" without a single request.
+1. *Accumulated state as an experimental `contentKey`* — **built
+   2026-08-17: `experiments/history_key.js`**, model-free, wired into
+   nothing. `node experiments/history_key.js <graph.json>`. It walks the
+   pinned ancestor path to each parent of every convergence and compares
+   two keys:
+
+   - `routeKey` (ordered exprs from the root) survives **0 of 3**
+     convergences on the depth-4 run, and must: two nodes merge only when
+     their paths are parallel, and parallel paths differ by construction,
+     so a full-history key never merges anything. Kept as the degenerate
+     bound — the useful version of "accumulated state" has to *forget*
+     the route. That is what makes it state rather than a log.
+   - `deltaSetKey` (unordered set of non-empty deltas + own expr)
+     survives **3 of 3** — but that graph's delta variety is **0.18**
+     (4 distinct strings over 22 nodes), so the key is nearly constant
+     and the agreement is weak evidence, which the probe now says out
+     loud. A hand-built diamond whose two routes change different things
+     ("Red is on the path" / "off the path") is correctly separated,
+     0 of 1 surviving, so the mechanism works; it is this run's data that
+     cannot exercise it.
+
+   The first version of the probe scored discrimination by counting
+   partitions over the whole graph, and reported the working diamond as
+   inert — a convergence has one key *per parent*, and a global count
+   collapses them to the pinned one. Measure the input's delta variety,
+   not the output's group count.
+
+   **So the open question is not answered, and cannot be until deltas
+   stop collapsing.** Re-run this against a post-seeds-v2 model graph,
+   where v2 deltas ran 14/15 distinct, before drawing anything from it.
 2. *Path deltas rendered into the prompt* — cheap, reuses
    `ancestorPath`, and stays a prompt change rather than machinery. It
    also opens an error-compounding channel that seed-derived context
