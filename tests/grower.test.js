@@ -211,6 +211,36 @@ test("maxNodes stops creation and the result validates", async () => {
   assert.ok(full.validation.ok, JSON.stringify(full.validation.errors));
 });
 
+test("a proposal that restates its source is refused and counted apart from cycles", async () => {
+  // The observed degenerate mode: leave(red, basket) -> leave(red, basket).
+  // Echo the target's own expr and Note back as the proposal.
+  const echoingFetch = async (url, options) => {
+    if (url.endsWith("/props")) return { ok: true, json: async () => FIXTURES.props };
+    const prompt = JSON.parse(options.body).prompt;
+    const expr = [...prompt.matchAll(/^State: (.*)$/gm)].at(-1)[1];
+    const state = [...prompt.matchAll(/^Note: (.*)$/gm)].at(-1)[1];
+    return {
+      ok: true,
+      json: async () => ({
+        content: JSON.stringify({
+          branches: [{ label: "Nothing changes", expr, state, delta: "", invariants: "" }],
+        }),
+        stop_type: "eos",
+        stopped_limit: null,
+      }),
+    };
+  };
+  const { graph, stats } = await growGraph({
+    ...CONFIG,
+    graph: seeds.red,
+    client: createClient({ fetch: echoingFetch }),
+  });
+  assert.strictEqual(stats.created, 0);
+  assert.strictEqual(stats.rejectedNullTransitions, 1);
+  assert.strictEqual(stats.rejectedCycles, 0); // not conflated with a cycle
+  assert.strictEqual(graph.nodes.length, seeds.red.nodes.length);
+});
+
 test("truncated completions are counted, not fatal", async () => {
   const truncatingFetch = async (url, options) => {
     if (url.endsWith("/props")) return { ok: true, json: async () => FIXTURES.props };

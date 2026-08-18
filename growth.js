@@ -53,15 +53,59 @@
     return { merged: true, into: survivor.id };
   }
 
+  // A continuation whose content is identical to the state it continues FROM
+  // advances nothing: the edge carries no information and the child is a
+  // restatement, not an event. Observed as `leave(red, basket) -> leave(red,
+  // basket)` and as a four-node chain of `watch(red, woods)` — 8 of 34 edges
+  // in one real run (LOCAL_LLM.md §8).
+  //
+  // This is NOT a second definition of "same state" (§5.5.4). Two different
+  // questions:
+  //   - "are these two nodes the same state?"  — identity. sameInContext owns
+  //     it, and its answer for a chain is `recurrence, do not merge`, which
+  //     must stay that way or criedWolf's three `cry(boy, wolf)` collapse.
+  //   - "does this edge advance anything?"     — validity. This. It never
+  //     compares two distinct states, so it cannot disagree with the predicate.
+  //
+  // Nor can it be solved by merging: source and candidate are comparable here,
+  // so the incomparability clause blocks the collapse, and lifting that clause
+  // would reintroduce the cycles the merge rewire relies on being impossible
+  // (see the header). A null transition has to be refused at creation.
+  //
+  // BOTH fields must be present on the source before this claims anything,
+  // mirroring the predicate's refusal to merge unknown states. Two nodes with
+  // the same expr and no state at all are not evidence that nothing changed —
+  // they are evidence that nothing was said. Refusing to judge there is the
+  // cheap direction: a missed null transition costs one junk node, a wrongly
+  // refused recurrence costs criedWolf.
+  //
+  // Note what this does NOT catch. It is a syntactic proxy for "nothing
+  // changed", and it fires on the observed cases only because the model
+  // restated the state text too. A model that wrote a *different* sentence
+  // for an event that is still impossible — leaving a basket already left,
+  // a thing Red has exactly one of — would pass it. Preconditions and
+  // consumption need a world model, the machinery this repo has twice
+  // declined to build (§1.1). This catches laziness, not incoherence.
+  function isNullTransition(source, node) {
+    const expr = Ids.normalizedContent(source.expr);
+    const state = Ids.normalizedContent(source.state);
+    if (!expr || !state) return false;
+    return Ids.normalizedContent(node.expr) === expr
+      && Ids.normalizedContent(node.state) === state;
+  }
+
   // Insert one continuation. Returns:
   //   { merged:true,  into, edge }  — collapsed into an existing parallel state
   //   { merged:false, node, edge }  — kept as a genuinely new state
   //   { ok:false, message }         — bad input (e.g. `from` not in graph)
+  //   { ok:false, reason:"null_transition" } — restates `from`; nothing added
   function insertContinuation(graph, { from, node, type, label } = {}) {
-    if (!graph.nodes.some((n) => n.id === from)) {
-      return { ok: false, message: `Source node ${from} is missing` };
-    }
+    const source = graph.nodes.find((n) => n.id === from);
+    if (!source) return { ok: false, message: `Source node ${from} is missing` };
     if (!node) return { ok: false, message: "Continuation has no node" };
+    if (isNullTransition(source, node)) {
+      return { ok: false, reason: "null_transition", message: `Continuation restates ${from}` };
+    }
     // Content-addressed, hashing the node `from` was reached under. This is
     // the id site that fires most — once per inserted continuation — so it is
     // the one that decides whether a grown graph replays at all (§3).
@@ -86,7 +130,7 @@
     return (continuations || []).map((c) => insertContinuation(graph, c));
   }
 
-  const api = { insertContinuation, grow, collapseIfSame };
+  const api = { insertContinuation, grow, collapseIfSame, isNullTransition };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   root.StoryDagGrowth = api;
 })(typeof window !== "undefined" ? window : globalThis);

@@ -192,6 +192,7 @@ async function growGraph({
     created: 0,
     mergedDuplicates: 0,
     rejectedCycles: 0,
+    rejectedNullTransitions: 0,
     truncated: 0,
     droppedRejoins: 0,
     expansions: 0,
@@ -246,7 +247,11 @@ async function growGraph({
           label: node.delta || "alternative branch",
         });
         if (result.ok === false) {
-          stats.rejectedCycles += 1;
+          // Two distinct refusals, counted apart: a cycle is a structural
+          // impossibility, a null transition is a proposal that said nothing.
+          // Collapsing them would hide which failure a run actually had.
+          if (result.reason === "null_transition") stats.rejectedNullTransitions += 1;
+          else stats.rejectedCycles += 1;
           continue;
         }
 

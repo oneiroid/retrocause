@@ -46,7 +46,7 @@ side. See `CONCEPT.md` §"What each layer commits to".
 | `ids.js` | Content-addressed ids (`nodeId`, `edgeId`) + `canonicalJson`; owns `normalizedContent`, the one content key. Requires nothing — it is the leaf everything else imports |
 | `story_builder_engine.js` | Graph ops: add/remove nodes & edges, cycle checks, branch composition |
 | `merge_predicate.js` | `sameInContext`: same content + parallel paths ⇒ same state (merge) |
-| `growth.js` | Merge-on-insert: continuations collapse into same-in-context states |
+| `growth.js` | Merge-on-insert: continuations collapse into same-in-context states. Also refuses **null transitions** — a continuation matching its source in both `expr` and `state` advances nothing. That is an edge-validity rule, deliberately not a second definition of "same state" |
 | `seeds.js` | Seed story DAGs (nodes + edges). v2: one node = one event, `state` is world state (the model reads it), `reading` is the authored gloss (nothing renders it into a prompt) |
 | `llm_client.js` | llama-server transport; owns the pinned sampling profile and the response cache. **Node-only** — never loaded by the page |
 | `grower.js` | The deterministic traversal: proposes via `llm_client`, inserts via `growth.js`, pins every ordering. Node-only |

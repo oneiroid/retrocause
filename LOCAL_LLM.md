@@ -845,6 +845,20 @@ unordered iteration is as fatal to replay as a random seed.
    pinned order. The spine is constant across a run (grown nodes are
    filtered out); the path reflects the graph as the traversal has left
    it, which is deterministic given (1)–(5).
+8. **Null transitions are refused, not merged** (added 2026-08-17). A
+   continuation whose `expr` **and** `state` both match the state it
+   continues from advances nothing. `insertContinuation` rejects it
+   before an id is minted and returns `reason: "null_transition"`; the
+   grower counts it as `rejectedNullTransitions`, kept apart from
+   `rejectedCycles` so a run's failures stay distinguishable.
+
+   This sits beside (5), not inside (4): it is a validity rule about one
+   edge, not an identity rule about two states, and it never asks whether
+   two *distinct* nodes are the same. Both fields must be non-empty on
+   the source before it claims anything — same expr with no state at all
+   is not evidence that nothing changed, only that nothing was said, and
+   a wrongly refused recurrence is far more expensive than a missed
+   restatement. See §8 for the measurement and for what the proxy misses.
 
    **Budget note.** v2 costs ~1000 prompt tokens on an 8-node seed
    against `--ctx-size 4096` (§4.1). This is fine at seed scale and is a
@@ -925,6 +939,7 @@ sweep N seeds × M configurations and score each run on
 |---|---|
 | JSON validity | Should be 100% under §5.3. Anything less means the grammar is not applied or `n_predict` is truncating (check the stop reason) — a bug or a budget error, not a quality signal. |
 | Acyclicity acceptance rate | How often proposals are structurally usable |
+| Null-transition rate | Proposals that restated the state they continued from (§5.5.8). The grower's degenerate mode made countable. Shares one denominator with the rates above and below — total insert attempts — so a rejection cannot quietly inflate the others |
 | Duplicate-`expr` rate | Prompt collapse into one idea |
 | `rejoinTargetId` validity | Whether the model can actually reference real nodes |
 | Branch diversity | Distinct normalized `expr` per expansion point |
@@ -1136,17 +1151,46 @@ attribute each:
      predicates, no better world model. Nothing here argues against
      follow-on 3; it is the same gap.
 
-   **A separate defect this made legible.** One edge came back as
-   `leave(red, basket) → leave(red, basket)`: the model proposed the
-   state it was given as its own continuation. `sameInContext` correctly
-   refuses to merge those (each reaches the other — recurrence, not
-   convergence), so the result is a degenerate chain of identical states.
-   The same shape produced `watch(red, woods)` four times in the run that
-   started this work. A guard — reject a proposal whose normalized expr
-   equals its source's — is cheap and is *not* built here on purpose:
-   it would be a second rule about state identity living outside
-   `merge_predicate.js`, which is exactly what §5.5.4 forbids. Decide
-   where it belongs before writing it.
+   **A separate defect this made legible — now fixed (§5.5.8).** One edge
+   came back as `leave(red, basket) → leave(red, basket)`: the model
+   proposed the state it was given as its own continuation. The same
+   shape produced `watch(red, woods)` four times in the run that started
+   this work — **8 of 34 edges**, a quarter of that graph.
+
+   The first reading here was that a guard belonged in the grower and
+   was forbidden by §5.5.4 as a second definition of "same state". That
+   reasoning was too coarse. There are two questions, and they were
+   collapsed:
+
+   - *Are these two nodes the same state?* — identity. `sameInContext`
+     owns it, and its answer for a chain is **recurrence, do not merge**.
+     That must stay: it is what keeps criedWolf's three `cry(boy, wolf)`
+     distinct.
+   - *Does this edge advance anything?* — validity. Nobody owned it. It
+     never compares two *distinct* states, so it cannot contradict the
+     predicate.
+
+   And it cannot be solved by merging: source and candidate are
+   comparable, so the incomparability clause blocks the collapse, and
+   lifting that clause would reintroduce the cycles the merge rewire
+   relies on being impossible (`growth.js:9-13`). A null transition has
+   to be refused at creation, which is what `insertContinuation` now
+   does — counted as `rejectedNullTransitions`, apart from cycles.
+
+   **What it does not catch, and why that is stated rather than fixed.**
+   The rule is a syntactic proxy: same `expr` *and* same `state`. It
+   fires on the observed cases only because the model restated the state
+   text too. The deeper defect is that the second `leave(red, basket)` is
+   *impossible* — Red has one basket, and the first event consumed it. A
+   model that wrote a different sentence for that same impossible event
+   would pass the check untouched. Preconditions and consumption are a
+   world model — the machinery deleted in §1.1 and declined twice since.
+   This catches laziness, not incoherence, and the gap is the honest size
+   of the difference.
+
+   Measured on the authored seeds before shipping: **0 rejections across
+   33 seed edges** in all three stories, criedWolf included; **8 of 34**
+   on the degenerate run.
 3. **Closed vocabulary** (open, and it must come last): a lexicon of
    allowed predicates and arguments, enforced as an `enum` in the
    grammar rather than requested in prose. Note the tension — this is

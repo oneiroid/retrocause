@@ -151,6 +151,7 @@ async function grow(args) {
     result: {
       created: stats.created,
       rejectedCycles: stats.rejectedCycles,
+      rejectedNullTransitions: stats.rejectedNullTransitions,
       mergedDuplicates: stats.mergedDuplicates,
       truncated: stats.truncated,
       droppedRejoins: stats.droppedRejoins,

@@ -66,9 +66,16 @@ function scoreGrowth({ graph, stats }) {
   const requests = stats.expansions + stats.truncated;
   const jsonValidity = requests ? stats.expansions / requests : 1;
 
-  // Acyclicity acceptance — accepted inserts over all insert attempts.
-  const inserts = stats.created + stats.mergedDuplicates + stats.rejectedCycles;
+  // Every rate below shares one denominator: total insert attempts. Null
+  // transitions belong in it — they were proposals, and excluding them would
+  // quietly inflate every other acceptance number. Recorded runs from before
+  // `rejectedNullTransitions` existed read it as 0, which is what they were.
+  const nulls = stats.rejectedNullTransitions || 0;
+  const inserts = stats.created + stats.mergedDuplicates + stats.rejectedCycles + nulls;
   const acyclicityAcceptance = inserts ? (inserts - stats.rejectedCycles) / inserts : 1;
+  // Proposals that restated the state they continued from (growth.js). The
+  // grower's degenerate mode, made countable rather than argued about.
+  const nullTransitionRate = inserts ? nulls / inserts : 0;
 
   // Duplicate-expr rate — prompt collapse into one idea, measured over the
   // grown nodes that survived (merged duplicates are the mergeRate column).
@@ -128,6 +135,7 @@ function scoreGrowth({ graph, stats }) {
     grownNodes: grown.length,
     jsonValidity,
     acyclicityAcceptance,
+    nullTransitionRate,
     dupExprRate,
     mergeRate,
     rejoinValidity,
@@ -219,6 +227,7 @@ function printReport(rows, { show }) {
     grown: r.grownNodes,
     jsonValid: fmt(r.jsonValidity),
     acyclic: fmt(r.acyclicityAcceptance),
+    nullTx: fmt(r.nullTransitionRate),
     dupExpr: fmt(r.dupExprRate),
     merge: fmt(r.mergeRate),
     rejoin: fmt(r.rejoinValidity),
