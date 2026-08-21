@@ -56,6 +56,9 @@ side. See `CONCEPT.md` §"What each layer commits to".
 | `tools/eval.js` | `npm run eval` — §6 metric table over model runs, recorded run dirs, and the `gen_probe.js` baseline (probe candidate source through the grower's own traversal) |
 | `tools/serve_reference.sh` | Starts `llama-server` on the reproducible reference profile (`LOCAL_LLM.md` §4.1). Every flag in it is part of that profile |
 | `experiments/gen_probe.js` | Lexicon-recombiner probe; the traversal `grower.js` will lift and the eval baseline it must beat |
+| `experiments/same_state.js` | Can the local model judge "same state?" — 18 hand-labelled pairs. The one task it does well (bounded discrimination, not generation). Model + argument guard: 6/9 true merges vs the surface key's 2, zero false merges |
+| `experiments/history_key.js` | Folds seed `effects` along a path (last-write-wins) and asks whether merges survive knowing the route. Model-free |
+| `tools/extract_state.js` | Recorded failure: the local model cannot extract canonical state (22% malformed, 37 variables for 14 nodes). Kept as the record |
 | `tests/*.test.js` | `node --test` unit tests |
 
 ## Conventions

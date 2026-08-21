@@ -1,0 +1,22 @@
+Story states are events written as schema(arguments) with a note saying what is true afterwards. Two states are THE SAME when they describe the same situation in the story world, even if they are worded differently or use different verbs. They are DIFFERENT when anything they assert about the world differs — a different actor, a different place, a different fact — even if the wording is nearly identical.
+
+Answer with JSON: {"same": true} or {"same": false}.
+
+A: outpace(hare, tortoise) — The hare opens a lead wide enough to make the result look settled.
+B: lead(hare, race) — The hare is well ahead of the tortoise on the road.
+{"same": true}
+
+A: nap(hare, roadside) — The hare converts the lead into rest and the gap stops growing.
+B: nap(tortoise, roadside) — The tortoise stops at the roadside to rest.
+{"same": false}
+
+A: win(tortoise, race) — The slower runner arrives first because the faster one stopped.
+B: finish(tortoise, course) — The tortoise crosses the line ahead of the hare.
+{"same": true}
+
+A: start(fox, race) — The fox drops his paw; both are on the road.
+B: win(tortoise, race) — The slower runner arrives first because the faster one stopped.
+{"same": false}
+
+A: {{a_expr}} — {{a_state}}
+B: {{b_expr}} — {{b_state}}
