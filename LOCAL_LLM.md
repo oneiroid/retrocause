@@ -988,6 +988,28 @@ model. (Small budgets are expected to show spread ≈ 0 for both sources:
 a depth-2 growth of a chain-shaped seed is nearly a tree. The rule
 binds at corpus-scale budgets, not smoke tests.)
 
+**The rule needs a sample-size gate, and this was noticed after seeing a
+small-N run — recorded as such (2026-08-17).** The red re-baseline
+scored baseline `maxRankSpread` 2 against the model's **0**, which reads
+as the falsification signal firing hard. It is not interpretable. The
+model grew 6 nodes to the baseline's 24, spread over 15 topological
+ranks: **11 of those ranks hold exactly one node**, and a rank holding
+one node has in-degree spread 0 by construction. The baseline's spread
+comes entirely from its populous ranks (7 nodes at rank 2, 14 at rank 3).
+
+So `maxRankSpread` co-varies with node count, and "equal budgets" does
+not deliver equal node counts once the two sources merge at different
+rates — here 0.333 against 0.25, with the model's higher merge rate
+*reducing* the node count and therefore the measurable spread. The
+metric can penalise the convergence it exists to reward.
+
+The pre-registered rule stands as written; nothing here is licence to
+soften it after the fact. What it needs stated is the minimum it was
+always assumed to have: **compare at equal grown-node counts, or gate on
+a minimum nodes-per-rank, and never read a spread computed over
+singleton ranks.** Fix the comparison before the corpus sweep, not after
+seeing its result.
+
 **Per-branch contradiction check** (added from the §8 finding before
 anything reads `invariants`): a grown branch whose non-empty normalized
 `delta` equals its normalized `invariants` claims the same sentence
