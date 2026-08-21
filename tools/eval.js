@@ -121,6 +121,22 @@ function scoreGrowth({ graph, stats }) {
     .map(([rank, ds]) => ({ rank, n: ds.length, min: Math.min(...ds), max: Math.max(...ds) }));
   const maxRankSpread = Math.max(0, ...spreadByRank.map((s) => s.max - s.min));
 
+  // The sample the spread was computed over. A rank holding one node has
+  // spread 0 BY CONSTRUCTION — there is no second in-degree to differ from —
+  // so `maxRankSpread` co-varies with how many nodes land per rank, and a
+  // source that merges harder produces a smaller graph and therefore a
+  // smaller measurable spread. The metric can penalise the convergence it
+  // exists to reward (§6).
+  //
+  // No corrected metric is invented here: a spread of 0 over four two-node
+  // ranks and a spread of 0 over fourteen-node ranks are different claims,
+  // and the fix is to stop printing them the same. `scoredRanks` counts the
+  // ranks that could show any spread at all; `maxRankSize` is the best
+  // sample any rank offered. Read `maxRankSpread` only against these.
+  const scorable = spreadByRank.filter((s) => s.n > 1);
+  const scoredRanks = scorable.length;
+  const maxRankSize = Math.max(0, ...spreadByRank.map((s) => s.n));
+
   // Per-branch contradiction check (§0, §8): the observed failure is delta
   // copied into invariants — a branch whose "what changed" and "what held"
   // are the same sentence contradicts itself. Only the non-empty case
@@ -141,6 +157,8 @@ function scoreGrowth({ graph, stats }) {
     rejoinValidity,
     branchDiversity,
     maxRankSpread,
+    scoredRanks,
+    maxRankSize,
     contradictionRate,
     histogram,
     spreadByRank,
@@ -232,7 +250,9 @@ function printReport(rows, { show }) {
     merge: fmt(r.mergeRate),
     rejoin: fmt(r.rejoinValidity),
     diversity: fmt(r.branchDiversity),
-    rankSpread: r.maxRankSpread,
+    // Never bare: `0` and "no rank had enough nodes to tell" must not print
+    // identically. n = ranks with >1 node, max = biggest rank.
+    rankSpread: `${r.maxRankSpread} (n=${r.scoredRanks}, max=${r.maxRankSize})`,
     contradict: fmt(r.contradictionRate),
     replay: r.replayOk === null ? "—" : r.replayOk ? "OK" : "MISMATCH",
   })));
