@@ -111,6 +111,22 @@ input graph hash changed, so pre-v2 manifests replay against a graph
 that no longer exists. Re-baseline before comparing anything to the
 numbers in the v1-vs-v2 table above.
 
+**Red re-baselined on seeds v2, 2026-08-17** (`run_f9bb5588249a1b16`,
+depth 4 / width 3 / max 24, cache-cold). Six nodes created, four merged,
+**two null transitions refused** — the §5.5.8 guard firing on a real run
+for the first time. Delta variety **6/6 distinct**, no cross-story
+entities, and two grown->seed edges, so branch.v2's gains hold under the
+re-cut seeds. The graph is much smaller and denser than the pre-v2 runs
+(6 created against 15-18), which is what a high merge rate looks like;
+whether that is convergence or exhaustion needs the other two stories.
+
+The run also confirms §5.5.8's stated limit, in the exact case that
+prompted it: `leave(red, basket)` came back with the state "Red has left
+the basket behind and is carrying it alone". The null-transition guard
+correctly did *not* fire — the delta differs from its source — and the
+event is still incoherent. Laziness caught, incoherence untouched,
+as documented.
+
 **Not started.** The rest of Phase 2: the corpus-scale sweep that the
 §6 decision rule actually binds on (needs the topological-sort cycle
 check from §8 first — `validateGraph`'s O(E²·V) is the blocker), and
@@ -1280,9 +1296,37 @@ Two narrow uses, in this order:
    collapses them to the pinned one. Measure the input's delta variety,
    not the output's group count.
 
-   **So the open question is not answered, and cannot be until deltas
-   stop collapsing.** Re-run this against a post-seeds-v2 model graph,
-   where v2 deltas ran 14/15 distinct, before drawing anything from it.
+   **Re-run on a post-seeds-v2 graph (`run_f9bb5588249a1b16`, red,
+   depth 4 / width 3), and the answer is that the question is not
+   testable on a mixed graph at all.** Delta variety came back 1.00
+   (6 distinct over 6), so the earlier vacuity is gone — and both
+   convergences still disagreed, for a reason that is not a verdict:
+
+   ```
+   UNDECIDABLE leave(red, path)  (3 parents)
+     leave(red, path)|the wolf is still in the woods
+     leave(red, path)|
+   ```
+
+   One side of every disagreement is empty. Any path through the told
+   story contributes no deltas, because seed nodes have none — so an
+   empty set is compared against a non-empty one and differs
+   automatically. Counting that as disagreement reports the seeds'
+   silence as a semantic conflict, which is why the probe now splits
+   `testable` from `undecidable for want of deltas` and refuses to score
+   the latter.
+
+   **This is structural, not a data-quality problem better model output
+   fixes.** Every path starts at the root, the root is a seed, and the
+   seed spine records nothing. Comparing from the lowest common ancestor
+   instead of the root does not rescue it either: where a grown branch
+   rejoins the spine, the seed segment *after* the branch point is still
+   silent. Testing accumulated state as a `contentKey` therefore requires
+   seed nodes to carry deltas — which is the phi fixture, per story,
+   which is Attempt 1. The probe has now demonstrated §8's first blocker
+   rather than merely predicting it, and that is the result: **the idea
+   is blocked on the thing that killed the first attempt, and the probe
+   was the cheap way to find that out.**
 2. *Path deltas rendered into the prompt* — cheap, reuses
    `ancestorPath`, and stays a prompt change rather than machinery. It
    also opens an error-compounding channel that seed-derived context

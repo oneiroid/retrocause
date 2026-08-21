@@ -98,16 +98,27 @@ function score(graph, label) {
       const nodesOnPath = ancestorPath(graph, parentId).map((id) => byId.get(id)).filter(Boolean);
       return { route: routeKey(nodesOnPath, node), delta: deltaSetKey(nodesOnPath, node) };
     });
+    // A key whose delta half is empty means that path recorded no changes at
+    // all — every seed node has an empty `delta`, so any route through the
+    // told story contributes nothing. That is a COVERAGE hole, not a verdict:
+    // an empty set differs from a non-empty one automatically, and counting
+    // it as disagreement would report the seeds' silence as a semantic
+    // conflict. Split the two so the number means what it says.
+    const uncovered = keys.some((k) => k.delta.endsWith("|"));
+    const distinct = new Set(keys.map((k) => k.delta)).size;
     return {
       node,
       parents: keys.length,
       routeAgrees: new Set(keys.map((k) => k.route)).size === 1,
-      deltaAgrees: new Set(keys.map((k) => k.delta)).size === 1,
+      deltaAgrees: distinct === 1,
+      uncovered,
       deltaKeys: [...new Set(keys.map((k) => k.delta))],
     };
   });
 
   const agree = rows.filter((r) => r.deltaAgrees);
+  const testable = rows.filter((r) => !r.uncovered);
+  const blocked = rows.filter((r) => r.uncovered && !r.deltaAgrees);
   console.log(`\n=== ${label} ===`);
   console.log(`  nodes ${graph.nodes.length}  edges ${graph.edges.length}  `
     + `convergences (in-degree > 1) ${convergences.length}`);
@@ -120,9 +131,16 @@ function score(graph, label) {
     return;
   }
   console.log(`  routeKey  — convergences that survive: ${rows.filter((r) => r.routeAgrees).length}/${rows.length}`);
-  console.log(`  deltaSetKey — convergences that survive: ${agree.length}/${rows.length}`);
+  console.log(`  deltaSetKey — convergences that survive: ${agree.length}/${rows.length}`
+    + `   (testable: ${testable.filter((r) => r.deltaAgrees).length}/${testable.length}`
+    + `, undecidable for want of deltas: ${blocked.length})`);
+  if (blocked.length && !testable.length) {
+    console.log("    every disagreement is a coverage hole — one side of each is a");
+    console.log("    path through seed nodes, which record no deltas at all. Nothing");
+    console.log("    is being tested here (LOCAL_LLM.md §8, first blocker).");
+  }
   for (const r of rows.filter((x) => !x.deltaAgrees)) {
-    console.log(`\n    DISAGREES  ${r.node.expr}  (${r.parents} parents)`);
+    console.log(`\n    ${r.uncovered ? "UNDECIDABLE" : "DISAGREES  "} ${r.node.expr}  (${r.parents} parents)`);
     for (const k of r.deltaKeys) console.log(`      ${k}`);
   }
 }
