@@ -1367,6 +1367,52 @@ Two narrow uses, in this order:
    `effects` means "what this event changed" (time-relative). One field
    for both would repeat the `state`/`reading` mistake.
 
+   **Measured: the local model cannot do this extraction** (2026-08-17,
+   `tools/extract_state.js`, red, 14 nodes, reference profile). It was
+   asked the easiest version of the task — given the whole told story
+   *and* the node's own prose `state`, list what is true after the event.
+   Results:
+
+   | | |
+   |---|---|
+   | facts emitted | 206 |
+   | malformed (not `owner.property=value`) | **46 (22%)** |
+   | distinct variables for a 14-node story | **37** |
+
+   Thirty-seven variables is the finding. `red.location`, `red.path`,
+   `red.destination` and `red.destination.side` all coexist; so do
+   `red.alive` and `red.dead`, and `wolf.alive` and `wolf.dead`. The
+   coincidence property — the same fact written the same way every time,
+   which is the entire mechanism — is absent. Two routes could never
+   fold to the same state because they would not be naming the same
+   variables.
+
+   The content is wrong too, in the way this model is reliably wrong:
+   `swallow(wolf, grandmother)` produced `wolf.dead=yes` and
+   `red.location=inside_wolf` — the wolf is not dead and Red is not
+   swallowed for another three nodes. `swallow(wolf, red)` produced
+   `red.alive=yes, red.dead=no`.
+
+   And it padded. `gather(red, flowers)` emitted
+   `red.action.flowers.flowers.flowers=flowers` eleven times, filling the
+   array to `maxItems` exactly. That is a base-model repetition loop, and
+   it is worth naming why nothing stopped it: the reference profile pins
+   `repeat_penalty: 1.0` and `dry_multiplier: 0` — repetition machinery
+   deliberately **off**, because it is a hidden hyperparameter that would
+   break bit-replay (§4.1). Determinism and repetition-resistance are in
+   tension here, and this task sits on the wrong side of it. Adding
+   `maxItems` bounded the damage but did not stop the loop; without it
+   the first run simply truncated at `n_predict`.
+
+   **This closes the extraction option for grown nodes too.** If the
+   model cannot say what changed in a node it is *handed*, with the story
+   in front of it, it will not say it correctly for one it invents. So of
+   the two shapes for grown-node effects, post-hoc extraction is dead and
+   only a schema request (`branch.v3`) remains — and it inherits the same
+   weakness, which should be assumed until measured rather than hoped
+   against. `tools/extract_state.js` is kept as the record of the
+   attempt, in the same spirit as `gen_probe.js`.
+
    **The remaining gap is grown nodes**, which carry no `effects` yet, so
    every convergence in a grown graph is still undecidable — at least one
    path into it records nothing. That is the next step and it has two
