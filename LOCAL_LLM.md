@@ -1338,7 +1338,54 @@ Two narrow uses, in this order:
    `testable` from `undecidable for want of deltas` and refuses to score
    the latter.
 
-   **This is structural, not a data-quality problem better model output
+   **Resolved 2026-08-17 by changing the form, not the data.** Seed nodes
+   now carry `effects` — canonical `owner.property=value` assignments,
+   hand-authored, 36 of them — and the probe folds those along a path
+   with **last-write-wins per variable** instead of unioning prose.
+
+   The union was wrong in principle, not merely under-fed: leaving the
+   path and returning must fold to the same world as never leaving, and
+   `{on_path=no, on_path=yes}` versus `{on_path=yes}` does not. A set of
+   changes is a log; a state is what you get when later changes overwrite
+   earlier ones. Only overwriting makes two routes coincide, and
+   coinciding is the whole property under test. Verified both ways:
+   leave-then-return folds byte-identical to never-left, and criedWolf's
+   three `cry(boy, wolf)` nodes — identical `expr`, identical `effects` —
+   fold to **3 distinct states**, separated by `villagers.trust_boy`
+   alone (full → reduced → none). That was the designed kill-switch for
+   the whole idea and it survived.
+
+   **`effects` is hand-authored, and that is a rule, not an accident.**
+   Seeds are the ground truth grown graphs are scored against. A corpus
+   written by the model under test measures its self-consistency, not its
+   correctness. The §1.1 authoring-cost argument does not apply: phi's
+   bottleneck was that a *human* had to write typed fixtures before
+   automation would run at all, and nothing here gates — a story without
+   `effects` simply scores lower coverage in one experimental probe.
+   `effects` is also deliberately not `delta`: `delta` on a branch means
+   "what differs from the told story" (counterfactual-relative), while
+   `effects` means "what this event changed" (time-relative). One field
+   for both would repeat the `state`/`reading` mistake.
+
+   **The remaining gap is grown nodes**, which carry no `effects` yet, so
+   every convergence in a grown graph is still undecidable — at least one
+   path into it records nothing. That is the next step and it has two
+   shapes: request effects in the branch schema (a `branch.v3`), or
+   extract them post-hoc with the local model (`tools/extract_state.js`).
+   The runtime case is where using the small model is right, precisely
+   because it is the thing being measured rather than the yardstick.
+
+   **Third vacuity, third plausible number.** With no effects anywhere,
+   every fold is empty, every path is equal, and the probe printed "2/2
+   survived". It now prints `— (nothing testable)`. The pattern across
+   all three: this probe reports a clean-looking result whenever its
+   input is degenerate, and the fix each time was to interrogate the
+   input rather than the answer. Assume the next number is vacuous until
+   the coverage line says otherwise.
+
+   *Superseded reasoning, kept because it explains the shape of the fix:*
+
+   **This was structural, not a data-quality problem better model output
    fixes.** Every path starts at the root, the root is a seed, and the
    seed spine records nothing. Comparing from the lowest common ancestor
    instead of the root does not rescue it either: where a grown branch

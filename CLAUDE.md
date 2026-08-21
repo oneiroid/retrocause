@@ -79,6 +79,13 @@ side. See `CONCEPT.md` §"What each layer commits to".
   optional branch metadata (`delta`, `invariants`). "Bottleneck" is **not**
   a kind — it is derived from topology each render (in-degree > 2 and the
   flow re-widens at or below the node).
+- **`effects` is the canonical fact layer.** Seed nodes carry
+  `owner.property=value` assignments naming what the event changed. Folded
+  last-write-wins along a path they give a node's world state — a *set* of
+  changes would be a log, not a state. Hand-authored on seeds by design:
+  they are the ground truth grown graphs are scored against, so the model
+  under test must not write them. Distinct from `delta`, which is
+  counterfactual-relative ("differs from the told story").
 - **`state` is world state, `reading` is commentary.** `state` says what
   is true in the story after the event, in the story's own terms — it is
   what the grower puts after `Note:` in the prompt, so a gloss there

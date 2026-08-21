@@ -1,0 +1,33 @@
+Story states are events written as schema(arguments). After each event, the facts that are true in the story world are listed as JSON: each fact is a variable and its value, written variable=value. Variables are named owner.property. Use the same variable name every time the same fact is meant, so that two different routes through a story that end in the same situation produce the same facts.
+
+List every fact that is true after the event, not only the ones that changed.
+
+Story: The Tortoise and the Hare
+  [t_boast] boast(hare, speed) — The hare declares nothing on the road can outrun him.
+  [t_challenge] challenge(tortoise, hare) — The tortoise takes the boast seriously and names a course.
+  [t_start] start(fox, race) — The fox drops his paw; both are on the road.
+  [t_lead] outpace(hare, tortoise) — The hare opens a lead wide enough to make the result look settled.
+  [t_nap] nap(hare, roadside) — The hare converts the lead into rest and the gap stops growing.
+  [t_finish] win(tortoise, race) — The slower runner arrives first because the faster one stopped.
+
+Event: start(fox, race)
+Note: The fox drops his paw; both are on the road.
+Facts:
+{"facts": ["race.started=yes", "hare.location=road", "tortoise.location=road", "hare.moving=yes", "tortoise.moving=yes", "race.leader=none"]}
+
+Event: nap(hare, roadside)
+Note: The hare converts the lead into rest and the gap stops growing.
+Facts:
+{"facts": ["race.started=yes", "hare.location=roadside", "tortoise.location=road", "hare.moving=no", "tortoise.moving=yes", "race.leader=hare"]}
+
+Event: win(tortoise, race)
+Note: The slower runner arrives first because the faster one stopped.
+Facts:
+{"facts": ["race.started=yes", "race.finished=yes", "hare.location=roadside", "tortoise.location=finish", "hare.moving=no", "tortoise.moving=no", "race.leader=tortoise", "race.winner=tortoise"]}
+
+Story: {{title}}
+{{story}}
+
+Event: {{expr}}
+Note: {{state}}
+Facts:

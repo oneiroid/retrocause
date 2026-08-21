@@ -123,10 +123,11 @@
   // Keys not named below are emitted after the declared ones, sorted. That
   // matters: canonicalization must never silently DROP data, or a diff of two
   // canonical forms stops being a diff of two graphs.
-  // `reading` is the authored gloss (seeds.js v2) — declared here so it sits
-  // next to `state` rather than in the sorted tail. It has no default: only
-  // nodes that carry one emit one, so grown nodes are unaffected.
-  const NODE_KEY_ORDER = ["id", "label", "kind", "expr", "state", "reading", "tags", "delta", "invariants", "createdBy", "runId"];
+  // `reading` (authored gloss) and `effects` (canonical owner.property=value
+  // assignments) are declared here so they sit next to `state` rather than in
+  // the sorted tail. Neither has a default: only nodes that carry one emit
+  // one, so grown nodes are unaffected.
+  const NODE_KEY_ORDER = ["id", "label", "kind", "expr", "state", "reading", "effects", "tags", "delta", "invariants", "createdBy", "runId"];
   const EDGE_KEY_ORDER = ["id", "from", "to", "type", "label", "branchId"];
   const META_KEY_ORDER = ["title", "summary", "version"];
   const GRAPH_KEY_ORDER = ["meta", "root", "nodes", "edges"];
