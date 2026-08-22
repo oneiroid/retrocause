@@ -152,8 +152,8 @@ shape*:
   true since the second node.
 
 **Not started.** The rest of Phase 2: the corpus-scale sweep that the
-§6 decision rule actually binds on (needs the topological-sort cycle
-check from §8 first — `validateGraph`'s O(E²·V) is the blocker), and
+§6 decision rule actually binds on (its blocker cleared 2026-08-22 —
+`validateGraph`'s cycle check is now one Kahn pass, see §8), and
 the last of §8's follow-ons — the closed vocabulary as a grammar enum,
 which must go in alone and be scored against `maxRankSpread` because it
 moves the grower toward the probe it is supposed to beat. First
@@ -1102,12 +1102,15 @@ the accidental fork), or have the grower assert its output through both
 code paths. This is the largest correctness risk in the design, it
 predates the design, and it has grown since the design was written.
 
-**`validateGraph` is O(E²·V).** For each edge it removes that edge and
-runs a full reachability search (`story_builder_engine.js:92-95`).
-Fine for eight nodes, not fine for the graphs this module exists to
-produce. Validate once at the end of a run rather than per insertion,
-and expect to replace the cycle check with a single topological sort
-before corpus-scale sweeps.
+**`validateGraph` was O(E²·V) — fixed 2026-08-22.** For each edge it
+removed that edge and ran a full reachability search. The cycle check
+is now a single Kahn pass (O(V+E)); nodes that never reach in-degree
+zero are the cyclic set and the edges among them name the cycle. A
+3000-node / 6000-edge graph validates in ~165 ms. Still validate once
+at the end of a run rather than per insertion — per-insert cycle
+refusal is `wouldCreateCycle`'s separate, cheaper job. The app's
+private `validateGraph` fork (above) still carries the old sweep;
+that is the fork problem, not this one.
 
 **Small-model quality — first measurement, 2026-08-04.** Grammar
 guarantees the shape, not the sense. Phase 0.5 probed the sense directly

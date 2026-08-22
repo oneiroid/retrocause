@@ -100,9 +100,29 @@
       if (!ids.has(edge.from) || !ids.has(edge.to)) errors.push(`Missing endpoint on ${edge.id}`);
       if (edge.from === edge.to) errors.push(`Self-loop on ${edge.from}`);
     });
+    // One Kahn pass. Nodes that never reach in-degree 0 are exactly the ones
+    // on or behind a cycle; the edges among them name it. The previous
+    // remove-one-edge reachability sweep was O(E²·V), which is what kept
+    // corpus-scale runs off the table (LOCAL_LLM.md §8) — this is O(V+E).
+    const indegree = {};
+    const adj = {};
+    graph.nodes.forEach((node) => { indegree[node.id] = 0; adj[node.id] = []; });
     graph.edges.forEach((edge) => {
-      const without = graph.edges.filter((candidate) => candidate.id !== edge.id);
-      if (reachable(graph, edge.to, edge.from, without)) errors.push(`Cycle through ${edge.from} → ${edge.to}`);
+      if (edge.to in indegree) indegree[edge.to] += 1;
+      if (adj[edge.from]) adj[edge.from].push(edge.to);
+    });
+    const queue = Object.keys(indegree).filter((id) => indegree[id] === 0);
+    while (queue.length) {
+      const id = queue.shift();
+      adj[id].forEach((next) => {
+        if (!(next in indegree)) return;
+        indegree[next] -= 1;
+        if (indegree[next] === 0) queue.push(next);
+      });
+    }
+    const cyclic = new Set(Object.keys(indegree).filter((id) => indegree[id] > 0));
+    graph.edges.forEach((edge) => {
+      if (cyclic.has(edge.from) && cyclic.has(edge.to)) errors.push(`Cycle through ${edge.from} → ${edge.to}`);
     });
     graph.nodes.forEach((node) => {
       if (node.id !== graph.root && !graph.edges.some((edge) => edge.to === node.id)) warnings.push(`Orphan node: ${node.label}`);

@@ -280,7 +280,8 @@ async function growGraph({
     frontier = [...next];
   }
 
-  // validateGraph is O(E²·V) — once per run, never per insert (§8).
+  // Once per run, never per insert (§8) — per-insert cycle refusal is
+  // addEdge's own wouldCreateCycle.
   const validation = Engine.validateGraph(graph);
   return { graph, stats, validation };
 }
