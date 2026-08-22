@@ -151,9 +151,33 @@ shape*:
   horse)` with delta "the Greeks are now inside the horse", already
   true since the second node.
 
-**Not started.** The rest of Phase 2: the corpus-scale sweep that the
-§6 decision rule actually binds on (its blocker cleared 2026-08-22 —
-`validateGraph`'s cycle check is now one Kahn pass, see §8), and
+**First corpus-scale sweep, 2026-08-22** (blocker cleared the same day —
+`validateGraph`'s cycle check is now one Kahn pass, see §8 — and §6's
+matched-count comparison fixed *before* running, as it required: each
+model row gets a `baseline@N` re-grown to the model's achieved count).
+Two budgets, all rows replay OK. At depth 5 / width 3 / max 48, matched
+comparisons:
+
+| story | model spread | baseline@N spread |
+|---|---|---|
+| red | **2** (n=6, max=2) | 0 (n=2, max=5) |
+| criedWolf | 0 (n=1) | 0 (n=1) — singleton ranks, unreadable |
+| trojanHorse | **2** (n=8, max=3) | 1 (n=4, max=7) |
+
+And on the budget axis (depth 4 → 5): model spread rose (red 0→2,
+trojan 1→2) while the matched baseline held (0, 1). **The pre-registered
+falsification signal did not fire** — the first budget where the model
+rows lead the matched baseline on the metric the design bet on. Read it
+with both hands: the leading ranks hold 2–3 nodes, so this is the first
+supporting observation, not a confirmation; and `dupExprRate` climbs
+with depth on the same rows (red 0.167→0.286, trojan 0.125→0.429), so
+part of the convergence may be prompt collapse rather than semantics —
+the two mechanisms produce the same in-degree signature and the metric
+cannot tell them apart. criedWolf stays saturated at every budget
+(nullTx 0.556, one grown node). Next read should be at width 4+ or a
+fourth story, not more depth — depth is what feeds the collapse.
+
+**Still open in Phase 2:**
 the last of §8's follow-ons — the closed vocabulary as a grammar enum,
 which must go in alone and be scored against `maxRankSpread` because it
 moves the grower toward the probe it is supposed to beat. First
