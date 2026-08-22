@@ -113,15 +113,25 @@ const PAIRS = [
 // flock and sheep are different tokens. Within one story's vocabulary that is
 // rare (seeds name things consistently); a destructive merge is not
 // recoverable. Trade the rare gain for the unrecoverable loss.
+//
+// Arguments compare IN ORDER (since 2026-08-22). The first guard sorted them,
+// and the adversarial set showed what that blindness costs: the model judged
+// tell(red, wolf, X) the same as tell(wolf, red, X) — a role swap in the
+// destructive direction. Ordered comparison vetoes it symbolically. The price,
+// computed from the recorded verdicts before switching: the genuinely
+// symmetric meet(wolf, red)/meet(red, wolf) merge is lost, and nothing else
+// moves — same trade as the guard itself, a rare true merge for an
+// unrecoverable false one.
+function extractArguments(expr) {
+  const open = expr.indexOf("(");
+  if (open < 0) return [];
+  return expr.slice(open + 1, expr.lastIndexOf(")")).split(",")
+    .map((a) => a.trim().toLowerCase()).filter(Boolean);
+}
+
 function sameArguments(exprA, exprB) {
-  const args = (e) => {
-    const open = e.indexOf("(");
-    if (open < 0) return [];
-    return e.slice(open + 1, e.lastIndexOf(")")).split(",")
-      .map((a) => a.trim().toLowerCase()).filter(Boolean).sort();
-  };
-  const a = args(exprA);
-  const b = args(exprB);
+  const a = extractArguments(exprA);
+  const b = extractArguments(exprB);
   return a.length === b.length && a.every((x, i) => x === b[i]);
 }
 
@@ -137,9 +147,10 @@ function sameArguments(exprA, exprB) {
 // So every pair here has sorted-equal arguments, and the whole decision falls
 // on the model. Kinds:
 //
-//   role-swap    same args, swapped roles. The guard SORTS arguments, so
-//                tell(red, wolf, X) and tell(wolf, red, X) both reach the
-//                model — the one place the guard is deliberately blind.
+//   role-swap    same args, swapped roles. The guard this set was authored
+//                against SORTED arguments, so these reached the model — and
+//                one became a false merge, which is why the guard is now
+//                ordered and these pairs are vetoed before the model speaks.
 //   negation     same event frame, state asserts the opposite.
 //   aspect       approaching vs arrived; about-to vs done.
 //   extra-fact   one state asserts strictly more about the world.
@@ -192,12 +203,16 @@ async function main() {
   const adversarial = process.argv.includes("--adversarial");
   const pairs = adversarial ? ADVERSARIAL : PAIRS;
   if (adversarial) {
-    // Assert the design rule instead of trusting it: every adversarial pair
-    // must pass the guard, or it is testing the wrong component.
+    // Assert the AUTHORING rule instead of trusting it: every adversarial pair
+    // was designed to pass the guard as it stood at authoring time, which
+    // sorted arguments. The live guard is now ordered, so role-swap pairs are
+    // deliberately guard-vetoed — that veto is the fix under test, not a
+    // defect in the set.
+    const sorted = (e) => extractArguments(e).sort().join("|");
     for (const [, , a, b] of pairs) {
-      if (!sameArguments(a[0], b[0])) throw new Error(`guard-vetoed pair in adversarial set: ${a[0]} / ${b[0]}`);
+      if (sorted(a[0]) !== sorted(b[0])) throw new Error(`pair breaks the authoring rule (sorted-equal args): ${a[0]} / ${b[0]}`);
     }
-    console.log(`adversarial set: ${pairs.length} pairs, all guard-passing\n`);
+    console.log(`adversarial set: ${pairs.length} pairs, all sorted-equal by authoring rule\n`);
   }
 
   const results = [];

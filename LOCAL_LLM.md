@@ -1324,7 +1324,12 @@ Both in the destructive direction, and each exposes a different hole:
    `meet(wolf, red)`/`meet(red, wolf)` merge is lost (adversarial true
    merges 4/5 → 3/5); the original 18 are unaffected. Same trade as
    before — a rare true merge for an unrecoverable false one — and it
-   should be taken.
+   should be taken. **Taken 2026-08-22** (`experiments/same_state.js`,
+   ordered `sameArguments`); the rerun matched the prediction line for
+   line — clean set untouched, adversarial false merges 2 → 1, `meet`
+   lost. The probe now asserts the set's *authoring* rule (sorted-equal
+   arguments) instead of live guard passage, because role-swap pairs
+   being vetoed is the fix working, not the set leaking.
 2. *Aspect.* Identical expr, "about to strike" versus "is inside the
    wolf". No guard can reach this — the arguments are identical and the
    difference is entirely in the state text, which is the model's half
