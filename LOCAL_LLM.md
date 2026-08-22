@@ -127,6 +127,30 @@ correctly did *not* fire — the delta differs from its source — and the
 event is still incoherent. Laziness caught, incoherence untouched,
 as documented.
 
+**criedWolf and trojanHorse re-baselined 2026-08-22**
+(`run_8e714bd89b86da56`, `run_0b11f20b8803a771`, same depth 4 / width 3
+/ max 24, both replay byte-identical cache-cold), so all three stories
+are now on seeds v2 and the pre-v2 numbers can be retired. The two
+profiles could not be more different, which answers Red's open
+"convergence or exhaustion" question with *it depends on the story's
+shape*:
+
+- **criedWolf grew one node** — but a good one: `believe(villagers,
+  boy)`, the counterfactual pivot of the whole story, plus a valid
+  rejoin. Everything else either merged into the told story (merge
+  0.467) or was refused as a null transition (nullTx 0.467 — the cyclic
+  cry structure invites proposals that advance nothing, and the §5.5.8
+  guard now does real work here, 7 refusals vs Red's 2). At this budget
+  the model's possibility space for criedWolf is near-saturated: it
+  re-proposes the told story.
+- **trojanHorse grew 8** and produced the **first nonzero
+  `rejoinValidity` (0.333)** — real `rejoins` edges into `th_open` from
+  grown nodes. The known failures repeat on schedule: `dupExpr` 0.125
+  (`ignore(trojans, cassandra)` twice), one `delta`-`invariants` copy
+  (contradict 0.125), and delta-names-a-non-change — `take(trojans,
+  horse)` with delta "the Greeks are now inside the horse", already
+  true since the second node.
+
 **Not started.** The rest of Phase 2: the corpus-scale sweep that the
 §6 decision rule actually binds on (needs the topological-sort cycle
 check from §8 first — `validateGraph`'s O(E²·V) is the blocker), and
