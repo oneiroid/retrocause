@@ -9,7 +9,11 @@
 //                            [--replay] [--baseline-only] [--show]
 //
 // `sweep` grows one model run and one baseline run per story on the same
-// budgets and scores both; the model rows need the reference server
+// budgets and scores both; each model row that lands under the node cap also
+// gets a `baseline@N` row — the baseline re-grown to the model's achieved
+// grown-node count, which is §6's stated minimum for reading `rankSpread`
+// (the metric co-varies with node count, so the full-budget baseline is not
+// the comparison). The model rows need the reference server
 // (./tools/serve_reference.sh), the baseline rows never touch the network.
 // `score` re-scores an existing run directory (grown_graph.json +
 // growth_manifest.json) with no server at all.
@@ -240,7 +244,7 @@ const fmt = (v) => (v === null ? "—" : typeof v === "number" ? +v.toFixed(3) :
 function printReport(rows, { show }) {
   console.table(rows.map((r) => ({
     source: r.source,
-    prompt: r.source === "baseline" ? "—" : r.prompt,
+    prompt: r.source.startsWith("baseline") ? "—" : r.prompt,
     story: r.story,
     grown: r.grownNodes,
     jsonValid: fmt(r.jsonValidity),
@@ -327,7 +331,23 @@ async function sweep(args) {
   if (!args.baselineOnly) {
     for (const prompt of prompts) {
       for (const story of stories) {
-        rows.push(await evalRun({ source: "model", story, prompt, ...budget }));
+        const row = await evalRun({ source: "model", story, prompt, ...budget });
+        rows.push(row);
+        // §6's stated minimum for the spread comparison: equal grown-node
+        // counts. The full-budget baseline grows to its cap while the model's
+        // higher merge rate lands it lower, so each model row gets a second
+        // baseline capped at the model's achieved count — `maxNodes` caps
+        // created nodes, and the baseline is model-free, so the extra row is
+        // nearly free. Read `rankSpread` model-vs-baseline@N, never
+        // model-vs-full-budget.
+        if (row.grownNodes > 0 && row.grownNodes < budget.maxNodes) {
+          const matched = await evalRun({
+            source: "baseline", story, prompt: prompts[0],
+            ...budget, maxNodes: row.grownNodes,
+          });
+          matched.source = `baseline@${row.grownNodes}`;
+          rows.push(matched);
+        }
       }
     }
   }
