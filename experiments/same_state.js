@@ -125,12 +125,83 @@ function sameArguments(exprA, exprB) {
   return a.length === b.length && a.every((x, i) => x === b[i]);
 }
 
+// ── adversarial set (2026-08-22) ────────────────────────────────────────────
+//
+// The original 18 were designed AND labelled by the same author (Opus 5),
+// which the §8 write-up flags as the reason not to wire contentKey in yet.
+// This set was authored by a different model (Fable 5); labels still want
+// human review before anything ships on them.
+//
+// Design rule: every pair PASSES the argument guard. A guard-vetoed pair is a
+// foregone conclusion — including it would measure the guard, not the model.
+// So every pair here has sorted-equal arguments, and the whole decision falls
+// on the model. Kinds:
+//
+//   role-swap    same args, swapped roles. The guard SORTS arguments, so
+//                tell(red, wolf, X) and tell(wolf, red, X) both reach the
+//                model — the one place the guard is deliberately blind.
+//   negation     same event frame, state asserts the opposite.
+//   aspect       approaching vs arrived; about-to vs done.
+//   extra-fact   one state asserts strictly more about the world.
+//   symmetric    role order genuinely does not matter (meet).
+//   paraphrase   control: same-args paraphrases, must still come back SAME.
+const ADVERSARIAL = [
+  // ---- SAME ----------------------------------------------------------------
+  ["symmetric", true,
+    ["meet(wolf, red)", "The wolf and Red are face to face on the path."],
+    ["meet(red, wolf)", "Red and the wolf stand facing each other on the path."]],
+  ["paraphrase", true,
+    ["recognize(red, wolf)", "Red knows it is the wolf."],
+    ["see_through(red, wolf)", "Red has seen through the disguise: it is the wolf."]],
+  ["paraphrase", true,
+    ["sleep(trojans, troy)", "Troy is asleep. The horse stands unwatched inside the walls."],
+    ["rest(trojans, troy)", "The city sleeps; nobody is watching the horse within the walls."]],
+  ["paraphrase", true,
+    ["swallow(wolf, red)", "Red is inside the wolf with her grandmother."],
+    ["capture(red, wolf)", "Red is trapped inside the wolf, where her grandmother already is."]],
+  ["paraphrase", true,
+    ["ignore(villagers, boy)", "The villagers hear the cry and stay where they are."],
+    ["dismiss(villagers, boy)", "The villagers hear the boy cry out and do not move."]],
+  // ---- DIFFERENT -----------------------------------------------------------
+  ["role-swap", false,
+    ["tell(red, wolf, grandmother_house)", "The wolf knows Red's destination."],
+    ["tell(wolf, red, grandmother_house)", "Red knows the wolf's destination."]],
+  ["role-swap", false,
+    ["distrust(villagers, boy)", "The villagers have decided the boy's cry means nothing."],
+    ["distrust(boy, villagers)", "The boy has decided the villagers will never come again."]],
+  ["negation", false,
+    ["leave(red, path)", "Red is among the trees, off the route her mother named."],
+    ["return(red, path)", "Red is back on the marked path."]],
+  ["negation", false,
+    ["sleep(trojans, troy)", "Troy is asleep."],
+    ["wake(trojans, troy)", "Troy is awake; the celebration runs late into the night."]],
+  ["aspect", false,
+    ["arrive(red, grandmother_house)", "Red is at the door of her grandmother's house, still outside."],
+    ["arrive(red, grandmother_house)", "Red is inside the house, at the bedside."]],
+  ["aspect", false,
+    ["swallow(wolf, grandmother)", "The wolf has the grandmother cornered and is about to strike."],
+    ["swallow(wolf, grandmother)", "The grandmother is inside the wolf."]],
+  ["extra-fact", false,
+    ["enter(red, woods)", "Red is on the path in the woods, carrying the basket."],
+    ["enter(red, woods)", "Red is on the path in the woods, and the wolf is watching her from the trees."]],
+];
+
 async function main() {
   const template = fs.readFileSync(path.join(R, "prompts", "same.v1.txt"), "utf8");
   const client = createClient({ cacheDir: path.join(R, "cache"), sampling: { seed: 7 } });
+  const adversarial = process.argv.includes("--adversarial");
+  const pairs = adversarial ? ADVERSARIAL : PAIRS;
+  if (adversarial) {
+    // Assert the design rule instead of trusting it: every adversarial pair
+    // must pass the guard, or it is testing the wrong component.
+    for (const [, , a, b] of pairs) {
+      if (!sameArguments(a[0], b[0])) throw new Error(`guard-vetoed pair in adversarial set: ${a[0]} / ${b[0]}`);
+    }
+    console.log(`adversarial set: ${pairs.length} pairs, all guard-passing\n`);
+  }
 
   const results = [];
-  for (const [kind, expected, a, b] of PAIRS) {
+  for (const [kind, expected, a, b] of pairs) {
     const prompt = template
       .replaceAll("{{a_expr}}", a[0]).replaceAll("{{a_state}}", a[1])
       .replaceAll("{{b_expr}}", b[0]).replaceAll("{{b_state}}", b[1]);
@@ -140,6 +211,14 @@ async function main() {
       raw = JSON.parse(content).same;
     } catch (error) {
       console.error(`  !! ${a[0]} / ${b[0]}: ${error.message}`);
+    }
+    // A null answer is an infrastructure failure, not an opinion. It must
+    // never enter the guard: guard(null) -> false happens to MATCH every
+    // "different" label, so a dead server would score 7/18 and look like a
+    // weak discriminator instead of like a dead server. Count it apart.
+    if (raw === null) {
+      results.push({ kind, expected, raw, got: null, a, b, ok: false, failed: true });
+      continue;
     }
     const guarded = sameArguments(a[0], b[0]) ? raw : false;
     results.push({ kind, expected, raw, got: guarded, a, b,
@@ -151,20 +230,29 @@ async function main() {
       + `model said ${r.raw}${r.vetoed ? " → VETOED by argument guard" : ""}`);
     if (!r.ok) console.log(`         A: ${r.a[0]}\n         B: ${r.b[0]}`);
   }
-  const rawCorrect = results.filter((r) => r.raw === r.expected).length;
-  console.log(`\n  model alone ${rawCorrect}/${results.length}`);
+  const rawCorrect = results.filter((r) => !r.failed && r.raw === r.expected).length;
+  console.log(`\n  model alone ${rawCorrect}/${results.filter((r) => !r.failed).length}`);
 
-  const n = results.length;
-  const correct = results.filter((r) => r.ok).length;
+  const failed = results.filter((r) => r.failed).length;
+  if (failed) {
+    console.log(`\n  *** ${failed}/${results.length} pairs got NO answer (server down or`);
+    console.log("      truncation). Accuracy below is over answered pairs only.");
+  }
+  const answered = results.filter((r) => !r.failed);
+  const n = answered.length;
+  const correct = answered.filter((r) => r.ok).length;
   // Both directions matter and they fail differently: saying SAME too often
   // over-merges the graph into mush, saying DIFFERENT too often is just
   // today's surface-form key with extra latency.
-  const pos = results.filter((r) => r.expected);
-  const neg = results.filter((r) => !r.expected);
-  console.log(`\n  accuracy    ${correct}/${n} (${(correct / n * 100).toFixed(0)}%)`);
+  const pos = answered.filter((r) => r.expected);
+  const neg = answered.filter((r) => !r.expected);
+  console.log(`\n  accuracy    ${correct}/${n}${n ? ` (${(correct / n * 100).toFixed(0)}%)` : ""}`);
   console.log(`  same pairs  ${pos.filter((r) => r.ok).length}/${pos.length} recognised as same`);
   console.log(`  diff pairs  ${neg.filter((r) => r.ok).length}/${neg.length} recognised as different`);
-  const always = new Set(results.map((r) => r.got));
+  const falseMerges = neg.filter((r) => r.got === true);
+  console.log(`  FALSE MERGES (guarded verdict "same" on a different pair): ${falseMerges.length}`);
+  for (const r of falseMerges) console.log(`      ${r.a[0]}  /  ${r.b[0]}`);
+  const always = new Set(answered.map((r) => r.got));
   if (always.size === 1) {
     console.log(`  *** the model answered ${[...always][0]} to EVERY pair — it is not`);
     console.log("      discriminating at all, and the accuracy above is just the");
@@ -172,6 +260,10 @@ async function main() {
   }
 }
 
-main().catch((e) => { console.error(e.message); process.exit(1); });
+// Behind require.main for the same reason gen_probe.js is (§0): requiring
+// this module for PAIRS or sameArguments must not fire 18 model calls.
+if (require.main === module) {
+  main().catch((e) => { console.error(e.message); process.exit(1); });
+}
 
-module.exports = { PAIRS, sameArguments };
+module.exports = { PAIRS, ADVERSARIAL, sameArguments };
