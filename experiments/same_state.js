@@ -139,8 +139,9 @@ function sameArguments(exprA, exprB) {
 //
 // The original 18 were designed AND labelled by the same author (Opus 5),
 // which the §8 write-up flags as the reason not to wire contentKey in yet.
-// This set was authored by a different model (Fable 5); labels still want
-// human review before anything ships on them.
+// This set was authored by a different model (Fable 5). Labels HUMAN-REVIEWED
+// 2026-08-23: eleven confirmed as authored, one flipped (see the extra-fact
+// rule below), so numbers from this set may now be quoted without that caveat.
 //
 // Design rule: every pair PASSES the argument guard. A guard-vetoed pair is a
 // foregone conclusion — including it would measure the guard, not the model.
@@ -153,7 +154,11 @@ function sameArguments(exprA, exprB) {
 //                ordered and these pairs are vetoed before the model speaks.
 //   negation     same event frame, state asserts the opposite.
 //   aspect       approaching vs arrived; about-to vs done.
-//   extra-fact   one state asserts strictly more about the world.
+//   extra-fact   one state asserts strictly more about the world. HUMAN-REVIEWED
+//                RULE (2026-08-23): any extra fact makes it a different state,
+//                whoever the fact is about. Merging would delete that fact, and
+//                a deleted fact is not recoverable. This is a decision about
+//                what "same state" MEANS, not a measurement of the model.
 //   symmetric    role order genuinely does not matter (meet).
 //   paraphrase   control: same-args paraphrases, must still come back SAME.
 const ADVERSARIAL = [
@@ -161,9 +166,6 @@ const ADVERSARIAL = [
   ["symmetric", true,
     ["meet(wolf, red)", "The wolf and Red are face to face on the path."],
     ["meet(red, wolf)", "Red and the wolf stand facing each other on the path."]],
-  ["paraphrase", true,
-    ["recognize(red, wolf)", "Red knows it is the wolf."],
-    ["see_through(red, wolf)", "Red has seen through the disguise: it is the wolf."]],
   ["paraphrase", true,
     ["sleep(trojans, troy)", "Troy is asleep. The horse stands unwatched inside the walls."],
     ["rest(trojans, troy)", "The city sleeps; nobody is watching the horse within the walls."]],
@@ -195,6 +197,12 @@ const ADVERSARIAL = [
   ["extra-fact", false,
     ["enter(red, woods)", "Red is on the path in the woods, carrying the basket."],
     ["enter(red, woods)", "Red is on the path in the woods, and the wolf is watching her from the trees."]],
+  // Relabelled paraphrase -> extra-fact at human review (2026-08-23): B asserts
+  // there WAS a disguise, which A does not. Under the reviewed rule that is a
+  // different state, and the old SAME label contradicted the pair above it.
+  ["extra-fact", false,
+    ["recognize(red, wolf)", "Red knows it is the wolf."],
+    ["see_through(red, wolf)", "Red has seen through the disguise: it is the wolf."]],
 ];
 
 async function main() {

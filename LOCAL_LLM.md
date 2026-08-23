@@ -1354,8 +1354,8 @@ the capability is real and to say the guard is mandatory rather than
 optional; it is not enough to wire into `sameInContext` unattended.
 
 **The adversarial set was run (2026-08-22, authored by a different model
-— Fable 5 — labels pending human review), and it found what the clean set
-could not.** Twelve pairs, every one passing the argument guard by
+— Fable 5; labels human-reviewed 2026-08-23, one flipped — see below), and
+it found what the clean set could not.** Twelve pairs, every one passing the argument guard by
 construction, aimed at the guard's known blind spots. 9/12 — but the
 score is not the result:
 
@@ -1387,8 +1387,31 @@ Both in the destructive direction, and each exposes a different hole:
    of the split. This is a genuine model error with no symbolic rescue,
    and it is why the flag stays off.
 
+**Human review of the labels, 2026-08-23 — and it cost the model a
+point.** The set was authored by a model, so its labels were held as
+provisional until a human ruled on them. Eleven stood. One flipped:
+`recognize(red, wolf)` "Red knows it is the wolf" against
+`see_through(red, wolf)` "Red has seen through the disguise: it is the
+wolf", labelled SAME as a paraphrase, is now DIFFERENT — B asserts there
+*was* a disguise and A does not.
+
+The flip settles a definition the set had been applying inconsistently:
+that pair was labelled SAME for asserting more, while `enter(red, woods)`
+with and without "the wolf is watching her" was labelled DIFFERENT for
+the same reason. **The reviewed rule: any extra fact makes it a different
+state, whoever the fact is about** — merging would delete that fact and a
+deleted fact is not recoverable. This is a ruling on what "same state"
+*means*, not a measurement, which is why it was the human's to make.
+
+Rerun on the reference profile under the reviewed labels: **8/12, and two
+false merges** — the unrescuable `swallow` aspect pair, and now
+`recognize`/`see_through`, which the model calls the same and which the
+argument guard cannot veto (identical arguments in order).
+
 So the corrected summary: on clean pairs, zero false merges; on
-adversarial pairs, one false merge even after the ordered-argument fix.
+adversarial pairs, **two** false merges even after the ordered-argument
+fix — one more than the pre-review labels showed, in the destructive
+direction, on a pair no symbolic guard can reach.
 The capability is real, the hybrid is strictly better than the surface
 key, and it is still not safe to run unattended. It ships, if it ships,
 as a *suggestion surface* — "these N pairs look mergeable, confirm" —
