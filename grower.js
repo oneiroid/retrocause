@@ -174,6 +174,13 @@ async function growGraph({
   graph: inputGraph,
   client,
   promptTemplate,
+  // Optional candidate source that replaces the client + template path:
+  // `async (graph, source, { bypassCache }) => branches[]`. Everything after
+  // proposal — the deterministic sort, the width cap, merge-on-insert, the
+  // refusal counters — is shared, which is what makes two sources comparable
+  // (eval.js's "swap only the candidate source"). Absent, behaviour is the
+  // client path exactly as before.
+  proposer = null,
   from,
   depth,
   width,
@@ -207,12 +214,16 @@ async function growGraph({
 
       let proposed;
       try {
-        const { content } = await client.complete(
-          renderPrompt(promptTemplate, source, promptContext(graph, source)),
-          BRANCH_SCHEMA,
-          { bypassCache },
-        );
-        proposed = JSON.parse(content).branches;
+        if (proposer) {
+          proposed = await proposer(graph, source, { bypassCache });
+        } else {
+          const { content } = await client.complete(
+            renderPrompt(promptTemplate, source, promptContext(graph, source)),
+            BRANCH_SCHEMA,
+            { bypassCache },
+          );
+          proposed = JSON.parse(content).branches;
+        }
       } catch (error) {
         // Truncation is a counted hard failure for this expansion point, not
         // a retry with a bigger cap — that would make the run irreproducible
@@ -236,6 +247,11 @@ async function growGraph({
           delta: candidate.delta,
           invariants: candidate.invariants,
           tags: Array.isArray(candidate.tags) && candidate.tags.length ? candidate.tags : ["counterfactual"],
+          // A frame-sourced candidate carries its frame, so the grown node can
+          // be a history line for the next expansion (frame_proposer.js).
+          // JSON candidates have none and emit none — their canonical JSON is
+          // unchanged.
+          ...(candidate.frame ? { frame: candidate.frame } : {}),
           createdBy: "grown",
           ...(runId ? { runId } : {}),
         };

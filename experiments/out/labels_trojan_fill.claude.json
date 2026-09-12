@@ -1,0 +1,242 @@
+{
+ "sentence:th_gift#0": [
+  false,
+  false,
+  true,
+  false
+ ],
+ "sentence:th_gift#1": [
+  true,
+  true,
+  true,
+  false
+ ],
+ "sentence:th_gift#2": [
+  true,
+  true,
+  true,
+  false
+ ],
+ "sentence:th_gift#3": [
+  true,
+  true,
+  true,
+  false
+ ],
+ "sentence:th_gift#4": [
+  true,
+  true,
+  true,
+  false
+ ],
+ "sentence:th_gift#5": [
+  true,
+  true,
+  true,
+  false
+ ],
+ "sentence:th_gift#6": [
+  true,
+  true,
+  true,
+  false
+ ],
+ "sentence:th_gift#7": [
+  true,
+  true,
+  true,
+  false
+ ],
+ "sentence:th_gift#8": [
+  false,
+  true,
+  true,
+  false
+ ],
+ "sentence:th_gift#9": [
+  false,
+  false,
+  true,
+  false
+ ],
+ "sentence:th_gift#10": [
+  true,
+  true,
+  true,
+  true
+ ],
+ "sentence:th_gift#11": [
+  true,
+  true,
+  true,
+  true
+ ],
+ "sentence:th_gift#12": [
+  true,
+  true,
+  true,
+  false
+ ],
+ "sentence:th_gift#13": [
+  false,
+  true,
+  false,
+  false
+ ],
+ "sentence:th_lie#0": [
+  false,
+  false,
+  true,
+  false
+ ],
+ "sentence:th_lie#1": [
+  true,
+  true,
+  true,
+  false
+ ],
+ "sentence:th_lie#2": [
+  true,
+  true,
+  true,
+  false
+ ],
+ "sentence:th_lie#3": [
+  true,
+  true,
+  true,
+  false
+ ],
+ "sentence:th_lie#4": [
+  false,
+  false,
+  true,
+  false
+ ],
+ "sentence:th_lie#5": [
+  false,
+  false,
+  true,
+  false
+ ],
+ "sentence:th_lie#6": [
+  false,
+  false,
+  true,
+  false
+ ],
+ "sentence:th_lie#7": [
+  true,
+  true,
+  true,
+  false
+ ],
+ "sentence:th_lie#8": [
+  true,
+  true,
+  true,
+  false
+ ],
+ "sentence:th_lie#9": [
+  true,
+  true,
+  true,
+  false
+ ],
+ "sentence:th_lie#10": [
+  false,
+  false,
+  true,
+  false
+ ],
+ "sentence:th_lie#11": [
+  false,
+  false,
+  true,
+  false
+ ],
+ "sentence:th_lie#12": [
+  false,
+  false,
+  true,
+  false
+ ],
+ "sentence:th_lie#13": [
+  true,
+  true,
+  true,
+  true
+ ],
+ "sentence:th_seer#0": [
+  true,
+  true,
+  true,
+  false
+ ],
+ "sentence:th_seer#1": [
+  false,
+  false,
+  true,
+  false
+ ],
+ "sentence:th_seer#2": [
+  false,
+  false,
+  true,
+  false
+ ],
+ "sentence:th_seer#3": [
+  true,
+  true,
+  true,
+  false
+ ],
+ "sentence:th_seer#4": [
+  true,
+  true,
+  true,
+  false
+ ],
+ "sentence:th_seer#5": [
+  true,
+  true,
+  true,
+  false
+ ],
+ "sentence:th_seer#6": [
+  true,
+  true,
+  true,
+  false
+ ],
+ "sentence:th_seer#7": [
+  false,
+  false,
+  true,
+  false
+ ],
+ "sentence:th_seer#8": [
+  true,
+  true,
+  true,
+  false
+ ],
+ "sentence:th_seer#9": [
+  false,
+  true,
+  true,
+  false
+ ],
+ "sentence:th_seer#10": [
+  true,
+  true,
+  true,
+  false
+ ],
+ "sentence:th_seer#11": [
+  false,
+  false,
+  true,
+  false
+ ]
+}

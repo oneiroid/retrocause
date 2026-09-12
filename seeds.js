@@ -333,6 +333,132 @@
 
   const seeds = { red, criedWolf, trojanHorse };
 
+  // ── frames (2026-08-31, continuation-generation plan v3, Step 0) ─────────
+  //
+  // A hand-authored `frame` per seed node: { actor, action, outcome }, which
+  // `frames.js` renders as
+  //
+  //     Then {actor} {action}, and now {outcome}.
+  //
+  // This is the model boundary the sentence arm of the Stage 0 A/B probe
+  // uses, against the JSON boundary of `prompts/branch.v2.txt`. It is a
+  // representation under test, not a replacement for anything: `expr`,
+  // `state`, `reading` and `effects` are untouched.
+  //
+  // `entities` is the CLOSED per-story actor list. It is closed because it is
+  // what makes `parse` invertible — nothing else in the sentence marks where
+  // the actor stops and the action starts. The cost is real and is the
+  // design's main limitation: no continuation can introduce a character the
+  // author did not list. Red's woodcutter arrives from outside the story; a
+  // closed enum can only ever propose him because he was pre-declared.
+  //
+  // Authoring rules, all enforced by tests/frames.test.js:
+  //   - `actor` is verbatim one of the story's `entities`.
+  //   - no reserved substring (", and now ", newline) in any slot; no comma
+  //     or period in `action`; no period in `outcome`.
+  //   - every `effects` OWNER of the node is named in `outcome`. This is the
+  //     cheap automated half of keeping the prose outcome honest to the
+  //     canonical fact layer; the other half is reading it, which is what
+  //     Step 0 is. `outcome` is deliberately NOT rendered from `effects` —
+  //     mechanical outcome text in every history sentence would teach the
+  //     model mechanical text, which is the hypothesis being tested.
+  //
+  // Grown nodes get a `frame` too, but no `effects`: scoring a grown outcome
+  // against the folded seed `effects` is a separate question, out of scope.
+
+  function withFrames(story, entities, frames) {
+    story.entities = entities;
+    story.nodes.forEach((n) => {
+      const f = frames[n.id];
+      if (f) n.frame = { actor: f[0], action: f[1], outcome: f[2] };
+    });
+    return story;
+  }
+
+  withFrames(red,
+    ["Red", "Red's mother", "Red's grandmother", "the wolf", "the woodcutter"], {
+    red_start: ["Red's mother", "gives Red a basket to carry to her grandmother's house",
+      "Red is at home holding the basket with the woods between her and the house"],
+    red_warn: ["Red's mother", "tells her to keep to the path and not stray",
+      "Red has been told to stay on the path and has neither agreed nor refused"],
+    red_woods: ["Red", "walks into the woods with the basket",
+      "Red is alone on the path among the trees"],
+    red_meet: ["the wolf", "steps into the path in front of her",
+      "the wolf and Red stand face to face and nothing has been threatened yet"],
+    red_tell: ["Red", "tells him where her grandmother lives and that she is alone",
+      "the wolf knows the house Red is walking to and who is waiting in it"],
+    red_leave: ["Red", "steps off the path into the trees",
+      "Red is off the route her mother named and nobody stands between the wolf and the house"],
+    red_flowers: ["Red", "stops to gather flowers",
+      "Red is standing still while the time she has runs out"],
+    red_grandma: ["the wolf", "runs ahead and reaches the house first",
+      "the wolf is at the grandmother's door while Red is still in the woods"],
+    red_eat_grandmother: ["the wolf", "swallows the grandmother whole",
+      "the grandmother is inside the wolf and nobody in the house can warn Red"],
+    red_disguise: ["the wolf", "puts on her cap and lies down in her bed",
+      "from the doorway the wolf reads as the grandmother"],
+    red_arrive: ["Red", "reaches the house and comes to the bedside",
+      "Red is inside the house believing she is with her grandmother"],
+    red_recognition: ["Red", "looks closely and sees the wolf under the cap",
+      "Red knows it is the wolf and she is already within its reach"],
+    red_eat_red: ["the wolf", "swallows Red as well",
+      "Red is inside the wolf with her grandmother and the house is quiet"],
+    red_rescue: ["the woodcutter", "cuts the wolf open and lifts them out",
+      "Red and her grandmother are alive in the house and the wolf is dead"],
+  });
+
+  withFrames(criedWolf,
+    ["the boy", "the villagers", "the wolf"], {
+    cw_watch: ["the villagers", "send the boy up the hillside to watch the flock",
+      "the boy is alone with the flock on the hillside and the villagers are in earshot below"],
+    cw_cry1: ["the boy", "shouts that a wolf is at the flock for the fun of it",
+      "the boy has raised the alarm and there is no wolf"],
+    cw_run1: ["the villagers", "drop their work and run up the hill",
+      "the villagers are at the flock with nothing to fight"],
+    cw_laugh: ["the boy", "laughs at them for coming",
+      "the villagers go back down knowing the boy called them for a joke"],
+    cw_cry2: ["the boy", "shouts wolf a second time",
+      "the boy has raised the alarm again and there is still no wolf"],
+    cw_run2: ["the villagers", "climb the hill once more",
+      "the villagers stand at the flock and again find nothing"],
+    cw_doubt: ["the villagers", "agree among themselves that his cry means nothing",
+      "the villagers will not come again and the boy does not know it"],
+    cw_wolf: ["the wolf", "comes out of the trees to the flock",
+      "a wolf is among the sheep and the boy is alone with it"],
+    cw_cry3: ["the boy", "shouts wolf a third time and means it",
+      "the boy has raised the alarm truthfully"],
+    cw_dismiss: ["the villagers", "hear the cry and stay where they are",
+      "the villagers remain in the village and nobody climbs the hill"],
+    cw_loss: ["the wolf", "kills the sheep one after another",
+      "the flock is dead and the boy stands unhurt among them"],
+  });
+
+  withFrames(trojanHorse,
+    ["the Greeks", "the Trojans", "Sinon", "Cassandra"], {
+    th_build: ["the Greeks", "build a hollow wooden horse on the plain",
+      "a wooden horse stands empty outside Troy and the gates of the city are shut"],
+    th_hide: ["the Greeks", "seal armed men inside the horse",
+      "the Greeks are hidden in the horse and from outside it is a wooden statue"],
+    th_sail: ["the Greeks", "sail their ships out of sight",
+      "the Greeks' fleet is gone from the shore and the siege looks over"],
+    th_gift: ["the Trojans", "come out of the walls and gather around the abandoned horse",
+      "the Trojans stand around the horse arguing what to do with it"],
+    th_lie: ["Sinon", "tells them the horse is an offering that will protect the city",
+      "the Trojans believe the horse is safe to take in"],
+    th_seer: ["Cassandra", "says aloud that the horse is full of armed men",
+      "the warning has been given in front of the whole city"],
+    th_ignore: ["the Trojans", "set her warning aside",
+      "the warning is refused and nothing about the horse has changed"],
+    th_enter: ["the Trojans", "haul the horse through the gates",
+      "the horse stands inside Troy and the gates are shut behind it"],
+    th_night: ["the Trojans", "feast late and go to sleep",
+      "the Trojans are asleep and the horse stands unwatched inside the walls"],
+    th_open: ["the Greeks", "climb out of the horse and open the gates from inside",
+      "the Greeks are loose in Troy and the horse is empty and the gates stand open"],
+    th_fall: ["the Greeks", "burn the city through the night",
+      "Troy is burning and the war is over"],
+  });
+
   const api = { seeds, node, edge, pathEdges };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   root.RetrocauseSeeds = api;

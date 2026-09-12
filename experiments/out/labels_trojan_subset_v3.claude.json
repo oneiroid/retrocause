@@ -1,0 +1,11 @@
+{
+"sentence:th_gift#0":[null,null,true,false],  "sentence:th_gift#1":[null,null,true,false],
+"sentence:th_gift#2":[null,null,true,false],  "json:th_gift#0":[null,null,true,false],
+"json:th_gift#1":[null,null,false,false],
+"sentence:th_lie#0":[null,null,true,false],   "sentence:th_lie#1":[null,null,true,false],
+"sentence:th_lie#2":[null,null,true,false],   "sentence:th_lie#3":[null,null,true,false],
+"json:th_lie#0":[null,null,false,false],
+"sentence:th_seer#0":[null,null,true,false],  "json:th_seer#0":[null,null,true,false],
+"json:th_seer#1":[null,null,true,false],      "json:th_seer#2":[null,null,false,false],
+"json:th_seer#3":[null,null,true,false]
+}

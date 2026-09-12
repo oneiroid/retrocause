@@ -1,0 +1,17 @@
+STORY: The Tortoise and the Hare
+Then the hare boasts that nothing on the road can outrun him, and now the hare has staked his name on his speed.
+Then the tortoise takes the boast seriously and names a course, and now a race is agreed and the course is set.
+Then the fox drops his paw to start them, and now both runners are on the road.
+NEXT EVENT: Then the hare opens a lead wide enough to look settled, and now the hare is far ahead and the tortoise is out of sight behind him.
+
+STORY: The Tortoise and the Hare
+Then the hare boasts that nothing on the road can outrun him, and now the hare has staked his name on his speed.
+Then the tortoise takes the boast seriously and names a course, and now a race is agreed and the course is set.
+Then the fox drops his paw to start them, and now both runners are on the road.
+Then the hare opens a lead wide enough to look settled, and now the hare is far ahead and the tortoise is out of sight behind him.
+Then the hare lies down at the roadside to rest, and now the hare is asleep and the gap has stopped growing.
+NEXT EVENT: Then the tortoise holds a pace that does not depend on the gap, and now the tortoise is still moving while the hare is not.
+
+STORY: {{title}}
+{{history}}
+NEXT EVENT:

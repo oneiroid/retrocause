@@ -1,0 +1,22 @@
+Story events are written as one sentence: "Then ACTOR ACTION, and now OUTCOME." Two events are THE SAME when they describe the same happening in the story world, even if they are worded differently or use different verbs. They are DIFFERENT when anything they assert about the world differs — a different actor, a different place, a different fact — even if the wording is nearly identical.
+
+Answer with JSON: {"same": true} or {"same": false}.
+
+A: Then the hare opens a lead wide enough to look settled, and now the hare is far ahead and the tortoise is out of sight behind him.
+B: Then the hare pulls away down the road, and now the hare is well ahead of the tortoise.
+{"same": true}
+
+A: Then the hare lies down at the roadside to rest, and now the hare is asleep and the gap has stopped growing.
+B: Then the tortoise lies down at the roadside to rest, and now the tortoise is asleep and the gap has stopped closing.
+{"same": false}
+
+A: Then the tortoise crosses the line first, and now the slower runner has won because the faster one stopped.
+B: Then the tortoise finishes the course ahead of the hare, and now the tortoise has won the race.
+{"same": true}
+
+A: Then the fox drops his paw to start them, and now both runners are on the road.
+B: Then the fox drops his paw to start them, and now both runners are on the road and the hare has already taken a lead.
+{"same": false}
+
+A: {{a}}
+B: {{b}}

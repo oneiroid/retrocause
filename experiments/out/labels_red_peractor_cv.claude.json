@@ -1,0 +1,182 @@
+{
+ "sentence:red_woods#0": [
+  null,
+  true,
+  true,
+  false
+ ],
+ "sentence:red_woods#1": [
+  null,
+  false,
+  true,
+  false
+ ],
+ "sentence:red_woods#2": [
+  null,
+  false,
+  true,
+  false
+ ],
+ "sentence:red_woods#3": [
+  null,
+  true,
+  true,
+  false
+ ],
+ "sentence:red_woods#4": [
+  null,
+  false,
+  true,
+  false
+ ],
+ "sentence:red_woods#5": [
+  null,
+  true,
+  true,
+  false
+ ],
+ "sentence:red_woods#6": [
+  null,
+  false,
+  true,
+  false
+ ],
+ "sentence:red_woods#7": [
+  null,
+  false,
+  true,
+  false
+ ],
+ "sentence:red_woods#8": [
+  null,
+  true,
+  true,
+  false
+ ],
+ "sentence:red_woods#9": [
+  null,
+  true,
+  true,
+  false
+ ],
+ "sentence:red_tell#0": [
+  null,
+  true,
+  true,
+  false
+ ],
+ "sentence:red_tell#1": [
+  null,
+  false,
+  false,
+  false
+ ],
+ "sentence:red_tell#2": [
+  null,
+  false,
+  true,
+  false
+ ],
+ "sentence:red_tell#3": [
+  null,
+  false,
+  true,
+  false
+ ],
+ "sentence:red_tell#4": [
+  null,
+  true,
+  true,
+  false
+ ],
+ "sentence:red_tell#5": [
+  null,
+  false,
+  true,
+  false
+ ],
+ "sentence:red_tell#6": [
+  null,
+  false,
+  true,
+  false
+ ],
+ "sentence:red_tell#7": [
+  null,
+  true,
+  true,
+  false
+ ],
+ "sentence:red_tell#8": [
+  null,
+  false,
+  true,
+  false
+ ],
+ "sentence:red_tell#9": [
+  null,
+  true,
+  true,
+  false
+ ],
+ "sentence:red_flowers#0": [
+  null,
+  true,
+  true,
+  false
+ ],
+ "sentence:red_flowers#1": [
+  null,
+  false,
+  true,
+  false
+ ],
+ "sentence:red_flowers#2": [
+  null,
+  false,
+  true,
+  false
+ ],
+ "sentence:red_flowers#3": [
+  null,
+  true,
+  true,
+  true
+ ],
+ "sentence:red_flowers#4": [
+  null,
+  true,
+  true,
+  false
+ ],
+ "sentence:red_flowers#5": [
+  null,
+  true,
+  true,
+  false
+ ],
+ "sentence:red_flowers#6": [
+  null,
+  true,
+  true,
+  false
+ ],
+ "sentence:red_flowers#7": [
+  null,
+  false,
+  true,
+  false
+ ],
+ "sentence:red_flowers#8": [
+  null,
+  true,
+  true,
+  false
+ ],
+ "sentence:red_flowers#9": [
+  null,
+  true,
+  true,
+  false
+ ]
+}

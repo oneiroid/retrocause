@@ -1,0 +1,278 @@
+{
+ "sentence:red_woods#0": [
+  true,
+  true,
+  true,
+  true
+ ],
+ "sentence:red_woods#1": [
+  false,
+  false,
+  true,
+  false
+ ],
+ "sentence:red_woods#2": [
+  true,
+  true,
+  true,
+  false
+ ],
+ "sentence:red_woods#3": [
+  false,
+  false,
+  true,
+  false
+ ],
+ "sentence:red_woods#4": [
+  true,
+  true,
+  true,
+  true
+ ],
+ "sentence:red_woods#5": [
+  false,
+  false,
+  true,
+  false
+ ],
+ "sentence:red_woods#6": [
+  true,
+  true,
+  true,
+  true
+ ],
+ "sentence:red_woods#7": [
+  true,
+  true,
+  true,
+  true
+ ],
+ "sentence:red_woods#8": [
+  false,
+  true,
+  true,
+  false
+ ],
+ "sentence:red_woods#9": [
+  false,
+  false,
+  false,
+  false
+ ],
+ "sentence:red_woods#10": [
+  false,
+  false,
+  true,
+  false
+ ],
+ "sentence:red_woods#11": [
+  false,
+  false,
+  true,
+  false
+ ],
+ "sentence:red_tell#0": [
+  false,
+  true,
+  false,
+  false
+ ],
+ "sentence:red_tell#1": [
+  true,
+  true,
+  true,
+  false
+ ],
+ "sentence:red_tell#2": [
+  true,
+  true,
+  true,
+  false
+ ],
+ "sentence:red_tell#3": [
+  true,
+  true,
+  true,
+  false
+ ],
+ "sentence:red_tell#4": [
+  true,
+  true,
+  true,
+  false
+ ],
+ "sentence:red_tell#5": [
+  true,
+  true,
+  true,
+  false
+ ],
+ "sentence:red_tell#6": [
+  true,
+  true,
+  true,
+  false
+ ],
+ "sentence:red_tell#7": [
+  true,
+  true,
+  true,
+  false
+ ],
+ "sentence:red_tell#8": [
+  true,
+  true,
+  true,
+  false
+ ],
+ "sentence:red_tell#9": [
+  false,
+  false,
+  true,
+  false
+ ],
+ "sentence:red_tell#10": [
+  true,
+  true,
+  true,
+  false
+ ],
+ "sentence:red_tell#11": [
+  false,
+  false,
+  true,
+  false
+ ],
+ "sentence:red_tell#12": [
+  false,
+  false,
+  true,
+  false
+ ],
+ "sentence:red_tell#13": [
+  false,
+  false,
+  false,
+  false
+ ],
+ "sentence:red_tell#14": [
+  false,
+  false,
+  true,
+  false
+ ],
+ "sentence:red_tell#15": [
+  false,
+  false,
+  true,
+  false
+ ],
+ "sentence:red_tell#16": [
+  true,
+  true,
+  true,
+  false
+ ],
+ "sentence:red_tell#17": [
+  true,
+  true,
+  true,
+  false
+ ],
+ "sentence:red_flowers#0": [
+  false,
+  false,
+  true,
+  false
+ ],
+ "sentence:red_flowers#1": [
+  true,
+  true,
+  true,
+  false
+ ],
+ "sentence:red_flowers#2": [
+  true,
+  true,
+  true,
+  false
+ ],
+ "sentence:red_flowers#3": [
+  true,
+  true,
+  true,
+  false
+ ],
+ "sentence:red_flowers#4": [
+  true,
+  true,
+  true,
+  false
+ ],
+ "sentence:red_flowers#5": [
+  true,
+  true,
+  true,
+  true
+ ],
+ "sentence:red_flowers#6": [
+  true,
+  true,
+  true,
+  false
+ ],
+ "sentence:red_flowers#7": [
+  true,
+  true,
+  true,
+  false
+ ],
+ "sentence:red_flowers#8": [
+  true,
+  true,
+  true,
+  false
+ ],
+ "sentence:red_flowers#9": [
+  true,
+  true,
+  true,
+  false
+ ],
+ "sentence:red_flowers#10": [
+  false,
+  false,
+  true,
+  false
+ ],
+ "sentence:red_flowers#11": [
+  false,
+  false,
+  true,
+  false
+ ],
+ "sentence:red_flowers#12": [
+  false,
+  false,
+  true,
+  false
+ ],
+ "sentence:red_flowers#13": [
+  false,
+  false,
+  true,
+  false
+ ],
+ "sentence:red_flowers#14": [
+  true,
+  true,
+  true,
+  false
+ ],
+ "sentence:red_flowers#15": [
+  true,
+  true,
+  true,
+  false
+ ]
+}

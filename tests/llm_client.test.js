@@ -116,3 +116,67 @@ test("bypassCache skips the read but still records (cache-cold replay, §4.2)", 
   assert.strictEqual(replayed.cached, false);
   assert.strictEqual(fetch.completions().length, 2);
 });
+
+// ── optional sampling keys and per-request overrides (continuation plan v3) ──
+
+// The load-bearing property: a client that sets none of the new fields must
+// send the body it sent before they existed, byte for byte. The body IS the
+// cache key, so anything else silently orphans every recorded response.
+test("optional sampling keys are absent unless set", async () => {
+  const fetch = stubFetch(EOS);
+  await createClient({ fetch }).complete("p", null);
+  const body = fetch.completions()[0].body;
+  for (const key of ["min_p", "top_p", "stop", "grammar"]) {
+    assert.ok(!(key in body), `${key} must not appear in a default body`);
+  }
+  assert.deepStrictEqual(Object.keys(body), [
+    "prompt", "temperature", "top_k", "seed", "samplers",
+    "repeat_penalty", "dry_multiplier", "n_predict", "cache_prompt",
+  ]);
+});
+
+test("optional sampling keys are emitted in a fixed order when set", async () => {
+  const fetch = stubFetch(EOS);
+  const client = createClient({
+    fetch,
+    sampling: { temperature: 1.0, top_k: 0, min_p: 0.05, stop: ["\n"], n_predict: 40 },
+  });
+  await client.complete("p", null, { grammar: "root ::= \"x\"" });
+  const body = fetch.completions()[0].body;
+  assert.deepStrictEqual(Object.keys(body), [
+    "prompt", "temperature", "top_k", "seed", "samplers",
+    "repeat_penalty", "dry_multiplier", "n_predict", "cache_prompt",
+    "min_p", "stop", "grammar",
+  ]);
+  assert.strictEqual(body.temperature, 1.0);
+  assert.strictEqual(body.min_p, 0.05);
+  assert.deepStrictEqual(body.stop, ["\n"]);
+});
+
+// K samples from one prompt need K seeds. Without a per-request seed a
+// temperature>0 client returns the same completion K times.
+test("per-request seed overrides the pinned one and separates cache keys", async () => {
+  const fetch = stubFetch(EOS);
+  const client = createClient({ fetch, sampling: { seed: 7, temperature: 1.0 } });
+  const a = await client.complete("p", null, { seed: 101 });
+  const b = await client.complete("p", null, { seed: 102 });
+  const c = await client.complete("p", null);
+  assert.strictEqual(fetch.completions()[0].body.seed, 101);
+  assert.strictEqual(fetch.completions()[1].body.seed, 102);
+  assert.strictEqual(fetch.completions()[2].body.seed, 7);
+  assert.notStrictEqual(a.cacheKey, b.cacheKey);
+  assert.notStrictEqual(a.cacheKey, c.cacheKey);
+});
+
+// A truncated sample is a run failure for the grower and a measurement for
+// the probe, so the partial text rides on the error rather than being lost.
+test("truncation carries the partial content on the error", async () => {
+  const fetch = stubFetch({ content: "Then Red walks", stop_type: "limit", stopped_limit: null });
+  const client = createClient({ fetch });
+  await assert.rejects(() => client.complete("p", null), (error) => {
+    assert.strictEqual(error.truncated, true);
+    assert.strictEqual(error.content, "Then Red walks");
+    assert.ok(error.cacheKey);
+    return true;
+  });
+});

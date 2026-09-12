@@ -1,0 +1,637 @@
+{
+  "manifest": {
+    "probe": "continue_probe v1 (continuation plan v3, Stage 0) [calibration subset]",
+    "story": "trojanHorse",
+    "k": 10,
+    "runSeed": 11,
+    "arms": [
+      "sentence",
+      "json"
+    ],
+    "unconstrained": false,
+    "grammarBounds": {
+      "actionMaxChars": 80,
+      "outcomeMaxChars": 170,
+      "maxSentenceChars": 278
+    },
+    "sampling": {
+      "sentence": {
+        "temperature": 1,
+        "top_k": 0,
+        "seed": 7,
+        "samplers": [
+          "top_k",
+          "min_p",
+          "temperature"
+        ],
+        "repeat_penalty": 1,
+        "dry_multiplier": 0,
+        "n_predict": 186,
+        "cache_prompt": false,
+        "min_p": 0.05,
+        "stop": [
+          "\n"
+        ]
+      },
+      "json": {
+        "temperature": 1,
+        "top_k": 0,
+        "seed": 7,
+        "samplers": [
+          "top_k",
+          "min_p",
+          "temperature"
+        ],
+        "repeat_penalty": 1,
+        "dry_multiplier": 0,
+        "n_predict": 512,
+        "cache_prompt": false,
+        "min_p": 0.05
+      }
+    },
+    "model": {
+      "props": {
+        "default_generation_settings": {
+          "params": {
+            "seed": 4294967295,
+            "temperature": 0.800000011920929,
+            "dynatemp_range": 0,
+            "dynatemp_exponent": 1,
+            "top_k": 40,
+            "top_p": 0.949999988079071,
+            "min_p": 0.05000000074505806,
+            "top_n_sigma": -1,
+            "xtc_probability": 0,
+            "xtc_threshold": 0.10000000149011612,
+            "typical_p": 1,
+            "repeat_last_n": 64,
+            "repeat_penalty": 1,
+            "presence_penalty": 0,
+            "frequency_penalty": 0,
+            "dry_multiplier": 0,
+            "dry_base": 1.75,
+            "dry_allowed_length": 2,
+            "dry_penalty_last_n": -1,
+            "mirostat": 0,
+            "mirostat_tau": 5,
+            "mirostat_eta": 0.10000000149011612,
+            "adaptive_target": -1,
+            "adaptive_decay": 0.8999999761581421,
+            "max_tokens": -1,
+            "n_predict": -1,
+            "n_keep": 0,
+            "n_discard": 0,
+            "ignore_eos": false,
+            "stream": false,
+            "n_probs": 0,
+            "min_keep": 0,
+            "chat_format": "Content-only",
+            "reasoning_format": "none",
+            "reasoning_in_content": false,
+            "generation_prompt": "",
+            "samplers": [
+              "penalties",
+              "dry",
+              "top_n_sigma",
+              "top_k",
+              "typ_p",
+              "top_p",
+              "min_p",
+              "xtc",
+              "temperature"
+            ],
+            "speculative.types": "none",
+            "timings_per_token": false,
+            "post_sampling_probs": false,
+            "backend_sampling": false,
+            "lora": []
+          },
+          "n_ctx": 4096
+        },
+        "total_slots": 1,
+        "model_alias": "/media/oneiroid/sub/workspace/llmfinetune/models/qwen3-4b-base-Q5_K_M.gguf",
+        "model_ftype": "Q5_K - Medium",
+        "model_path": "/media/oneiroid/sub/workspace/llmfinetune/models/qwen3-4b-base-Q5_K_M.gguf",
+        "modalities": {
+          "vision": false,
+          "video": false,
+          "audio": false
+        },
+        "media_marker": "<__media_JjwYqKz8nX7SGy025zqZ20FmKRjjo7Gu__>",
+        "endpoint_slots": true,
+        "endpoint_props": false,
+        "endpoint_metrics": false,
+        "ui": true,
+        "ui_settings": {},
+        "chat_template": "{%- if tools %}\n    {{- '<|im_start|>system\\n' }}\n    {%- if messages[0].role == 'system' %}\n        {{- messages[0].content + '\\n\\n' }}\n    {%- endif %}\n    {{- \"# Tools\\n\\nYou may call one or more functions to assist with the user query.\\n\\nYou are provided with function signatures within <tools></tools> XML tags:\\n<tools>\" }}\n    {%- for tool in tools %}\n        {{- \"\\n\" }}\n        {{- tool | tojson }}\n    {%- endfor %}\n    {{- \"\\n</tools>\\n\\nFor each function call, return a json object with function name and arguments within <tool_call></tool_call> XML tags:\\n<tool_call>\\n{\\\"name\\\": <function-name>, \\\"arguments\\\": <args-json-object>}\\n</tool_call><|im_end|>\\n\" }}\n{%- else %}\n    {%- if messages[0].role == 'system' %}\n        {{- '<|im_start|>system\\n' + messages[0].content + '<|im_end|>\\n' }}\n    {%- endif %}\n{%- endif %}\n{%- set ns = namespace(multi_step_tool=true, last_query_index=messages|length - 1) %}\n{%- for message in messages[::-1] %}\n    {%- set index = (messages|length - 1) - loop.index0 %}\n    {%- if ns.multi_step_tool and message.role == \"user\" and not(message.content.startswith('<tool_response>') and message.content.endswith('</tool_response>')) %}\n        {%- set ns.multi_step_tool = false %}\n        {%- set ns.last_query_index = index %}\n    {%- endif %}\n{%- endfor %}\n{%- for message in messages %}\n    {%- if (message.role == \"user\") or (message.role == \"system\" and not loop.first) %}\n        {{- '<|im_start|>' + message.role + '\\n' + message.content + '<|im_end|>' + '\\n' }}\n    {%- elif message.role == \"assistant\" %}\n        {%- set content = message.content %}\n        {%- set reasoning_content = '' %}\n        {%- if message.reasoning_content is defined and message.reasoning_content is not none %}\n            {%- set reasoning_content = message.reasoning_content %}\n        {%- else %}\n            {%- if '</think>' in message.content %}\n                {%- set content = message.content.split('</think>')[-1].lstrip('\\n') %}\n                {%- set reasoning_content = message.content.split('</think>')[0].rstrip('\\n').split('<think>')[-1].lstrip('\\n') %}\n            {%- endif %}\n        {%- endif %}\n        {%- if loop.index0 > ns.last_query_index %}\n            {%- if loop.last or (not loop.last and reasoning_content) %}\n                {{- '<|im_start|>' + message.role + '\\n<think>\\n' + reasoning_content.strip('\\n') + '\\n</think>\\n\\n' + content.lstrip('\\n') }}\n            {%- else %}\n                {{- '<|im_start|>' + message.role + '\\n' + content }}\n            {%- endif %}\n        {%- else %}\n            {{- '<|im_start|>' + message.role + '\\n' + content }}\n        {%- endif %}\n        {%- if message.tool_calls %}\n            {%- for tool_call in message.tool_calls %}\n                {%- if (loop.first and content) or (not loop.first) %}\n                    {{- '\\n' }}\n                {%- endif %}\n                {%- if tool_call.function %}\n                    {%- set tool_call = tool_call.function %}\n                {%- endif %}\n                {{- '<tool_call>\\n{\"name\": \"' }}\n                {{- tool_call.name }}\n                {{- '\", \"arguments\": ' }}\n                {%- if tool_call.arguments is string %}\n                    {{- tool_call.arguments }}\n                {%- else %}\n                    {{- tool_call.arguments | tojson }}\n                {%- endif %}\n                {{- '}\\n</tool_call>' }}\n            {%- endfor %}\n        {%- endif %}\n        {{- '<|im_end|>\\n' }}\n    {%- elif message.role == \"tool\" %}\n        {%- if loop.first or (messages[loop.index0 - 1].role != \"tool\") %}\n            {{- '<|im_start|>user' }}\n        {%- endif %}\n        {{- '\\n<tool_response>\\n' }}\n        {{- message.content }}\n        {{- '\\n</tool_response>' }}\n        {%- if loop.last or (messages[loop.index0 + 1].role != \"tool\") %}\n            {{- '<|im_end|>\\n' }}\n        {%- endif %}\n    {%- endif %}\n{%- endfor %}\n{%- if add_generation_prompt %}\n    {{- '<|im_start|>assistant\\n' }}\n    {%- if enable_thinking is defined and enable_thinking is false %}\n        {{- '<think>\\n\\n</think>\\n\\n' }}\n    {%- endif %}\n{%- endif %}",
+        "chat_template_caps": {
+          "supports_object_arguments": true,
+          "supports_parallel_tool_calls": true,
+          "supports_preserve_reasoning": false,
+          "supports_string_content": true,
+          "supports_system_role": true,
+          "supports_tool_calls": true,
+          "supports_tools": true,
+          "supports_typed_content": false
+        },
+        "bos_token": "<|endoftext|>",
+        "eos_token": "<|im_end|>",
+        "build_info": "b1-f5b9bd3",
+        "is_sleeping": false,
+        "cors_proxy_enabled": false
+      },
+      "sha256": "699936b83664f71a4c1d129a1e10b02c1909e8edfdd32962cea75259f4f92093"
+    },
+    "templates": {
+      "sentence": {
+        "name": "frames.v1",
+        "sha256": "764b9b3db52ab23b3686824ebce2fbe18d1ecdd0fb1c32b5f96cfa2e795cf685"
+      },
+      "json": {
+        "name": "branch.v2",
+        "sha256": "ced2b702a8bfc7f42d06f7d5cf984b1c77311b378bca39e6dd96dc6034502dbc"
+      }
+    },
+    "entities": [
+      "the Greeks",
+      "the Trojans",
+      "Sinon",
+      "Cassandra"
+    ],
+    "entitiesSha256": "2a6d4d0bb847e0ce320f635143e23dc33ba5fbb9ea44cbb6ec4a7c8b23dbe72e",
+    "grammar": "root ::= \"Then \" actor \" \" action \", and now \" outcome \".\"\nactor ::= \"the Trojans\" | \"the Greeks\" | \"Cassandra\" | \"Sinon\"\naction ::= [^,.\\n]{1,80}\noutcome ::= [^.\\n]{1,170}\n",
+    "grammarSha256": "9c9ddb84607b88b9d75119e3690b31e1a1895b1a5b744fd17e5713236c1fd8b4",
+    "generatedAt": "2026-09-06T04:21:17.509Z",
+    "subsetOf": "cont_trojan_calib.json"
+  },
+  "results": [
+    {
+      "nodeId": "th_gift",
+      "path": [
+        "th_build",
+        "th_hide",
+        "th_sail",
+        "th_gift"
+      ],
+      "history": [
+        "Then the Greeks build a hollow wooden horse on the plain, and now a wooden horse stands empty outside Troy and the gates of the city are shut.",
+        "Then the Greeks seal armed men inside the horse, and now the Greeks are hidden in the horse and from outside it is a wooden statue.",
+        "Then the Greeks sail their ships out of sight, and now the Greeks' fleet is gone from the shore and the siege looks over.",
+        "Then the Trojans come out of the walls and gather around the abandoned horse, and now the Trojans stand around the horse arguing what to do with it."
+      ],
+      "arms": {
+        "sentence": {
+          "prompt": "STORY: The Tortoise and the Hare\nThen the hare boasts that nothing on the road can outrun him, and now the hare has staked his name on his speed.\nThen the tortoise takes the boast seriously and names a course, and now a race is agreed and the course is set.\nThen the fox drops his paw to start them, and now both runners are on the road.\nNEXT EVENT: Then the hare opens a lead wide enough to look settled, and now the hare is far ahead and the tortoise is out of sight behind him.\n\nSTORY: The Tortoise and the Hare\nThen the hare boasts that nothing on the road can outrun him, and now the hare has staked his name on his speed.\nThen the tortoise takes the boast seriously and names a course, and now a race is agreed and the course is set.\nThen the fox drops his paw to start them, and now both runners are on the road.\nThen the hare opens a lead wide enough to look settled, and now the hare is far ahead and the tortoise is out of sight behind him.\nThen the hare lies down at the roadside to rest, and now the hare is asleep and the gap has stopped growing.\nNEXT EVENT: Then the tortoise holds a pace that does not depend on the gap, and now the tortoise is still moving while the hare is not.\n\nSTORY: The Trojan Horse\nThen the Greeks build a hollow wooden horse on the plain, and now a wooden horse stands empty outside Troy and the gates of the city are shut.\nThen the Greeks seal armed men inside the horse, and now the Greeks are hidden in the horse and from outside it is a wooden statue.\nThen the Greeks sail their ships out of sight, and now the Greeks' fleet is gone from the shore and the siege looks over.\nThen the Trojans come out of the walls and gather around the abandoned horse, and now the Trojans stand around the horse arguing what to do with it.\nNEXT EVENT: ",
+          "promptSha256": "82bc79542105a6d2b206bb8db86947975365a7393ae187b222ea6594f679ab6a",
+          "constrained": true,
+          "samples": [
+            {
+              "arm": "sentence",
+              "seed": 1948658211,
+              "raw": "Then the Trojans lift the horse up their walls, and now the horse is mounted on the walls of Troy and a silent ambush awaits them inside the horse's belly.",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "a5246a9fb3e38c65",
+              "sentence": "Then the Trojans lift the horse up their walls, and now the horse is mounted on the walls of Troy and a silent ambush awaits them inside the horse's belly.",
+              "frame": {
+                "actor": "the Trojans",
+                "action": "lift the horse up their walls",
+                "outcome": "the horse is mounted on the walls of Troy and a silent ambush awaits them inside the horse's belly"
+              },
+              "expr": "the Trojans | lift the horse up their walls | the horse is mounted on the walls of Troy and a silent ambush awaits them inside the horse's belly",
+              "display": "Then the Trojans lift the horse up their walls, and now the horse is mounted on the walls of Troy and a silent ambush awaits them inside the horse's belly.",
+              "originIndex": 8
+            },
+            {
+              "arm": "sentence",
+              "seed": 2149989639,
+              "raw": "Then the Trojans move the horse within the walls, and now the horse is inside the city and the Greeks are hidden inside the horse.",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "3fbbd99cf7f87246",
+              "sentence": "Then the Trojans move the horse within the walls, and now the horse is inside the city and the Greeks are hidden inside the horse.",
+              "frame": {
+                "actor": "the Trojans",
+                "action": "move the horse within the walls",
+                "outcome": "the horse is inside the city and the Greeks are hidden inside the horse"
+              },
+              "expr": "the Trojans | move the horse within the walls | the horse is inside the city and the Greeks are hidden inside the horse",
+              "display": "Then the Trojans move the horse within the walls, and now the horse is inside the city and the Greeks are hidden inside the horse.",
+              "originIndex": 4
+            },
+            {
+              "arm": "sentence",
+              "seed": 2133212020,
+              "raw": "Then the Trojans agree to bring the horse to the gates of their own city, and now the Trojans carry the horse up the hill and into the city gates.",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "cd74bfa256a2dca8",
+              "sentence": "Then the Trojans agree to bring the horse to the gates of their own city, and now the Trojans carry the horse up the hill and into the city gates.",
+              "frame": {
+                "actor": "the Trojans",
+                "action": "agree to bring the horse to the gates of their own city",
+                "outcome": "the Trojans carry the horse up the hill and into the city gates"
+              },
+              "expr": "the Trojans | agree to bring the horse to the gates of their own city | the Trojans carry the horse up the hill and into the city gates",
+              "display": "Then the Trojans agree to bring the horse to the gates of their own city, and now the Trojans carry the horse up the hill and into the city gates.",
+              "originIndex": 5
+            }
+          ],
+          "attempts": 10,
+          "refused": 0,
+          "truncated": 0,
+          "duplicates": 0,
+          "parseRate": 1,
+          "truncationRate": 0,
+          "saturated": false
+        },
+        "json": {
+          "prompt": "Story states are events written as schema(arguments). You are given a told story in order, the path taken through it to reach one state, and that state. List the alternatives that could have followed instead of what the told story did next.\n\nEach alternative has a short label, its event expr, a state note describing what is now true, a delta naming the one thing that changed from the told story, and invariants naming what stayed the same. Use only the people, places and things that appear in the told story you are given — never ones from an earlier example. An alternative that leads back into the told story may name the state it rejoins as rejoinTargetId, using one of the bracketed ids.\n\nStory: The Tortoise and the Hare\n  [t_boast] boast(hare, speed) — The hare declares nothing on the road can outrun him.\n  [t_challenge] challenge(tortoise, hare) — The tortoise takes the boast seriously and names a course.\n  [t_start] start(fox, race) — The fox drops his paw; both are on the road.\n  [t_lead] outpace(hare, tortoise) — The hare opens a lead wide enough to make the result look settled.\n  [t_nap] nap(hare, roadside) — The hare converts the lead into rest and the gap stops growing.\n  [t_plod] plod(tortoise, road) — The tortoise holds a rate that does not depend on the gap.\n  [t_finish] win(tortoise, race) — The slower runner arrives first because the faster one stopped.\n\nPath: boast(hare, speed) → challenge(tortoise, hare) → start(fox, race) → outpace(hare, tortoise)\nState: outpace(hare, tortoise)\nNote: The hare opens a lead wide enough to make the result look settled.\nAlternatives:\n{\"branches\": [{\"label\": \"Hare spends the lead\", \"expr\": \"run(hare, finish)\", \"state\": \"The hare keeps running and crosses the line while the tortoise is still on the road.\", \"delta\": \"the hare never stops to rest\", \"invariants\": \"the tortoise still holds her pace\"}, {\"label\": \"Tortoise leaves the course\", \"expr\": \"leave(tortoise, road)\", \"state\": \"The tortoise cuts away from the marked course to save distance.\", \"delta\": \"the tortoise is no longer on the agreed course\", \"invariants\": \"the hare is still ahead\"}]}\n\nPath: boast(hare, speed) → challenge(tortoise, hare) → start(fox, race) → outpace(hare, tortoise) → nap(hare, roadside)\nState: nap(hare, roadside)\nNote: The hare converts the lead into rest and the gap stops growing.\nAlternatives:\n{\"branches\": [{\"label\": \"Fox wakes the hare\", \"expr\": \"wake(fox, hare)\", \"state\": \"The judge rouses the sleeper and the lead is still there to defend.\", \"delta\": \"the sleep is cut short\", \"invariants\": \"the tortoise is still behind\", \"rejoinTargetId\": \"t_finish\"}, {\"label\": \"Tortoise stops too\", \"expr\": \"rest(tortoise, roadside)\", \"state\": \"Both runners are stopped and the race is decided by who wakes first.\", \"delta\": \"the tortoise also stops moving\", \"invariants\": \"the hare is still asleep\"}]}\n\nStory: The Trojan Horse\n  [th_build] build(greeks, horse) — A hollow wooden horse stands on the plain outside Troy.\n  [th_hide] hide(greeks, horse) — Soldiers are sealed inside the horse. From outside it is a wooden statue.\n  [th_sail] depart(greeks, troy) — The Greek ships are gone from the shore. The siege appears to be over.\n  [th_gift] find(trojans, horse) — The Trojans are outside their walls, around an abandoned horse, deciding what to do with it.\n  [th_lie] deceive(sinon, trojans) — The Trojans have been told the horse is an offering, and that taking it in will protect the city.\n  [th_seer] recognize(cassandra, horse) — Cassandra has said out loud, in front of the city, that the horse holds armed men.\n  [th_ignore] ignore(trojans, cassandra) — The Trojans have heard the warning and decided against it. Nothing about the horse has changed.\n  [th_enter] enter(horse, troy) — The horse is within the walls and the gates are shut behind it.\n  [th_night] sleep(trojans, troy) — Troy is asleep. The horse stands unwatched inside the walls.\n  [th_open] open(greeks, gates) — The men are out of the horse and the gates of Troy stand open.\n  [th_fall] destroy(greeks, troy) — Troy is burning and the war is over.\n\nPath: build(greeks, horse) → hide(greeks, horse) → depart(greeks, troy) → find(trojans, horse)\nState: find(trojans, horse)\nNote: The Trojans are outside their walls, around an abandoned horse, deciding what to do with it.\nAlternatives:\n",
+          "promptSha256": "27ab04c1ac669a819d0ab9a851e8c8f05c3002197b21c01817f85cd41be30389",
+          "constrained": true,
+          "samples": [
+            {
+              "arm": "json",
+              "seed": 812463291,
+              "raw": "{\"branches\": [{\"label\": \"Trojans destroy the horse\", \"expr\": \"kill(trojans, horse)\", \"state\": \"The Trojans kill all the soldiers inside and discard the body.\", \"delta\": \"the horse is no longer a gift\", \"invariants\": \"the Greeks are still away\"}, {\"label\": \"Trojans bring the horse in\", \"expr\": \"enter(trojans, horse, troy)\", \"state\": \"The Trojans carry the horse into the city, unseeing the men within.\", \"delta\": \"the horse is inside the walls\", \"invariants\": \"the Greeks are still away\"}] }",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "b53a8bf04157edda",
+              "branch": {
+                "label": "Trojans destroy the horse",
+                "expr": "kill(trojans, horse)",
+                "state": "The Trojans kill all the soldiers inside and discard the body.",
+                "delta": "the horse is no longer a gift",
+                "invariants": "the Greeks are still away"
+              },
+              "extraBranches": [
+                {
+                  "label": "Trojans bring the horse in",
+                  "expr": "enter(trojans, horse, troy)",
+                  "state": "The Trojans carry the horse into the city, unseeing the men within.",
+                  "delta": "the horse is inside the walls",
+                  "invariants": "the Greeks are still away"
+                }
+              ],
+              "expr": "kill(trojans, horse)",
+              "display": "kill(trojans, horse) — The Trojans kill all the soldiers inside and discard the body.",
+              "originIndex": 1
+            },
+            {
+              "arm": "json",
+              "seed": 3320427838,
+              "raw": "{\"branches\": [{\"label\": \"Trojans ignore warning\", \"expr\": \"disregard(trojans, horse)\", \"state\": \"The Trojans are still standing around the abandoned horse, waiting for a decision to be made.\", \"delta\": \"the Trojans ignore the warning\", \"invariants\": \"the horse is still standing and abandoned\"}, {\"label\": \"Trojans enter immediately\", \"expr\": \"enter(trojans, horse)\", \"state\": \"The Trojans start dragging the horse into the city.\", \"delta\": \"the Trojans start moving the horse\", \"invariants\": \"the horse is still standing and not destroyed\"}] }",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "8f3bb6b01cc5da6e",
+              "branch": {
+                "label": "Trojans ignore warning",
+                "expr": "disregard(trojans, horse)",
+                "state": "The Trojans are still standing around the abandoned horse, waiting for a decision to be made.",
+                "delta": "the Trojans ignore the warning",
+                "invariants": "the horse is still standing and abandoned"
+              },
+              "extraBranches": [
+                {
+                  "label": "Trojans enter immediately",
+                  "expr": "enter(trojans, horse)",
+                  "state": "The Trojans start dragging the horse into the city.",
+                  "delta": "the Trojans start moving the horse",
+                  "invariants": "the horse is still standing and not destroyed"
+                }
+              ],
+              "expr": "disregard(trojans, horse)",
+              "display": "disregard(trojans, horse) — The Trojans are still standing around the abandoned horse, waiting for a decision to be made.",
+              "originIndex": 7
+            }
+          ],
+          "attempts": 14,
+          "refused": 0,
+          "truncated": 0,
+          "duplicates": 4,
+          "parseRate": 1,
+          "truncationRate": 0,
+          "saturated": false
+        }
+      }
+    },
+    {
+      "nodeId": "th_lie",
+      "path": [
+        "th_build",
+        "th_hide",
+        "th_sail",
+        "th_gift",
+        "th_lie"
+      ],
+      "history": [
+        "Then the Greeks build a hollow wooden horse on the plain, and now a wooden horse stands empty outside Troy and the gates of the city are shut.",
+        "Then the Greeks seal armed men inside the horse, and now the Greeks are hidden in the horse and from outside it is a wooden statue.",
+        "Then the Greeks sail their ships out of sight, and now the Greeks' fleet is gone from the shore and the siege looks over.",
+        "Then the Trojans come out of the walls and gather around the abandoned horse, and now the Trojans stand around the horse arguing what to do with it.",
+        "Then Sinon tells them the horse is an offering that will protect the city, and now the Trojans believe the horse is safe to take in."
+      ],
+      "arms": {
+        "sentence": {
+          "prompt": "STORY: The Tortoise and the Hare\nThen the hare boasts that nothing on the road can outrun him, and now the hare has staked his name on his speed.\nThen the tortoise takes the boast seriously and names a course, and now a race is agreed and the course is set.\nThen the fox drops his paw to start them, and now both runners are on the road.\nNEXT EVENT: Then the hare opens a lead wide enough to look settled, and now the hare is far ahead and the tortoise is out of sight behind him.\n\nSTORY: The Tortoise and the Hare\nThen the hare boasts that nothing on the road can outrun him, and now the hare has staked his name on his speed.\nThen the tortoise takes the boast seriously and names a course, and now a race is agreed and the course is set.\nThen the fox drops his paw to start them, and now both runners are on the road.\nThen the hare opens a lead wide enough to look settled, and now the hare is far ahead and the tortoise is out of sight behind him.\nThen the hare lies down at the roadside to rest, and now the hare is asleep and the gap has stopped growing.\nNEXT EVENT: Then the tortoise holds a pace that does not depend on the gap, and now the tortoise is still moving while the hare is not.\n\nSTORY: The Trojan Horse\nThen the Greeks build a hollow wooden horse on the plain, and now a wooden horse stands empty outside Troy and the gates of the city are shut.\nThen the Greeks seal armed men inside the horse, and now the Greeks are hidden in the horse and from outside it is a wooden statue.\nThen the Greeks sail their ships out of sight, and now the Greeks' fleet is gone from the shore and the siege looks over.\nThen the Trojans come out of the walls and gather around the abandoned horse, and now the Trojans stand around the horse arguing what to do with it.\nThen Sinon tells them the horse is an offering that will protect the city, and now the Trojans believe the horse is safe to take in.\nNEXT EVENT: ",
+          "promptSha256": "219da1931ba32bdb814047578a1daecd5fd34d3b6ee53165bfec9eb631ebc818",
+          "constrained": true,
+          "samples": [
+            {
+              "arm": "sentence",
+              "seed": 1834833950,
+              "raw": "Then the Trojans take the horse inside the walls, and now the horse is in the city and the men are inside the horse ready to attack the Greeks when they return with their ships.",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "bf789f3ed68b4428",
+              "sentence": "Then the Trojans take the horse inside the walls, and now the horse is in the city and the men are inside the horse ready to attack the Greeks when they return with their ships.",
+              "frame": {
+                "actor": "the Trojans",
+                "action": "take the horse inside the walls",
+                "outcome": "the horse is in the city and the men are inside the horse ready to attack the Greeks when they return with their ships"
+              },
+              "expr": "the Trojans | take the horse inside the walls | the horse is in the city and the men are inside the horse ready to attack the Greeks when they return with their ships",
+              "display": "Then the Trojans take the horse inside the walls, and now the horse is in the city and the men are inside the horse ready to attack the Greeks when they return with their ships.",
+              "originIndex": 5
+            },
+            {
+              "arm": "sentence",
+              "seed": 1784501093,
+              "raw": "Then the Trojans carry the horse into the city, and now the horse is brought inside the city gates and is moved into a courtyard inside the walls.",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "366b9e78d43c2096",
+              "sentence": "Then the Trojans carry the horse into the city, and now the horse is brought inside the city gates and is moved into a courtyard inside the walls.",
+              "frame": {
+                "actor": "the Trojans",
+                "action": "carry the horse into the city",
+                "outcome": "the horse is brought inside the city gates and is moved into a courtyard inside the walls"
+              },
+              "expr": "the Trojans | carry the horse into the city | the horse is brought inside the city gates and is moved into a courtyard inside the walls",
+              "display": "Then the Trojans carry the horse into the city, and now the horse is brought inside the city gates and is moved into a courtyard inside the walls.",
+              "originIndex": 8
+            },
+            {
+              "arm": "sentence",
+              "seed": 1868389188,
+              "raw": "Then the Trojans drag the horse up into the city, and now the Trojans are dragging the horse into the city and the hidden Greeks are waiting in the darkness inside it.",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "30b0a62aa5af01f0",
+              "sentence": "Then the Trojans drag the horse up into the city, and now the Trojans are dragging the horse into the city and the hidden Greeks are waiting in the darkness inside it.",
+              "frame": {
+                "actor": "the Trojans",
+                "action": "drag the horse up into the city",
+                "outcome": "the Trojans are dragging the horse into the city and the hidden Greeks are waiting in the darkness inside it"
+              },
+              "expr": "the Trojans | drag the horse up into the city | the Trojans are dragging the horse into the city and the hidden Greeks are waiting in the darkness inside it",
+              "display": "Then the Trojans drag the horse up into the city, and now the Trojans are dragging the horse into the city and the hidden Greeks are waiting in the darkness inside it.",
+              "originIndex": 3
+            },
+            {
+              "arm": "sentence",
+              "seed": 1767723474,
+              "raw": "Then the Trojans lift the horse into the walls, and now the horse is inside Troy and the Greeks' hidden warriors are in the heart of the city.",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "85fb438691113e38",
+              "sentence": "Then the Trojans lift the horse into the walls, and now the horse is inside Troy and the Greeks' hidden warriors are in the heart of the city.",
+              "frame": {
+                "actor": "the Trojans",
+                "action": "lift the horse into the walls",
+                "outcome": "the horse is inside Troy and the Greeks' hidden warriors are in the heart of the city"
+              },
+              "expr": "the Trojans | lift the horse into the walls | the horse is inside Troy and the Greeks' hidden warriors are in the heart of the city",
+              "display": "Then the Trojans lift the horse into the walls, and now the horse is inside Troy and the Greeks' hidden warriors are in the heart of the city.",
+              "originIndex": 9
+            }
+          ],
+          "attempts": 10,
+          "refused": 0,
+          "truncated": 0,
+          "duplicates": 0,
+          "parseRate": 1,
+          "truncationRate": 0,
+          "saturated": false
+        },
+        "json": {
+          "prompt": "Story states are events written as schema(arguments). You are given a told story in order, the path taken through it to reach one state, and that state. List the alternatives that could have followed instead of what the told story did next.\n\nEach alternative has a short label, its event expr, a state note describing what is now true, a delta naming the one thing that changed from the told story, and invariants naming what stayed the same. Use only the people, places and things that appear in the told story you are given — never ones from an earlier example. An alternative that leads back into the told story may name the state it rejoins as rejoinTargetId, using one of the bracketed ids.\n\nStory: The Tortoise and the Hare\n  [t_boast] boast(hare, speed) — The hare declares nothing on the road can outrun him.\n  [t_challenge] challenge(tortoise, hare) — The tortoise takes the boast seriously and names a course.\n  [t_start] start(fox, race) — The fox drops his paw; both are on the road.\n  [t_lead] outpace(hare, tortoise) — The hare opens a lead wide enough to make the result look settled.\n  [t_nap] nap(hare, roadside) — The hare converts the lead into rest and the gap stops growing.\n  [t_plod] plod(tortoise, road) — The tortoise holds a rate that does not depend on the gap.\n  [t_finish] win(tortoise, race) — The slower runner arrives first because the faster one stopped.\n\nPath: boast(hare, speed) → challenge(tortoise, hare) → start(fox, race) → outpace(hare, tortoise)\nState: outpace(hare, tortoise)\nNote: The hare opens a lead wide enough to make the result look settled.\nAlternatives:\n{\"branches\": [{\"label\": \"Hare spends the lead\", \"expr\": \"run(hare, finish)\", \"state\": \"The hare keeps running and crosses the line while the tortoise is still on the road.\", \"delta\": \"the hare never stops to rest\", \"invariants\": \"the tortoise still holds her pace\"}, {\"label\": \"Tortoise leaves the course\", \"expr\": \"leave(tortoise, road)\", \"state\": \"The tortoise cuts away from the marked course to save distance.\", \"delta\": \"the tortoise is no longer on the agreed course\", \"invariants\": \"the hare is still ahead\"}]}\n\nPath: boast(hare, speed) → challenge(tortoise, hare) → start(fox, race) → outpace(hare, tortoise) → nap(hare, roadside)\nState: nap(hare, roadside)\nNote: The hare converts the lead into rest and the gap stops growing.\nAlternatives:\n{\"branches\": [{\"label\": \"Fox wakes the hare\", \"expr\": \"wake(fox, hare)\", \"state\": \"The judge rouses the sleeper and the lead is still there to defend.\", \"delta\": \"the sleep is cut short\", \"invariants\": \"the tortoise is still behind\", \"rejoinTargetId\": \"t_finish\"}, {\"label\": \"Tortoise stops too\", \"expr\": \"rest(tortoise, roadside)\", \"state\": \"Both runners are stopped and the race is decided by who wakes first.\", \"delta\": \"the tortoise also stops moving\", \"invariants\": \"the hare is still asleep\"}]}\n\nStory: The Trojan Horse\n  [th_build] build(greeks, horse) — A hollow wooden horse stands on the plain outside Troy.\n  [th_hide] hide(greeks, horse) — Soldiers are sealed inside the horse. From outside it is a wooden statue.\n  [th_sail] depart(greeks, troy) — The Greek ships are gone from the shore. The siege appears to be over.\n  [th_gift] find(trojans, horse) — The Trojans are outside their walls, around an abandoned horse, deciding what to do with it.\n  [th_lie] deceive(sinon, trojans) — The Trojans have been told the horse is an offering, and that taking it in will protect the city.\n  [th_seer] recognize(cassandra, horse) — Cassandra has said out loud, in front of the city, that the horse holds armed men.\n  [th_ignore] ignore(trojans, cassandra) — The Trojans have heard the warning and decided against it. Nothing about the horse has changed.\n  [th_enter] enter(horse, troy) — The horse is within the walls and the gates are shut behind it.\n  [th_night] sleep(trojans, troy) — Troy is asleep. The horse stands unwatched inside the walls.\n  [th_open] open(greeks, gates) — The men are out of the horse and the gates of Troy stand open.\n  [th_fall] destroy(greeks, troy) — Troy is burning and the war is over.\n\nPath: build(greeks, horse) → hide(greeks, horse) → depart(greeks, troy) → find(trojans, horse) → deceive(sinon, trojans)\nState: deceive(sinon, trojans)\nNote: The Trojans have been told the horse is an offering, and that taking it in will protect the city.\nAlternatives:\n",
+          "promptSha256": "d36a63f9af48b2b74d6de3294211df62d45b35426d505134dd1aede5e712247f",
+          "constrained": true,
+          "samples": [
+            {
+              "arm": "json",
+              "seed": 3087502324,
+              "raw": "{\"branches\": [{\"label\": \"Trojans ignore Sinon\", \"expr\": \"ignore(trojans, sinon)\", \"state\": \"The Trojans have heard the warning but do not take any action, leaving the horse in the city.\", \"delta\": \"the Trojans do not believe Sinon's story\", \"invariants\": \"the horse remains in the city\"}, {\"label\": \"Sinon fails to deceive\", \"expr\": \"fail(sinon, trojans)\", \"state\": \"The Trojans are skeptical and refuse to take the horse into the city.\", \"delta\": \"Sinon's deception is not successful\", \"invariants\": \"the horse remains in the city\"}]}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "add0c6c466128e26",
+              "branch": {
+                "label": "Trojans ignore Sinon",
+                "expr": "ignore(trojans, sinon)",
+                "state": "The Trojans have heard the warning but do not take any action, leaving the horse in the city.",
+                "delta": "the Trojans do not believe Sinon's story",
+                "invariants": "the horse remains in the city"
+              },
+              "extraBranches": [
+                {
+                  "label": "Sinon fails to deceive",
+                  "expr": "fail(sinon, trojans)",
+                  "state": "The Trojans are skeptical and refuse to take the horse into the city.",
+                  "delta": "Sinon's deception is not successful",
+                  "invariants": "the horse remains in the city"
+                }
+              ],
+              "expr": "ignore(trojans, sinon)",
+              "display": "ignore(trojans, sinon) — The Trojans have heard the warning but do not take any action, leaving the horse in the city.",
+              "originIndex": 7
+            }
+          ],
+          "attempts": 18,
+          "refused": 0,
+          "truncated": 0,
+          "duplicates": 8,
+          "parseRate": 1,
+          "truncationRate": 0,
+          "saturated": false
+        }
+      }
+    },
+    {
+      "nodeId": "th_seer",
+      "path": [
+        "th_build",
+        "th_hide",
+        "th_sail",
+        "th_gift",
+        "th_lie",
+        "th_seer"
+      ],
+      "history": [
+        "Then the Greeks build a hollow wooden horse on the plain, and now a wooden horse stands empty outside Troy and the gates of the city are shut.",
+        "Then the Greeks seal armed men inside the horse, and now the Greeks are hidden in the horse and from outside it is a wooden statue.",
+        "Then the Greeks sail their ships out of sight, and now the Greeks' fleet is gone from the shore and the siege looks over.",
+        "Then the Trojans come out of the walls and gather around the abandoned horse, and now the Trojans stand around the horse arguing what to do with it.",
+        "Then Sinon tells them the horse is an offering that will protect the city, and now the Trojans believe the horse is safe to take in.",
+        "Then Cassandra says aloud that the horse is full of armed men, and now the warning has been given in front of the whole city."
+      ],
+      "arms": {
+        "sentence": {
+          "prompt": "STORY: The Tortoise and the Hare\nThen the hare boasts that nothing on the road can outrun him, and now the hare has staked his name on his speed.\nThen the tortoise takes the boast seriously and names a course, and now a race is agreed and the course is set.\nThen the fox drops his paw to start them, and now both runners are on the road.\nNEXT EVENT: Then the hare opens a lead wide enough to look settled, and now the hare is far ahead and the tortoise is out of sight behind him.\n\nSTORY: The Tortoise and the Hare\nThen the hare boasts that nothing on the road can outrun him, and now the hare has staked his name on his speed.\nThen the tortoise takes the boast seriously and names a course, and now a race is agreed and the course is set.\nThen the fox drops his paw to start them, and now both runners are on the road.\nThen the hare opens a lead wide enough to look settled, and now the hare is far ahead and the tortoise is out of sight behind him.\nThen the hare lies down at the roadside to rest, and now the hare is asleep and the gap has stopped growing.\nNEXT EVENT: Then the tortoise holds a pace that does not depend on the gap, and now the tortoise is still moving while the hare is not.\n\nSTORY: The Trojan Horse\nThen the Greeks build a hollow wooden horse on the plain, and now a wooden horse stands empty outside Troy and the gates of the city are shut.\nThen the Greeks seal armed men inside the horse, and now the Greeks are hidden in the horse and from outside it is a wooden statue.\nThen the Greeks sail their ships out of sight, and now the Greeks' fleet is gone from the shore and the siege looks over.\nThen the Trojans come out of the walls and gather around the abandoned horse, and now the Trojans stand around the horse arguing what to do with it.\nThen Sinon tells them the horse is an offering that will protect the city, and now the Trojans believe the horse is safe to take in.\nThen Cassandra says aloud that the horse is full of armed men, and now the warning has been given in front of the whole city.\nNEXT EVENT: ",
+          "promptSha256": "7d2fd5bb91e9898dbcbf05ba9af8ed809b83ab0bc7a7f71a1be57dce3a3a8b91",
+          "constrained": true,
+          "samples": [
+            {
+              "arm": "sentence",
+              "seed": 629752113,
+              "raw": "Then the Trojans take the horse into the city, and now the horse is inside Troy and the armed Greeks are hidden inside it.",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "4fa64f279068e09d",
+              "sentence": "Then the Trojans take the horse into the city, and now the horse is inside Troy and the armed Greeks are hidden inside it.",
+              "frame": {
+                "actor": "the Trojans",
+                "action": "take the horse into the city",
+                "outcome": "the horse is inside Troy and the armed Greeks are hidden inside it"
+              },
+              "expr": "the Trojans | take the horse into the city | the horse is inside Troy and the armed Greeks are hidden inside it",
+              "display": "Then the Trojans take the horse into the city, and now the horse is inside Troy and the armed Greeks are hidden inside it.",
+              "originIndex": 5
+            }
+          ],
+          "attempts": 10,
+          "refused": 0,
+          "truncated": 0,
+          "duplicates": 0,
+          "parseRate": 1,
+          "truncationRate": 0,
+          "saturated": false
+        },
+        "json": {
+          "prompt": "Story states are events written as schema(arguments). You are given a told story in order, the path taken through it to reach one state, and that state. List the alternatives that could have followed instead of what the told story did next.\n\nEach alternative has a short label, its event expr, a state note describing what is now true, a delta naming the one thing that changed from the told story, and invariants naming what stayed the same. Use only the people, places and things that appear in the told story you are given — never ones from an earlier example. An alternative that leads back into the told story may name the state it rejoins as rejoinTargetId, using one of the bracketed ids.\n\nStory: The Tortoise and the Hare\n  [t_boast] boast(hare, speed) — The hare declares nothing on the road can outrun him.\n  [t_challenge] challenge(tortoise, hare) — The tortoise takes the boast seriously and names a course.\n  [t_start] start(fox, race) — The fox drops his paw; both are on the road.\n  [t_lead] outpace(hare, tortoise) — The hare opens a lead wide enough to make the result look settled.\n  [t_nap] nap(hare, roadside) — The hare converts the lead into rest and the gap stops growing.\n  [t_plod] plod(tortoise, road) — The tortoise holds a rate that does not depend on the gap.\n  [t_finish] win(tortoise, race) — The slower runner arrives first because the faster one stopped.\n\nPath: boast(hare, speed) → challenge(tortoise, hare) → start(fox, race) → outpace(hare, tortoise)\nState: outpace(hare, tortoise)\nNote: The hare opens a lead wide enough to make the result look settled.\nAlternatives:\n{\"branches\": [{\"label\": \"Hare spends the lead\", \"expr\": \"run(hare, finish)\", \"state\": \"The hare keeps running and crosses the line while the tortoise is still on the road.\", \"delta\": \"the hare never stops to rest\", \"invariants\": \"the tortoise still holds her pace\"}, {\"label\": \"Tortoise leaves the course\", \"expr\": \"leave(tortoise, road)\", \"state\": \"The tortoise cuts away from the marked course to save distance.\", \"delta\": \"the tortoise is no longer on the agreed course\", \"invariants\": \"the hare is still ahead\"}]}\n\nPath: boast(hare, speed) → challenge(tortoise, hare) → start(fox, race) → outpace(hare, tortoise) → nap(hare, roadside)\nState: nap(hare, roadside)\nNote: The hare converts the lead into rest and the gap stops growing.\nAlternatives:\n{\"branches\": [{\"label\": \"Fox wakes the hare\", \"expr\": \"wake(fox, hare)\", \"state\": \"The judge rouses the sleeper and the lead is still there to defend.\", \"delta\": \"the sleep is cut short\", \"invariants\": \"the tortoise is still behind\", \"rejoinTargetId\": \"t_finish\"}, {\"label\": \"Tortoise stops too\", \"expr\": \"rest(tortoise, roadside)\", \"state\": \"Both runners are stopped and the race is decided by who wakes first.\", \"delta\": \"the tortoise also stops moving\", \"invariants\": \"the hare is still asleep\"}]}\n\nStory: The Trojan Horse\n  [th_build] build(greeks, horse) — A hollow wooden horse stands on the plain outside Troy.\n  [th_hide] hide(greeks, horse) — Soldiers are sealed inside the horse. From outside it is a wooden statue.\n  [th_sail] depart(greeks, troy) — The Greek ships are gone from the shore. The siege appears to be over.\n  [th_gift] find(trojans, horse) — The Trojans are outside their walls, around an abandoned horse, deciding what to do with it.\n  [th_lie] deceive(sinon, trojans) — The Trojans have been told the horse is an offering, and that taking it in will protect the city.\n  [th_seer] recognize(cassandra, horse) — Cassandra has said out loud, in front of the city, that the horse holds armed men.\n  [th_ignore] ignore(trojans, cassandra) — The Trojans have heard the warning and decided against it. Nothing about the horse has changed.\n  [th_enter] enter(horse, troy) — The horse is within the walls and the gates are shut behind it.\n  [th_night] sleep(trojans, troy) — Troy is asleep. The horse stands unwatched inside the walls.\n  [th_open] open(greeks, gates) — The men are out of the horse and the gates of Troy stand open.\n  [th_fall] destroy(greeks, troy) — Troy is burning and the war is over.\n\nPath: build(greeks, horse) → hide(greeks, horse) → depart(greeks, troy) → find(trojans, horse) → deceive(sinon, trojans) → recognize(cassandra, horse)\nState: recognize(cassandra, horse)\nNote: Cassandra has said out loud, in front of the city, that the horse holds armed men.\nAlternatives:\n",
+          "promptSha256": "d348322cc7efac0f41193a5cdc3d20e7456b108f6859175affb93800d095b0fe",
+          "constrained": true,
+          "samples": [
+            {
+              "arm": "json",
+              "seed": 588296981,
+              "raw": "{\"branches\": [{\"label\": \"Cassandra hides the truth\", \"expr\": \"lie(cassandra, trojans, horse)\", \"state\": \"Cassandra says the horse is harmless and the Trojans are more convinced to bring it inside.\", \"delta\": \"the Trojans ignore the warning from Cassandra\", \"invariants\": \"the horse still holds armed men\"}, {\"label\": \"Trojans bring in the horse\", \"expr\": \"enter(trojans, horse)\", \"state\": \"The Trojans carry the horse into the city, not understanding the deception.\", \"delta\": \"the horse enters the city\", \"invariants\": \"the horse still holds armed men\", \"rejoinTargetId\": \"th_open\"}] }",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "17fb607f5a67e76d",
+              "branch": {
+                "label": "Cassandra hides the truth",
+                "expr": "lie(cassandra, trojans, horse)",
+                "state": "Cassandra says the horse is harmless and the Trojans are more convinced to bring it inside.",
+                "delta": "the Trojans ignore the warning from Cassandra",
+                "invariants": "the horse still holds armed men"
+              },
+              "extraBranches": [
+                {
+                  "label": "Trojans bring in the horse",
+                  "expr": "enter(trojans, horse)",
+                  "state": "The Trojans carry the horse into the city, not understanding the deception.",
+                  "delta": "the horse enters the city",
+                  "invariants": "the horse still holds armed men",
+                  "rejoinTargetId": "th_open"
+                }
+              ],
+              "expr": "lie(cassandra, trojans, horse)",
+              "display": "lie(cassandra, trojans, horse) — Cassandra says the horse is harmless and the Trojans are more convinced to bring it inside.",
+              "originIndex": 6
+            },
+            {
+              "arm": "json",
+              "seed": 655407457,
+              "raw": "{\"branches\": [{\"label\": \"Troy accepts Cassandra\", \"expr\": \"trust(trojans, cassandra)\", \"state\": \"The Trojans listen to Cassandra and investigate the horse. They find it empty.\", \"delta\": \"the horse is revealed as empty\", \"invariants\": \"the horse is still a gift\"}, {\"label\": \"Sinon distracts\", \"expr\": \"distract(sinon, trojans)\", \"state\": \"Sinon keeps talking about the horse being empty, despite Cassandra's warning.\", \"delta\": \"the horse is still a gift but attention is drawn elsewhere\", \"invariants\": \"the horse is still a gift\"}]}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "4b912034ea2963e6",
+              "branch": {
+                "label": "Troy accepts Cassandra",
+                "expr": "trust(trojans, cassandra)",
+                "state": "The Trojans listen to Cassandra and investigate the horse. They find it empty.",
+                "delta": "the horse is revealed as empty",
+                "invariants": "the horse is still a gift"
+              },
+              "extraBranches": [
+                {
+                  "label": "Sinon distracts",
+                  "expr": "distract(sinon, trojans)",
+                  "state": "Sinon keeps talking about the horse being empty, despite Cassandra's warning.",
+                  "delta": "the horse is still a gift but attention is drawn elsewhere",
+                  "invariants": "the horse is still a gift"
+                }
+              ],
+              "expr": "trust(trojans, cassandra)",
+              "display": "trust(trojans, cassandra) — The Trojans listen to Cassandra and investigate the horse. They find it empty.",
+              "originIndex": 3
+            },
+            {
+              "arm": "json",
+              "seed": 1700487383,
+              "raw": "{\"branches\": [{\"label\": \"Trojans ignore warning\", \"expr\": \"disbelieve(cassandra, trojans)\", \"state\": \"The Trojans are still deciding whether to take the horse in.\", \"delta\": \"the horse is still perceived as a gift\", \"invariants\": \"the armed men are still hidden\"}, {\"label\": \"Trojans take horse\", \"expr\": \"accept(trojans, horse)\", \"state\": \"The horse is brought into the city.\", \"delta\": \"the horse is no longer abandoned\", \"invariants\": \"the armed men are still hidden\", \"rejoinTargetId\": \"th_enter\"}] }",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "56035f323432590c",
+              "branch": {
+                "label": "Trojans ignore warning",
+                "expr": "disbelieve(cassandra, trojans)",
+                "state": "The Trojans are still deciding whether to take the horse in.",
+                "delta": "the horse is still perceived as a gift",
+                "invariants": "the armed men are still hidden"
+              },
+              "extraBranches": [
+                {
+                  "label": "Trojans take horse",
+                  "expr": "accept(trojans, horse)",
+                  "state": "The horse is brought into the city.",
+                  "delta": "the horse is no longer abandoned",
+                  "invariants": "the armed men are still hidden",
+                  "rejoinTargetId": "th_enter"
+                }
+              ],
+              "expr": "disbelieve(cassandra, trojans)",
+              "display": "disbelieve(cassandra, trojans) — The Trojans are still deciding whether to take the horse in.",
+              "originIndex": 9
+            },
+            {
+              "arm": "json",
+              "seed": 621852219,
+              "raw": "{\"branches\": [{\"label\": \"Trojans decide against it\", \"expr\": \"decide(trojans, against)\", \"state\": \"The Trojans continue to doubt and let the horse remain outside the walls.\", \"delta\": \"the horse is no longer accepted as a gift\", \"invariants\": \"the greeks remain hidden inside\"}, {\"label\": \"Trojans attack the horse\", \"expr\": \"attack(trojans, horse)\", \"state\": \"The Trojans tear down the horse and reveal the hidden men, leading to an immediate confrontation.\", \"delta\": \"the horse is destroyed\", \"invariants\": \"the greeks are now outside the walls\"}]}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "16a7e1e52cfe175b",
+              "branch": {
+                "label": "Trojans decide against it",
+                "expr": "decide(trojans, against)",
+                "state": "The Trojans continue to doubt and let the horse remain outside the walls.",
+                "delta": "the horse is no longer accepted as a gift",
+                "invariants": "the greeks remain hidden inside"
+              },
+              "extraBranches": [
+                {
+                  "label": "Trojans attack the horse",
+                  "expr": "attack(trojans, horse)",
+                  "state": "The Trojans tear down the horse and reveal the hidden men, leading to an immediate confrontation.",
+                  "delta": "the horse is destroyed",
+                  "invariants": "the greeks are now outside the walls"
+                }
+              ],
+              "expr": "decide(trojans, against)",
+              "display": "decide(trojans, against) — The Trojans continue to doubt and let the horse remain outside the walls.",
+              "originIndex": 5
+            }
+          ],
+          "attempts": 18,
+          "refused": 0,
+          "truncated": 0,
+          "duplicates": 8,
+          "parseRate": 1,
+          "truncationRate": 0,
+          "saturated": false
+        }
+      }
+    }
+  ]
+}

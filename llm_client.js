@@ -41,6 +41,18 @@ const REFERENCE_SAMPLING = {
   cache_prompt: false,
 };
 
+// Sampling fields that are NOT part of the reference profile and are emitted
+// into the request body only when a caller sets them (continuation plan v3).
+// They are optional rather than defaulted for one reason: the serialized body
+// is the cache key, so adding a key unconditionally — even set to a llama.cpp
+// default — orphans every recorded response and every manifest that replays
+// against one. A client that sets none of these produces a byte-identical
+// body to the one this module sent before they existed.
+//
+// The order here is the emission order, and it is fixed for the same reason
+// the reference block's order is (§5.5.2).
+const OPTIONAL_SAMPLING_KEYS = ["min_p", "top_p", "stop"];
+
 const DEFAULT_BASE_URL = "http://127.0.0.1:8080";
 
 // On this build a completion that ends at EOS reports
@@ -85,19 +97,35 @@ function createClient({
   // The request body is CONSTRUCTED in a fixed key order (§5.5.2):
   // JSON.stringify preserves insertion order, and the serialized body is the
   // cache key, so a reordered body would be a cache miss and a different run.
-  function requestBody(prompt, schema) {
-    return {
+  // `seed` and `grammar` are the only PER-REQUEST overrides. Everything else
+  // is fixed at construction, so one run is one sampling block.
+  //
+  // seed:    drawing K samples from one prompt requires K seeds. With the
+  //          block's single pinned seed, a temperature>0 run would return the
+  //          same completion K times — silently, and looking like a
+  //          degenerate model rather than a degenerate request.
+  // grammar: the frame grammar enumerates one story's entities, so it is
+  //          content-dependent and cannot be pinned per client.
+  //
+  // Both fold into the cache key by construction: they are part of the body.
+  function requestBody(prompt, schema, { seed, grammar } = {}) {
+    const body = {
       prompt: String(prompt),
       temperature: pinned.temperature,
       top_k: pinned.top_k,
-      seed: pinned.seed,
+      seed: seed === undefined ? pinned.seed : seed,
       samplers: pinned.samplers,
       repeat_penalty: pinned.repeat_penalty,
       dry_multiplier: pinned.dry_multiplier,
       n_predict: pinned.n_predict,
       cache_prompt: pinned.cache_prompt,
-      ...(schema ? { json_schema: schema } : {}),
     };
+    for (const key of OPTIONAL_SAMPLING_KEYS) {
+      if (pinned[key] !== undefined) body[key] = pinned[key];
+    }
+    if (grammar) body.grammar = String(grammar);
+    if (schema) body.json_schema = schema;
+    return body;
   }
 
   function cacheKeyFor(body, modelFingerprint) {
@@ -114,8 +142,8 @@ function createClient({
   //
   // `bypassCache` skips the cache READ but still records: this is what makes
   // `grow:replay` cache-cold (§4.2) while leaving fresh fixtures behind.
-  async function complete(prompt, schema, { bypassCache = false } = {}) {
-    const body = requestBody(prompt, schema);
+  async function complete(prompt, schema, { bypassCache = false, seed, grammar } = {}) {
+    const body = requestBody(prompt, schema, { seed, grammar });
     const key = cacheKeyFor(body, await fingerprint());
 
     if (cacheDir && !bypassCache && fs.existsSync(cachePath(key))) {
@@ -145,6 +173,13 @@ function createClient({
     if (response.stop_type === STOP_TYPE_TRUNCATED) {
       const error = new Error(`completion truncated at n_predict=${pinned.n_predict}`);
       error.truncated = true;
+      // The partial text rides along. For the grower a truncation is a run
+      // failure and the content is noise; for the unconstrained diagnostic
+      // batch of the frame probe, a truncated sample IS the measurement (how
+      // often does the model run past the one-sentence format), and losing
+      // its text would lose the finding.
+      error.content = response.content;
+      error.cacheKey = key;
       throw error;
     }
     return { content: response.content, stopType: response.stop_type, cached, cacheKey: key };

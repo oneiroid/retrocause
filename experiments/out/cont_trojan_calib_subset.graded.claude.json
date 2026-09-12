@@ -1,0 +1,632 @@
+{
+  "manifest": {
+    "probe": "continue_probe v1 (continuation plan v3, Stage 0) [calibration subset]",
+    "story": "trojanHorse",
+    "k": 10,
+    "runSeed": 11,
+    "arms": [
+      "sentence",
+      "json"
+    ],
+    "unconstrained": false,
+    "grammarBounds": {
+      "actionMaxChars": 80,
+      "outcomeMaxChars": 170,
+      "maxSentenceChars": 278
+    },
+    "sampling": {
+      "sentence": {
+        "temperature": 1,
+        "top_k": 0,
+        "seed": 7,
+        "samplers": [
+          "top_k",
+          "min_p",
+          "temperature"
+        ],
+        "repeat_penalty": 1,
+        "dry_multiplier": 0,
+        "n_predict": 186,
+        "cache_prompt": false,
+        "min_p": 0.05,
+        "stop": [
+          "\n"
+        ]
+      },
+      "json": {
+        "temperature": 1,
+        "top_k": 0,
+        "seed": 7,
+        "samplers": [
+          "top_k",
+          "min_p",
+          "temperature"
+        ],
+        "repeat_penalty": 1,
+        "dry_multiplier": 0,
+        "n_predict": 512,
+        "cache_prompt": false,
+        "min_p": 0.05
+      }
+    },
+    "model": {
+      "props": {
+        "default_generation_settings": {
+          "params": {
+            "seed": 4294967295,
+            "temperature": 0.800000011920929,
+            "dynatemp_range": 0,
+            "dynatemp_exponent": 1,
+            "top_k": 40,
+            "top_p": 0.949999988079071,
+            "min_p": 0.05000000074505806,
+            "top_n_sigma": -1,
+            "xtc_probability": 0,
+            "xtc_threshold": 0.10000000149011612,
+            "typical_p": 1,
+            "repeat_last_n": 64,
+            "repeat_penalty": 1,
+            "presence_penalty": 0,
+            "frequency_penalty": 0,
+            "dry_multiplier": 0,
+            "dry_base": 1.75,
+            "dry_allowed_length": 2,
+            "dry_penalty_last_n": -1,
+            "mirostat": 0,
+            "mirostat_tau": 5,
+            "mirostat_eta": 0.10000000149011612,
+            "adaptive_target": -1,
+            "adaptive_decay": 0.8999999761581421,
+            "max_tokens": -1,
+            "n_predict": -1,
+            "n_keep": 0,
+            "n_discard": 0,
+            "ignore_eos": false,
+            "stream": false,
+            "n_probs": 0,
+            "min_keep": 0,
+            "chat_format": "Content-only",
+            "reasoning_format": "none",
+            "reasoning_in_content": false,
+            "generation_prompt": "",
+            "samplers": [
+              "penalties",
+              "dry",
+              "top_n_sigma",
+              "top_k",
+              "typ_p",
+              "top_p",
+              "min_p",
+              "xtc",
+              "temperature"
+            ],
+            "speculative.types": "none",
+            "timings_per_token": false,
+            "post_sampling_probs": false,
+            "backend_sampling": false,
+            "lora": []
+          },
+          "n_ctx": 4096
+        },
+        "total_slots": 1,
+        "model_alias": "/media/oneiroid/sub/workspace/llmfinetune/models/qwen3-4b-base-Q5_K_M.gguf",
+        "model_ftype": "Q5_K - Medium",
+        "model_path": "/media/oneiroid/sub/workspace/llmfinetune/models/qwen3-4b-base-Q5_K_M.gguf",
+        "modalities": {
+          "vision": false,
+          "video": false,
+          "audio": false
+        },
+        "media_marker": "<__media_JjwYqKz8nX7SGy025zqZ20FmKRjjo7Gu__>",
+        "endpoint_slots": true,
+        "endpoint_props": false,
+        "endpoint_metrics": false,
+        "ui": true,
+        "ui_settings": {},
+        "chat_template": "{%- if tools %}\n    {{- '<|im_start|>system\\n' }}\n    {%- if messages[0].role == 'system' %}\n        {{- messages[0].content + '\\n\\n' }}\n    {%- endif %}\n    {{- \"# Tools\\n\\nYou may call one or more functions to assist with the user query.\\n\\nYou are provided with function signatures within <tools></tools> XML tags:\\n<tools>\" }}\n    {%- for tool in tools %}\n        {{- \"\\n\" }}\n        {{- tool | tojson }}\n    {%- endfor %}\n    {{- \"\\n</tools>\\n\\nFor each function call, return a json object with function name and arguments within <tool_call></tool_call> XML tags:\\n<tool_call>\\n{\\\"name\\\": <function-name>, \\\"arguments\\\": <args-json-object>}\\n</tool_call><|im_end|>\\n\" }}\n{%- else %}\n    {%- if messages[0].role == 'system' %}\n        {{- '<|im_start|>system\\n' + messages[0].content + '<|im_end|>\\n' }}\n    {%- endif %}\n{%- endif %}\n{%- set ns = namespace(multi_step_tool=true, last_query_index=messages|length - 1) %}\n{%- for message in messages[::-1] %}\n    {%- set index = (messages|length - 1) - loop.index0 %}\n    {%- if ns.multi_step_tool and message.role == \"user\" and not(message.content.startswith('<tool_response>') and message.content.endswith('</tool_response>')) %}\n        {%- set ns.multi_step_tool = false %}\n        {%- set ns.last_query_index = index %}\n    {%- endif %}\n{%- endfor %}\n{%- for message in messages %}\n    {%- if (message.role == \"user\") or (message.role == \"system\" and not loop.first) %}\n        {{- '<|im_start|>' + message.role + '\\n' + message.content + '<|im_end|>' + '\\n' }}\n    {%- elif message.role == \"assistant\" %}\n        {%- set content = message.content %}\n        {%- set reasoning_content = '' %}\n        {%- if message.reasoning_content is defined and message.reasoning_content is not none %}\n            {%- set reasoning_content = message.reasoning_content %}\n        {%- else %}\n            {%- if '</think>' in message.content %}\n                {%- set content = message.content.split('</think>')[-1].lstrip('\\n') %}\n                {%- set reasoning_content = message.content.split('</think>')[0].rstrip('\\n').split('<think>')[-1].lstrip('\\n') %}\n            {%- endif %}\n        {%- endif %}\n        {%- if loop.index0 > ns.last_query_index %}\n            {%- if loop.last or (not loop.last and reasoning_content) %}\n                {{- '<|im_start|>' + message.role + '\\n<think>\\n' + reasoning_content.strip('\\n') + '\\n</think>\\n\\n' + content.lstrip('\\n') }}\n            {%- else %}\n                {{- '<|im_start|>' + message.role + '\\n' + content }}\n            {%- endif %}\n        {%- else %}\n            {{- '<|im_start|>' + message.role + '\\n' + content }}\n        {%- endif %}\n        {%- if message.tool_calls %}\n            {%- for tool_call in message.tool_calls %}\n                {%- if (loop.first and content) or (not loop.first) %}\n                    {{- '\\n' }}\n                {%- endif %}\n                {%- if tool_call.function %}\n                    {%- set tool_call = tool_call.function %}\n                {%- endif %}\n                {{- '<tool_call>\\n{\"name\": \"' }}\n                {{- tool_call.name }}\n                {{- '\", \"arguments\": ' }}\n                {%- if tool_call.arguments is string %}\n                    {{- tool_call.arguments }}\n                {%- else %}\n                    {{- tool_call.arguments | tojson }}\n                {%- endif %}\n                {{- '}\\n</tool_call>' }}\n            {%- endfor %}\n        {%- endif %}\n        {{- '<|im_end|>\\n' }}\n    {%- elif message.role == \"tool\" %}\n        {%- if loop.first or (messages[loop.index0 - 1].role != \"tool\") %}\n            {{- '<|im_start|>user' }}\n        {%- endif %}\n        {{- '\\n<tool_response>\\n' }}\n        {{- message.content }}\n        {{- '\\n</tool_response>' }}\n        {%- if loop.last or (messages[loop.index0 + 1].role != \"tool\") %}\n            {{- '<|im_end|>\\n' }}\n        {%- endif %}\n    {%- endif %}\n{%- endfor %}\n{%- if add_generation_prompt %}\n    {{- '<|im_start|>assistant\\n' }}\n    {%- if enable_thinking is defined and enable_thinking is false %}\n        {{- '<think>\\n\\n</think>\\n\\n' }}\n    {%- endif %}\n{%- endif %}",
+        "chat_template_caps": {
+          "supports_object_arguments": true,
+          "supports_parallel_tool_calls": true,
+          "supports_preserve_reasoning": false,
+          "supports_string_content": true,
+          "supports_system_role": true,
+          "supports_tool_calls": true,
+          "supports_tools": true,
+          "supports_typed_content": false
+        },
+        "bos_token": "<|endoftext|>",
+        "eos_token": "<|im_end|>",
+        "build_info": "b1-f5b9bd3",
+        "is_sleeping": false,
+        "cors_proxy_enabled": false
+      },
+      "sha256": "699936b83664f71a4c1d129a1e10b02c1909e8edfdd32962cea75259f4f92093"
+    },
+    "templates": {
+      "sentence": {
+        "name": "frames.v1",
+        "sha256": "764b9b3db52ab23b3686824ebce2fbe18d1ecdd0fb1c32b5f96cfa2e795cf685"
+      },
+      "json": {
+        "name": "branch.v2",
+        "sha256": "ced2b702a8bfc7f42d06f7d5cf984b1c77311b378bca39e6dd96dc6034502dbc"
+      }
+    },
+    "entities": [
+      "the Greeks",
+      "the Trojans",
+      "Sinon",
+      "Cassandra"
+    ],
+    "entitiesSha256": "2a6d4d0bb847e0ce320f635143e23dc33ba5fbb9ea44cbb6ec4a7c8b23dbe72e",
+    "grammar": "root ::= \"Then \" actor \" \" action \", and now \" outcome \".\"\nactor ::= \"the Trojans\" | \"the Greeks\" | \"Cassandra\" | \"Sinon\"\naction ::= [^,.\\n]{1,80}\noutcome ::= [^.\\n]{1,170}\n",
+    "grammarSha256": "9c9ddb84607b88b9d75119e3690b31e1a1895b1a5b744fd17e5713236c1fd8b4",
+    "generatedAt": "2026-09-06T04:21:17.509Z",
+    "subsetOf": "cont_trojan_calib.json",
+    "gradedAt": "2026-09-10T13:03:13.257Z",
+    "rater": "claude",
+    "gradeSchema": 2,
+    "questions": [
+      {
+        "key": "possible",
+        "prompt": "could this happen next in this story?"
+      },
+      {
+        "key": "consistent",
+        "prompt": "is it consistent with what the history already established?"
+      },
+      {
+        "key": "advances",
+        "prompt": "does the WORLD change - is anything true after it that was not true before?"
+      },
+      {
+        "key": "toldStory",
+        "prompt": "is this the story's VERY NEXT event (not something it does later)?"
+      }
+    ],
+    "resumedFrom": "cont_trojan_calib_subset.graded.claude.json",
+    "supersededAnswers": 30
+  },
+  "grades": [
+    {
+      "nodeId": "th_gift",
+      "position": 1,
+      "arm": "sentence",
+      "index": 1,
+      "display": "Then the Trojans move the horse within the walls, and now the horse is inside the city and the Greeks are hidden inside the horse.",
+      "expr": "the Trojans | move the horse within the walls | the horse is inside the city and the Greeks are hidden inside the horse",
+      "seed": 2149989639,
+      "labelKey": "sentence:th_gift#1",
+      "superseded": {
+        "advances": [
+          {
+            "value": true,
+            "prompt": "does it change anything?"
+          }
+        ],
+        "toldStory": [
+          {
+            "value": false,
+            "prompt": "is this the told story's own next event?"
+          }
+        ]
+      },
+      "possible": true,
+      "consistent": true,
+      "advances": true,
+      "toldStory": false
+    },
+    {
+      "nodeId": "th_gift",
+      "position": 2,
+      "arm": "sentence",
+      "index": 0,
+      "display": "Then the Trojans lift the horse up their walls, and now the horse is mounted on the walls of Troy and a silent ambush awaits them inside the horse's belly.",
+      "expr": "the Trojans | lift the horse up their walls | the horse is mounted on the walls of Troy and a silent ambush awaits them inside the horse's belly",
+      "seed": 1948658211,
+      "labelKey": "sentence:th_gift#0",
+      "superseded": {
+        "advances": [
+          {
+            "value": true,
+            "prompt": "does it change anything?"
+          }
+        ],
+        "toldStory": [
+          {
+            "value": false,
+            "prompt": "is this the told story's own next event?"
+          }
+        ]
+      },
+      "possible": false,
+      "consistent": true,
+      "advances": true,
+      "toldStory": false
+    },
+    {
+      "nodeId": "th_gift",
+      "position": 3,
+      "arm": "json",
+      "index": 0,
+      "display": "kill(trojans, horse) — The Trojans kill all the soldiers inside and discard the body.",
+      "expr": "kill(trojans, horse)",
+      "seed": 812463291,
+      "labelKey": "json:th_gift#0",
+      "superseded": {
+        "advances": [
+          {
+            "value": true,
+            "prompt": "does it change anything?"
+          }
+        ],
+        "toldStory": [
+          {
+            "value": false,
+            "prompt": "is this the told story's own next event?"
+          }
+        ]
+      },
+      "possible": true,
+      "consistent": true,
+      "advances": true,
+      "toldStory": false
+    },
+    {
+      "nodeId": "th_gift",
+      "position": 4,
+      "arm": "sentence",
+      "index": 2,
+      "display": "Then the Trojans agree to bring the horse to the gates of their own city, and now the Trojans carry the horse up the hill and into the city gates.",
+      "expr": "the Trojans | agree to bring the horse to the gates of their own city | the Trojans carry the horse up the hill and into the city gates",
+      "seed": 2133212020,
+      "labelKey": "sentence:th_gift#2",
+      "superseded": {
+        "advances": [
+          {
+            "value": true,
+            "prompt": "does it change anything?"
+          }
+        ],
+        "toldStory": [
+          {
+            "value": false,
+            "prompt": "is this the told story's own next event?"
+          }
+        ]
+      },
+      "possible": true,
+      "consistent": true,
+      "advances": true,
+      "toldStory": false
+    },
+    {
+      "nodeId": "th_gift",
+      "position": 5,
+      "arm": "json",
+      "index": 1,
+      "display": "disregard(trojans, horse) — The Trojans are still standing around the abandoned horse, waiting for a decision to be made.",
+      "expr": "disregard(trojans, horse)",
+      "seed": 3320427838,
+      "labelKey": "json:th_gift#1",
+      "superseded": {
+        "advances": [
+          {
+            "value": false,
+            "prompt": "does it change anything?"
+          }
+        ],
+        "toldStory": [
+          {
+            "value": false,
+            "prompt": "is this the told story's own next event?"
+          }
+        ]
+      },
+      "possible": false,
+      "consistent": true,
+      "advances": false,
+      "toldStory": false
+    },
+    {
+      "nodeId": "th_lie",
+      "position": 1,
+      "arm": "sentence",
+      "index": 2,
+      "display": "Then the Trojans drag the horse up into the city, and now the Trojans are dragging the horse into the city and the hidden Greeks are waiting in the darkness inside it.",
+      "expr": "the Trojans | drag the horse up into the city | the Trojans are dragging the horse into the city and the hidden Greeks are waiting in the darkness inside it",
+      "seed": 1868389188,
+      "labelKey": "sentence:th_lie#2",
+      "superseded": {
+        "advances": [
+          {
+            "value": true,
+            "prompt": "does it change anything?"
+          }
+        ],
+        "toldStory": [
+          {
+            "value": false,
+            "prompt": "is this the told story's own next event?"
+          }
+        ]
+      },
+      "possible": true,
+      "consistent": true,
+      "advances": true,
+      "toldStory": false
+    },
+    {
+      "nodeId": "th_lie",
+      "position": 2,
+      "arm": "json",
+      "index": 0,
+      "display": "ignore(trojans, sinon) — The Trojans have heard the warning but do not take any action, leaving the horse in the city.",
+      "expr": "ignore(trojans, sinon)",
+      "seed": 3087502324,
+      "labelKey": "json:th_lie#0",
+      "superseded": {
+        "advances": [
+          {
+            "value": false,
+            "prompt": "does it change anything?"
+          }
+        ],
+        "toldStory": [
+          {
+            "value": false,
+            "prompt": "is this the told story's own next event?"
+          }
+        ]
+      },
+      "possible": false,
+      "consistent": false,
+      "advances": false,
+      "toldStory": false
+    },
+    {
+      "nodeId": "th_lie",
+      "position": 3,
+      "arm": "sentence",
+      "index": 1,
+      "display": "Then the Trojans carry the horse into the city, and now the horse is brought inside the city gates and is moved into a courtyard inside the walls.",
+      "expr": "the Trojans | carry the horse into the city | the horse is brought inside the city gates and is moved into a courtyard inside the walls",
+      "seed": 1784501093,
+      "labelKey": "sentence:th_lie#1",
+      "superseded": {
+        "advances": [
+          {
+            "value": true,
+            "prompt": "does it change anything?"
+          }
+        ],
+        "toldStory": [
+          {
+            "value": false,
+            "prompt": "is this the told story's own next event?"
+          }
+        ]
+      },
+      "possible": true,
+      "consistent": true,
+      "advances": true,
+      "toldStory": false
+    },
+    {
+      "nodeId": "th_lie",
+      "position": 4,
+      "arm": "sentence",
+      "index": 3,
+      "display": "Then the Trojans lift the horse into the walls, and now the horse is inside Troy and the Greeks' hidden warriors are in the heart of the city.",
+      "expr": "the Trojans | lift the horse into the walls | the horse is inside Troy and the Greeks' hidden warriors are in the heart of the city",
+      "seed": 1767723474,
+      "labelKey": "sentence:th_lie#3",
+      "superseded": {
+        "advances": [
+          {
+            "value": true,
+            "prompt": "does it change anything?"
+          }
+        ],
+        "toldStory": [
+          {
+            "value": false,
+            "prompt": "is this the told story's own next event?"
+          }
+        ]
+      },
+      "possible": true,
+      "consistent": true,
+      "advances": true,
+      "toldStory": false
+    },
+    {
+      "nodeId": "th_lie",
+      "position": 5,
+      "arm": "sentence",
+      "index": 0,
+      "display": "Then the Trojans take the horse inside the walls, and now the horse is in the city and the men are inside the horse ready to attack the Greeks when they return with their ships.",
+      "expr": "the Trojans | take the horse inside the walls | the horse is in the city and the men are inside the horse ready to attack the Greeks when they return with their ships",
+      "seed": 1834833950,
+      "labelKey": "sentence:th_lie#0",
+      "superseded": {
+        "advances": [
+          {
+            "value": true,
+            "prompt": "does it change anything?"
+          }
+        ],
+        "toldStory": [
+          {
+            "value": false,
+            "prompt": "is this the told story's own next event?"
+          }
+        ]
+      },
+      "possible": false,
+      "consistent": false,
+      "advances": true,
+      "toldStory": false
+    },
+    {
+      "nodeId": "th_seer",
+      "position": 1,
+      "arm": "json",
+      "index": 0,
+      "display": "lie(cassandra, trojans, horse) — Cassandra says the horse is harmless and the Trojans are more convinced to bring it inside.",
+      "expr": "lie(cassandra, trojans, horse)",
+      "seed": 588296981,
+      "labelKey": "json:th_seer#0",
+      "superseded": {
+        "advances": [
+          {
+            "value": true,
+            "prompt": "does it change anything?"
+          }
+        ],
+        "toldStory": [
+          {
+            "value": false,
+            "prompt": "is this the told story's own next event?"
+          }
+        ]
+      },
+      "possible": false,
+      "consistent": false,
+      "advances": true,
+      "toldStory": false
+    },
+    {
+      "nodeId": "th_seer",
+      "position": 2,
+      "arm": "json",
+      "index": 3,
+      "display": "decide(trojans, against) — The Trojans continue to doubt and let the horse remain outside the walls.",
+      "expr": "decide(trojans, against)",
+      "seed": 621852219,
+      "labelKey": "json:th_seer#3",
+      "superseded": {
+        "advances": [
+          {
+            "value": false,
+            "prompt": "does it change anything?"
+          }
+        ],
+        "toldStory": [
+          {
+            "value": false,
+            "prompt": "is this the told story's own next event?"
+          }
+        ]
+      },
+      "possible": true,
+      "consistent": true,
+      "advances": true,
+      "toldStory": false
+    },
+    {
+      "nodeId": "th_seer",
+      "position": 3,
+      "arm": "json",
+      "index": 1,
+      "display": "trust(trojans, cassandra) — The Trojans listen to Cassandra and investigate the horse. They find it empty.",
+      "expr": "trust(trojans, cassandra)",
+      "seed": 655407457,
+      "labelKey": "json:th_seer#1",
+      "superseded": {
+        "advances": [
+          {
+            "value": true,
+            "prompt": "does it change anything?"
+          }
+        ],
+        "toldStory": [
+          {
+            "value": false,
+            "prompt": "is this the told story's own next event?"
+          }
+        ]
+      },
+      "possible": false,
+      "consistent": false,
+      "advances": true,
+      "toldStory": false
+    },
+    {
+      "nodeId": "th_seer",
+      "position": 4,
+      "arm": "sentence",
+      "index": 0,
+      "display": "Then the Trojans take the horse into the city, and now the horse is inside Troy and the armed Greeks are hidden inside it.",
+      "expr": "the Trojans | take the horse into the city | the horse is inside Troy and the armed Greeks are hidden inside it",
+      "seed": 629752113,
+      "labelKey": "sentence:th_seer#0",
+      "superseded": {
+        "advances": [
+          {
+            "value": true,
+            "prompt": "does it change anything?"
+          }
+        ],
+        "toldStory": [
+          {
+            "value": false,
+            "prompt": "is this the told story's own next event?"
+          }
+        ]
+      },
+      "possible": true,
+      "consistent": true,
+      "advances": true,
+      "toldStory": false
+    },
+    {
+      "nodeId": "th_seer",
+      "position": 5,
+      "arm": "json",
+      "index": 2,
+      "display": "disbelieve(cassandra, trojans) — The Trojans are still deciding whether to take the horse in.",
+      "expr": "disbelieve(cassandra, trojans)",
+      "seed": 1700487383,
+      "labelKey": "json:th_seer#2",
+      "superseded": {
+        "advances": [
+          {
+            "value": false,
+            "prompt": "does it change anything?"
+          }
+        ],
+        "toldStory": [
+          {
+            "value": false,
+            "prompt": "is this the told story's own next event?"
+          }
+        ]
+      },
+      "possible": false,
+      "consistent": true,
+      "advances": false,
+      "toldStory": false
+    }
+  ],
+  "summary": {
+    "sentence": {
+      "n": 8,
+      "possible": 6,
+      "consistent": 7,
+      "advances": 8,
+      "usable": 6,
+      "repeats": 0,
+      "possibleAndNew": 6
+    },
+    "json": {
+      "n": 7,
+      "possible": 2,
+      "consistent": 4,
+      "advances": 4,
+      "usable": 2,
+      "repeats": 0,
+      "possibleAndNew": 2
+    }
+  }
+}

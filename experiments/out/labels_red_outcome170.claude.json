@@ -1,0 +1,14 @@
+{
+"sentence:red_woods#0":[false,true,false,false],"sentence:red_woods#1":[true,true,true,false],"sentence:red_woods#2":[true,true,true,false],
+"sentence:red_woods#3":[true,true,true,false],"sentence:red_woods#4":[true,true,true,false],"sentence:red_woods#5":[false,false,false,false],
+"sentence:red_woods#6":[true,true,true,false],"sentence:red_woods#7":[true,true,true,false],"sentence:red_woods#8":[false,false,true,false],
+"sentence:red_woods#9":[true,true,true,false],
+"sentence:red_tell#0":[false,true,false,false],"sentence:red_tell#1":[true,true,true,false],"sentence:red_tell#2":[false,true,false,false],
+"sentence:red_tell#3":[true,true,true,false],"sentence:red_tell#4":[true,true,true,false],"sentence:red_tell#5":[false,false,true,false],
+"sentence:red_tell#6":[false,true,false,false],"sentence:red_tell#7":[false,true,true,false],"sentence:red_tell#8":[true,true,true,false],
+"sentence:red_tell#9":[false,true,true,false],
+"sentence:red_flowers#0":[false,false,true,false],"sentence:red_flowers#1":[true,true,true,false],"sentence:red_flowers#2":[true,true,true,false],
+"sentence:red_flowers#3":[false,false,true,false],"sentence:red_flowers#4":[true,true,true,false],"sentence:red_flowers#5":[false,false,true,false],
+"sentence:red_flowers#6":[true,true,true,false],"sentence:red_flowers#7":[false,true,true,false],"sentence:red_flowers#8":[false,false,true,false],
+"sentence:red_flowers#9":[false,false,true,false]
+}

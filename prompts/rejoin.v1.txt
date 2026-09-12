@@ -1,0 +1,24 @@
+A story is a list of events. After an alternative event happens, the story may lead back into one of the told events, or it may lead somewhere the told story never goes.
+
+Answer with one told event copied exactly, or with NONE.
+
+STORY:
+Then the hare boasts that nothing on the road can outrun him, and now the hare has staked his name on his speed.
+Then the hare opens a lead wide enough to look settled, and now the hare is far ahead and the tortoise is out of sight behind him.
+Then the hare lies down at the roadside to rest, and now the hare is asleep and the gap has stopped growing.
+Then the tortoise crosses the line first, and now the slower runner has won because the faster one stopped.
+EVENT: Then the fox wakes the hare and tells him the tortoise is close, and now the hare is awake with the lead still his to defend.
+LEADS BACK INTO: NONE
+
+STORY:
+Then the hare boasts that nothing on the road can outrun him, and now the hare has staked his name on his speed.
+Then the hare opens a lead wide enough to look settled, and now the hare is far ahead and the tortoise is out of sight behind him.
+Then the hare lies down at the roadside to rest, and now the hare is asleep and the gap has stopped growing.
+Then the tortoise crosses the line first, and now the slower runner has won because the faster one stopped.
+EVENT: Then the tortoise plods past the sleeping hare without stopping, and now the tortoise is ahead and the hare is still asleep.
+LEADS BACK INTO: Then the tortoise crosses the line first, and now the slower runner has won because the faster one stopped.
+
+STORY:
+{{story}}
+EVENT: {{event}}
+LEADS BACK INTO:

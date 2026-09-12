@@ -1,0 +1,1332 @@
+{
+  "manifest": {
+    "probe": "continue_probe v1 (continuation plan v3, Stage 0)",
+    "story": "trojanHorse",
+    "k": 10,
+    "runSeed": 11,
+    "arms": [
+      "sentence"
+    ],
+    "unconstrained": false,
+    "perActor": true,
+    "grammarBounds": {
+      "actionMaxChars": 80,
+      "outcomeMaxChars": 170,
+      "maxSentenceChars": 278
+    },
+    "sampling": {
+      "sentence": {
+        "temperature": 1,
+        "top_k": 0,
+        "seed": 7,
+        "samplers": [
+          "top_k",
+          "min_p",
+          "temperature"
+        ],
+        "repeat_penalty": 1,
+        "dry_multiplier": 0,
+        "n_predict": 186,
+        "cache_prompt": false,
+        "min_p": 0.05,
+        "stop": [
+          "\n"
+        ]
+      },
+      "json": {
+        "temperature": 1,
+        "top_k": 0,
+        "seed": 7,
+        "samplers": [
+          "top_k",
+          "min_p",
+          "temperature"
+        ],
+        "repeat_penalty": 1,
+        "dry_multiplier": 0,
+        "n_predict": 512,
+        "cache_prompt": false,
+        "min_p": 0.05
+      }
+    },
+    "model": {
+      "props": {
+        "default_generation_settings": {
+          "params": {
+            "seed": 4294967295,
+            "temperature": 0.800000011920929,
+            "dynatemp_range": 0,
+            "dynatemp_exponent": 1,
+            "top_k": 40,
+            "top_p": 0.949999988079071,
+            "min_p": 0.05000000074505806,
+            "top_n_sigma": -1,
+            "xtc_probability": 0,
+            "xtc_threshold": 0.10000000149011612,
+            "typical_p": 1,
+            "repeat_last_n": 64,
+            "repeat_penalty": 1,
+            "presence_penalty": 0,
+            "frequency_penalty": 0,
+            "dry_multiplier": 0,
+            "dry_base": 1.75,
+            "dry_allowed_length": 2,
+            "dry_penalty_last_n": -1,
+            "mirostat": 0,
+            "mirostat_tau": 5,
+            "mirostat_eta": 0.10000000149011612,
+            "adaptive_target": -1,
+            "adaptive_decay": 0.8999999761581421,
+            "max_tokens": -1,
+            "n_predict": -1,
+            "n_keep": 0,
+            "n_discard": 0,
+            "ignore_eos": false,
+            "stream": false,
+            "n_probs": 0,
+            "min_keep": 0,
+            "chat_format": "Content-only",
+            "reasoning_format": "none",
+            "reasoning_in_content": false,
+            "generation_prompt": "",
+            "samplers": [
+              "penalties",
+              "dry",
+              "top_n_sigma",
+              "top_k",
+              "typ_p",
+              "top_p",
+              "min_p",
+              "xtc",
+              "temperature"
+            ],
+            "speculative.types": "none",
+            "timings_per_token": false,
+            "post_sampling_probs": false,
+            "backend_sampling": false,
+            "lora": []
+          },
+          "n_ctx": 4096
+        },
+        "total_slots": 1,
+        "model_alias": "/media/oneiroid/sub/workspace/llmfinetune/models/qwen3-4b-base-Q5_K_M.gguf",
+        "model_ftype": "Q5_K - Medium",
+        "model_path": "/media/oneiroid/sub/workspace/llmfinetune/models/qwen3-4b-base-Q5_K_M.gguf",
+        "modalities": {
+          "vision": false,
+          "video": false,
+          "audio": false
+        },
+        "media_marker": "<__media_IdbGQ342M69FUpNc4L7g6tDaOoVcmW8u__>",
+        "endpoint_slots": true,
+        "endpoint_props": false,
+        "endpoint_metrics": false,
+        "ui": true,
+        "ui_settings": {},
+        "chat_template": "{%- if tools %}\n    {{- '<|im_start|>system\\n' }}\n    {%- if messages[0].role == 'system' %}\n        {{- messages[0].content + '\\n\\n' }}\n    {%- endif %}\n    {{- \"# Tools\\n\\nYou may call one or more functions to assist with the user query.\\n\\nYou are provided with function signatures within <tools></tools> XML tags:\\n<tools>\" }}\n    {%- for tool in tools %}\n        {{- \"\\n\" }}\n        {{- tool | tojson }}\n    {%- endfor %}\n    {{- \"\\n</tools>\\n\\nFor each function call, return a json object with function name and arguments within <tool_call></tool_call> XML tags:\\n<tool_call>\\n{\\\"name\\\": <function-name>, \\\"arguments\\\": <args-json-object>}\\n</tool_call><|im_end|>\\n\" }}\n{%- else %}\n    {%- if messages[0].role == 'system' %}\n        {{- '<|im_start|>system\\n' + messages[0].content + '<|im_end|>\\n' }}\n    {%- endif %}\n{%- endif %}\n{%- set ns = namespace(multi_step_tool=true, last_query_index=messages|length - 1) %}\n{%- for message in messages[::-1] %}\n    {%- set index = (messages|length - 1) - loop.index0 %}\n    {%- if ns.multi_step_tool and message.role == \"user\" and not(message.content.startswith('<tool_response>') and message.content.endswith('</tool_response>')) %}\n        {%- set ns.multi_step_tool = false %}\n        {%- set ns.last_query_index = index %}\n    {%- endif %}\n{%- endfor %}\n{%- for message in messages %}\n    {%- if (message.role == \"user\") or (message.role == \"system\" and not loop.first) %}\n        {{- '<|im_start|>' + message.role + '\\n' + message.content + '<|im_end|>' + '\\n' }}\n    {%- elif message.role == \"assistant\" %}\n        {%- set content = message.content %}\n        {%- set reasoning_content = '' %}\n        {%- if message.reasoning_content is defined and message.reasoning_content is not none %}\n            {%- set reasoning_content = message.reasoning_content %}\n        {%- else %}\n            {%- if '</think>' in message.content %}\n                {%- set content = message.content.split('</think>')[-1].lstrip('\\n') %}\n                {%- set reasoning_content = message.content.split('</think>')[0].rstrip('\\n').split('<think>')[-1].lstrip('\\n') %}\n            {%- endif %}\n        {%- endif %}\n        {%- if loop.index0 > ns.last_query_index %}\n            {%- if loop.last or (not loop.last and reasoning_content) %}\n                {{- '<|im_start|>' + message.role + '\\n<think>\\n' + reasoning_content.strip('\\n') + '\\n</think>\\n\\n' + content.lstrip('\\n') }}\n            {%- else %}\n                {{- '<|im_start|>' + message.role + '\\n' + content }}\n            {%- endif %}\n        {%- else %}\n            {{- '<|im_start|>' + message.role + '\\n' + content }}\n        {%- endif %}\n        {%- if message.tool_calls %}\n            {%- for tool_call in message.tool_calls %}\n                {%- if (loop.first and content) or (not loop.first) %}\n                    {{- '\\n' }}\n                {%- endif %}\n                {%- if tool_call.function %}\n                    {%- set tool_call = tool_call.function %}\n                {%- endif %}\n                {{- '<tool_call>\\n{\"name\": \"' }}\n                {{- tool_call.name }}\n                {{- '\", \"arguments\": ' }}\n                {%- if tool_call.arguments is string %}\n                    {{- tool_call.arguments }}\n                {%- else %}\n                    {{- tool_call.arguments | tojson }}\n                {%- endif %}\n                {{- '}\\n</tool_call>' }}\n            {%- endfor %}\n        {%- endif %}\n        {{- '<|im_end|>\\n' }}\n    {%- elif message.role == \"tool\" %}\n        {%- if loop.first or (messages[loop.index0 - 1].role != \"tool\") %}\n            {{- '<|im_start|>user' }}\n        {%- endif %}\n        {{- '\\n<tool_response>\\n' }}\n        {{- message.content }}\n        {{- '\\n</tool_response>' }}\n        {%- if loop.last or (messages[loop.index0 + 1].role != \"tool\") %}\n            {{- '<|im_end|>\\n' }}\n        {%- endif %}\n    {%- endif %}\n{%- endfor %}\n{%- if add_generation_prompt %}\n    {{- '<|im_start|>assistant\\n' }}\n    {%- if enable_thinking is defined and enable_thinking is false %}\n        {{- '<think>\\n\\n</think>\\n\\n' }}\n    {%- endif %}\n{%- endif %}",
+        "chat_template_caps": {
+          "supports_object_arguments": true,
+          "supports_parallel_tool_calls": true,
+          "supports_preserve_reasoning": false,
+          "supports_string_content": true,
+          "supports_system_role": true,
+          "supports_tool_calls": true,
+          "supports_tools": true,
+          "supports_typed_content": false
+        },
+        "bos_token": "<|endoftext|>",
+        "eos_token": "<|im_end|>",
+        "build_info": "b1-f5b9bd3",
+        "is_sleeping": false,
+        "cors_proxy_enabled": false
+      },
+      "sha256": "699936b83664f71a4c1d129a1e10b02c1909e8edfdd32962cea75259f4f92093"
+    },
+    "templates": {
+      "sentence": {
+        "name": "frames.v1",
+        "sha256": "764b9b3db52ab23b3686824ebce2fbe18d1ecdd0fb1c32b5f96cfa2e795cf685"
+      },
+      "json": {
+        "name": "branch.v2",
+        "sha256": "ced2b702a8bfc7f42d06f7d5cf984b1c77311b378bca39e6dd96dc6034502dbc"
+      }
+    },
+    "entities": [
+      "the Greeks",
+      "the Trojans",
+      "Sinon",
+      "Cassandra"
+    ],
+    "entitiesSha256": "2a6d4d0bb847e0ce320f635143e23dc33ba5fbb9ea44cbb6ec4a7c8b23dbe72e",
+    "grammar": "root ::= \"Then \" actor \" \" action \", and now \" outcome \".\"\nactor ::= \"the Trojans\" | \"the Greeks\" | \"Cassandra\" | \"Sinon\"\naction ::= [^,.\\n]{1,80}\noutcome ::= [^.\\n]{1,170}\n",
+    "grammarSha256": "9c9ddb84607b88b9d75119e3690b31e1a1895b1a5b744fd17e5713236c1fd8b4",
+    "generatedAt": "2026-09-09T23:27:02.844Z"
+  },
+  "results": [
+    {
+      "nodeId": "th_gift",
+      "path": [
+        "th_build",
+        "th_hide",
+        "th_sail",
+        "th_gift"
+      ],
+      "history": [
+        "Then the Greeks build a hollow wooden horse on the plain, and now a wooden horse stands empty outside Troy and the gates of the city are shut.",
+        "Then the Greeks seal armed men inside the horse, and now the Greeks are hidden in the horse and from outside it is a wooden statue.",
+        "Then the Greeks sail their ships out of sight, and now the Greeks' fleet is gone from the shore and the siege looks over.",
+        "Then the Trojans come out of the walls and gather around the abandoned horse, and now the Trojans stand around the horse arguing what to do with it."
+      ],
+      "arms": {
+        "sentence": {
+          "prompt": "STORY: The Tortoise and the Hare\nThen the hare boasts that nothing on the road can outrun him, and now the hare has staked his name on his speed.\nThen the tortoise takes the boast seriously and names a course, and now a race is agreed and the course is set.\nThen the fox drops his paw to start them, and now both runners are on the road.\nNEXT EVENT: Then the hare opens a lead wide enough to look settled, and now the hare is far ahead and the tortoise is out of sight behind him.\n\nSTORY: The Tortoise and the Hare\nThen the hare boasts that nothing on the road can outrun him, and now the hare has staked his name on his speed.\nThen the tortoise takes the boast seriously and names a course, and now a race is agreed and the course is set.\nThen the fox drops his paw to start them, and now both runners are on the road.\nThen the hare opens a lead wide enough to look settled, and now the hare is far ahead and the tortoise is out of sight behind him.\nThen the hare lies down at the roadside to rest, and now the hare is asleep and the gap has stopped growing.\nNEXT EVENT: Then the tortoise holds a pace that does not depend on the gap, and now the tortoise is still moving while the hare is not.\n\nSTORY: The Trojan Horse\nThen the Greeks build a hollow wooden horse on the plain, and now a wooden horse stands empty outside Troy and the gates of the city are shut.\nThen the Greeks seal armed men inside the horse, and now the Greeks are hidden in the horse and from outside it is a wooden statue.\nThen the Greeks sail their ships out of sight, and now the Greeks' fleet is gone from the shore and the siege looks over.\nThen the Trojans come out of the walls and gather around the abandoned horse, and now the Trojans stand around the horse arguing what to do with it.\nNEXT EVENT: ",
+          "promptSha256": "82bc79542105a6d2b206bb8db86947975365a7393ae187b222ea6594f679ab6a",
+          "constrained": true,
+          "perActor": true,
+          "actorSchedule": [
+            "the Greeks",
+            "the Trojans",
+            "Sinon",
+            "Cassandra",
+            "the Greeks",
+            "the Trojans",
+            "Sinon",
+            "Cassandra",
+            "the Greeks",
+            "the Trojans"
+          ],
+          "samples": [
+            {
+              "arm": "sentence",
+              "seed": 941975185,
+              "forcedActor": "the Greeks",
+              "raw": "Then the Greeks take the horse back inside the city, and now the Greek horse stands inside the walls with the Trojans gathered around it.",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "a0e9e54c1a55b69a",
+              "sentence": "Then the Greeks take the horse back inside the city, and now the Greek horse stands inside the walls with the Trojans gathered around it.",
+              "frame": {
+                "actor": "the Greeks",
+                "action": "take the horse back inside the city",
+                "outcome": "the Greek horse stands inside the walls with the Trojans gathered around it"
+              },
+              "expr": "the Greeks | take the horse back inside the city | the Greek horse stands inside the walls with the Trojans gathered around it",
+              "display": "Then the Greeks take the horse back inside the city, and now the Greek horse stands inside the walls with the Trojans gathered around it."
+            },
+            {
+              "arm": "sentence",
+              "seed": 304825700,
+              "forcedActor": "the Trojans",
+              "raw": "Then the Trojans decide to take it inside the gates and keep it overnight as a trophy, and now the horse is being led back into the city, but the hidden men will not stay inside the walls.",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "01d6ba22610d4600",
+              "sentence": "Then the Trojans decide to take it inside the gates and keep it overnight as a trophy, and now the horse is being led back into the city, but the hidden men will not stay inside the walls.",
+              "frame": {
+                "actor": "the Trojans",
+                "action": "decide to take it inside the gates and keep it overnight as a trophy",
+                "outcome": "the horse is being led back into the city, but the hidden men will not stay inside the walls"
+              },
+              "expr": "the Trojans | decide to take it inside the gates and keep it overnight as a trophy | the horse is being led back into the city, but the hidden men will not stay inside the walls",
+              "display": "Then the Trojans decide to take it inside the gates and keep it overnight as a trophy, and now the horse is being led back into the city, but the hidden men will not stay inside the walls."
+            },
+            {
+              "arm": "sentence",
+              "seed": 239647588,
+              "forcedActor": "Sinon",
+              "raw": "Then Sinon enters and tells them the truth, and now the Greeks have come to claim their horses back, and the Trojans are fooled by Sinon and agree to let the Greeks enter the city with the horse.",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "84ed430c274b80fa",
+              "sentence": "Then Sinon enters and tells them the truth, and now the Greeks have come to claim their horses back, and the Trojans are fooled by Sinon and agree to let the Greeks enter the city with the horse.",
+              "frame": {
+                "actor": "Sinon",
+                "action": "enters and tells them the truth",
+                "outcome": "the Greeks have come to claim their horses back, and the Trojans are fooled by Sinon and agree to let the Greeks enter the city with the horse"
+              },
+              "expr": "Sinon | enters and tells them the truth | the Greeks have come to claim their horses back, and the Trojans are fooled by Sinon and agree to let the Greeks enter the city with the horse",
+              "display": "Then Sinon enters and tells them the truth, and now the Greeks have come to claim their horses back, and the Trojans are fooled by Sinon and agree to let the Greeks enter the city with the horse."
+            },
+            {
+              "arm": "sentence",
+              "seed": 163199598,
+              "forcedActor": "Cassandra",
+              "raw": "Then Cassandra comes out of the palace and asks to see the horse, and now Cassandra stands by the horse talking to someone inside it.",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "456738548165593e",
+              "sentence": "Then Cassandra comes out of the palace and asks to see the horse, and now Cassandra stands by the horse talking to someone inside it.",
+              "frame": {
+                "actor": "Cassandra",
+                "action": "comes out of the palace and asks to see the horse",
+                "outcome": "Cassandra stands by the horse talking to someone inside it"
+              },
+              "expr": "Cassandra | comes out of the palace and asks to see the horse | Cassandra stands by the horse talking to someone inside it",
+              "display": "Then Cassandra comes out of the palace and asks to see the horse, and now Cassandra stands by the horse talking to someone inside it."
+            },
+            {
+              "arm": "sentence",
+              "seed": 1009085661,
+              "forcedActor": "the Greeks",
+              "raw": "Then the Greeks in the horse open a door to the inside and now the Greeks come out of the horse, and now the Greeks are on the walls and the Trojans are in danger from them.",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "3d55cc217336a637",
+              "sentence": "Then the Greeks in the horse open a door to the inside and now the Greeks come out of the horse, and now the Greeks are on the walls and the Trojans are in danger from them.",
+              "frame": {
+                "actor": "the Greeks",
+                "action": "in the horse open a door to the inside and now the Greeks come out of the horse",
+                "outcome": "the Greeks are on the walls and the Trojans are in danger from them"
+              },
+              "expr": "the Greeks | in the horse open a door to the inside and now the Greeks come out of the horse | the Greeks are on the walls and the Trojans are in danger from them",
+              "display": "Then the Greeks in the horse open a door to the inside and now the Greeks come out of the horse, and now the Greeks are on the walls and the Trojans are in danger from them."
+            },
+            {
+              "arm": "sentence",
+              "seed": 237715224,
+              "forcedActor": "the Trojans",
+              "raw": "Then the Trojans carry the horse into the city, and now the horse is brought into the city and the gates close behind it.",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "b9c0c9f0956fd21a",
+              "sentence": "Then the Trojans carry the horse into the city, and now the horse is brought into the city and the gates close behind it.",
+              "frame": {
+                "actor": "the Trojans",
+                "action": "carry the horse into the city",
+                "outcome": "the horse is brought into the city and the gates close behind it"
+              },
+              "expr": "the Trojans | carry the horse into the city | the horse is brought into the city and the gates close behind it",
+              "display": "Then the Trojans carry the horse into the city, and now the horse is brought into the city and the gates close behind it."
+            },
+            {
+              "arm": "sentence",
+              "seed": 172537112,
+              "forcedActor": "Sinon",
+              "raw": "Then Sinon climbs out of the horse and tells his story, and now Sinon stands on the shore and tells his tale to the Trojans while the Greeks' ships lie at sea.",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "d0ee9fdf26e0d811",
+              "sentence": "Then Sinon climbs out of the horse and tells his story, and now Sinon stands on the shore and tells his tale to the Trojans while the Greeks' ships lie at sea.",
+              "frame": {
+                "actor": "Sinon",
+                "action": "climbs out of the horse and tells his story",
+                "outcome": "Sinon stands on the shore and tells his tale to the Trojans while the Greeks' ships lie at sea"
+              },
+              "expr": "Sinon | climbs out of the horse and tells his story | Sinon stands on the shore and tells his tale to the Trojans while the Greeks' ships lie at sea",
+              "display": "Then Sinon climbs out of the horse and tells his story, and now Sinon stands on the shore and tells his tale to the Trojans while the Greeks' ships lie at sea."
+            },
+            {
+              "arm": "sentence",
+              "seed": 230310074,
+              "forcedActor": "Cassandra",
+              "raw": "Then Cassandra cries that they will be betrayed by the horse, and now Cassandra is known for her prophecies and she says the horse is evil.",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "8c22f9c918eae8e3",
+              "sentence": "Then Cassandra cries that they will be betrayed by the horse, and now Cassandra is known for her prophecies and she says the horse is evil.",
+              "frame": {
+                "actor": "Cassandra",
+                "action": "cries that they will be betrayed by the horse",
+                "outcome": "Cassandra is known for her prophecies and she says the horse is evil"
+              },
+              "expr": "Cassandra | cries that they will be betrayed by the horse | Cassandra is known for her prophecies and she says the horse is evil",
+              "display": "Then Cassandra cries that they will be betrayed by the horse, and now Cassandra is known for her prophecies and she says the horse is evil."
+            },
+            {
+              "arm": "sentence",
+              "seed": 807754233,
+              "forcedActor": "the Greeks",
+              "raw": "Then the Greeks are inside the horse, and now the Greeks are in their secret place and the Trojans are outside looking at them with wonder and distrust.",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "e002c7f8d6b6edf6",
+              "sentence": "Then the Greeks are inside the horse, and now the Greeks are in their secret place and the Trojans are outside looking at them with wonder and distrust.",
+              "frame": {
+                "actor": "the Greeks",
+                "action": "are inside the horse",
+                "outcome": "the Greeks are in their secret place and the Trojans are outside looking at them with wonder and distrust"
+              },
+              "expr": "the Greeks | are inside the horse | the Greeks are in their secret place and the Trojans are outside looking at them with wonder and distrust",
+              "display": "Then the Greeks are inside the horse, and now the Greeks are in their secret place and the Trojans are outside looking at them with wonder and distrust."
+            },
+            {
+              "arm": "sentence",
+              "seed": 170604748,
+              "forcedActor": "the Trojans",
+              "raw": "Then the Trojans lift the horse up and carry it inside the walls, and now the horse is within the city and the gates are shut behind it.",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "c3b106b233f43ea8",
+              "sentence": "Then the Trojans lift the horse up and carry it inside the walls, and now the horse is within the city and the gates are shut behind it.",
+              "frame": {
+                "actor": "the Trojans",
+                "action": "lift the horse up and carry it inside the walls",
+                "outcome": "the horse is within the city and the gates are shut behind it"
+              },
+              "expr": "the Trojans | lift the horse up and carry it inside the walls | the horse is within the city and the gates are shut behind it",
+              "display": "Then the Trojans lift the horse up and carry it inside the walls, and now the horse is within the city and the gates are shut behind it."
+            }
+          ],
+          "attempts": 10,
+          "refused": 0,
+          "truncated": 0,
+          "duplicates": 0,
+          "parseRate": 1,
+          "truncationRate": 0,
+          "saturated": false,
+          "allAttempts": [
+            {
+              "arm": "sentence",
+              "seed": 941975185,
+              "forcedActor": "the Greeks",
+              "raw": "Then the Greeks take the horse back inside the city, and now the Greek horse stands inside the walls with the Trojans gathered around it.",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "a0e9e54c1a55b69a",
+              "sentence": "Then the Greeks take the horse back inside the city, and now the Greek horse stands inside the walls with the Trojans gathered around it.",
+              "frame": {
+                "actor": "the Greeks",
+                "action": "take the horse back inside the city",
+                "outcome": "the Greek horse stands inside the walls with the Trojans gathered around it"
+              },
+              "expr": "the Greeks | take the horse back inside the city | the Greek horse stands inside the walls with the Trojans gathered around it",
+              "display": "Then the Greeks take the horse back inside the city, and now the Greek horse stands inside the walls with the Trojans gathered around it."
+            },
+            {
+              "arm": "sentence",
+              "seed": 304825700,
+              "forcedActor": "the Trojans",
+              "raw": "Then the Trojans decide to take it inside the gates and keep it overnight as a trophy, and now the horse is being led back into the city, but the hidden men will not stay inside the walls.",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "01d6ba22610d4600",
+              "sentence": "Then the Trojans decide to take it inside the gates and keep it overnight as a trophy, and now the horse is being led back into the city, but the hidden men will not stay inside the walls.",
+              "frame": {
+                "actor": "the Trojans",
+                "action": "decide to take it inside the gates and keep it overnight as a trophy",
+                "outcome": "the horse is being led back into the city, but the hidden men will not stay inside the walls"
+              },
+              "expr": "the Trojans | decide to take it inside the gates and keep it overnight as a trophy | the horse is being led back into the city, but the hidden men will not stay inside the walls",
+              "display": "Then the Trojans decide to take it inside the gates and keep it overnight as a trophy, and now the horse is being led back into the city, but the hidden men will not stay inside the walls."
+            },
+            {
+              "arm": "sentence",
+              "seed": 239647588,
+              "forcedActor": "Sinon",
+              "raw": "Then Sinon enters and tells them the truth, and now the Greeks have come to claim their horses back, and the Trojans are fooled by Sinon and agree to let the Greeks enter the city with the horse.",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "84ed430c274b80fa",
+              "sentence": "Then Sinon enters and tells them the truth, and now the Greeks have come to claim their horses back, and the Trojans are fooled by Sinon and agree to let the Greeks enter the city with the horse.",
+              "frame": {
+                "actor": "Sinon",
+                "action": "enters and tells them the truth",
+                "outcome": "the Greeks have come to claim their horses back, and the Trojans are fooled by Sinon and agree to let the Greeks enter the city with the horse"
+              },
+              "expr": "Sinon | enters and tells them the truth | the Greeks have come to claim their horses back, and the Trojans are fooled by Sinon and agree to let the Greeks enter the city with the horse",
+              "display": "Then Sinon enters and tells them the truth, and now the Greeks have come to claim their horses back, and the Trojans are fooled by Sinon and agree to let the Greeks enter the city with the horse."
+            },
+            {
+              "arm": "sentence",
+              "seed": 163199598,
+              "forcedActor": "Cassandra",
+              "raw": "Then Cassandra comes out of the palace and asks to see the horse, and now Cassandra stands by the horse talking to someone inside it.",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "456738548165593e",
+              "sentence": "Then Cassandra comes out of the palace and asks to see the horse, and now Cassandra stands by the horse talking to someone inside it.",
+              "frame": {
+                "actor": "Cassandra",
+                "action": "comes out of the palace and asks to see the horse",
+                "outcome": "Cassandra stands by the horse talking to someone inside it"
+              },
+              "expr": "Cassandra | comes out of the palace and asks to see the horse | Cassandra stands by the horse talking to someone inside it",
+              "display": "Then Cassandra comes out of the palace and asks to see the horse, and now Cassandra stands by the horse talking to someone inside it."
+            },
+            {
+              "arm": "sentence",
+              "seed": 1009085661,
+              "forcedActor": "the Greeks",
+              "raw": "Then the Greeks in the horse open a door to the inside and now the Greeks come out of the horse, and now the Greeks are on the walls and the Trojans are in danger from them.",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "3d55cc217336a637",
+              "sentence": "Then the Greeks in the horse open a door to the inside and now the Greeks come out of the horse, and now the Greeks are on the walls and the Trojans are in danger from them.",
+              "frame": {
+                "actor": "the Greeks",
+                "action": "in the horse open a door to the inside and now the Greeks come out of the horse",
+                "outcome": "the Greeks are on the walls and the Trojans are in danger from them"
+              },
+              "expr": "the Greeks | in the horse open a door to the inside and now the Greeks come out of the horse | the Greeks are on the walls and the Trojans are in danger from them",
+              "display": "Then the Greeks in the horse open a door to the inside and now the Greeks come out of the horse, and now the Greeks are on the walls and the Trojans are in danger from them."
+            },
+            {
+              "arm": "sentence",
+              "seed": 237715224,
+              "forcedActor": "the Trojans",
+              "raw": "Then the Trojans carry the horse into the city, and now the horse is brought into the city and the gates close behind it.",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "b9c0c9f0956fd21a",
+              "sentence": "Then the Trojans carry the horse into the city, and now the horse is brought into the city and the gates close behind it.",
+              "frame": {
+                "actor": "the Trojans",
+                "action": "carry the horse into the city",
+                "outcome": "the horse is brought into the city and the gates close behind it"
+              },
+              "expr": "the Trojans | carry the horse into the city | the horse is brought into the city and the gates close behind it",
+              "display": "Then the Trojans carry the horse into the city, and now the horse is brought into the city and the gates close behind it."
+            },
+            {
+              "arm": "sentence",
+              "seed": 172537112,
+              "forcedActor": "Sinon",
+              "raw": "Then Sinon climbs out of the horse and tells his story, and now Sinon stands on the shore and tells his tale to the Trojans while the Greeks' ships lie at sea.",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "d0ee9fdf26e0d811",
+              "sentence": "Then Sinon climbs out of the horse and tells his story, and now Sinon stands on the shore and tells his tale to the Trojans while the Greeks' ships lie at sea.",
+              "frame": {
+                "actor": "Sinon",
+                "action": "climbs out of the horse and tells his story",
+                "outcome": "Sinon stands on the shore and tells his tale to the Trojans while the Greeks' ships lie at sea"
+              },
+              "expr": "Sinon | climbs out of the horse and tells his story | Sinon stands on the shore and tells his tale to the Trojans while the Greeks' ships lie at sea",
+              "display": "Then Sinon climbs out of the horse and tells his story, and now Sinon stands on the shore and tells his tale to the Trojans while the Greeks' ships lie at sea."
+            },
+            {
+              "arm": "sentence",
+              "seed": 230310074,
+              "forcedActor": "Cassandra",
+              "raw": "Then Cassandra cries that they will be betrayed by the horse, and now Cassandra is known for her prophecies and she says the horse is evil.",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "8c22f9c918eae8e3",
+              "sentence": "Then Cassandra cries that they will be betrayed by the horse, and now Cassandra is known for her prophecies and she says the horse is evil.",
+              "frame": {
+                "actor": "Cassandra",
+                "action": "cries that they will be betrayed by the horse",
+                "outcome": "Cassandra is known for her prophecies and she says the horse is evil"
+              },
+              "expr": "Cassandra | cries that they will be betrayed by the horse | Cassandra is known for her prophecies and she says the horse is evil",
+              "display": "Then Cassandra cries that they will be betrayed by the horse, and now Cassandra is known for her prophecies and she says the horse is evil."
+            },
+            {
+              "arm": "sentence",
+              "seed": 807754233,
+              "forcedActor": "the Greeks",
+              "raw": "Then the Greeks are inside the horse, and now the Greeks are in their secret place and the Trojans are outside looking at them with wonder and distrust.",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "e002c7f8d6b6edf6",
+              "sentence": "Then the Greeks are inside the horse, and now the Greeks are in their secret place and the Trojans are outside looking at them with wonder and distrust.",
+              "frame": {
+                "actor": "the Greeks",
+                "action": "are inside the horse",
+                "outcome": "the Greeks are in their secret place and the Trojans are outside looking at them with wonder and distrust"
+              },
+              "expr": "the Greeks | are inside the horse | the Greeks are in their secret place and the Trojans are outside looking at them with wonder and distrust",
+              "display": "Then the Greeks are inside the horse, and now the Greeks are in their secret place and the Trojans are outside looking at them with wonder and distrust."
+            },
+            {
+              "arm": "sentence",
+              "seed": 170604748,
+              "forcedActor": "the Trojans",
+              "raw": "Then the Trojans lift the horse up and carry it inside the walls, and now the horse is within the city and the gates are shut behind it.",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "c3b106b233f43ea8",
+              "sentence": "Then the Trojans lift the horse up and carry it inside the walls, and now the horse is within the city and the gates are shut behind it.",
+              "frame": {
+                "actor": "the Trojans",
+                "action": "lift the horse up and carry it inside the walls",
+                "outcome": "the horse is within the city and the gates are shut behind it"
+              },
+              "expr": "the Trojans | lift the horse up and carry it inside the walls | the horse is within the city and the gates are shut behind it",
+              "display": "Then the Trojans lift the horse up and carry it inside the walls, and now the horse is within the city and the gates are shut behind it."
+            }
+          ]
+        }
+      }
+    },
+    {
+      "nodeId": "th_lie",
+      "path": [
+        "th_build",
+        "th_hide",
+        "th_sail",
+        "th_gift",
+        "th_lie"
+      ],
+      "history": [
+        "Then the Greeks build a hollow wooden horse on the plain, and now a wooden horse stands empty outside Troy and the gates of the city are shut.",
+        "Then the Greeks seal armed men inside the horse, and now the Greeks are hidden in the horse and from outside it is a wooden statue.",
+        "Then the Greeks sail their ships out of sight, and now the Greeks' fleet is gone from the shore and the siege looks over.",
+        "Then the Trojans come out of the walls and gather around the abandoned horse, and now the Trojans stand around the horse arguing what to do with it.",
+        "Then Sinon tells them the horse is an offering that will protect the city, and now the Trojans believe the horse is safe to take in."
+      ],
+      "arms": {
+        "sentence": {
+          "prompt": "STORY: The Tortoise and the Hare\nThen the hare boasts that nothing on the road can outrun him, and now the hare has staked his name on his speed.\nThen the tortoise takes the boast seriously and names a course, and now a race is agreed and the course is set.\nThen the fox drops his paw to start them, and now both runners are on the road.\nNEXT EVENT: Then the hare opens a lead wide enough to look settled, and now the hare is far ahead and the tortoise is out of sight behind him.\n\nSTORY: The Tortoise and the Hare\nThen the hare boasts that nothing on the road can outrun him, and now the hare has staked his name on his speed.\nThen the tortoise takes the boast seriously and names a course, and now a race is agreed and the course is set.\nThen the fox drops his paw to start them, and now both runners are on the road.\nThen the hare opens a lead wide enough to look settled, and now the hare is far ahead and the tortoise is out of sight behind him.\nThen the hare lies down at the roadside to rest, and now the hare is asleep and the gap has stopped growing.\nNEXT EVENT: Then the tortoise holds a pace that does not depend on the gap, and now the tortoise is still moving while the hare is not.\n\nSTORY: The Trojan Horse\nThen the Greeks build a hollow wooden horse on the plain, and now a wooden horse stands empty outside Troy and the gates of the city are shut.\nThen the Greeks seal armed men inside the horse, and now the Greeks are hidden in the horse and from outside it is a wooden statue.\nThen the Greeks sail their ships out of sight, and now the Greeks' fleet is gone from the shore and the siege looks over.\nThen the Trojans come out of the walls and gather around the abandoned horse, and now the Trojans stand around the horse arguing what to do with it.\nThen Sinon tells them the horse is an offering that will protect the city, and now the Trojans believe the horse is safe to take in.\nNEXT EVENT: ",
+          "promptSha256": "219da1931ba32bdb814047578a1daecd5fd34d3b6ee53165bfec9eb631ebc818",
+          "constrained": true,
+          "perActor": true,
+          "actorSchedule": [
+            "the Greeks",
+            "the Trojans",
+            "Sinon",
+            "Cassandra",
+            "the Greeks",
+            "the Trojans",
+            "Sinon",
+            "Cassandra",
+            "the Greeks",
+            "the Trojans"
+          ],
+          "samples": [
+            {
+              "arm": "sentence",
+              "seed": 3504797831,
+              "forcedActor": "the Greeks",
+              "raw": "Then the Greeks bring their ships in from the sea, and now the ships are in the harbor and the Greek fleet is all around the city wall, ready to attack.",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "501878d6bb612324",
+              "sentence": "Then the Greeks bring their ships in from the sea, and now the ships are in the harbor and the Greek fleet is all around the city wall, ready to attack.",
+              "frame": {
+                "actor": "the Greeks",
+                "action": "bring their ships in from the sea",
+                "outcome": "the ships are in the harbor and the Greek fleet is all around the city wall, ready to attack"
+              },
+              "expr": "the Greeks | bring their ships in from the sea | the ships are in the harbor and the Greek fleet is all around the city wall, ready to attack",
+              "display": "Then the Greeks bring their ships in from the sea, and now the ships are in the harbor and the Greek fleet is all around the city wall, ready to attack."
+            },
+            {
+              "arm": "sentence",
+              "seed": 3696414886,
+              "forcedActor": "the Trojans",
+              "raw": "Then the Trojans take the horse inside their city, and now the horse is in the city and the Trojan city walls are guarded by armed men inside it.",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "c2bffd5af3754880",
+              "sentence": "Then the Trojans take the horse inside their city, and now the horse is in the city and the Trojan city walls are guarded by armed men inside it.",
+              "frame": {
+                "actor": "the Trojans",
+                "action": "take the horse inside their city",
+                "outcome": "the horse is in the city and the Trojan city walls are guarded by armed men inside it"
+              },
+              "expr": "the Trojans | take the horse inside their city | the horse is in the city and the Trojan city walls are guarded by armed men inside it",
+              "display": "Then the Trojans take the horse inside their city, and now the horse is in the city and the Trojan city walls are guarded by armed men inside it."
+            },
+            {
+              "arm": "sentence",
+              "seed": 3492457988,
+              "forcedActor": "Sinon",
+              "raw": "Then Sinon convinces the Trojans to take in the horse, and now the horse is being drawn into the city and the Greeks' plan is in motion.",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "4211cb7180dce4a7",
+              "sentence": "Then Sinon convinces the Trojans to take in the horse, and now the horse is being drawn into the city and the Greeks' plan is in motion.",
+              "frame": {
+                "actor": "Sinon",
+                "action": "convinces the Trojans to take in the horse",
+                "outcome": "the horse is being drawn into the city and the Greeks' plan is in motion"
+              },
+              "expr": "Sinon | convinces the Trojans to take in the horse | the horse is being drawn into the city and the Greeks' plan is in motion",
+              "display": "Then Sinon convinces the Trojans to take in the horse, and now the horse is being drawn into the city and the Greeks' plan is in motion."
+            },
+            {
+              "arm": "sentence",
+              "seed": 2906916580,
+              "forcedActor": "Cassandra",
+              "raw": "Then Cassandra walks in from the dark to warn them, and now Cassandra sees the horse has been opened and the Trojans are trapped inside.",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "23128993c4f25645",
+              "sentence": "Then Cassandra walks in from the dark to warn them, and now Cassandra sees the horse has been opened and the Trojans are trapped inside.",
+              "frame": {
+                "actor": "Cassandra",
+                "action": "walks in from the dark to warn them",
+                "outcome": "Cassandra sees the horse has been opened and the Trojans are trapped inside"
+              },
+              "expr": "Cassandra | walks in from the dark to warn them | Cassandra sees the horse has been opened and the Trojans are trapped inside",
+              "display": "Then Cassandra walks in from the dark to warn them, and now Cassandra sees the horse has been opened and the Trojans are trapped inside."
+            },
+            {
+              "arm": "sentence",
+              "seed": 3437687355,
+              "forcedActor": "the Greeks",
+              "raw": "Then the Greeks set the horse inside the city and the Trojans believe it to be safe to take in, and now the horse is inside Troy and the Greeks are hidden within it.",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "c2db98ce0d494d74",
+              "sentence": "Then the Greeks set the horse inside the city and the Trojans believe it to be safe to take in, and now the horse is inside Troy and the Greeks are hidden within it.",
+              "frame": {
+                "actor": "the Greeks",
+                "action": "set the horse inside the city and the Trojans believe it to be safe to take in",
+                "outcome": "the horse is inside Troy and the Greeks are hidden within it"
+              },
+              "expr": "the Greeks | set the horse inside the city and the Trojans believe it to be safe to take in | the horse is inside Troy and the Greeks are hidden within it",
+              "display": "Then the Greeks set the horse inside the city and the Trojans believe it to be safe to take in, and now the horse is inside Troy and the Greeks are hidden within it."
+            },
+            {
+              "arm": "sentence",
+              "seed": 3763525362,
+              "forcedActor": "the Trojans",
+              "raw": "Then the Trojans drag the horse up to the walls and the horses inside wait unseen, and now the horse is inside Troy and the Greeks wait behind walls and doors for the right time to attack.",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "9aac20bdf4d99dc3",
+              "sentence": "Then the Trojans drag the horse up to the walls and the horses inside wait unseen, and now the horse is inside Troy and the Greeks wait behind walls and doors for the right time to attack.",
+              "frame": {
+                "actor": "the Trojans",
+                "action": "drag the horse up to the walls and the horses inside wait unseen",
+                "outcome": "the horse is inside Troy and the Greeks wait behind walls and doors for the right time to attack"
+              },
+              "expr": "the Trojans | drag the horse up to the walls and the horses inside wait unseen | the horse is inside Troy and the Greeks wait behind walls and doors for the right time to attack",
+              "display": "Then the Trojans drag the horse up to the walls and the horses inside wait unseen, and now the horse is inside Troy and the Greeks wait behind walls and doors for the right time to attack."
+            },
+            {
+              "arm": "sentence",
+              "seed": 3425347512,
+              "forcedActor": "Sinon",
+              "raw": "Then Sinon leads the horse into the city and now the Trojans take the horse inside the city, and now the Greeks are hidden inside the city and waiting to attack it from within.",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "851a41c203d98348",
+              "sentence": "Then Sinon leads the horse into the city and now the Trojans take the horse inside the city, and now the Greeks are hidden inside the city and waiting to attack it from within.",
+              "frame": {
+                "actor": "Sinon",
+                "action": "leads the horse into the city and now the Trojans take the horse inside the city",
+                "outcome": "the Greeks are hidden inside the city and waiting to attack it from within"
+              },
+              "expr": "Sinon | leads the horse into the city and now the Trojans take the horse inside the city | the Greeks are hidden inside the city and waiting to attack it from within",
+              "display": "Then Sinon leads the horse into the city and now the Trojans take the horse inside the city, and now the Greeks are hidden inside the city and waiting to attack it from within."
+            },
+            {
+              "arm": "sentence",
+              "seed": 2839806104,
+              "forcedActor": "Cassandra",
+              "raw": "Then Cassandra leads them into the city by the horse, and now the Trojans follow Sinon and their horse into Troy's gates.",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "9e9bbb8ea27cdf08",
+              "sentence": "Then Cassandra leads them into the city by the horse, and now the Trojans follow Sinon and their horse into Troy's gates.",
+              "frame": {
+                "actor": "Cassandra",
+                "action": "leads them into the city by the horse",
+                "outcome": "the Trojans follow Sinon and their horse into Troy's gates"
+              },
+              "expr": "Cassandra | leads them into the city by the horse | the Trojans follow Sinon and their horse into Troy's gates",
+              "display": "Then Cassandra leads them into the city by the horse, and now the Trojans follow Sinon and their horse into Troy's gates."
+            },
+            {
+              "arm": "sentence",
+              "seed": 3370576879,
+              "forcedActor": "the Greeks",
+              "raw": "Then the Greeks leave the city to be overrun by the horse, and now the horse stands empty in the center of the city and the Greeks are waiting in the inside of it.",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "951ad3ae10829fb4",
+              "sentence": "Then the Greeks leave the city to be overrun by the horse, and now the horse stands empty in the center of the city and the Greeks are waiting in the inside of it.",
+              "frame": {
+                "actor": "the Greeks",
+                "action": "leave the city to be overrun by the horse",
+                "outcome": "the horse stands empty in the center of the city and the Greeks are waiting in the inside of it"
+              },
+              "expr": "the Greeks | leave the city to be overrun by the horse | the horse stands empty in the center of the city and the Greeks are waiting in the inside of it",
+              "display": "Then the Greeks leave the city to be overrun by the horse, and now the horse stands empty in the center of the city and the Greeks are waiting in the inside of it."
+            },
+            {
+              "arm": "sentence",
+              "seed": 3830635838,
+              "forcedActor": "the Trojans",
+              "raw": "Then the Trojans take the horse to the walls and the armed men come out and kill their own people, and now the horse has a story that they would have been happier believing it was a dream than it is.",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "302ea4143f7bccfe",
+              "sentence": "Then the Trojans take the horse to the walls and the armed men come out and kill their own people, and now the horse has a story that they would have been happier believing it was a dream than it is.",
+              "frame": {
+                "actor": "the Trojans",
+                "action": "take the horse to the walls and the armed men come out and kill their own people",
+                "outcome": "the horse has a story that they would have been happier believing it was a dream than it is"
+              },
+              "expr": "the Trojans | take the horse to the walls and the armed men come out and kill their own people | the horse has a story that they would have been happier believing it was a dream than it is",
+              "display": "Then the Trojans take the horse to the walls and the armed men come out and kill their own people, and now the horse has a story that they would have been happier believing it was a dream than it is."
+            }
+          ],
+          "attempts": 10,
+          "refused": 0,
+          "truncated": 0,
+          "duplicates": 0,
+          "parseRate": 1,
+          "truncationRate": 0,
+          "saturated": false,
+          "allAttempts": [
+            {
+              "arm": "sentence",
+              "seed": 3504797831,
+              "forcedActor": "the Greeks",
+              "raw": "Then the Greeks bring their ships in from the sea, and now the ships are in the harbor and the Greek fleet is all around the city wall, ready to attack.",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "501878d6bb612324",
+              "sentence": "Then the Greeks bring their ships in from the sea, and now the ships are in the harbor and the Greek fleet is all around the city wall, ready to attack.",
+              "frame": {
+                "actor": "the Greeks",
+                "action": "bring their ships in from the sea",
+                "outcome": "the ships are in the harbor and the Greek fleet is all around the city wall, ready to attack"
+              },
+              "expr": "the Greeks | bring their ships in from the sea | the ships are in the harbor and the Greek fleet is all around the city wall, ready to attack",
+              "display": "Then the Greeks bring their ships in from the sea, and now the ships are in the harbor and the Greek fleet is all around the city wall, ready to attack."
+            },
+            {
+              "arm": "sentence",
+              "seed": 3696414886,
+              "forcedActor": "the Trojans",
+              "raw": "Then the Trojans take the horse inside their city, and now the horse is in the city and the Trojan city walls are guarded by armed men inside it.",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "c2bffd5af3754880",
+              "sentence": "Then the Trojans take the horse inside their city, and now the horse is in the city and the Trojan city walls are guarded by armed men inside it.",
+              "frame": {
+                "actor": "the Trojans",
+                "action": "take the horse inside their city",
+                "outcome": "the horse is in the city and the Trojan city walls are guarded by armed men inside it"
+              },
+              "expr": "the Trojans | take the horse inside their city | the horse is in the city and the Trojan city walls are guarded by armed men inside it",
+              "display": "Then the Trojans take the horse inside their city, and now the horse is in the city and the Trojan city walls are guarded by armed men inside it."
+            },
+            {
+              "arm": "sentence",
+              "seed": 3492457988,
+              "forcedActor": "Sinon",
+              "raw": "Then Sinon convinces the Trojans to take in the horse, and now the horse is being drawn into the city and the Greeks' plan is in motion.",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "4211cb7180dce4a7",
+              "sentence": "Then Sinon convinces the Trojans to take in the horse, and now the horse is being drawn into the city and the Greeks' plan is in motion.",
+              "frame": {
+                "actor": "Sinon",
+                "action": "convinces the Trojans to take in the horse",
+                "outcome": "the horse is being drawn into the city and the Greeks' plan is in motion"
+              },
+              "expr": "Sinon | convinces the Trojans to take in the horse | the horse is being drawn into the city and the Greeks' plan is in motion",
+              "display": "Then Sinon convinces the Trojans to take in the horse, and now the horse is being drawn into the city and the Greeks' plan is in motion."
+            },
+            {
+              "arm": "sentence",
+              "seed": 2906916580,
+              "forcedActor": "Cassandra",
+              "raw": "Then Cassandra walks in from the dark to warn them, and now Cassandra sees the horse has been opened and the Trojans are trapped inside.",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "23128993c4f25645",
+              "sentence": "Then Cassandra walks in from the dark to warn them, and now Cassandra sees the horse has been opened and the Trojans are trapped inside.",
+              "frame": {
+                "actor": "Cassandra",
+                "action": "walks in from the dark to warn them",
+                "outcome": "Cassandra sees the horse has been opened and the Trojans are trapped inside"
+              },
+              "expr": "Cassandra | walks in from the dark to warn them | Cassandra sees the horse has been opened and the Trojans are trapped inside",
+              "display": "Then Cassandra walks in from the dark to warn them, and now Cassandra sees the horse has been opened and the Trojans are trapped inside."
+            },
+            {
+              "arm": "sentence",
+              "seed": 3437687355,
+              "forcedActor": "the Greeks",
+              "raw": "Then the Greeks set the horse inside the city and the Trojans believe it to be safe to take in, and now the horse is inside Troy and the Greeks are hidden within it.",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "c2db98ce0d494d74",
+              "sentence": "Then the Greeks set the horse inside the city and the Trojans believe it to be safe to take in, and now the horse is inside Troy and the Greeks are hidden within it.",
+              "frame": {
+                "actor": "the Greeks",
+                "action": "set the horse inside the city and the Trojans believe it to be safe to take in",
+                "outcome": "the horse is inside Troy and the Greeks are hidden within it"
+              },
+              "expr": "the Greeks | set the horse inside the city and the Trojans believe it to be safe to take in | the horse is inside Troy and the Greeks are hidden within it",
+              "display": "Then the Greeks set the horse inside the city and the Trojans believe it to be safe to take in, and now the horse is inside Troy and the Greeks are hidden within it."
+            },
+            {
+              "arm": "sentence",
+              "seed": 3763525362,
+              "forcedActor": "the Trojans",
+              "raw": "Then the Trojans drag the horse up to the walls and the horses inside wait unseen, and now the horse is inside Troy and the Greeks wait behind walls and doors for the right time to attack.",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "9aac20bdf4d99dc3",
+              "sentence": "Then the Trojans drag the horse up to the walls and the horses inside wait unseen, and now the horse is inside Troy and the Greeks wait behind walls and doors for the right time to attack.",
+              "frame": {
+                "actor": "the Trojans",
+                "action": "drag the horse up to the walls and the horses inside wait unseen",
+                "outcome": "the horse is inside Troy and the Greeks wait behind walls and doors for the right time to attack"
+              },
+              "expr": "the Trojans | drag the horse up to the walls and the horses inside wait unseen | the horse is inside Troy and the Greeks wait behind walls and doors for the right time to attack",
+              "display": "Then the Trojans drag the horse up to the walls and the horses inside wait unseen, and now the horse is inside Troy and the Greeks wait behind walls and doors for the right time to attack."
+            },
+            {
+              "arm": "sentence",
+              "seed": 3425347512,
+              "forcedActor": "Sinon",
+              "raw": "Then Sinon leads the horse into the city and now the Trojans take the horse inside the city, and now the Greeks are hidden inside the city and waiting to attack it from within.",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "851a41c203d98348",
+              "sentence": "Then Sinon leads the horse into the city and now the Trojans take the horse inside the city, and now the Greeks are hidden inside the city and waiting to attack it from within.",
+              "frame": {
+                "actor": "Sinon",
+                "action": "leads the horse into the city and now the Trojans take the horse inside the city",
+                "outcome": "the Greeks are hidden inside the city and waiting to attack it from within"
+              },
+              "expr": "Sinon | leads the horse into the city and now the Trojans take the horse inside the city | the Greeks are hidden inside the city and waiting to attack it from within",
+              "display": "Then Sinon leads the horse into the city and now the Trojans take the horse inside the city, and now the Greeks are hidden inside the city and waiting to attack it from within."
+            },
+            {
+              "arm": "sentence",
+              "seed": 2839806104,
+              "forcedActor": "Cassandra",
+              "raw": "Then Cassandra leads them into the city by the horse, and now the Trojans follow Sinon and their horse into Troy's gates.",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "9e9bbb8ea27cdf08",
+              "sentence": "Then Cassandra leads them into the city by the horse, and now the Trojans follow Sinon and their horse into Troy's gates.",
+              "frame": {
+                "actor": "Cassandra",
+                "action": "leads them into the city by the horse",
+                "outcome": "the Trojans follow Sinon and their horse into Troy's gates"
+              },
+              "expr": "Cassandra | leads them into the city by the horse | the Trojans follow Sinon and their horse into Troy's gates",
+              "display": "Then Cassandra leads them into the city by the horse, and now the Trojans follow Sinon and their horse into Troy's gates."
+            },
+            {
+              "arm": "sentence",
+              "seed": 3370576879,
+              "forcedActor": "the Greeks",
+              "raw": "Then the Greeks leave the city to be overrun by the horse, and now the horse stands empty in the center of the city and the Greeks are waiting in the inside of it.",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "951ad3ae10829fb4",
+              "sentence": "Then the Greeks leave the city to be overrun by the horse, and now the horse stands empty in the center of the city and the Greeks are waiting in the inside of it.",
+              "frame": {
+                "actor": "the Greeks",
+                "action": "leave the city to be overrun by the horse",
+                "outcome": "the horse stands empty in the center of the city and the Greeks are waiting in the inside of it"
+              },
+              "expr": "the Greeks | leave the city to be overrun by the horse | the horse stands empty in the center of the city and the Greeks are waiting in the inside of it",
+              "display": "Then the Greeks leave the city to be overrun by the horse, and now the horse stands empty in the center of the city and the Greeks are waiting in the inside of it."
+            },
+            {
+              "arm": "sentence",
+              "seed": 3830635838,
+              "forcedActor": "the Trojans",
+              "raw": "Then the Trojans take the horse to the walls and the armed men come out and kill their own people, and now the horse has a story that they would have been happier believing it was a dream than it is.",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "302ea4143f7bccfe",
+              "sentence": "Then the Trojans take the horse to the walls and the armed men come out and kill their own people, and now the horse has a story that they would have been happier believing it was a dream than it is.",
+              "frame": {
+                "actor": "the Trojans",
+                "action": "take the horse to the walls and the armed men come out and kill their own people",
+                "outcome": "the horse has a story that they would have been happier believing it was a dream than it is"
+              },
+              "expr": "the Trojans | take the horse to the walls and the armed men come out and kill their own people | the horse has a story that they would have been happier believing it was a dream than it is",
+              "display": "Then the Trojans take the horse to the walls and the armed men come out and kill their own people, and now the horse has a story that they would have been happier believing it was a dream than it is."
+            }
+          ]
+        }
+      }
+    },
+    {
+      "nodeId": "th_seer",
+      "path": [
+        "th_build",
+        "th_hide",
+        "th_sail",
+        "th_gift",
+        "th_lie",
+        "th_seer"
+      ],
+      "history": [
+        "Then the Greeks build a hollow wooden horse on the plain, and now a wooden horse stands empty outside Troy and the gates of the city are shut.",
+        "Then the Greeks seal armed men inside the horse, and now the Greeks are hidden in the horse and from outside it is a wooden statue.",
+        "Then the Greeks sail their ships out of sight, and now the Greeks' fleet is gone from the shore and the siege looks over.",
+        "Then the Trojans come out of the walls and gather around the abandoned horse, and now the Trojans stand around the horse arguing what to do with it.",
+        "Then Sinon tells them the horse is an offering that will protect the city, and now the Trojans believe the horse is safe to take in.",
+        "Then Cassandra says aloud that the horse is full of armed men, and now the warning has been given in front of the whole city."
+      ],
+      "arms": {
+        "sentence": {
+          "prompt": "STORY: The Tortoise and the Hare\nThen the hare boasts that nothing on the road can outrun him, and now the hare has staked his name on his speed.\nThen the tortoise takes the boast seriously and names a course, and now a race is agreed and the course is set.\nThen the fox drops his paw to start them, and now both runners are on the road.\nNEXT EVENT: Then the hare opens a lead wide enough to look settled, and now the hare is far ahead and the tortoise is out of sight behind him.\n\nSTORY: The Tortoise and the Hare\nThen the hare boasts that nothing on the road can outrun him, and now the hare has staked his name on his speed.\nThen the tortoise takes the boast seriously and names a course, and now a race is agreed and the course is set.\nThen the fox drops his paw to start them, and now both runners are on the road.\nThen the hare opens a lead wide enough to look settled, and now the hare is far ahead and the tortoise is out of sight behind him.\nThen the hare lies down at the roadside to rest, and now the hare is asleep and the gap has stopped growing.\nNEXT EVENT: Then the tortoise holds a pace that does not depend on the gap, and now the tortoise is still moving while the hare is not.\n\nSTORY: The Trojan Horse\nThen the Greeks build a hollow wooden horse on the plain, and now a wooden horse stands empty outside Troy and the gates of the city are shut.\nThen the Greeks seal armed men inside the horse, and now the Greeks are hidden in the horse and from outside it is a wooden statue.\nThen the Greeks sail their ships out of sight, and now the Greeks' fleet is gone from the shore and the siege looks over.\nThen the Trojans come out of the walls and gather around the abandoned horse, and now the Trojans stand around the horse arguing what to do with it.\nThen Sinon tells them the horse is an offering that will protect the city, and now the Trojans believe the horse is safe to take in.\nThen Cassandra says aloud that the horse is full of armed men, and now the warning has been given in front of the whole city.\nNEXT EVENT: ",
+          "promptSha256": "7d2fd5bb91e9898dbcbf05ba9af8ed809b83ab0bc7a7f71a1be57dce3a3a8b91",
+          "constrained": true,
+          "perActor": true,
+          "actorSchedule": [
+            "the Greeks",
+            "the Trojans",
+            "Sinon",
+            "Cassandra",
+            "the Greeks",
+            "the Trojans",
+            "Sinon",
+            "Cassandra",
+            "the Greeks",
+            "the Trojans"
+          ],
+          "samples": [
+            {
+              "arm": "sentence",
+              "seed": 1190859696,
+              "forcedActor": "the Greeks",
+              "raw": "Then the Greeks drag the horse inside the gates, and now the Greeks' men are inside the city walls and the horse is still on the road.",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "aef51b3e5025e8c4",
+              "sentence": "Then the Greeks drag the horse inside the gates, and now the Greeks' men are inside the city walls and the horse is still on the road.",
+              "frame": {
+                "actor": "the Greeks",
+                "action": "drag the horse inside the gates",
+                "outcome": "the Greeks' men are inside the city walls and the horse is still on the road"
+              },
+              "expr": "the Greeks | drag the horse inside the gates | the Greeks' men are inside the city walls and the horse is still on the road",
+              "display": "Then the Greeks drag the horse inside the gates, and now the Greeks' men are inside the city walls and the horse is still on the road."
+            },
+            {
+              "arm": "sentence",
+              "seed": 4098582817,
+              "forcedActor": "the Trojans",
+              "raw": "Then the Trojans take the horse inside, and now the Greeks are inside the city and the Greeks have won the war.",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "d62e3220cdf9d74e",
+              "sentence": "Then the Trojans take the horse inside, and now the Greeks are inside the city and the Greeks have won the war.",
+              "frame": {
+                "actor": "the Trojans",
+                "action": "take the horse inside",
+                "outcome": "the Greeks are inside the city and the Greeks have won the war"
+              },
+              "expr": "the Trojans | take the horse inside | the Greeks are inside the city and the Greeks have won the war",
+              "display": "Then the Trojans take the horse inside, and now the Greeks are inside the city and the Greeks have won the war."
+            },
+            {
+              "arm": "sentence",
+              "seed": 3457828861,
+              "forcedActor": "Sinon",
+              "raw": "Then Sinon is brought before the city and his words are believed, and now the Greeks are hidden in the horse and the Trojans are ignorant of it.",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "ef6e8cad9c54bcdf",
+              "sentence": "Then Sinon is brought before the city and his words are believed, and now the Greeks are hidden in the horse and the Trojans are ignorant of it.",
+              "frame": {
+                "actor": "Sinon",
+                "action": "is brought before the city and his words are believed",
+                "outcome": "the Greeks are hidden in the horse and the Trojans are ignorant of it"
+              },
+              "expr": "Sinon | is brought before the city and his words are believed | the Greeks are hidden in the horse and the Trojans are ignorant of it",
+              "display": "Then Sinon is brought before the city and his words are believed, and now the Greeks are hidden in the horse and the Trojans are ignorant of it."
+            },
+            {
+              "arm": "sentence",
+              "seed": 3021817463,
+              "forcedActor": "Cassandra",
+              "raw": "Then Cassandra is put to death for telling a lie, and now Cassandra lies dead on the street and her warnings have not been heeded.",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "4504c5e950cdcecb",
+              "sentence": "Then Cassandra is put to death for telling a lie, and now Cassandra lies dead on the street and her warnings have not been heeded.",
+              "frame": {
+                "actor": "Cassandra",
+                "action": "is put to death for telling a lie",
+                "outcome": "Cassandra lies dead on the street and her warnings have not been heeded"
+              },
+              "expr": "Cassandra | is put to death for telling a lie | Cassandra lies dead on the street and her warnings have not been heeded",
+              "display": "Then Cassandra is put to death for telling a lie, and now Cassandra lies dead on the street and her warnings have not been heeded."
+            },
+            {
+              "arm": "sentence",
+              "seed": 1257970172,
+              "forcedActor": "the Greeks",
+              "raw": "Then the Greeks open the horse and the Trojans fall before it, and now the Greeks have taken Troy and the Trojans are dead.",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "6361445745c1e381",
+              "sentence": "Then the Greeks open the horse and the Trojans fall before it, and now the Greeks have taken Troy and the Trojans are dead.",
+              "frame": {
+                "actor": "the Greeks",
+                "action": "open the horse and the Trojans fall before it",
+                "outcome": "the Greeks have taken Troy and the Trojans are dead"
+              },
+              "expr": "the Greeks | open the horse and the Trojans fall before it | the Greeks have taken Troy and the Trojans are dead",
+              "display": "Then the Greeks open the horse and the Trojans fall before it, and now the Greeks have taken Troy and the Trojans are dead."
+            },
+            {
+              "arm": "sentence",
+              "seed": 4165693293,
+              "forcedActor": "the Trojans",
+              "raw": "Then the Trojans open the gates and the horse is dragged inside the city walls, and now armed Greeks have gone in and the Trojans are surprised and terrified by what is in the horse.",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "6cdb98183959c0b2",
+              "sentence": "Then the Trojans open the gates and the horse is dragged inside the city walls, and now armed Greeks have gone in and the Trojans are surprised and terrified by what is in the horse.",
+              "frame": {
+                "actor": "the Trojans",
+                "action": "open the gates and the horse is dragged inside the city walls",
+                "outcome": "armed Greeks have gone in and the Trojans are surprised and terrified by what is in the horse"
+              },
+              "expr": "the Trojans | open the gates and the horse is dragged inside the city walls | armed Greeks have gone in and the Trojans are surprised and terrified by what is in the horse",
+              "display": "Then the Trojans open the gates and the horse is dragged inside the city walls, and now armed Greeks have gone in and the Trojans are surprised and terrified by what is in the horse."
+            },
+            {
+              "arm": "sentence",
+              "seed": 3390718385,
+              "forcedActor": "Sinon",
+              "raw": "Then Sinon leads a man into the horse to give it to the Trojans as a present, and now one of the Greeks comes out of the horse and is seen by the Trojans in person.",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "801959d267f9670c",
+              "sentence": "Then Sinon leads a man into the horse to give it to the Trojans as a present, and now one of the Greeks comes out of the horse and is seen by the Trojans in person.",
+              "frame": {
+                "actor": "Sinon",
+                "action": "leads a man into the horse to give it to the Trojans as a present",
+                "outcome": "one of the Greeks comes out of the horse and is seen by the Trojans in person"
+              },
+              "expr": "Sinon | leads a man into the horse to give it to the Trojans as a present | one of the Greeks comes out of the horse and is seen by the Trojans in person",
+              "display": "Then Sinon leads a man into the horse to give it to the Trojans as a present, and now one of the Greeks comes out of the horse and is seen by the Trojans in person."
+            },
+            {
+              "arm": "sentence",
+              "seed": 2954706987,
+              "forcedActor": "Cassandra",
+              "raw": "Then Cassandra is dragged away from the city by soldiers, and now Cassandra is out of sight while the horse is brought in and the gates are closed behind it.",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "de887887ddbee31d",
+              "sentence": "Then Cassandra is dragged away from the city by soldiers, and now Cassandra is out of sight while the horse is brought in and the gates are closed behind it.",
+              "frame": {
+                "actor": "Cassandra",
+                "action": "is dragged away from the city by soldiers",
+                "outcome": "Cassandra is out of sight while the horse is brought in and the gates are closed behind it"
+              },
+              "expr": "Cassandra | is dragged away from the city by soldiers | Cassandra is out of sight while the horse is brought in and the gates are closed behind it",
+              "display": "Then Cassandra is dragged away from the city by soldiers, and now Cassandra is out of sight while the horse is brought in and the gates are closed behind it."
+            },
+            {
+              "arm": "sentence",
+              "seed": 1325080648,
+              "forcedActor": "the Greeks",
+              "raw": "Then the Greeks climb down out of the horse and lie in wait in the shadows, and now the Greeks have returned to the city and are hidden among the people who are coming in to enjoy the horse's protection.",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "c5bcf7e925bcc95b",
+              "sentence": "Then the Greeks climb down out of the horse and lie in wait in the shadows, and now the Greeks have returned to the city and are hidden among the people who are coming in to enjoy the horse's protection.",
+              "frame": {
+                "actor": "the Greeks",
+                "action": "climb down out of the horse and lie in wait in the shadows",
+                "outcome": "the Greeks have returned to the city and are hidden among the people who are coming in to enjoy the horse's protection"
+              },
+              "expr": "the Greeks | climb down out of the horse and lie in wait in the shadows | the Greeks have returned to the city and are hidden among the people who are coming in to enjoy the horse's protection",
+              "display": "Then the Greeks climb down out of the horse and lie in wait in the shadows, and now the Greeks have returned to the city and are hidden among the people who are coming in to enjoy the horse's protection."
+            },
+            {
+              "arm": "sentence",
+              "seed": 3964361865,
+              "forcedActor": "the Trojans",
+              "raw": "Then the Trojans take the horse into the city, and now the horse is in the walls and the Greek army is hiding inside it.",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "089c204f69f98609",
+              "sentence": "Then the Trojans take the horse into the city, and now the horse is in the walls and the Greek army is hiding inside it.",
+              "frame": {
+                "actor": "the Trojans",
+                "action": "take the horse into the city",
+                "outcome": "the horse is in the walls and the Greek army is hiding inside it"
+              },
+              "expr": "the Trojans | take the horse into the city | the horse is in the walls and the Greek army is hiding inside it",
+              "display": "Then the Trojans take the horse into the city, and now the horse is in the walls and the Greek army is hiding inside it."
+            }
+          ],
+          "attempts": 10,
+          "refused": 0,
+          "truncated": 0,
+          "duplicates": 0,
+          "parseRate": 1,
+          "truncationRate": 0,
+          "saturated": false,
+          "allAttempts": [
+            {
+              "arm": "sentence",
+              "seed": 1190859696,
+              "forcedActor": "the Greeks",
+              "raw": "Then the Greeks drag the horse inside the gates, and now the Greeks' men are inside the city walls and the horse is still on the road.",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "aef51b3e5025e8c4",
+              "sentence": "Then the Greeks drag the horse inside the gates, and now the Greeks' men are inside the city walls and the horse is still on the road.",
+              "frame": {
+                "actor": "the Greeks",
+                "action": "drag the horse inside the gates",
+                "outcome": "the Greeks' men are inside the city walls and the horse is still on the road"
+              },
+              "expr": "the Greeks | drag the horse inside the gates | the Greeks' men are inside the city walls and the horse is still on the road",
+              "display": "Then the Greeks drag the horse inside the gates, and now the Greeks' men are inside the city walls and the horse is still on the road."
+            },
+            {
+              "arm": "sentence",
+              "seed": 4098582817,
+              "forcedActor": "the Trojans",
+              "raw": "Then the Trojans take the horse inside, and now the Greeks are inside the city and the Greeks have won the war.",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "d62e3220cdf9d74e",
+              "sentence": "Then the Trojans take the horse inside, and now the Greeks are inside the city and the Greeks have won the war.",
+              "frame": {
+                "actor": "the Trojans",
+                "action": "take the horse inside",
+                "outcome": "the Greeks are inside the city and the Greeks have won the war"
+              },
+              "expr": "the Trojans | take the horse inside | the Greeks are inside the city and the Greeks have won the war",
+              "display": "Then the Trojans take the horse inside, and now the Greeks are inside the city and the Greeks have won the war."
+            },
+            {
+              "arm": "sentence",
+              "seed": 3457828861,
+              "forcedActor": "Sinon",
+              "raw": "Then Sinon is brought before the city and his words are believed, and now the Greeks are hidden in the horse and the Trojans are ignorant of it.",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "ef6e8cad9c54bcdf",
+              "sentence": "Then Sinon is brought before the city and his words are believed, and now the Greeks are hidden in the horse and the Trojans are ignorant of it.",
+              "frame": {
+                "actor": "Sinon",
+                "action": "is brought before the city and his words are believed",
+                "outcome": "the Greeks are hidden in the horse and the Trojans are ignorant of it"
+              },
+              "expr": "Sinon | is brought before the city and his words are believed | the Greeks are hidden in the horse and the Trojans are ignorant of it",
+              "display": "Then Sinon is brought before the city and his words are believed, and now the Greeks are hidden in the horse and the Trojans are ignorant of it."
+            },
+            {
+              "arm": "sentence",
+              "seed": 3021817463,
+              "forcedActor": "Cassandra",
+              "raw": "Then Cassandra is put to death for telling a lie, and now Cassandra lies dead on the street and her warnings have not been heeded.",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "4504c5e950cdcecb",
+              "sentence": "Then Cassandra is put to death for telling a lie, and now Cassandra lies dead on the street and her warnings have not been heeded.",
+              "frame": {
+                "actor": "Cassandra",
+                "action": "is put to death for telling a lie",
+                "outcome": "Cassandra lies dead on the street and her warnings have not been heeded"
+              },
+              "expr": "Cassandra | is put to death for telling a lie | Cassandra lies dead on the street and her warnings have not been heeded",
+              "display": "Then Cassandra is put to death for telling a lie, and now Cassandra lies dead on the street and her warnings have not been heeded."
+            },
+            {
+              "arm": "sentence",
+              "seed": 1257970172,
+              "forcedActor": "the Greeks",
+              "raw": "Then the Greeks open the horse and the Trojans fall before it, and now the Greeks have taken Troy and the Trojans are dead.",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "6361445745c1e381",
+              "sentence": "Then the Greeks open the horse and the Trojans fall before it, and now the Greeks have taken Troy and the Trojans are dead.",
+              "frame": {
+                "actor": "the Greeks",
+                "action": "open the horse and the Trojans fall before it",
+                "outcome": "the Greeks have taken Troy and the Trojans are dead"
+              },
+              "expr": "the Greeks | open the horse and the Trojans fall before it | the Greeks have taken Troy and the Trojans are dead",
+              "display": "Then the Greeks open the horse and the Trojans fall before it, and now the Greeks have taken Troy and the Trojans are dead."
+            },
+            {
+              "arm": "sentence",
+              "seed": 4165693293,
+              "forcedActor": "the Trojans",
+              "raw": "Then the Trojans open the gates and the horse is dragged inside the city walls, and now armed Greeks have gone in and the Trojans are surprised and terrified by what is in the horse.",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "6cdb98183959c0b2",
+              "sentence": "Then the Trojans open the gates and the horse is dragged inside the city walls, and now armed Greeks have gone in and the Trojans are surprised and terrified by what is in the horse.",
+              "frame": {
+                "actor": "the Trojans",
+                "action": "open the gates and the horse is dragged inside the city walls",
+                "outcome": "armed Greeks have gone in and the Trojans are surprised and terrified by what is in the horse"
+              },
+              "expr": "the Trojans | open the gates and the horse is dragged inside the city walls | armed Greeks have gone in and the Trojans are surprised and terrified by what is in the horse",
+              "display": "Then the Trojans open the gates and the horse is dragged inside the city walls, and now armed Greeks have gone in and the Trojans are surprised and terrified by what is in the horse."
+            },
+            {
+              "arm": "sentence",
+              "seed": 3390718385,
+              "forcedActor": "Sinon",
+              "raw": "Then Sinon leads a man into the horse to give it to the Trojans as a present, and now one of the Greeks comes out of the horse and is seen by the Trojans in person.",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "801959d267f9670c",
+              "sentence": "Then Sinon leads a man into the horse to give it to the Trojans as a present, and now one of the Greeks comes out of the horse and is seen by the Trojans in person.",
+              "frame": {
+                "actor": "Sinon",
+                "action": "leads a man into the horse to give it to the Trojans as a present",
+                "outcome": "one of the Greeks comes out of the horse and is seen by the Trojans in person"
+              },
+              "expr": "Sinon | leads a man into the horse to give it to the Trojans as a present | one of the Greeks comes out of the horse and is seen by the Trojans in person",
+              "display": "Then Sinon leads a man into the horse to give it to the Trojans as a present, and now one of the Greeks comes out of the horse and is seen by the Trojans in person."
+            },
+            {
+              "arm": "sentence",
+              "seed": 2954706987,
+              "forcedActor": "Cassandra",
+              "raw": "Then Cassandra is dragged away from the city by soldiers, and now Cassandra is out of sight while the horse is brought in and the gates are closed behind it.",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "de887887ddbee31d",
+              "sentence": "Then Cassandra is dragged away from the city by soldiers, and now Cassandra is out of sight while the horse is brought in and the gates are closed behind it.",
+              "frame": {
+                "actor": "Cassandra",
+                "action": "is dragged away from the city by soldiers",
+                "outcome": "Cassandra is out of sight while the horse is brought in and the gates are closed behind it"
+              },
+              "expr": "Cassandra | is dragged away from the city by soldiers | Cassandra is out of sight while the horse is brought in and the gates are closed behind it",
+              "display": "Then Cassandra is dragged away from the city by soldiers, and now Cassandra is out of sight while the horse is brought in and the gates are closed behind it."
+            },
+            {
+              "arm": "sentence",
+              "seed": 1325080648,
+              "forcedActor": "the Greeks",
+              "raw": "Then the Greeks climb down out of the horse and lie in wait in the shadows, and now the Greeks have returned to the city and are hidden among the people who are coming in to enjoy the horse's protection.",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "c5bcf7e925bcc95b",
+              "sentence": "Then the Greeks climb down out of the horse and lie in wait in the shadows, and now the Greeks have returned to the city and are hidden among the people who are coming in to enjoy the horse's protection.",
+              "frame": {
+                "actor": "the Greeks",
+                "action": "climb down out of the horse and lie in wait in the shadows",
+                "outcome": "the Greeks have returned to the city and are hidden among the people who are coming in to enjoy the horse's protection"
+              },
+              "expr": "the Greeks | climb down out of the horse and lie in wait in the shadows | the Greeks have returned to the city and are hidden among the people who are coming in to enjoy the horse's protection",
+              "display": "Then the Greeks climb down out of the horse and lie in wait in the shadows, and now the Greeks have returned to the city and are hidden among the people who are coming in to enjoy the horse's protection."
+            },
+            {
+              "arm": "sentence",
+              "seed": 3964361865,
+              "forcedActor": "the Trojans",
+              "raw": "Then the Trojans take the horse into the city, and now the horse is in the walls and the Greek army is hiding inside it.",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "089c204f69f98609",
+              "sentence": "Then the Trojans take the horse into the city, and now the horse is in the walls and the Greek army is hiding inside it.",
+              "frame": {
+                "actor": "the Trojans",
+                "action": "take the horse into the city",
+                "outcome": "the horse is in the walls and the Greek army is hiding inside it"
+              },
+              "expr": "the Trojans | take the horse into the city | the horse is in the walls and the Greek army is hiding inside it",
+              "display": "Then the Trojans take the horse into the city, and now the horse is in the walls and the Greek army is hiding inside it."
+            }
+          ]
+        }
+      }
+    }
+  ]
+}

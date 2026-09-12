@@ -1,0 +1,1362 @@
+{
+  "manifest": {
+    "probe": "continue_probe v1 (continuation plan v3, Stage 0)",
+    "story": "red",
+    "k": 10,
+    "runSeed": 7,
+    "arms": [
+      "sentence"
+    ],
+    "unconstrained": true,
+    "sampling": {
+      "sentence": {
+        "temperature": 1,
+        "top_k": 0,
+        "seed": 7,
+        "samplers": [
+          "top_k",
+          "min_p",
+          "temperature"
+        ],
+        "repeat_penalty": 1,
+        "dry_multiplier": 0,
+        "n_predict": 40,
+        "cache_prompt": false,
+        "min_p": 0.05,
+        "stop": [
+          "\n"
+        ]
+      },
+      "json": {
+        "temperature": 1,
+        "top_k": 0,
+        "seed": 7,
+        "samplers": [
+          "top_k",
+          "min_p",
+          "temperature"
+        ],
+        "repeat_penalty": 1,
+        "dry_multiplier": 0,
+        "n_predict": 512,
+        "cache_prompt": false,
+        "min_p": 0.05
+      }
+    },
+    "model": {
+      "props": {
+        "default_generation_settings": {
+          "params": {
+            "seed": 4294967295,
+            "temperature": 0.800000011920929,
+            "dynatemp_range": 0,
+            "dynatemp_exponent": 1,
+            "top_k": 40,
+            "top_p": 0.949999988079071,
+            "min_p": 0.05000000074505806,
+            "top_n_sigma": -1,
+            "xtc_probability": 0,
+            "xtc_threshold": 0.10000000149011612,
+            "typical_p": 1,
+            "repeat_last_n": 64,
+            "repeat_penalty": 1,
+            "presence_penalty": 0,
+            "frequency_penalty": 0,
+            "dry_multiplier": 0,
+            "dry_base": 1.75,
+            "dry_allowed_length": 2,
+            "dry_penalty_last_n": -1,
+            "mirostat": 0,
+            "mirostat_tau": 5,
+            "mirostat_eta": 0.10000000149011612,
+            "adaptive_target": -1,
+            "adaptive_decay": 0.8999999761581421,
+            "max_tokens": -1,
+            "n_predict": -1,
+            "n_keep": 0,
+            "n_discard": 0,
+            "ignore_eos": false,
+            "stream": false,
+            "n_probs": 0,
+            "min_keep": 0,
+            "chat_format": "Content-only",
+            "reasoning_format": "none",
+            "reasoning_in_content": false,
+            "generation_prompt": "",
+            "samplers": [
+              "penalties",
+              "dry",
+              "top_n_sigma",
+              "top_k",
+              "typ_p",
+              "top_p",
+              "min_p",
+              "xtc",
+              "temperature"
+            ],
+            "speculative.types": "none",
+            "timings_per_token": false,
+            "post_sampling_probs": false,
+            "backend_sampling": false,
+            "lora": []
+          },
+          "n_ctx": 4096
+        },
+        "total_slots": 1,
+        "model_alias": "/media/oneiroid/sub/workspace/llmfinetune/models/qwen3-1.7b-base-Q8_0.gguf",
+        "model_ftype": "Q8_0",
+        "model_path": "/media/oneiroid/sub/workspace/llmfinetune/models/qwen3-1.7b-base-Q8_0.gguf",
+        "modalities": {
+          "vision": false,
+          "video": false,
+          "audio": false
+        },
+        "media_marker": "<__media_lX3II4fg6RyrzwprNSD2kVJy60LS49dO__>",
+        "endpoint_slots": true,
+        "endpoint_props": false,
+        "endpoint_metrics": false,
+        "ui": true,
+        "ui_settings": {},
+        "chat_template": "{%- if tools %}\n    {{- '<|im_start|>system\\n' }}\n    {%- if messages[0].role == 'system' %}\n        {{- messages[0].content + '\\n\\n' }}\n    {%- endif %}\n    {{- \"# Tools\\n\\nYou may call one or more functions to assist with the user query.\\n\\nYou are provided with function signatures within <tools></tools> XML tags:\\n<tools>\" }}\n    {%- for tool in tools %}\n        {{- \"\\n\" }}\n        {{- tool | tojson }}\n    {%- endfor %}\n    {{- \"\\n</tools>\\n\\nFor each function call, return a json object with function name and arguments within <tool_call></tool_call> XML tags:\\n<tool_call>\\n{\\\"name\\\": <function-name>, \\\"arguments\\\": <args-json-object>}\\n</tool_call><|im_end|>\\n\" }}\n{%- else %}\n    {%- if messages[0].role == 'system' %}\n        {{- '<|im_start|>system\\n' + messages[0].content + '<|im_end|>\\n' }}\n    {%- endif %}\n{%- endif %}\n{%- set ns = namespace(multi_step_tool=true, last_query_index=messages|length - 1) %}\n{%- for message in messages[::-1] %}\n    {%- set index = (messages|length - 1) - loop.index0 %}\n    {%- if ns.multi_step_tool and message.role == \"user\" and not(message.content.startswith('<tool_response>') and message.content.endswith('</tool_response>')) %}\n        {%- set ns.multi_step_tool = false %}\n        {%- set ns.last_query_index = index %}\n    {%- endif %}\n{%- endfor %}\n{%- for message in messages %}\n    {%- if (message.role == \"user\") or (message.role == \"system\" and not loop.first) %}\n        {{- '<|im_start|>' + message.role + '\\n' + message.content + '<|im_end|>' + '\\n' }}\n    {%- elif message.role == \"assistant\" %}\n        {%- set content = message.content %}\n        {%- set reasoning_content = '' %}\n        {%- if message.reasoning_content is defined and message.reasoning_content is not none %}\n            {%- set reasoning_content = message.reasoning_content %}\n        {%- else %}\n            {%- if '</think>' in message.content %}\n                {%- set content = message.content.split('</think>')[-1].lstrip('\\n') %}\n                {%- set reasoning_content = message.content.split('</think>')[0].rstrip('\\n').split('<think>')[-1].lstrip('\\n') %}\n            {%- endif %}\n        {%- endif %}\n        {%- if loop.index0 > ns.last_query_index %}\n            {%- if loop.last or (not loop.last and reasoning_content) %}\n                {{- '<|im_start|>' + message.role + '\\n<think>\\n' + reasoning_content.strip('\\n') + '\\n</think>\\n\\n' + content.lstrip('\\n') }}\n            {%- else %}\n                {{- '<|im_start|>' + message.role + '\\n' + content }}\n            {%- endif %}\n        {%- else %}\n            {{- '<|im_start|>' + message.role + '\\n' + content }}\n        {%- endif %}\n        {%- if message.tool_calls %}\n            {%- for tool_call in message.tool_calls %}\n                {%- if (loop.first and content) or (not loop.first) %}\n                    {{- '\\n' }}\n                {%- endif %}\n                {%- if tool_call.function %}\n                    {%- set tool_call = tool_call.function %}\n                {%- endif %}\n                {{- '<tool_call>\\n{\"name\": \"' }}\n                {{- tool_call.name }}\n                {{- '\", \"arguments\": ' }}\n                {%- if tool_call.arguments is string %}\n                    {{- tool_call.arguments }}\n                {%- else %}\n                    {{- tool_call.arguments | tojson }}\n                {%- endif %}\n                {{- '}\\n</tool_call>' }}\n            {%- endfor %}\n        {%- endif %}\n        {{- '<|im_end|>\\n' }}\n    {%- elif message.role == \"tool\" %}\n        {%- if loop.first or (messages[loop.index0 - 1].role != \"tool\") %}\n            {{- '<|im_start|>user' }}\n        {%- endif %}\n        {{- '\\n<tool_response>\\n' }}\n        {{- message.content }}\n        {{- '\\n</tool_response>' }}\n        {%- if loop.last or (messages[loop.index0 + 1].role != \"tool\") %}\n            {{- '<|im_end|>\\n' }}\n        {%- endif %}\n    {%- endif %}\n{%- endfor %}\n{%- if add_generation_prompt %}\n    {{- '<|im_start|>assistant\\n' }}\n    {%- if enable_thinking is defined and enable_thinking is false %}\n        {{- '<think>\\n\\n</think>\\n\\n' }}\n    {%- endif %}\n{%- endif %}",
+        "chat_template_caps": {
+          "supports_object_arguments": true,
+          "supports_parallel_tool_calls": true,
+          "supports_preserve_reasoning": false,
+          "supports_string_content": true,
+          "supports_system_role": true,
+          "supports_tool_calls": true,
+          "supports_tools": true,
+          "supports_typed_content": false
+        },
+        "bos_token": "<|endoftext|>",
+        "eos_token": "<|endoftext|>",
+        "build_info": "b1-f5b9bd3",
+        "is_sleeping": false,
+        "cors_proxy_enabled": false
+      },
+      "sha256": "8a0dbbf6b697a3c06fc8ee030834e3740af02ef974d7ec3b5921adf5f35b7cba"
+    },
+    "templates": {
+      "sentence": {
+        "name": "frames.v1",
+        "sha256": "764b9b3db52ab23b3686824ebce2fbe18d1ecdd0fb1c32b5f96cfa2e795cf685"
+      },
+      "json": {
+        "name": "branch.v2",
+        "sha256": "ced2b702a8bfc7f42d06f7d5cf984b1c77311b378bca39e6dd96dc6034502dbc"
+      }
+    },
+    "entities": [
+      "Red",
+      "Red's mother",
+      "Red's grandmother",
+      "the wolf",
+      "the woodcutter"
+    ],
+    "entitiesSha256": "aa4a631da8ab1b2d3ed508810e59e9882dc6e761c223c4050f33d301cf1db41f",
+    "grammar": "root ::= \"Then \" actor \" \" action \", and now \" outcome \".\"\nactor ::= \"Red's grandmother\" | \"the woodcutter\" | \"Red's mother\" | \"the wolf\" | \"Red\"\naction ::= [^,.\\n]{1,90}\noutcome ::= [^.\\n]{1,140}\n",
+    "grammarSha256": "57a839e9870f84bcc26a2a72898b891f66e9616576d4cf9d13b5ee5d7d0afbe7",
+    "generatedAt": "2026-08-30T21:59:01.972Z"
+  },
+  "results": [
+    {
+      "nodeId": "red_woods",
+      "path": [
+        "red_start",
+        "red_warn",
+        "red_woods"
+      ],
+      "history": [
+        "Then Red's mother gives Red a basket to carry to her grandmother's house, and now Red is at home holding the basket with the woods between her and the house.",
+        "Then Red's mother tells her to keep to the path and not stray, and now Red has been told to stay on the path and has neither agreed nor refused.",
+        "Then Red walks into the woods with the basket, and now Red is alone on the path among the trees."
+      ],
+      "arms": {
+        "sentence": {
+          "prompt": "STORY: The Tortoise and the Hare\nThen the hare boasts that nothing on the road can outrun him, and now the hare has staked his name on his speed.\nThen the tortoise takes the boast seriously and names a course, and now a race is agreed and the course is set.\nThen the fox drops his paw to start them, and now both runners are on the road.\nNEXT EVENT: Then the hare opens a lead wide enough to look settled, and now the hare is far ahead and the tortoise is out of sight behind him.\n\nSTORY: The Tortoise and the Hare\nThen the hare boasts that nothing on the road can outrun him, and now the hare has staked his name on his speed.\nThen the tortoise takes the boast seriously and names a course, and now a race is agreed and the course is set.\nThen the fox drops his paw to start them, and now both runners are on the road.\nThen the hare opens a lead wide enough to look settled, and now the hare is far ahead and the tortoise is out of sight behind him.\nThen the hare lies down at the roadside to rest, and now the hare is asleep and the gap has stopped growing.\nNEXT EVENT: Then the tortoise holds a pace that does not depend on the gap, and now the tortoise is still moving while the hare is not.\n\nSTORY: Little Red Riding Hood\nThen Red's mother gives Red a basket to carry to her grandmother's house, and now Red is at home holding the basket with the woods between her and the house.\nThen Red's mother tells her to keep to the path and not stray, and now Red has been told to stay on the path and has neither agreed nor refused.\nThen Red walks into the woods with the basket, and now Red is alone on the path among the trees.\nNEXT EVENT: ",
+          "promptSha256": "679f23e9bed021c8cecaa9c45fd2a1ada91c0e133ae533462b62cf55fa007659",
+          "constrained": false,
+          "samples": [
+            {
+              "arm": "sentence",
+              "seed": 3064675225,
+              "raw": " Then Red stops to rest in a clearing, and now Red is walking in the forest.",
+              "stopType": "word",
+              "cached": true,
+              "cacheKey": "42a7a5f8306e1b2a",
+              "sentence": "Then Red stops to rest in a clearing, and now Red is walking in the forest.",
+              "frame": {
+                "actor": "Red",
+                "action": "stops to rest in a clearing",
+                "outcome": "Red is walking in the forest"
+              },
+              "expr": "Red | stops to rest in a clearing | Red is walking in the forest",
+              "display": "Then Red stops to rest in a clearing, and now Red is walking in the forest."
+            },
+            {
+              "arm": "sentence",
+              "seed": 3047897606,
+              "raw": " Then Red eats and drinks from the basket, and now Red is hungry and thirsty.",
+              "stopType": "word",
+              "cached": true,
+              "cacheKey": "f53d1cdadb61b0b0",
+              "sentence": "Then Red eats and drinks from the basket, and now Red is hungry and thirsty.",
+              "frame": {
+                "actor": "Red",
+                "action": "eats and drinks from the basket",
+                "outcome": "Red is hungry and thirsty"
+              },
+              "expr": "Red | eats and drinks from the basket | Red is hungry and thirsty",
+              "display": "Then Red eats and drinks from the basket, and now Red is hungry and thirsty."
+            },
+            {
+              "arm": "sentence",
+              "seed": 3031119987,
+              "raw": " Then Red finds a big rabbit sleeping on a rock, and now Red is sitting on a rock next to the rabbit.",
+              "stopType": "word",
+              "cached": true,
+              "cacheKey": "ee10b0525b407af8",
+              "sentence": "Then Red finds a big rabbit sleeping on a rock, and now Red is sitting on a rock next to the rabbit.",
+              "frame": {
+                "actor": "Red",
+                "action": "finds a big rabbit sleeping on a rock",
+                "outcome": "Red is sitting on a rock next to the rabbit"
+              },
+              "expr": "Red | finds a big rabbit sleeping on a rock | Red is sitting on a rock next to the rabbit",
+              "display": "Then Red finds a big rabbit sleeping on a rock, and now Red is sitting on a rock next to the rabbit."
+            },
+            {
+              "arm": "sentence",
+              "seed": 3014342368,
+              "raw": " Then Red falls asleep, and now Red has been asleep for a while and is tired.",
+              "stopType": "word",
+              "cached": true,
+              "cacheKey": "bfd32fec10c7933a",
+              "sentence": "Then Red falls asleep, and now Red has been asleep for a while and is tired.",
+              "frame": {
+                "actor": "Red",
+                "action": "falls asleep",
+                "outcome": "Red has been asleep for a while and is tired"
+              },
+              "expr": "Red | falls asleep | Red has been asleep for a while and is tired",
+              "display": "Then Red falls asleep, and now Red has been asleep for a while and is tired."
+            },
+            {
+              "arm": "sentence",
+              "seed": 3081452844,
+              "raw": " Then Red's mother scolds her and tells her to be careful, and now Red is in the house talking with her mother.",
+              "stopType": "word",
+              "cached": false,
+              "cacheKey": "df27c247646e2029",
+              "sentence": "Then Red's mother scolds her and tells her to be careful, and now Red is in the house talking with her mother.",
+              "frame": {
+                "actor": "Red's mother",
+                "action": "scolds her and tells her to be careful",
+                "outcome": "Red is in the house talking with her mother"
+              },
+              "expr": "Red's mother | scolds her and tells her to be careful | Red is in the house talking with her mother",
+              "display": "Then Red's mother scolds her and tells her to be careful, and now Red is in the house talking with her mother."
+            },
+            {
+              "arm": "sentence",
+              "seed": 3198896177,
+              "raw": " Then the wolf approaches and demands the basket, and now the wolf is threatening and has no way of knowing which path it will take.",
+              "stopType": "word",
+              "cached": false,
+              "cacheKey": "225bfabb7f39a89d",
+              "sentence": "Then the wolf approaches and demands the basket, and now the wolf is threatening and has no way of knowing which path it will take.",
+              "frame": {
+                "actor": "the wolf",
+                "action": "approaches and demands the basket",
+                "outcome": "the wolf is threatening and has no way of knowing which path it will take"
+              },
+              "expr": "the wolf | approaches and demands the basket | the wolf is threatening and has no way of knowing which path it will take",
+              "display": "Then the wolf approaches and demands the basket, and now the wolf is threatening and has no way of knowing which path it will take."
+            },
+            {
+              "arm": "sentence",
+              "seed": 814522332,
+              "raw": " Then Red hears a dog's bark and a wolf's cry, and now Red has heard the wolf and knows she is in danger.",
+              "stopType": "word",
+              "cached": false,
+              "cacheKey": "5ce8124e3b584b18",
+              "sentence": "Then Red hears a dog's bark and a wolf's cry, and now Red has heard the wolf and knows she is in danger.",
+              "frame": {
+                "actor": "Red",
+                "action": "hears a dog's bark and a wolf's cry",
+                "outcome": "Red has heard the wolf and knows she is in danger"
+              },
+              "expr": "Red | hears a dog's bark and a wolf's cry | Red has heard the wolf and knows she is in danger",
+              "display": "Then Red hears a dog's bark and a wolf's cry, and now Red has heard the wolf and knows she is in danger."
+            },
+            {
+              "arm": "sentence",
+              "seed": 831299951,
+              "raw": " Then Red comes to a bridge over a stream, and now Red is walking on the path among the trees and the stream is in the way of the path.",
+              "stopType": "word",
+              "cached": false,
+              "cacheKey": "bafae8791a305c2f",
+              "sentence": "Then Red comes to a bridge over a stream, and now Red is walking on the path among the trees and the stream is in the way of the path.",
+              "frame": {
+                "actor": "Red",
+                "action": "comes to a bridge over a stream",
+                "outcome": "Red is walking on the path among the trees and the stream is in the way of the path"
+              },
+              "expr": "Red | comes to a bridge over a stream | Red is walking on the path among the trees and the stream is in the way of the path",
+              "display": "Then Red comes to a bridge over a stream, and now Red is walking on the path among the trees and the stream is in the way of the path."
+            },
+            {
+              "arm": "sentence",
+              "seed": 797744713,
+              "raw": " Then Red sees the wolf in the path and runs to the house, and now the wolf and Red are both running to the house.",
+              "stopType": "word",
+              "cached": false,
+              "cacheKey": "32f88f076fe33c39",
+              "sentence": "Then Red sees the wolf in the path and runs to the house, and now the wolf and Red are both running to the house.",
+              "frame": {
+                "actor": "Red",
+                "action": "sees the wolf in the path and runs to the house",
+                "outcome": "the wolf and Red are both running to the house"
+              },
+              "expr": "Red | sees the wolf in the path and runs to the house | the wolf and Red are both running to the house",
+              "display": "Then Red sees the wolf in the path and runs to the house, and now the wolf and Red are both running to the house."
+            },
+            {
+              "arm": "sentence",
+              "seed": 747411856,
+              "raw": " Then Red crosses a stream and the basket spills its contents, and now the basket is empty and Red is soaked.",
+              "stopType": "word",
+              "cached": false,
+              "cacheKey": "457b7159881f677b",
+              "sentence": "Then Red crosses a stream and the basket spills its contents, and now the basket is empty and Red is soaked.",
+              "frame": {
+                "actor": "Red",
+                "action": "crosses a stream and the basket spills its contents",
+                "outcome": "the basket is empty and Red is soaked"
+              },
+              "expr": "Red | crosses a stream and the basket spills its contents | the basket is empty and Red is soaked",
+              "display": "Then Red crosses a stream and the basket spills its contents, and now the basket is empty and Red is soaked."
+            }
+          ],
+          "attempts": 17,
+          "refused": 6,
+          "truncated": 1,
+          "duplicates": 0,
+          "parseRate": 0.5882352941176471,
+          "saturated": false,
+          "allAttempts": [
+            {
+              "arm": "sentence",
+              "seed": 3064675225,
+              "raw": " Then Red stops to rest in a clearing, and now Red is walking in the forest.",
+              "stopType": "word",
+              "cached": true,
+              "cacheKey": "42a7a5f8306e1b2a",
+              "sentence": "Then Red stops to rest in a clearing, and now Red is walking in the forest.",
+              "frame": {
+                "actor": "Red",
+                "action": "stops to rest in a clearing",
+                "outcome": "Red is walking in the forest"
+              },
+              "expr": "Red | stops to rest in a clearing | Red is walking in the forest",
+              "display": "Then Red stops to rest in a clearing, and now Red is walking in the forest."
+            },
+            {
+              "arm": "sentence",
+              "seed": 3047897606,
+              "raw": " Then Red eats and drinks from the basket, and now Red is hungry and thirsty.",
+              "stopType": "word",
+              "cached": true,
+              "cacheKey": "f53d1cdadb61b0b0",
+              "sentence": "Then Red eats and drinks from the basket, and now Red is hungry and thirsty.",
+              "frame": {
+                "actor": "Red",
+                "action": "eats and drinks from the basket",
+                "outcome": "Red is hungry and thirsty"
+              },
+              "expr": "Red | eats and drinks from the basket | Red is hungry and thirsty",
+              "display": "Then Red eats and drinks from the basket, and now Red is hungry and thirsty."
+            },
+            {
+              "arm": "sentence",
+              "seed": 3031119987,
+              "raw": " Then Red finds a big rabbit sleeping on a rock, and now Red is sitting on a rock next to the rabbit.",
+              "stopType": "word",
+              "cached": true,
+              "cacheKey": "ee10b0525b407af8",
+              "sentence": "Then Red finds a big rabbit sleeping on a rock, and now Red is sitting on a rock next to the rabbit.",
+              "frame": {
+                "actor": "Red",
+                "action": "finds a big rabbit sleeping on a rock",
+                "outcome": "Red is sitting on a rock next to the rabbit"
+              },
+              "expr": "Red | finds a big rabbit sleeping on a rock | Red is sitting on a rock next to the rabbit",
+              "display": "Then Red finds a big rabbit sleeping on a rock, and now Red is sitting on a rock next to the rabbit."
+            },
+            {
+              "arm": "sentence",
+              "seed": 3014342368,
+              "raw": " Then Red falls asleep, and now Red has been asleep for a while and is tired.",
+              "stopType": "word",
+              "cached": true,
+              "cacheKey": "bfd32fec10c7933a",
+              "sentence": "Then Red falls asleep, and now Red has been asleep for a while and is tired.",
+              "frame": {
+                "actor": "Red",
+                "action": "falls asleep",
+                "outcome": "Red has been asleep for a while and is tired"
+              },
+              "expr": "Red | falls asleep | Red has been asleep for a while and is tired",
+              "display": "Then Red falls asleep, and now Red has been asleep for a while and is tired."
+            },
+            {
+              "arm": "sentence",
+              "seed": 3131785701,
+              "raw": "10 seconds later, Red hears the wolf and runs to grandmother's house to tell her what is going on.",
+              "stopType": "word",
+              "cached": false,
+              "cacheKey": "eaa129281e5b1552",
+              "sentence": "10 seconds later, Red hears the wolf and runs to grandmother's house to tell her what is going on.",
+              "error": "missing \"Then \" prefix"
+            },
+            {
+              "arm": "sentence",
+              "seed": 3115008082,
+              "raw": " Then a wolf comes and stands on the path to the house, and now Red is at a fork in the path.",
+              "stopType": "word",
+              "cached": false,
+              "cacheKey": "26a982c4cf1c2096",
+              "sentence": "Then a wolf comes and stands on the path to the house, and now Red is at a fork in the path.",
+              "error": "no entity matches the actor slot"
+            },
+            {
+              "arm": "sentence",
+              "seed": 3098230463,
+              "raw": " Then Red finds an old hag who makes her a cup of poisoned tea and now the tea is in her mouth.",
+              "stopType": "word",
+              "cached": false,
+              "cacheKey": "910b7c7600276a64",
+              "sentence": "Then Red finds an old hag who makes her a cup of poisoned tea and now the tea is in her mouth.",
+              "error": "missing \", and now \" separator"
+            },
+            {
+              "arm": "sentence",
+              "seed": 3081452844,
+              "raw": " Then Red's mother scolds her and tells her to be careful, and now Red is in the house talking with her mother.",
+              "stopType": "word",
+              "cached": false,
+              "cacheKey": "df27c247646e2029",
+              "sentence": "Then Red's mother scolds her and tells her to be careful, and now Red is in the house talking with her mother.",
+              "frame": {
+                "actor": "Red's mother",
+                "action": "scolds her and tells her to be careful",
+                "outcome": "Red is in the house talking with her mother"
+              },
+              "expr": "Red's mother | scolds her and tells her to be careful | Red is in the house talking with her mother",
+              "display": "Then Red's mother scolds her and tells her to be careful, and now Red is in the house talking with her mother."
+            },
+            {
+              "arm": "sentence",
+              "seed": 3198896177,
+              "raw": " Then the wolf approaches and demands the basket, and now the wolf is threatening and has no way of knowing which path it will take.",
+              "stopType": "word",
+              "cached": false,
+              "cacheKey": "225bfabb7f39a89d",
+              "sentence": "Then the wolf approaches and demands the basket, and now the wolf is threatening and has no way of knowing which path it will take.",
+              "frame": {
+                "actor": "the wolf",
+                "action": "approaches and demands the basket",
+                "outcome": "the wolf is threatening and has no way of knowing which path it will take"
+              },
+              "expr": "the wolf | approaches and demands the basket | the wolf is threatening and has no way of knowing which path it will take",
+              "display": "Then the wolf approaches and demands the basket, and now the wolf is threatening and has no way of knowing which path it will take."
+            },
+            {
+              "arm": "sentence",
+              "seed": 3182118558,
+              "raw": "1. Red walks past a big black dog, and now Red has come to a house and sees it. 2. The dog chases Red into the woods, and now Red is lost and",
+              "stopType": "limit",
+              "truncated": true,
+              "cacheKey": "1d040d966bfd77a8",
+              "error": "truncated at n_predict"
+            },
+            {
+              "arm": "sentence",
+              "seed": 848077570,
+              "raw": " Then a bear comes from behind the bushes and stands in front of the path, and now the bear is on the path among the trees.",
+              "stopType": "word",
+              "cached": false,
+              "cacheKey": "797f1f80a231f16a",
+              "sentence": "Then a bear comes from behind the bushes and stands in front of the path, and now the bear is on the path among the trees.",
+              "error": "no entity matches the actor slot"
+            },
+            {
+              "arm": "sentence",
+              "seed": 864855189,
+              "raw": " Then the Wolf approaches, and now the Wolf is walking in the forest and Red is in the forest alone.",
+              "stopType": "word",
+              "cached": false,
+              "cacheKey": "f10f44869e091470",
+              "sentence": "Then the Wolf approaches, and now the Wolf is walking in the forest and Red is in the forest alone.",
+              "error": "no entity matches the actor slot"
+            },
+            {
+              "arm": "sentence",
+              "seed": 814522332,
+              "raw": " Then Red hears a dog's bark and a wolf's cry, and now Red has heard the wolf and knows she is in danger.",
+              "stopType": "word",
+              "cached": false,
+              "cacheKey": "5ce8124e3b584b18",
+              "sentence": "Then Red hears a dog's bark and a wolf's cry, and now Red has heard the wolf and knows she is in danger.",
+              "frame": {
+                "actor": "Red",
+                "action": "hears a dog's bark and a wolf's cry",
+                "outcome": "Red has heard the wolf and knows she is in danger"
+              },
+              "expr": "Red | hears a dog's bark and a wolf's cry | Red has heard the wolf and knows she is in danger",
+              "display": "Then Red hears a dog's bark and a wolf's cry, and now Red has heard the wolf and knows she is in danger."
+            },
+            {
+              "arm": "sentence",
+              "seed": 831299951,
+              "raw": " Then Red comes to a bridge over a stream, and now Red is walking on the path among the trees and the stream is in the way of the path.",
+              "stopType": "word",
+              "cached": false,
+              "cacheKey": "bafae8791a305c2f",
+              "sentence": "Then Red comes to a bridge over a stream, and now Red is walking on the path among the trees and the stream is in the way of the path.",
+              "frame": {
+                "actor": "Red",
+                "action": "comes to a bridge over a stream",
+                "outcome": "Red is walking on the path among the trees and the stream is in the way of the path"
+              },
+              "expr": "Red | comes to a bridge over a stream | Red is walking on the path among the trees and the stream is in the way of the path",
+              "display": "Then Red comes to a bridge over a stream, and now Red is walking on the path among the trees and the stream is in the way of the path."
+            },
+            {
+              "arm": "sentence",
+              "seed": 780967094,
+              "raw": " Then a wolf comes upon the path with a pack, and now Red is surrounded by wolves.",
+              "stopType": "word",
+              "cached": false,
+              "cacheKey": "a0eac54efd0926a8",
+              "sentence": "Then a wolf comes upon the path with a pack, and now Red is surrounded by wolves.",
+              "error": "no entity matches the actor slot"
+            },
+            {
+              "arm": "sentence",
+              "seed": 797744713,
+              "raw": " Then Red sees the wolf in the path and runs to the house, and now the wolf and Red are both running to the house.",
+              "stopType": "word",
+              "cached": false,
+              "cacheKey": "32f88f076fe33c39",
+              "sentence": "Then Red sees the wolf in the path and runs to the house, and now the wolf and Red are both running to the house.",
+              "frame": {
+                "actor": "Red",
+                "action": "sees the wolf in the path and runs to the house",
+                "outcome": "the wolf and Red are both running to the house"
+              },
+              "expr": "Red | sees the wolf in the path and runs to the house | the wolf and Red are both running to the house",
+              "display": "Then Red sees the wolf in the path and runs to the house, and now the wolf and Red are both running to the house."
+            },
+            {
+              "arm": "sentence",
+              "seed": 747411856,
+              "raw": " Then Red crosses a stream and the basket spills its contents, and now the basket is empty and Red is soaked.",
+              "stopType": "word",
+              "cached": false,
+              "cacheKey": "457b7159881f677b",
+              "sentence": "Then Red crosses a stream and the basket spills its contents, and now the basket is empty and Red is soaked.",
+              "frame": {
+                "actor": "Red",
+                "action": "crosses a stream and the basket spills its contents",
+                "outcome": "the basket is empty and Red is soaked"
+              },
+              "expr": "Red | crosses a stream and the basket spills its contents | the basket is empty and Red is soaked",
+              "display": "Then Red crosses a stream and the basket spills its contents, and now the basket is empty and Red is soaked."
+            }
+          ]
+        }
+      }
+    },
+    {
+      "nodeId": "red_tell",
+      "path": [
+        "red_start",
+        "red_warn",
+        "red_woods",
+        "red_meet",
+        "red_tell"
+      ],
+      "history": [
+        "Then Red's mother gives Red a basket to carry to her grandmother's house, and now Red is at home holding the basket with the woods between her and the house.",
+        "Then Red's mother tells her to keep to the path and not stray, and now Red has been told to stay on the path and has neither agreed nor refused.",
+        "Then Red walks into the woods with the basket, and now Red is alone on the path among the trees.",
+        "Then the wolf steps into the path in front of her, and now the wolf and Red stand face to face and nothing has been threatened yet.",
+        "Then Red tells him where her grandmother lives and that she is alone, and now the wolf knows the house Red is walking to and who is waiting in it."
+      ],
+      "arms": {
+        "sentence": {
+          "prompt": "STORY: The Tortoise and the Hare\nThen the hare boasts that nothing on the road can outrun him, and now the hare has staked his name on his speed.\nThen the tortoise takes the boast seriously and names a course, and now a race is agreed and the course is set.\nThen the fox drops his paw to start them, and now both runners are on the road.\nNEXT EVENT: Then the hare opens a lead wide enough to look settled, and now the hare is far ahead and the tortoise is out of sight behind him.\n\nSTORY: The Tortoise and the Hare\nThen the hare boasts that nothing on the road can outrun him, and now the hare has staked his name on his speed.\nThen the tortoise takes the boast seriously and names a course, and now a race is agreed and the course is set.\nThen the fox drops his paw to start them, and now both runners are on the road.\nThen the hare opens a lead wide enough to look settled, and now the hare is far ahead and the tortoise is out of sight behind him.\nThen the hare lies down at the roadside to rest, and now the hare is asleep and the gap has stopped growing.\nNEXT EVENT: Then the tortoise holds a pace that does not depend on the gap, and now the tortoise is still moving while the hare is not.\n\nSTORY: Little Red Riding Hood\nThen Red's mother gives Red a basket to carry to her grandmother's house, and now Red is at home holding the basket with the woods between her and the house.\nThen Red's mother tells her to keep to the path and not stray, and now Red has been told to stay on the path and has neither agreed nor refused.\nThen Red walks into the woods with the basket, and now Red is alone on the path among the trees.\nThen the wolf steps into the path in front of her, and now the wolf and Red stand face to face and nothing has been threatened yet.\nThen Red tells him where her grandmother lives and that she is alone, and now the wolf knows the house Red is walking to and who is waiting in it.\nNEXT EVENT: ",
+          "promptSha256": "762498993b9b4d328f7ca752263b1b7e1bad6a98900dba95704723238dfbd660",
+          "constrained": false,
+          "samples": [
+            {
+              "arm": "sentence",
+              "seed": 3190560826,
+              "raw": " Then the wolf brings Red home, and now the wolf is in the house and Red is alone at home.",
+              "stopType": "word",
+              "cached": false,
+              "cacheKey": "a156c37f9bd44d89",
+              "sentence": "Then the wolf brings Red home, and now the wolf is in the house and Red is alone at home.",
+              "frame": {
+                "actor": "the wolf",
+                "action": "brings Red home",
+                "outcome": "the wolf is in the house and Red is alone at home"
+              },
+              "expr": "the wolf | brings Red home | the wolf is in the house and Red is alone at home",
+              "display": "Then the wolf brings Red home, and now the wolf is in the house and Red is alone at home."
+            },
+            {
+              "arm": "sentence",
+              "seed": 3173783207,
+              "raw": " Then Red tells him to stay away from her, and now Red has agreed to keep away and the wolf is still there but is not threatening her.",
+              "stopType": "word",
+              "cached": false,
+              "cacheKey": "731060ba0aaec3b0",
+              "sentence": "Then Red tells him to stay away from her, and now Red has agreed to keep away and the wolf is still there but is not threatening her.",
+              "frame": {
+                "actor": "Red",
+                "action": "tells him to stay away from her",
+                "outcome": "Red has agreed to keep away and the wolf is still there but is not threatening her"
+              },
+              "expr": "Red | tells him to stay away from her | Red has agreed to keep away and the wolf is still there but is not threatening her",
+              "display": "Then Red tells him to stay away from her, and now Red has agreed to keep away and the wolf is still there but is not threatening her."
+            },
+            {
+              "arm": "sentence",
+              "seed": 3123450350,
+              "raw": " Then the wolf pulls his face back in a sneer and says that he wants the little girl, and now the wolf and Red are fighting and no one has been hurt.",
+              "stopType": "word",
+              "cached": false,
+              "cacheKey": "e426def50ce821bf",
+              "sentence": "Then the wolf pulls his face back in a sneer and says that he wants the little girl, and now the wolf and Red are fighting and no one has been hurt.",
+              "frame": {
+                "actor": "the wolf",
+                "action": "pulls his face back in a sneer and says that he wants the little girl",
+                "outcome": "the wolf and Red are fighting and no one has been hurt"
+              },
+              "expr": "the wolf | pulls his face back in a sneer and says that he wants the little girl | the wolf and Red are fighting and no one has been hurt",
+              "display": "Then the wolf pulls his face back in a sneer and says that he wants the little girl, and now the wolf and Red are fighting and no one has been hurt."
+            },
+            {
+              "arm": "sentence",
+              "seed": 3140227969,
+              "raw": " Then Red goes into the house and the wolf waits with the basket on the path, and now Red and the wolf are walking to each other.",
+              "stopType": "word",
+              "cached": false,
+              "cacheKey": "536ec292bc9677b8",
+              "sentence": "Then Red goes into the house and the wolf waits with the basket on the path, and now Red and the wolf are walking to each other.",
+              "frame": {
+                "actor": "Red",
+                "action": "goes into the house and the wolf waits with the basket on the path",
+                "outcome": "Red and the wolf are walking to each other"
+              },
+              "expr": "Red | goes into the house and the wolf waits with the basket on the path | Red and the wolf are walking to each other",
+              "display": "Then Red goes into the house and the wolf waits with the basket on the path, and now Red and the wolf are walking to each other."
+            },
+            {
+              "arm": "sentence",
+              "seed": 3089895112,
+              "raw": " Then Red sees the wolf and runs for the house, and now the wolf is running towards Red as she runs for the house.",
+              "stopType": "word",
+              "cached": false,
+              "cacheKey": "8cdd488795a1f941",
+              "sentence": "Then Red sees the wolf and runs for the house, and now the wolf is running towards Red as she runs for the house.",
+              "frame": {
+                "actor": "Red",
+                "action": "sees the wolf and runs for the house",
+                "outcome": "the wolf is running towards Red as she runs for the house"
+              },
+              "expr": "Red | sees the wolf and runs for the house | the wolf is running towards Red as she runs for the house",
+              "display": "Then Red sees the wolf and runs for the house, and now the wolf is running towards Red as she runs for the house."
+            },
+            {
+              "arm": "sentence",
+              "seed": 3106672731,
+              "raw": " Then Red runs back through the woods to the house, and now the wolf has caught up with her.",
+              "stopType": "word",
+              "cached": false,
+              "cacheKey": "08919143f6e31eb9",
+              "sentence": "Then Red runs back through the woods to the house, and now the wolf has caught up with her.",
+              "frame": {
+                "actor": "Red",
+                "action": "runs back through the woods to the house",
+                "outcome": "the wolf has caught up with her"
+              },
+              "expr": "Red | runs back through the woods to the house | the wolf has caught up with her",
+              "display": "Then Red runs back through the woods to the house, and now the wolf has caught up with her."
+            },
+            {
+              "arm": "sentence",
+              "seed": 3056339874,
+              "raw": " Then the wolf goes to the house, and now Red is walking alone on the path to her grandmother's house.",
+              "stopType": "word",
+              "cached": false,
+              "cacheKey": "d4c5b35138e2cc57",
+              "sentence": "Then the wolf goes to the house, and now Red is walking alone on the path to her grandmother's house.",
+              "frame": {
+                "actor": "the wolf",
+                "action": "goes to the house",
+                "outcome": "Red is walking alone on the path to her grandmother's house"
+              },
+              "expr": "the wolf | goes to the house | Red is walking alone on the path to her grandmother's house",
+              "display": "Then the wolf goes to the house, and now Red is walking alone on the path to her grandmother's house."
+            },
+            {
+              "arm": "sentence",
+              "seed": 3073117493,
+              "raw": " Then the wolf threatens to kill Red and her grandmother, and now the wolf is standing between Red and the path and holding Red in his teeth.",
+              "stopType": "word",
+              "cached": false,
+              "cacheKey": "b0a42ae51dd12f5b",
+              "sentence": "Then the wolf threatens to kill Red and her grandmother, and now the wolf is standing between Red and the path and holding Red in his teeth.",
+              "frame": {
+                "actor": "the wolf",
+                "action": "threatens to kill Red and her grandmother",
+                "outcome": "the wolf is standing between Red and the path and holding Red in his teeth"
+              },
+              "expr": "the wolf | threatens to kill Red and her grandmother | the wolf is standing between Red and the path and holding Red in his teeth",
+              "display": "Then the wolf threatens to kill Red and her grandmother, and now the wolf is standing between Red and the path and holding Red in his teeth."
+            },
+            {
+              "arm": "sentence",
+              "seed": 4016892231,
+              "raw": " Then the wolf pulls a knife from his belt and stabs Red, and now Red is dead and the wolf is happy that he has the red jacket for his dinner.",
+              "stopType": "word",
+              "cached": false,
+              "cacheKey": "d0bc3d89e432e24b",
+              "sentence": "Then the wolf pulls a knife from his belt and stabs Red, and now Red is dead and the wolf is happy that he has the red jacket for his dinner.",
+              "frame": {
+                "actor": "the wolf",
+                "action": "pulls a knife from his belt and stabs Red",
+                "outcome": "Red is dead and the wolf is happy that he has the red jacket for his dinner"
+              },
+              "expr": "the wolf | pulls a knife from his belt and stabs Red | Red is dead and the wolf is happy that he has the red jacket for his dinner",
+              "display": "Then the wolf pulls a knife from his belt and stabs Red, and now Red is dead and the wolf is happy that he has the red jacket for his dinner."
+            },
+            {
+              "arm": "sentence",
+              "seed": 4000114612,
+              "raw": " Then the wolf opens the door to let her in, and now Red enters the house.",
+              "stopType": "word",
+              "cached": false,
+              "cacheKey": "df1ba3fcf08b4be6",
+              "sentence": "Then the wolf opens the door to let her in, and now Red enters the house.",
+              "frame": {
+                "actor": "the wolf",
+                "action": "opens the door to let her in",
+                "outcome": "Red enters the house"
+              },
+              "expr": "the wolf | opens the door to let her in | Red enters the house",
+              "display": "Then the wolf opens the door to let her in, and now Red enters the house."
+            }
+          ],
+          "attempts": 12,
+          "refused": 1,
+          "truncated": 1,
+          "duplicates": 0,
+          "parseRate": 0.8333333333333334,
+          "saturated": false,
+          "allAttempts": [
+            {
+              "arm": "sentence",
+              "seed": 3190560826,
+              "raw": " Then the wolf brings Red home, and now the wolf is in the house and Red is alone at home.",
+              "stopType": "word",
+              "cached": false,
+              "cacheKey": "a156c37f9bd44d89",
+              "sentence": "Then the wolf brings Red home, and now the wolf is in the house and Red is alone at home.",
+              "frame": {
+                "actor": "the wolf",
+                "action": "brings Red home",
+                "outcome": "the wolf is in the house and Red is alone at home"
+              },
+              "expr": "the wolf | brings Red home | the wolf is in the house and Red is alone at home",
+              "display": "Then the wolf brings Red home, and now the wolf is in the house and Red is alone at home."
+            },
+            {
+              "arm": "sentence",
+              "seed": 3207338445,
+              "raw": "1 Then Red runs after her grandmother and the wolf chases her, and now the wolf and Red run for the house and Red is running in fear.",
+              "stopType": "word",
+              "cached": false,
+              "cacheKey": "6707468628a270cc",
+              "sentence": "1 Then Red runs after her grandmother and the wolf chases her, and now the wolf and Red run for the house and Red is running in fear.",
+              "error": "missing \"Then \" prefix"
+            },
+            {
+              "arm": "sentence",
+              "seed": 3157005588,
+              "raw": " Then Red says that she will give the basket to the grandmother's maid, and now the wolf knows that the maid is where Red will give the basket, and that the house is where the grandmother waits",
+              "stopType": "limit",
+              "truncated": true,
+              "cacheKey": "9b36389f9df810d1",
+              "error": "truncated at n_predict"
+            },
+            {
+              "arm": "sentence",
+              "seed": 3173783207,
+              "raw": " Then Red tells him to stay away from her, and now Red has agreed to keep away and the wolf is still there but is not threatening her.",
+              "stopType": "word",
+              "cached": false,
+              "cacheKey": "731060ba0aaec3b0",
+              "sentence": "Then Red tells him to stay away from her, and now Red has agreed to keep away and the wolf is still there but is not threatening her.",
+              "frame": {
+                "actor": "Red",
+                "action": "tells him to stay away from her",
+                "outcome": "Red has agreed to keep away and the wolf is still there but is not threatening her"
+              },
+              "expr": "Red | tells him to stay away from her | Red has agreed to keep away and the wolf is still there but is not threatening her",
+              "display": "Then Red tells him to stay away from her, and now Red has agreed to keep away and the wolf is still there but is not threatening her."
+            },
+            {
+              "arm": "sentence",
+              "seed": 3123450350,
+              "raw": " Then the wolf pulls his face back in a sneer and says that he wants the little girl, and now the wolf and Red are fighting and no one has been hurt.",
+              "stopType": "word",
+              "cached": false,
+              "cacheKey": "e426def50ce821bf",
+              "sentence": "Then the wolf pulls his face back in a sneer and says that he wants the little girl, and now the wolf and Red are fighting and no one has been hurt.",
+              "frame": {
+                "actor": "the wolf",
+                "action": "pulls his face back in a sneer and says that he wants the little girl",
+                "outcome": "the wolf and Red are fighting and no one has been hurt"
+              },
+              "expr": "the wolf | pulls his face back in a sneer and says that he wants the little girl | the wolf and Red are fighting and no one has been hurt",
+              "display": "Then the wolf pulls his face back in a sneer and says that he wants the little girl, and now the wolf and Red are fighting and no one has been hurt."
+            },
+            {
+              "arm": "sentence",
+              "seed": 3140227969,
+              "raw": " Then Red goes into the house and the wolf waits with the basket on the path, and now Red and the wolf are walking to each other.",
+              "stopType": "word",
+              "cached": false,
+              "cacheKey": "536ec292bc9677b8",
+              "sentence": "Then Red goes into the house and the wolf waits with the basket on the path, and now Red and the wolf are walking to each other.",
+              "frame": {
+                "actor": "Red",
+                "action": "goes into the house and the wolf waits with the basket on the path",
+                "outcome": "Red and the wolf are walking to each other"
+              },
+              "expr": "Red | goes into the house and the wolf waits with the basket on the path | Red and the wolf are walking to each other",
+              "display": "Then Red goes into the house and the wolf waits with the basket on the path, and now Red and the wolf are walking to each other."
+            },
+            {
+              "arm": "sentence",
+              "seed": 3089895112,
+              "raw": " Then Red sees the wolf and runs for the house, and now the wolf is running towards Red as she runs for the house.",
+              "stopType": "word",
+              "cached": false,
+              "cacheKey": "8cdd488795a1f941",
+              "sentence": "Then Red sees the wolf and runs for the house, and now the wolf is running towards Red as she runs for the house.",
+              "frame": {
+                "actor": "Red",
+                "action": "sees the wolf and runs for the house",
+                "outcome": "the wolf is running towards Red as she runs for the house"
+              },
+              "expr": "Red | sees the wolf and runs for the house | the wolf is running towards Red as she runs for the house",
+              "display": "Then Red sees the wolf and runs for the house, and now the wolf is running towards Red as she runs for the house."
+            },
+            {
+              "arm": "sentence",
+              "seed": 3106672731,
+              "raw": " Then Red runs back through the woods to the house, and now the wolf has caught up with her.",
+              "stopType": "word",
+              "cached": false,
+              "cacheKey": "08919143f6e31eb9",
+              "sentence": "Then Red runs back through the woods to the house, and now the wolf has caught up with her.",
+              "frame": {
+                "actor": "Red",
+                "action": "runs back through the woods to the house",
+                "outcome": "the wolf has caught up with her"
+              },
+              "expr": "Red | runs back through the woods to the house | the wolf has caught up with her",
+              "display": "Then Red runs back through the woods to the house, and now the wolf has caught up with her."
+            },
+            {
+              "arm": "sentence",
+              "seed": 3056339874,
+              "raw": " Then the wolf goes to the house, and now Red is walking alone on the path to her grandmother's house.",
+              "stopType": "word",
+              "cached": false,
+              "cacheKey": "d4c5b35138e2cc57",
+              "sentence": "Then the wolf goes to the house, and now Red is walking alone on the path to her grandmother's house.",
+              "frame": {
+                "actor": "the wolf",
+                "action": "goes to the house",
+                "outcome": "Red is walking alone on the path to her grandmother's house"
+              },
+              "expr": "the wolf | goes to the house | Red is walking alone on the path to her grandmother's house",
+              "display": "Then the wolf goes to the house, and now Red is walking alone on the path to her grandmother's house."
+            },
+            {
+              "arm": "sentence",
+              "seed": 3073117493,
+              "raw": " Then the wolf threatens to kill Red and her grandmother, and now the wolf is standing between Red and the path and holding Red in his teeth.",
+              "stopType": "word",
+              "cached": false,
+              "cacheKey": "b0a42ae51dd12f5b",
+              "sentence": "Then the wolf threatens to kill Red and her grandmother, and now the wolf is standing between Red and the path and holding Red in his teeth.",
+              "frame": {
+                "actor": "the wolf",
+                "action": "threatens to kill Red and her grandmother",
+                "outcome": "the wolf is standing between Red and the path and holding Red in his teeth"
+              },
+              "expr": "the wolf | threatens to kill Red and her grandmother | the wolf is standing between Red and the path and holding Red in his teeth",
+              "display": "Then the wolf threatens to kill Red and her grandmother, and now the wolf is standing between Red and the path and holding Red in his teeth."
+            },
+            {
+              "arm": "sentence",
+              "seed": 4016892231,
+              "raw": " Then the wolf pulls a knife from his belt and stabs Red, and now Red is dead and the wolf is happy that he has the red jacket for his dinner.",
+              "stopType": "word",
+              "cached": false,
+              "cacheKey": "d0bc3d89e432e24b",
+              "sentence": "Then the wolf pulls a knife from his belt and stabs Red, and now Red is dead and the wolf is happy that he has the red jacket for his dinner.",
+              "frame": {
+                "actor": "the wolf",
+                "action": "pulls a knife from his belt and stabs Red",
+                "outcome": "Red is dead and the wolf is happy that he has the red jacket for his dinner"
+              },
+              "expr": "the wolf | pulls a knife from his belt and stabs Red | Red is dead and the wolf is happy that he has the red jacket for his dinner",
+              "display": "Then the wolf pulls a knife from his belt and stabs Red, and now Red is dead and the wolf is happy that he has the red jacket for his dinner."
+            },
+            {
+              "arm": "sentence",
+              "seed": 4000114612,
+              "raw": " Then the wolf opens the door to let her in, and now Red enters the house.",
+              "stopType": "word",
+              "cached": false,
+              "cacheKey": "df1ba3fcf08b4be6",
+              "sentence": "Then the wolf opens the door to let her in, and now Red enters the house.",
+              "frame": {
+                "actor": "the wolf",
+                "action": "opens the door to let her in",
+                "outcome": "Red enters the house"
+              },
+              "expr": "the wolf | opens the door to let her in | Red enters the house",
+              "display": "Then the wolf opens the door to let her in, and now Red enters the house."
+            }
+          ]
+        }
+      }
+    },
+    {
+      "nodeId": "red_flowers",
+      "path": [
+        "red_start",
+        "red_warn",
+        "red_woods",
+        "red_meet",
+        "red_tell",
+        "red_leave",
+        "red_flowers"
+      ],
+      "history": [
+        "Then Red's mother gives Red a basket to carry to her grandmother's house, and now Red is at home holding the basket with the woods between her and the house.",
+        "Then Red's mother tells her to keep to the path and not stray, and now Red has been told to stay on the path and has neither agreed nor refused.",
+        "Then Red walks into the woods with the basket, and now Red is alone on the path among the trees.",
+        "Then the wolf steps into the path in front of her, and now the wolf and Red stand face to face and nothing has been threatened yet.",
+        "Then Red tells him where her grandmother lives and that she is alone, and now the wolf knows the house Red is walking to and who is waiting in it.",
+        "Then Red steps off the path into the trees, and now Red is off the route her mother named and nobody stands between the wolf and the house.",
+        "Then Red stops to gather flowers, and now Red is standing still while the time she has runs out."
+      ],
+      "arms": {
+        "sentence": {
+          "prompt": "STORY: The Tortoise and the Hare\nThen the hare boasts that nothing on the road can outrun him, and now the hare has staked his name on his speed.\nThen the tortoise takes the boast seriously and names a course, and now a race is agreed and the course is set.\nThen the fox drops his paw to start them, and now both runners are on the road.\nNEXT EVENT: Then the hare opens a lead wide enough to look settled, and now the hare is far ahead and the tortoise is out of sight behind him.\n\nSTORY: The Tortoise and the Hare\nThen the hare boasts that nothing on the road can outrun him, and now the hare has staked his name on his speed.\nThen the tortoise takes the boast seriously and names a course, and now a race is agreed and the course is set.\nThen the fox drops his paw to start them, and now both runners are on the road.\nThen the hare opens a lead wide enough to look settled, and now the hare is far ahead and the tortoise is out of sight behind him.\nThen the hare lies down at the roadside to rest, and now the hare is asleep and the gap has stopped growing.\nNEXT EVENT: Then the tortoise holds a pace that does not depend on the gap, and now the tortoise is still moving while the hare is not.\n\nSTORY: Little Red Riding Hood\nThen Red's mother gives Red a basket to carry to her grandmother's house, and now Red is at home holding the basket with the woods between her and the house.\nThen Red's mother tells her to keep to the path and not stray, and now Red has been told to stay on the path and has neither agreed nor refused.\nThen Red walks into the woods with the basket, and now Red is alone on the path among the trees.\nThen the wolf steps into the path in front of her, and now the wolf and Red stand face to face and nothing has been threatened yet.\nThen Red tells him where her grandmother lives and that she is alone, and now the wolf knows the house Red is walking to and who is waiting in it.\nThen Red steps off the path into the trees, and now Red is off the route her mother named and nobody stands between the wolf and the house.\nThen Red stops to gather flowers, and now Red is standing still while the time she has runs out.\nNEXT EVENT: ",
+          "promptSha256": "b2b39c85d4e950c84160884bd94154d4cc73e16fd22a4dbce8f75feffd11f984",
+          "constrained": false,
+          "samples": [
+            {
+              "arm": "sentence",
+              "seed": 3976873751,
+              "raw": " Then the wolf appears in a sudden burst of movement, and now the wolf has crossed the path and is within sight of Red's grandmother.",
+              "stopType": "word",
+              "cached": false,
+              "cacheKey": "4816ad7f7e27375d",
+              "sentence": "Then the wolf appears in a sudden burst of movement, and now the wolf has crossed the path and is within sight of Red's grandmother.",
+              "frame": {
+                "actor": "the wolf",
+                "action": "appears in a sudden burst of movement",
+                "outcome": "the wolf has crossed the path and is within sight of Red's grandmother"
+              },
+              "expr": "the wolf | appears in a sudden burst of movement | the wolf has crossed the path and is within sight of Red's grandmother",
+              "display": "Then the wolf appears in a sudden burst of movement, and now the wolf has crossed the path and is within sight of Red's grandmother."
+            },
+            {
+              "arm": "sentence",
+              "seed": 4010428989,
+              "raw": " Then the wolf hides behind the tree, and now the wolf has no chance of attacking.",
+              "stopType": "word",
+              "cached": false,
+              "cacheKey": "f46f313a623a5444",
+              "sentence": "Then the wolf hides behind the tree, and now the wolf has no chance of attacking.",
+              "frame": {
+                "actor": "the wolf",
+                "action": "hides behind the tree",
+                "outcome": "the wolf has no chance of attacking"
+              },
+              "expr": "the wolf | hides behind the tree | the wolf has no chance of attacking",
+              "display": "Then the wolf hides behind the tree, and now the wolf has no chance of attacking."
+            },
+            {
+              "arm": "sentence",
+              "seed": 3993651370,
+              "raw": " Then Red screams, and now Red screams to warn the wolf of the danger.",
+              "stopType": "word",
+              "cached": false,
+              "cacheKey": "3251ee1d1225f427",
+              "sentence": "Then Red screams, and now Red screams to warn the wolf of the danger.",
+              "frame": {
+                "actor": "Red",
+                "action": "screams",
+                "outcome": "Red screams to warn the wolf of the danger"
+              },
+              "expr": "Red | screams | Red screams to warn the wolf of the danger",
+              "display": "Then Red screams, and now Red screams to warn the wolf of the danger."
+            },
+            {
+              "arm": "sentence",
+              "seed": 3909763275,
+              "raw": " Then the wolf pulls the red flowers away from her, and now the wolf has stolen Red's flowers and the wolf is pulling Red in for the attack.",
+              "stopType": "word",
+              "cached": false,
+              "cacheKey": "436239a69010787c",
+              "sentence": "Then the wolf pulls the red flowers away from her, and now the wolf has stolen Red's flowers and the wolf is pulling Red in for the attack.",
+              "frame": {
+                "actor": "the wolf",
+                "action": "pulls the red flowers away from her",
+                "outcome": "the wolf has stolen Red's flowers and the wolf is pulling Red in for the attack"
+              },
+              "expr": "the wolf | pulls the red flowers away from her | the wolf has stolen Red's flowers and the wolf is pulling Red in for the attack",
+              "display": "Then the wolf pulls the red flowers away from her, and now the wolf has stolen Red's flowers and the wolf is pulling Red in for the attack."
+            },
+            {
+              "arm": "sentence",
+              "seed": 3943318513,
+              "raw": " Then Red takes a bite out of one of the flowers, and now Red has eaten a flower and it falls to the ground.",
+              "stopType": "word",
+              "cached": false,
+              "cacheKey": "0f7def0104c3146f",
+              "sentence": "Then Red takes a bite out of one of the flowers, and now Red has eaten a flower and it falls to the ground.",
+              "frame": {
+                "actor": "Red",
+                "action": "takes a bite out of one of the flowers",
+                "outcome": "Red has eaten a flower and it falls to the ground"
+              },
+              "expr": "Red | takes a bite out of one of the flowers | Red has eaten a flower and it falls to the ground",
+              "display": "Then Red takes a bite out of one of the flowers, and now Red has eaten a flower and it falls to the ground."
+            },
+            {
+              "arm": "sentence",
+              "seed": 3926540894,
+              "raw": " Then the wolf stands and waits, and now the wolf waits in the forest for Red to come back with nothing in her basket.",
+              "stopType": "word",
+              "cached": false,
+              "cacheKey": "23c52313046b78cd",
+              "sentence": "Then the wolf stands and waits, and now the wolf waits in the forest for Red to come back with nothing in her basket.",
+              "frame": {
+                "actor": "the wolf",
+                "action": "stands and waits",
+                "outcome": "the wolf waits in the forest for Red to come back with nothing in her basket"
+              },
+              "expr": "the wolf | stands and waits | the wolf waits in the forest for Red to come back with nothing in her basket",
+              "display": "Then the wolf stands and waits, and now the wolf waits in the forest for Red to come back with nothing in her basket."
+            },
+            {
+              "arm": "sentence",
+              "seed": 3842652799,
+              "raw": " Then the wolf goes in and takes her grandmother, and now the grandmother is in the house with a basket and is dead.",
+              "stopType": "word",
+              "cached": false,
+              "cacheKey": "9d929e5c12d00b46",
+              "sentence": "Then the wolf goes in and takes her grandmother, and now the grandmother is in the house with a basket and is dead.",
+              "frame": {
+                "actor": "the wolf",
+                "action": "goes in and takes her grandmother",
+                "outcome": "the grandmother is in the house with a basket and is dead"
+              },
+              "expr": "the wolf | goes in and takes her grandmother | the grandmother is in the house with a basket and is dead",
+              "display": "Then the wolf goes in and takes her grandmother, and now the grandmother is in the house with a basket and is dead."
+            },
+            {
+              "arm": "sentence",
+              "seed": 1227602927,
+              "raw": " Then the wolf catches Red in a snare and eats her, and now Red has been eaten.",
+              "stopType": "word",
+              "cached": false,
+              "cacheKey": "fd21e41b061bc245",
+              "sentence": "Then the wolf catches Red in a snare and eats her, and now Red has been eaten.",
+              "frame": {
+                "actor": "the wolf",
+                "action": "catches Red in a snare and eats her",
+                "outcome": "Red has been eaten"
+              },
+              "expr": "the wolf | catches Red in a snare and eats her | Red has been eaten",
+              "display": "Then the wolf catches Red in a snare and eats her, and now Red has been eaten."
+            },
+            {
+              "arm": "sentence",
+              "seed": 1261158165,
+              "raw": " Then Red goes back to her grandmother's house, and now Red has brought her grandmother a basket of flowers.",
+              "stopType": "word",
+              "cached": false,
+              "cacheKey": "49b58b0db3d3a6c7",
+              "sentence": "Then Red goes back to her grandmother's house, and now Red has brought her grandmother a basket of flowers.",
+              "frame": {
+                "actor": "Red",
+                "action": "goes back to her grandmother's house",
+                "outcome": "Red has brought her grandmother a basket of flowers"
+              },
+              "expr": "Red | goes back to her grandmother's house | Red has brought her grandmother a basket of flowers",
+              "display": "Then Red goes back to her grandmother's house, and now Red has brought her grandmother a basket of flowers."
+            },
+            {
+              "arm": "sentence",
+              "seed": 1143714832,
+              "raw": " Then the wolf runs after her and she does not run fast enough, and now Red is being caught up by the wolf and the wolf has a chance to kill her.",
+              "stopType": "word",
+              "cached": false,
+              "cacheKey": "9a259e3d02c43d73",
+              "sentence": "Then the wolf runs after her and she does not run fast enough, and now Red is being caught up by the wolf and the wolf has a chance to kill her.",
+              "frame": {
+                "actor": "the wolf",
+                "action": "runs after her and she does not run fast enough",
+                "outcome": "Red is being caught up by the wolf and the wolf has a chance to kill her"
+              },
+              "expr": "the wolf | runs after her and she does not run fast enough | Red is being caught up by the wolf and the wolf has a chance to kill her",
+              "display": "Then the wolf runs after her and she does not run fast enough, and now Red is being caught up by the wolf and the wolf has a chance to kill her."
+            }
+          ],
+          "attempts": 15,
+          "refused": 4,
+          "truncated": 1,
+          "duplicates": 0,
+          "parseRate": 0.6666666666666666,
+          "saturated": false,
+          "allAttempts": [
+            {
+              "arm": "sentence",
+              "seed": 3976873751,
+              "raw": " Then the wolf appears in a sudden burst of movement, and now the wolf has crossed the path and is within sight of Red's grandmother.",
+              "stopType": "word",
+              "cached": false,
+              "cacheKey": "4816ad7f7e27375d",
+              "sentence": "Then the wolf appears in a sudden burst of movement, and now the wolf has crossed the path and is within sight of Red's grandmother.",
+              "frame": {
+                "actor": "the wolf",
+                "action": "appears in a sudden burst of movement",
+                "outcome": "the wolf has crossed the path and is within sight of Red's grandmother"
+              },
+              "expr": "the wolf | appears in a sudden burst of movement | the wolf has crossed the path and is within sight of Red's grandmother",
+              "display": "Then the wolf appears in a sudden burst of movement, and now the wolf has crossed the path and is within sight of Red's grandmother."
+            },
+            {
+              "arm": "sentence",
+              "seed": 3960096132,
+              "raw": "1 Then the wolf gets the basket, and now the wolf has it and is walking back to his home.",
+              "stopType": "word",
+              "cached": false,
+              "cacheKey": "9c451758fa1991ca",
+              "sentence": "1 Then the wolf gets the basket, and now the wolf has it and is walking back to his home.",
+              "error": "missing \"Then \" prefix"
+            },
+            {
+              "arm": "sentence",
+              "seed": 4010428989,
+              "raw": " Then the wolf hides behind the tree, and now the wolf has no chance of attacking.",
+              "stopType": "word",
+              "cached": false,
+              "cacheKey": "f46f313a623a5444",
+              "sentence": "Then the wolf hides behind the tree, and now the wolf has no chance of attacking.",
+              "frame": {
+                "actor": "the wolf",
+                "action": "hides behind the tree",
+                "outcome": "the wolf has no chance of attacking"
+              },
+              "expr": "the wolf | hides behind the tree | the wolf has no chance of attacking",
+              "display": "Then the wolf hides behind the tree, and now the wolf has no chance of attacking."
+            },
+            {
+              "arm": "sentence",
+              "seed": 3993651370,
+              "raw": " Then Red screams, and now Red screams to warn the wolf of the danger.",
+              "stopType": "word",
+              "cached": false,
+              "cacheKey": "3251ee1d1225f427",
+              "sentence": "Then Red screams, and now Red screams to warn the wolf of the danger.",
+              "frame": {
+                "actor": "Red",
+                "action": "screams",
+                "outcome": "Red screams to warn the wolf of the danger"
+              },
+              "expr": "Red | screams | Red screams to warn the wolf of the danger",
+              "display": "Then Red screams, and now Red screams to warn the wolf of the danger."
+            },
+            {
+              "arm": "sentence",
+              "seed": 3909763275,
+              "raw": " Then the wolf pulls the red flowers away from her, and now the wolf has stolen Red's flowers and the wolf is pulling Red in for the attack.",
+              "stopType": "word",
+              "cached": false,
+              "cacheKey": "436239a69010787c",
+              "sentence": "Then the wolf pulls the red flowers away from her, and now the wolf has stolen Red's flowers and the wolf is pulling Red in for the attack.",
+              "frame": {
+                "actor": "the wolf",
+                "action": "pulls the red flowers away from her",
+                "outcome": "the wolf has stolen Red's flowers and the wolf is pulling Red in for the attack"
+              },
+              "expr": "the wolf | pulls the red flowers away from her | the wolf has stolen Red's flowers and the wolf is pulling Red in for the attack",
+              "display": "Then the wolf pulls the red flowers away from her, and now the wolf has stolen Red's flowers and the wolf is pulling Red in for the attack."
+            },
+            {
+              "arm": "sentence",
+              "seed": 3892985656,
+              "raw": " Then the wolf approaches her with the basket, and now the wolf has a basket and Red is still gathering flowers.  Then Red opens the basket to see what is inside, and now Red is still",
+              "stopType": "limit",
+              "truncated": true,
+              "cacheKey": "cc75cb6caa97645a",
+              "error": "truncated at n_predict"
+            },
+            {
+              "arm": "sentence",
+              "seed": 3943318513,
+              "raw": " Then Red takes a bite out of one of the flowers, and now Red has eaten a flower and it falls to the ground.",
+              "stopType": "word",
+              "cached": false,
+              "cacheKey": "0f7def0104c3146f",
+              "sentence": "Then Red takes a bite out of one of the flowers, and now Red has eaten a flower and it falls to the ground.",
+              "frame": {
+                "actor": "Red",
+                "action": "takes a bite out of one of the flowers",
+                "outcome": "Red has eaten a flower and it falls to the ground"
+              },
+              "expr": "Red | takes a bite out of one of the flowers | Red has eaten a flower and it falls to the ground",
+              "display": "Then Red takes a bite out of one of the flowers, and now Red has eaten a flower and it falls to the ground."
+            },
+            {
+              "arm": "sentence",
+              "seed": 3926540894,
+              "raw": " Then the wolf stands and waits, and now the wolf waits in the forest for Red to come back with nothing in her basket.",
+              "stopType": "word",
+              "cached": false,
+              "cacheKey": "23c52313046b78cd",
+              "sentence": "Then the wolf stands and waits, and now the wolf waits in the forest for Red to come back with nothing in her basket.",
+              "frame": {
+                "actor": "the wolf",
+                "action": "stands and waits",
+                "outcome": "the wolf waits in the forest for Red to come back with nothing in her basket"
+              },
+              "expr": "the wolf | stands and waits | the wolf waits in the forest for Red to come back with nothing in her basket",
+              "display": "Then the wolf stands and waits, and now the wolf waits in the forest for Red to come back with nothing in her basket."
+            },
+            {
+              "arm": "sentence",
+              "seed": 3842652799,
+              "raw": " Then the wolf goes in and takes her grandmother, and now the grandmother is in the house with a basket and is dead.",
+              "stopType": "word",
+              "cached": false,
+              "cacheKey": "9d929e5c12d00b46",
+              "sentence": "Then the wolf goes in and takes her grandmother, and now the grandmother is in the house with a basket and is dead.",
+              "frame": {
+                "actor": "the wolf",
+                "action": "goes in and takes her grandmother",
+                "outcome": "the grandmother is in the house with a basket and is dead"
+              },
+              "expr": "the wolf | goes in and takes her grandmother | the grandmother is in the house with a basket and is dead",
+              "display": "Then the wolf goes in and takes her grandmother, and now the grandmother is in the house with a basket and is dead."
+            },
+            {
+              "arm": "sentence",
+              "seed": 3825875180,
+              "raw": " Then the wolf calls on his friends to meet him and now the wolf and his friends are close together in the trees.",
+              "stopType": "word",
+              "cached": false,
+              "cacheKey": "c98a859c314e9eae",
+              "sentence": "Then the wolf calls on his friends to meet him and now the wolf and his friends are close together in the trees.",
+              "error": "missing \", and now \" separator"
+            },
+            {
+              "arm": "sentence",
+              "seed": 1210825308,
+              "raw": " Then the wolf, the hunter, and the bear step into the path in front of her, and now Red is surrounded by the three monsters.",
+              "stopType": "word",
+              "cached": false,
+              "cacheKey": "9941fe77a1d625c1",
+              "sentence": "Then the wolf, the hunter, and the bear step into the path in front of her, and now Red is surrounded by the three monsters.",
+              "error": "no entity matches the actor slot"
+            },
+            {
+              "arm": "sentence",
+              "seed": 1227602927,
+              "raw": " Then the wolf catches Red in a snare and eats her, and now Red has been eaten.",
+              "stopType": "word",
+              "cached": false,
+              "cacheKey": "fd21e41b061bc245",
+              "sentence": "Then the wolf catches Red in a snare and eats her, and now Red has been eaten.",
+              "frame": {
+                "actor": "the wolf",
+                "action": "catches Red in a snare and eats her",
+                "outcome": "Red has been eaten"
+              },
+              "expr": "the wolf | catches Red in a snare and eats her | Red has been eaten",
+              "display": "Then the wolf catches Red in a snare and eats her, and now Red has been eaten."
+            },
+            {
+              "arm": "sentence",
+              "seed": 1244380546,
+              "raw": " Then Red is pushed over by the wolf and now the wolf has eaten the young girl.",
+              "stopType": "word",
+              "cached": false,
+              "cacheKey": "afd1e538a790f09a",
+              "sentence": "Then Red is pushed over by the wolf and now the wolf has eaten the young girl.",
+              "error": "missing \", and now \" separator"
+            },
+            {
+              "arm": "sentence",
+              "seed": 1261158165,
+              "raw": " Then Red goes back to her grandmother's house, and now Red has brought her grandmother a basket of flowers.",
+              "stopType": "word",
+              "cached": false,
+              "cacheKey": "49b58b0db3d3a6c7",
+              "sentence": "Then Red goes back to her grandmother's house, and now Red has brought her grandmother a basket of flowers.",
+              "frame": {
+                "actor": "Red",
+                "action": "goes back to her grandmother's house",
+                "outcome": "Red has brought her grandmother a basket of flowers"
+              },
+              "expr": "Red | goes back to her grandmother's house | Red has brought her grandmother a basket of flowers",
+              "display": "Then Red goes back to her grandmother's house, and now Red has brought her grandmother a basket of flowers."
+            },
+            {
+              "arm": "sentence",
+              "seed": 1143714832,
+              "raw": " Then the wolf runs after her and she does not run fast enough, and now Red is being caught up by the wolf and the wolf has a chance to kill her.",
+              "stopType": "word",
+              "cached": false,
+              "cacheKey": "9a259e3d02c43d73",
+              "sentence": "Then the wolf runs after her and she does not run fast enough, and now Red is being caught up by the wolf and the wolf has a chance to kill her.",
+              "frame": {
+                "actor": "the wolf",
+                "action": "runs after her and she does not run fast enough",
+                "outcome": "Red is being caught up by the wolf and the wolf has a chance to kill her"
+              },
+              "expr": "the wolf | runs after her and she does not run fast enough | Red is being caught up by the wolf and the wolf has a chance to kill her",
+              "display": "Then the wolf runs after her and she does not run fast enough, and now Red is being caught up by the wolf and the wolf has a chance to kill her."
+            }
+          ]
+        }
+      }
+    }
+  ]
+}

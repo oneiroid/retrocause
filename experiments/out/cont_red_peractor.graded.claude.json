@@ -1,0 +1,893 @@
+{
+  "manifest": {
+    "probe": "continue_probe v1 (continuation plan v3, Stage 0)",
+    "story": "red",
+    "k": 10,
+    "runSeed": 11,
+    "arms": [
+      "sentence"
+    ],
+    "unconstrained": false,
+    "perActor": true,
+    "grammarBounds": {
+      "actionMaxChars": 80,
+      "outcomeMaxChars": 170,
+      "maxSentenceChars": 284
+    },
+    "sampling": {
+      "sentence": {
+        "temperature": 1,
+        "top_k": 0,
+        "seed": 7,
+        "samplers": [
+          "top_k",
+          "min_p",
+          "temperature"
+        ],
+        "repeat_penalty": 1,
+        "dry_multiplier": 0,
+        "n_predict": 190,
+        "cache_prompt": false,
+        "min_p": 0.05,
+        "stop": [
+          "\n"
+        ]
+      },
+      "json": {
+        "temperature": 1,
+        "top_k": 0,
+        "seed": 7,
+        "samplers": [
+          "top_k",
+          "min_p",
+          "temperature"
+        ],
+        "repeat_penalty": 1,
+        "dry_multiplier": 0,
+        "n_predict": 512,
+        "cache_prompt": false,
+        "min_p": 0.05
+      }
+    },
+    "model": {
+      "props": {
+        "default_generation_settings": {
+          "params": {
+            "seed": 4294967295,
+            "temperature": 0.800000011920929,
+            "dynatemp_range": 0,
+            "dynatemp_exponent": 1,
+            "top_k": 40,
+            "top_p": 0.949999988079071,
+            "min_p": 0.05000000074505806,
+            "top_n_sigma": -1,
+            "xtc_probability": 0,
+            "xtc_threshold": 0.10000000149011612,
+            "typical_p": 1,
+            "repeat_last_n": 64,
+            "repeat_penalty": 1,
+            "presence_penalty": 0,
+            "frequency_penalty": 0,
+            "dry_multiplier": 0,
+            "dry_base": 1.75,
+            "dry_allowed_length": 2,
+            "dry_penalty_last_n": -1,
+            "mirostat": 0,
+            "mirostat_tau": 5,
+            "mirostat_eta": 0.10000000149011612,
+            "adaptive_target": -1,
+            "adaptive_decay": 0.8999999761581421,
+            "max_tokens": -1,
+            "n_predict": -1,
+            "n_keep": 0,
+            "n_discard": 0,
+            "ignore_eos": false,
+            "stream": false,
+            "n_probs": 0,
+            "min_keep": 0,
+            "chat_format": "Content-only",
+            "reasoning_format": "none",
+            "reasoning_in_content": false,
+            "generation_prompt": "",
+            "samplers": [
+              "penalties",
+              "dry",
+              "top_n_sigma",
+              "top_k",
+              "typ_p",
+              "top_p",
+              "min_p",
+              "xtc",
+              "temperature"
+            ],
+            "speculative.types": "none",
+            "timings_per_token": false,
+            "post_sampling_probs": false,
+            "backend_sampling": false,
+            "lora": []
+          },
+          "n_ctx": 4096
+        },
+        "total_slots": 1,
+        "model_alias": "/media/oneiroid/sub/workspace/llmfinetune/models/qwen3-4b-base-Q5_K_M.gguf",
+        "model_ftype": "Q5_K - Medium",
+        "model_path": "/media/oneiroid/sub/workspace/llmfinetune/models/qwen3-4b-base-Q5_K_M.gguf",
+        "modalities": {
+          "vision": false,
+          "video": false,
+          "audio": false
+        },
+        "media_marker": "<__media_IdbGQ342M69FUpNc4L7g6tDaOoVcmW8u__>",
+        "endpoint_slots": true,
+        "endpoint_props": false,
+        "endpoint_metrics": false,
+        "ui": true,
+        "ui_settings": {},
+        "chat_template": "{%- if tools %}\n    {{- '<|im_start|>system\\n' }}\n    {%- if messages[0].role == 'system' %}\n        {{- messages[0].content + '\\n\\n' }}\n    {%- endif %}\n    {{- \"# Tools\\n\\nYou may call one or more functions to assist with the user query.\\n\\nYou are provided with function signatures within <tools></tools> XML tags:\\n<tools>\" }}\n    {%- for tool in tools %}\n        {{- \"\\n\" }}\n        {{- tool | tojson }}\n    {%- endfor %}\n    {{- \"\\n</tools>\\n\\nFor each function call, return a json object with function name and arguments within <tool_call></tool_call> XML tags:\\n<tool_call>\\n{\\\"name\\\": <function-name>, \\\"arguments\\\": <args-json-object>}\\n</tool_call><|im_end|>\\n\" }}\n{%- else %}\n    {%- if messages[0].role == 'system' %}\n        {{- '<|im_start|>system\\n' + messages[0].content + '<|im_end|>\\n' }}\n    {%- endif %}\n{%- endif %}\n{%- set ns = namespace(multi_step_tool=true, last_query_index=messages|length - 1) %}\n{%- for message in messages[::-1] %}\n    {%- set index = (messages|length - 1) - loop.index0 %}\n    {%- if ns.multi_step_tool and message.role == \"user\" and not(message.content.startswith('<tool_response>') and message.content.endswith('</tool_response>')) %}\n        {%- set ns.multi_step_tool = false %}\n        {%- set ns.last_query_index = index %}\n    {%- endif %}\n{%- endfor %}\n{%- for message in messages %}\n    {%- if (message.role == \"user\") or (message.role == \"system\" and not loop.first) %}\n        {{- '<|im_start|>' + message.role + '\\n' + message.content + '<|im_end|>' + '\\n' }}\n    {%- elif message.role == \"assistant\" %}\n        {%- set content = message.content %}\n        {%- set reasoning_content = '' %}\n        {%- if message.reasoning_content is defined and message.reasoning_content is not none %}\n            {%- set reasoning_content = message.reasoning_content %}\n        {%- else %}\n            {%- if '</think>' in message.content %}\n                {%- set content = message.content.split('</think>')[-1].lstrip('\\n') %}\n                {%- set reasoning_content = message.content.split('</think>')[0].rstrip('\\n').split('<think>')[-1].lstrip('\\n') %}\n            {%- endif %}\n        {%- endif %}\n        {%- if loop.index0 > ns.last_query_index %}\n            {%- if loop.last or (not loop.last and reasoning_content) %}\n                {{- '<|im_start|>' + message.role + '\\n<think>\\n' + reasoning_content.strip('\\n') + '\\n</think>\\n\\n' + content.lstrip('\\n') }}\n            {%- else %}\n                {{- '<|im_start|>' + message.role + '\\n' + content }}\n            {%- endif %}\n        {%- else %}\n            {{- '<|im_start|>' + message.role + '\\n' + content }}\n        {%- endif %}\n        {%- if message.tool_calls %}\n            {%- for tool_call in message.tool_calls %}\n                {%- if (loop.first and content) or (not loop.first) %}\n                    {{- '\\n' }}\n                {%- endif %}\n                {%- if tool_call.function %}\n                    {%- set tool_call = tool_call.function %}\n                {%- endif %}\n                {{- '<tool_call>\\n{\"name\": \"' }}\n                {{- tool_call.name }}\n                {{- '\", \"arguments\": ' }}\n                {%- if tool_call.arguments is string %}\n                    {{- tool_call.arguments }}\n                {%- else %}\n                    {{- tool_call.arguments | tojson }}\n                {%- endif %}\n                {{- '}\\n</tool_call>' }}\n            {%- endfor %}\n        {%- endif %}\n        {{- '<|im_end|>\\n' }}\n    {%- elif message.role == \"tool\" %}\n        {%- if loop.first or (messages[loop.index0 - 1].role != \"tool\") %}\n            {{- '<|im_start|>user' }}\n        {%- endif %}\n        {{- '\\n<tool_response>\\n' }}\n        {{- message.content }}\n        {{- '\\n</tool_response>' }}\n        {%- if loop.last or (messages[loop.index0 + 1].role != \"tool\") %}\n            {{- '<|im_end|>\\n' }}\n        {%- endif %}\n    {%- endif %}\n{%- endfor %}\n{%- if add_generation_prompt %}\n    {{- '<|im_start|>assistant\\n' }}\n    {%- if enable_thinking is defined and enable_thinking is false %}\n        {{- '<think>\\n\\n</think>\\n\\n' }}\n    {%- endif %}\n{%- endif %}",
+        "chat_template_caps": {
+          "supports_object_arguments": true,
+          "supports_parallel_tool_calls": true,
+          "supports_preserve_reasoning": false,
+          "supports_string_content": true,
+          "supports_system_role": true,
+          "supports_tool_calls": true,
+          "supports_tools": true,
+          "supports_typed_content": false
+        },
+        "bos_token": "<|endoftext|>",
+        "eos_token": "<|im_end|>",
+        "build_info": "b1-f5b9bd3",
+        "is_sleeping": false,
+        "cors_proxy_enabled": false
+      },
+      "sha256": "699936b83664f71a4c1d129a1e10b02c1909e8edfdd32962cea75259f4f92093"
+    },
+    "templates": {
+      "sentence": {
+        "name": "frames.v1",
+        "sha256": "764b9b3db52ab23b3686824ebce2fbe18d1ecdd0fb1c32b5f96cfa2e795cf685"
+      },
+      "json": {
+        "name": "branch.v2",
+        "sha256": "ced2b702a8bfc7f42d06f7d5cf984b1c77311b378bca39e6dd96dc6034502dbc"
+      }
+    },
+    "entities": [
+      "Red",
+      "Red's mother",
+      "Red's grandmother",
+      "the wolf",
+      "the woodcutter"
+    ],
+    "entitiesSha256": "aa4a631da8ab1b2d3ed508810e59e9882dc6e761c223c4050f33d301cf1db41f",
+    "grammar": "root ::= \"Then \" actor \" \" action \", and now \" outcome \".\"\nactor ::= \"Red's grandmother\" | \"the woodcutter\" | \"Red's mother\" | \"the wolf\" | \"Red\"\naction ::= [^,.\\n]{1,80}\noutcome ::= [^.\\n]{1,170}\n",
+    "grammarSha256": "9469e45d8e7ba18c6981933a664b92d49d43b16f24f4a83c8397d6ab5f9e79db",
+    "generatedAt": "2026-09-09T23:34:33.191Z",
+    "gradedAt": "2026-09-10T13:18:51.509Z",
+    "rater": "claude",
+    "gradeSchema": 2,
+    "questions": [
+      {
+        "key": "possible",
+        "prompt": "could this happen next in this story?"
+      },
+      {
+        "key": "consistent",
+        "prompt": "is it consistent with what the history already established?"
+      },
+      {
+        "key": "advances",
+        "prompt": "does the WORLD change - is anything true after it that was not true before?"
+      },
+      {
+        "key": "toldStory",
+        "prompt": "is this the story's VERY NEXT event (not something it does later)?"
+      }
+    ],
+    "resumedFrom": "cont_red_peractor.graded.claude.json",
+    "supersededAnswers": 30
+  },
+  "grades": [
+    {
+      "nodeId": "red_woods",
+      "position": 1,
+      "arm": "sentence",
+      "index": 1,
+      "display": "Then Red's mother calls out for Red, and now Red's mother is at home waiting for Red to return and the woods are empty except for the path and the tree shadows on the path.",
+      "expr": "Red's mother | calls out for Red | Red's mother is at home waiting for Red to return and the woods are empty except for the path and the tree shadows on the path",
+      "seed": 1501249015,
+      "forcedActor": "Red's mother",
+      "labelKey": "sentence:red_woods#1",
+      "superseded": {
+        "toldStory": [
+          {
+            "value": false,
+            "prompt": "is this the told story's own next event?"
+          }
+        ]
+      },
+      "possible": false,
+      "consistent": false,
+      "advances": true,
+      "toldStory": false
+    },
+    {
+      "nodeId": "red_woods",
+      "position": 2,
+      "arm": "sentence",
+      "index": 2,
+      "display": "Then Red's grandmother tells her to stay on the path, and now the path is a trail for Red to follow but it is not clear where Red is or if Red is following it at all.",
+      "expr": "Red's grandmother | tells her to stay on the path | the path is a trail for Red to follow but it is not clear where Red is or if Red is following it at all",
+      "seed": 2506009218,
+      "forcedActor": "Red's grandmother",
+      "labelKey": "sentence:red_woods#2",
+      "superseded": {
+        "toldStory": [
+          {
+            "value": false,
+            "prompt": "is this the told story's own next event?"
+          }
+        ]
+      },
+      "possible": false,
+      "consistent": false,
+      "advances": true,
+      "toldStory": false
+    },
+    {
+      "nodeId": "red_woods",
+      "position": 3,
+      "arm": "sentence",
+      "index": 7,
+      "display": "Then Red's grandmother takes her in the woods and tells her to run away, and now Red is with her grandmother in the woods and has no reason to run away.",
+      "expr": "Red's grandmother | takes her in the woods and tells her to run away | Red is with her grandmother in the woods and has no reason to run away",
+      "seed": 2455676361,
+      "forcedActor": "Red's grandmother",
+      "labelKey": "sentence:red_woods#7",
+      "superseded": {
+        "toldStory": [
+          {
+            "value": false,
+            "prompt": "is this the told story's own next event?"
+          }
+        ]
+      },
+      "possible": false,
+      "consistent": false,
+      "advances": true,
+      "toldStory": false
+    },
+    {
+      "nodeId": "red_woods",
+      "position": 4,
+      "arm": "sentence",
+      "index": 5,
+      "display": "Then Red leaves the path, and now Red is off the path and heading towards a path she has not followed before.",
+      "expr": "Red | leaves the path | Red is off the path and heading towards a path she has not followed before",
+      "seed": 1006706012,
+      "forcedActor": "Red",
+      "labelKey": "sentence:red_woods#5",
+      "superseded": {
+        "toldStory": [
+          {
+            "value": false,
+            "prompt": "is this the told story's own next event?"
+          }
+        ]
+      },
+      "possible": true,
+      "consistent": true,
+      "advances": true,
+      "toldStory": false
+    },
+    {
+      "nodeId": "red_woods",
+      "position": 5,
+      "arm": "sentence",
+      "index": 8,
+      "display": "Then the woodcutter sees a figure approaching with a basket, and now the woodcutter is watching Red, who is in the woods and carrying something she has been told to carry and who has been told to stay on the path but has neither agreed nor.",
+      "expr": "the woodcutter | sees a figure approaching with a basket | the woodcutter is watching Red, who is in the woods and carrying something she has been told to carry and who has been told to stay on the path but has neither agreed nor",
+      "seed": 655334732,
+      "forcedActor": "the woodcutter",
+      "labelKey": "sentence:red_woods#8",
+      "superseded": {
+        "toldStory": [
+          {
+            "value": false,
+            "prompt": "is this the told story's own next event?"
+          }
+        ]
+      },
+      "possible": false,
+      "consistent": true,
+      "advances": true,
+      "toldStory": false
+    },
+    {
+      "nodeId": "red_woods",
+      "position": 6,
+      "arm": "sentence",
+      "index": 0,
+      "display": "Then Red sees the wolf at the crossroads and now Red has seen a wolf standing in the path, and now it is Red who sees it and it is the wolf who does not see her.",
+      "expr": "Red | sees the wolf at the crossroads and now Red has seen a wolf standing in the path | it is Red who sees it and it is the wolf who does not see her",
+      "seed": 956373155,
+      "forcedActor": "Red",
+      "labelKey": "sentence:red_woods#0",
+      "superseded": {
+        "toldStory": [
+          {
+            "value": false,
+            "prompt": "is this the told story's own next event?"
+          }
+        ]
+      },
+      "possible": false,
+      "consistent": true,
+      "advances": true,
+      "toldStory": false
+    },
+    {
+      "nodeId": "red_woods",
+      "position": 7,
+      "arm": "sentence",
+      "index": 4,
+      "display": "Then the woodcutter spots her and the path turns into a stream, and now Red and the woodcutter are both on the banks of a stream that is not the path he had come down.",
+      "expr": "the woodcutter | spots her and the path turns into a stream | Red and the woodcutter are both on the banks of a stream that is not the path he had come down",
+      "seed": 739222827,
+      "forcedActor": "the woodcutter",
+      "labelKey": "sentence:red_woods#4",
+      "superseded": {
+        "toldStory": [
+          {
+            "value": false,
+            "prompt": "is this the told story's own next event?"
+          }
+        ]
+      },
+      "possible": false,
+      "consistent": false,
+      "advances": true,
+      "toldStory": false
+    },
+    {
+      "nodeId": "red_woods",
+      "position": 8,
+      "arm": "sentence",
+      "index": 9,
+      "display": "Then Red encounters the wolf with the basket, and now Red is with the wolf holding the basket with the woods between her and the house.",
+      "expr": "Red | encounters the wolf with the basket | Red is with the wolf holding the basket with the woods between her and the house",
+      "seed": 1236756320,
+      "forcedActor": "Red",
+      "labelKey": "sentence:red_woods#9",
+      "superseded": {
+        "toldStory": [
+          {
+            "value": false,
+            "prompt": "is this the told story's own next event?"
+          }
+        ]
+      },
+      "possible": true,
+      "consistent": true,
+      "advances": true,
+      "toldStory": false
+    },
+    {
+      "nodeId": "red_woods",
+      "position": 9,
+      "arm": "sentence",
+      "index": 3,
+      "display": "Then the wolf lies in wait, and now the wolf is hiding and has not yet moved into sight.",
+      "expr": "the wolf | lies in wait | the wolf is hiding and has not yet moved into sight",
+      "seed": 2459188596,
+      "forcedActor": "the wolf",
+      "labelKey": "sentence:red_woods#3",
+      "superseded": {
+        "toldStory": [
+          {
+            "value": false,
+            "prompt": "is this the told story's own next event?"
+          }
+        ]
+      },
+      "possible": true,
+      "consistent": true,
+      "advances": true,
+      "toldStory": false
+    },
+    {
+      "nodeId": "red_woods",
+      "position": 10,
+      "arm": "sentence",
+      "index": 6,
+      "display": "Then Red's mother is on the road back from visiting her grandmother, and now Red is on the road back from visiting her grandmother and her mother is on the road to visit her grandmother's house.",
+      "expr": "Red's mother | is on the road back from visiting her grandmother | Red is on the road back from visiting her grandmother and her mother is on the road to visit her grandmother's house",
+      "seed": 1450916158,
+      "forcedActor": "Red's mother",
+      "labelKey": "sentence:red_woods#6",
+      "superseded": {
+        "toldStory": [
+          {
+            "value": false,
+            "prompt": "is this the told story's own next event?"
+          }
+        ]
+      },
+      "possible": false,
+      "consistent": false,
+      "advances": true,
+      "toldStory": false
+    },
+    {
+      "nodeId": "red_tell",
+      "position": 1,
+      "arm": "sentence",
+      "index": 8,
+      "display": "Then the wolf calls Red's grandmother to his own house, and now the wolf has called his grandmother and is walking her to his own home and Red is nowhere to be seen.",
+      "expr": "the wolf | calls Red's grandmother to his own house | the wolf has called his grandmother and is walking her to his own home and Red is nowhere to be seen",
+      "seed": 2361808478,
+      "forcedActor": "the wolf",
+      "labelKey": "sentence:red_tell#8",
+      "superseded": {
+        "toldStory": [
+          {
+            "value": false,
+            "prompt": "is this the told story's own next event?"
+          }
+        ]
+      },
+      "possible": false,
+      "consistent": false,
+      "advances": true,
+      "toldStory": false
+    },
+    {
+      "nodeId": "red_tell",
+      "position": 2,
+      "arm": "sentence",
+      "index": 9,
+      "display": "Then the woodcutter passes by and stops to listen to Red, and now the wolf and Red are alone in the woods and the woodcutter has heard them but has not yet moved to help her.",
+      "expr": "the woodcutter | passes by and stops to listen to Red | the wolf and Red are alone in the woods and the woodcutter has heard them but has not yet moved to help her",
+      "seed": 2180798127,
+      "forcedActor": "the woodcutter",
+      "labelKey": "sentence:red_tell#9",
+      "superseded": {
+        "toldStory": [
+          {
+            "value": false,
+            "prompt": "is this the told story's own next event?"
+          }
+        ]
+      },
+      "possible": true,
+      "consistent": true,
+      "advances": true,
+      "toldStory": false
+    },
+    {
+      "nodeId": "red_tell",
+      "position": 3,
+      "arm": "sentence",
+      "index": 3,
+      "display": "Then the wolf puts the basket aside and heads off in the direction of the house, and now the wolf has walked off and the basket is where he left it for Red to find later.",
+      "expr": "the wolf | puts the basket aside and heads off in the direction of the house | the wolf has walked off and the basket is where he left it for Red to find later",
+      "seed": 2210809907,
+      "forcedActor": "the wolf",
+      "labelKey": "sentence:red_tell#3",
+      "superseded": {
+        "toldStory": [
+          {
+            "value": false,
+            "prompt": "is this the told story's own next event?"
+          }
+        ]
+      },
+      "possible": false,
+      "consistent": false,
+      "advances": true,
+      "toldStory": false
+    },
+    {
+      "nodeId": "red_tell",
+      "position": 4,
+      "arm": "sentence",
+      "index": 0,
+      "display": "Then Red asks him to wait while she gets her grandmother, and now Red has a plan to save her grandmother but does not yet know how to do it or whether the wolf is really listening to her plan.",
+      "expr": "Red | asks him to wait while she gets her grandmother | Red has a plan to save her grandmother but does not yet know how to do it or whether the wolf is really listening to her plan",
+      "seed": 3281998600,
+      "forcedActor": "Red",
+      "labelKey": "sentence:red_tell#0",
+      "superseded": {
+        "toldStory": [
+          {
+            "value": false,
+            "prompt": "is this the told story's own next event?"
+          }
+        ]
+      },
+      "possible": true,
+      "consistent": true,
+      "advances": true,
+      "toldStory": false
+    },
+    {
+      "nodeId": "red_tell",
+      "position": 5,
+      "arm": "sentence",
+      "index": 1,
+      "display": "Then Red's mother gives Red a basket to carry to her grandmother's house, and now Red is at home holding the basket with the woods between her and the house.",
+      "expr": "Red's mother | gives Red a basket to carry to her grandmother's house | Red is at home holding the basket with the woods between her and the house",
+      "seed": 2750761710,
+      "forcedActor": "Red's mother",
+      "labelKey": "sentence:red_tell#1",
+      "superseded": {
+        "toldStory": [
+          {
+            "value": false,
+            "prompt": "is this the told story's own next event?"
+          }
+        ]
+      },
+      "possible": false,
+      "consistent": false,
+      "advances": false,
+      "toldStory": false
+    },
+    {
+      "nodeId": "red_tell",
+      "position": 6,
+      "arm": "sentence",
+      "index": 2,
+      "display": "Then Red's grandmother opens the door, and now the wolf is approaching the house and Red's grandmother is at the door to welcome Red back home.",
+      "expr": "Red's grandmother | opens the door | the wolf is approaching the house and Red's grandmother is at the door to welcome Red back home",
+      "seed": 209525219,
+      "forcedActor": "Red's grandmother",
+      "labelKey": "sentence:red_tell#2",
+      "superseded": {
+        "toldStory": [
+          {
+            "value": false,
+            "prompt": "is this the told story's own next event?"
+          }
+        ]
+      },
+      "possible": false,
+      "consistent": false,
+      "advances": true,
+      "toldStory": false
+    },
+    {
+      "nodeId": "red_tell",
+      "position": 7,
+      "arm": "sentence",
+      "index": 5,
+      "display": "Then Red and the wolf walk into the path in front of the grandmother's house, and now they stand in front of the door and can see the house, but Red does not know it is a wolf in the house with her grandmother.",
+      "expr": "Red | and the wolf walk into the path in front of the grandmother's house | they stand in front of the door and can see the house, but Red does not know it is a wolf in the house with her grandmother",
+      "seed": 3365886695,
+      "forcedActor": "Red",
+      "labelKey": "sentence:red_tell#5",
+      "superseded": {
+        "toldStory": [
+          {
+            "value": false,
+            "prompt": "is this the told story's own next event?"
+          }
+        ]
+      },
+      "possible": false,
+      "consistent": false,
+      "advances": true,
+      "toldStory": false
+    },
+    {
+      "nodeId": "red_tell",
+      "position": 8,
+      "arm": "sentence",
+      "index": 6,
+      "display": "Then Red's mother opens the door to the house and sees Red's grandmother, and now Red's grandmother has arrived safely in the house and Red's mother is relieved and pleased she is there.",
+      "expr": "Red's mother | opens the door to the house and sees Red's grandmother | Red's grandmother has arrived safely in the house and Red's mother is relieved and pleased she is there",
+      "seed": 2801094567,
+      "forcedActor": "Red's mother",
+      "labelKey": "sentence:red_tell#6",
+      "superseded": {
+        "toldStory": [
+          {
+            "value": false,
+            "prompt": "is this the told story's own next event?"
+          }
+        ]
+      },
+      "possible": false,
+      "consistent": false,
+      "advances": true,
+      "toldStory": false
+    },
+    {
+      "nodeId": "red_tell",
+      "position": 9,
+      "arm": "sentence",
+      "index": 7,
+      "display": "Then Red's grandmother opens the door to look for her, and now Red's grandmother is on the doorstep, but no one else is visible yet.",
+      "expr": "Red's grandmother | opens the door to look for her | Red's grandmother is on the doorstep, but no one else is visible yet",
+      "seed": 259858076,
+      "forcedActor": "Red's grandmother",
+      "labelKey": "sentence:red_tell#7",
+      "superseded": {
+        "toldStory": [
+          {
+            "value": false,
+            "prompt": "is this the told story's own next event?"
+          }
+        ]
+      },
+      "possible": true,
+      "consistent": true,
+      "advances": true,
+      "toldStory": false
+    },
+    {
+      "nodeId": "red_tell",
+      "position": 10,
+      "arm": "sentence",
+      "index": 4,
+      "display": "Then the woodcutter hears Red's voice, and now Red has been heard and the wolf is in danger of being noticed and captured, but has not yet been noticed or captured.",
+      "expr": "the woodcutter | hears Red's voice | Red has been heard and the wolf is in danger of being noticed and captured, but has not yet been noticed or captured",
+      "seed": 2231130984,
+      "forcedActor": "the woodcutter",
+      "labelKey": "sentence:red_tell#4",
+      "superseded": {
+        "toldStory": [
+          {
+            "value": false,
+            "prompt": "is this the told story's own next event?"
+          }
+        ]
+      },
+      "possible": true,
+      "consistent": true,
+      "advances": true,
+      "toldStory": false
+    },
+    {
+      "nodeId": "red_flowers",
+      "position": 1,
+      "arm": "sentence",
+      "index": 4,
+      "display": "Then the woodcutter appears and Red hides behind him, and now the woodcutter stands between the wolf and the house with Red hiding behind him.",
+      "expr": "the woodcutter | appears and Red hides behind him | the woodcutter stands between the wolf and the house with Red hiding behind him",
+      "seed": 377397037,
+      "forcedActor": "the woodcutter",
+      "labelKey": "sentence:red_flowers#4",
+      "superseded": {
+        "toldStory": [
+          {
+            "value": false,
+            "prompt": "is this the told story's own next event?"
+          }
+        ]
+      },
+      "possible": true,
+      "consistent": true,
+      "advances": true,
+      "toldStory": false
+    },
+    {
+      "nodeId": "red_flowers",
+      "position": 2,
+      "arm": "sentence",
+      "index": 5,
+      "display": "Then Red turns around with the flowers, and now the wolf is close enough to eat her and Red has lost sight of the house she's heading to.",
+      "expr": "Red | turns around with the flowers | the wolf is close enough to eat her and Red has lost sight of the house she's heading to",
+      "seed": 4214408406,
+      "forcedActor": "Red",
+      "labelKey": "sentence:red_flowers#5",
+      "superseded": {
+        "toldStory": [
+          {
+            "value": false,
+            "prompt": "is this the told story's own next event?"
+          }
+        ]
+      },
+      "possible": true,
+      "consistent": true,
+      "advances": true,
+      "toldStory": false
+    },
+    {
+      "nodeId": "red_flowers",
+      "position": 3,
+      "arm": "sentence",
+      "index": 2,
+      "display": "Then Red's grandmother calls out for her and Red turns and sees the wolf, and now Red has heard the call and has turned around to see the wolf who has no face yet.",
+      "expr": "Red's grandmother | calls out for her and Red turns and sees the wolf | Red has heard the call and has turned around to see the wolf who has no face yet",
+      "seed": 767504692,
+      "forcedActor": "Red's grandmother",
+      "labelKey": "sentence:red_flowers#2",
+      "superseded": {
+        "toldStory": [
+          {
+            "value": false,
+            "prompt": "is this the told story's own next event?"
+          }
+        ]
+      },
+      "possible": false,
+      "consistent": false,
+      "advances": true,
+      "toldStory": false
+    },
+    {
+      "nodeId": "red_flowers",
+      "position": 4,
+      "arm": "sentence",
+      "index": 0,
+      "display": "Then Red leaves the flowers and runs the last way to the house, and now Red is hurrying toward the house and the wolf is left behind her on the path.",
+      "expr": "Red | leaves the flowers and runs the last way to the house | Red is hurrying toward the house and the wolf is left behind her on the path",
+      "seed": 3329205,
+      "forcedActor": "Red",
+      "labelKey": "sentence:red_flowers#0",
+      "superseded": {
+        "toldStory": [
+          {
+            "value": false,
+            "prompt": "is this the told story's own next event?"
+          }
+        ]
+      },
+      "possible": true,
+      "consistent": true,
+      "advances": true,
+      "toldStory": false
+    },
+    {
+      "nodeId": "red_flowers",
+      "position": 5,
+      "arm": "sentence",
+      "index": 6,
+      "display": "Then Red's mother cries for Red and sends the woodsfolk to look for her, and now Red's mother is worried about her and sends out searchers after her, but Red has gone too far and no one knows where she has gone except the wolf.",
+      "expr": "Red's mother | cries for Red and sends the woodsfolk to look for her | Red's mother is worried about her and sends out searchers after her, but Red has gone too far and no one knows where she has gone except the wolf",
+      "seed": 2833823312,
+      "forcedActor": "Red's mother",
+      "labelKey": "sentence:red_flowers#6",
+      "superseded": {
+        "toldStory": [
+          {
+            "value": false,
+            "prompt": "is this the told story's own next event?"
+          }
+        ]
+      },
+      "possible": true,
+      "consistent": true,
+      "advances": true,
+      "toldStory": false
+    },
+    {
+      "nodeId": "red_flowers",
+      "position": 6,
+      "arm": "sentence",
+      "index": 3,
+      "display": "Then the wolf runs and reaches the house before Red, and now the wolf is on the doorstep while Red is still in the trees and has no way to see the house before her.",
+      "expr": "the wolf | runs and reaches the house before Red | the wolf is on the doorstep while Red is still in the trees and has no way to see the house before her",
+      "seed": 3096159174,
+      "forcedActor": "the wolf",
+      "labelKey": "sentence:red_flowers#3",
+      "superseded": {
+        "toldStory": [
+          {
+            "value": true,
+            "prompt": "is this the told story's own next event?"
+          }
+        ]
+      },
+      "possible": true,
+      "consistent": true,
+      "advances": true,
+      "toldStory": true
+    },
+    {
+      "nodeId": "red_flowers",
+      "position": 7,
+      "arm": "sentence",
+      "index": 7,
+      "display": "Then Red's grandmother calls out for her, and now the wolf calls out for her instead and she will not see him until he has arrived at the house.",
+      "expr": "Red's grandmother | calls out for her | the wolf calls out for her instead and she will not see him until he has arrived at the house",
+      "seed": 717171835,
+      "forcedActor": "Red's grandmother",
+      "labelKey": "sentence:red_flowers#7",
+      "superseded": {
+        "toldStory": [
+          {
+            "value": false,
+            "prompt": "is this the told story's own next event?"
+          }
+        ]
+      },
+      "possible": false,
+      "consistent": false,
+      "advances": true,
+      "toldStory": false
+    },
+    {
+      "nodeId": "red_flowers",
+      "position": 8,
+      "arm": "sentence",
+      "index": 1,
+      "display": "Then Red's mother sends out a messenger, and now Red's mother is out looking for Red and the wolf is inside the house waiting for her to come back.",
+      "expr": "Red's mother | sends out a messenger | Red's mother is out looking for Red and the wolf is inside the house waiting for her to come back",
+      "seed": 2951266645,
+      "forcedActor": "Red's mother",
+      "labelKey": "sentence:red_flowers#1",
+      "superseded": {
+        "toldStory": [
+          {
+            "value": false,
+            "prompt": "is this the told story's own next event?"
+          }
+        ]
+      },
+      "possible": false,
+      "consistent": false,
+      "advances": true,
+      "toldStory": false
+    },
+    {
+      "nodeId": "red_flowers",
+      "position": 9,
+      "arm": "sentence",
+      "index": 8,
+      "display": "Then the wolf steps off the path and into the woods, and now the wolf is also off the route Red has chosen and there is nobody left between him and the house but the flowers Red has collected.",
+      "expr": "the wolf | steps off the path and into the woods | the wolf is also off the route Red has chosen and there is nobody left between him and the house but the flowers Red has collected",
+      "seed": 3213602507,
+      "forcedActor": "the wolf",
+      "labelKey": "sentence:red_flowers#8",
+      "superseded": {
+        "toldStory": [
+          {
+            "value": false,
+            "prompt": "is this the told story's own next event?"
+          }
+        ]
+      },
+      "possible": true,
+      "consistent": true,
+      "advances": true,
+      "toldStory": false
+    },
+    {
+      "nodeId": "red_flowers",
+      "position": 10,
+      "arm": "sentence",
+      "index": 9,
+      "display": "Then the woodcutter hears a cry in the woods and follows it, and now the woodcutter is on the trail that the wolf and Red are on as he makes for the house Red is going to.",
+      "expr": "the woodcutter | hears a cry in the woods and follows it | the woodcutter is on the trail that the wolf and Red are on as he makes for the house Red is going to",
+      "seed": 159287990,
+      "forcedActor": "the woodcutter",
+      "labelKey": "sentence:red_flowers#9",
+      "superseded": {
+        "toldStory": [
+          {
+            "value": false,
+            "prompt": "is this the told story's own next event?"
+          }
+        ]
+      },
+      "possible": true,
+      "consistent": true,
+      "advances": true,
+      "toldStory": false
+    }
+  ],
+  "summary": {
+    "sentence": {
+      "n": 30,
+      "possible": 14,
+      "consistent": 16,
+      "advances": 29,
+      "usable": 14,
+      "repeats": 1,
+      "possibleAndNew": 13
+    }
+  }
+}

@@ -102,6 +102,42 @@ the first run where the probe visibly leads, and the honest reading is
 that the §6 decision rule is now live rather than hypothetical. Do not
 let a later sweep reinterpret it.
 
+**Frames + the Stage 0 A/B probe landed 2026-08-31** (continuation plan
+v3). A second model boundary now exists alongside the JSON one, as a
+representation under test: `frames.js` renders a hand-authored
+`{ actor, action, outcome }` per node as `Then {actor} {action}, and now
+{outcome}.`, `experiments/continue_probe.js` samples both boundaries at the
+same node under the same sampler, and `experiments/grade.js` puts the result
+in front of a human. Details and every deviation are in
+`experiments/NOTES.md`; three things belong here because they touch this
+document's own claims:
+
+- **§4.1 now has two profiles, and the default did not move.**
+  `serve_reference.sh` takes `PROFILE=ref-1.7b-cpu` (default — the Phase 0.5
+  artifact, which every run in `runs/` was grown under) or
+  `PROFILE=qwen3-4b-cuda`. The latter needed both a GGUF (there was none;
+  `mradermacher/Qwen3-4B-Base-GGUF`'s Q5_K_M is public, downloaded and
+  hash-pinned) and a CUDA backend (the pinned build had none; the same
+  commit `f5b9bd3` is rebuilt with `-DGGML_CUDA=ON` into `build-cuda/`,
+  deliberately not over `build/`). Plan v3 calls the 4B "the new default";
+  it is not one here, because that would silently reinterpret every manifest
+  claiming to have run against "the reference profile".
+  **Model size is still not isolated**: size and backend move together
+  between the profiles, and GPU kernels reorder floating-point reductions,
+  so the two are not bit-comparable even at temperature 0 — exactly the
+  substrate change §4.2 is about. Details in `experiments/NOTES.md`.
+- **§5.4's sampling block gained optional fields.** `min_p`, `top_p`, `stop`
+  and a per-request `grammar` and `seed` are emitted only when a caller sets
+  them, so a client that sets none sends a byte-identical body and every
+  recorded cache entry and manifest still keys the same. The per-request
+  seed is not a convenience: K samples from one prompt on the block's single
+  pinned seed return the same completion K times, silently.
+- **The seed graph hash moved again.** `frame` and `entities` are additive
+  fields on `seeds.js`, so nothing in `runs/` replays against the current
+  seeds — the same invalidation seeds v2 caused. Stage 0 writes no graph and
+  touches neither `grower.js` nor `eval.js`, so it is unaffected; the Gate 1
+  bridge run through `tools/eval.js` re-baselines anyway.
+
 **`seeds.js` v2 landed 2026-08-17** — the second of §8's three
 follow-ons. One node = one event, `state` is world state, and the
 authorial gloss moved to a new optional `reading` field that no prompt
