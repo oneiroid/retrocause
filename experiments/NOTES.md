@@ -1442,6 +1442,10 @@ Two things to decide before this goes further:
 
 ## Next config, and why this one
 
+> SUPERSEDED by the "Open" list at the end of this file. Item 0 was done
+> (see "Gate 0 red re-scored on the trimmed instrument"); item 1's agreement
+> check was overtaken by the 2026-09-10 rater decision. Kept for the reasoning.
+
 0. **Re-score red's Gate 0 batch on the full instrument** — the only batch
    with n=60 and both arms. `--resume` from the human's v1 file carries
    `possible` only (its `toldStory` was asked under the old wording), so it is
@@ -1467,18 +1471,215 @@ Two things to decide before this goes further:
 
 ---
 
-## Open, in the order it blocks things
+## Open, in the order it blocks things (current as of 2026-09-16)
 
-1. **Claude is measured and NOT calibrated** (kappa 0.30, one-directional).
-   Every Claude-rated figure is provisional, including the retracted
-   `--per-actor` verdict. Blocks unsupervised grading until the question is
-   split and re-asked.
-2. **The duplicate key is not comparable across arms** — free-text
+Supersedes the earlier "Next config" list above; resolved items are noted
+there in their own sections.
+
+1. **Quality is undecided; the failure MODE is the finding.** On the fresh
+   cold batch `usable` was 19 vs 18 (inside noise) and the Gate 0 83%/53%
+   consistency split did not replicate. What replicates is the failure shape:
+   the sentence boundary fails safe (non-events), the JSON boundary fails
+   corrupting (contradictions). Deciding whether frames are "better" needs a
+   larger cold batch, not another confound-hunt.
+2. **Non-event detection is semantic, not syntactic** (measured: regex recall
+   5/9, false-pos 6/51). A judge-gated redraw would recover silence cheaply
+   (~1.2 draws each) but costs one judge call per candidate. Build only if a
+   larger batch shows the non-event rate earns it.
+3. **The duplicate key is not comparable across arms** — free-text
    `frameExpr` vs compact `expr`. Blocks Stage 1 clustering and invalidates
    every cross-arm duplicate-rate comparison so far.
-3. **Model size is not isolated.** The 4B profile exists and works, but it
+4. **Model size is not isolated.** The 4B profile exists and works, but it
    moves size and backend together. Isolating size needs the 4B on CPU or the
    1.7B on CUDA — the second is cheap now that `build-cuda/` exists.
-4. **Stage 2's logprob distance has an unresolved implementation risk.**
+5. **Stage 2's logprob distance has an unresolved implementation risk.**
    llama-server does not return prompt-token logprobs in one call; verify the
    endpoint before budgeting N×K scoring calls. Untouched here.
+
+Rater status: since 2026-09-10 Claude's grading is the reference rater (the
+human's decision after the calibration runs). The kappa-0.30 "not calibrated"
+reading earlier in this file is superseded by that decision.
+
+---
+
+## Iteration cost cuts (2026-09-12)
+
+Two changes to make the loop faster, no findings retracted.
+
+**Grading instrument asks two questions, not four.** Per-question kappa on
+the calibration set said `consistent` (0.84) and `advances` (0.58)
+discriminate; `possible` (0.30, human yes 13/15) and `toldStory` (degenerate,
+both raters ~all-no) measured noise. `QUESTIONS` now carries an `ask` flag —
+`consistent`/`advances` asked, `possible`/`toldStory` not — so a human answers
+two y/n per sample instead of four. Nothing is removed: `--compare`,
+`--resume`, `--labels`, LEGACY_KEYS and v1-file reading still handle all four,
+a labels file may still supply the demoted two, and re-enabling `ask` restores
+them for a spot-check. `usable` drops its `possible` conjunct only when
+`possible` was not asked (unchanged when it was). Summaries omit a question
+they have no answers for rather than printing 0.
+
+**`--fast` on continue_probe.js for exploration.** `cache_prompt` is pinned
+false for bit-replay (every sample reprocesses the ~1000-token prompt — the
+28.9s CPU / 10.2s GPU per-config cost). `--fast` sets it true so the server
+reuses the shared-prefix KV cache across the K draws. It is opt-in and
+self-labelling: cache_prompt is part of the cache key, so `--fast` entries
+never collide with recorded ones, the manifest records `cache_prompt:true`,
+and a stderr line says the run is not replayable. The disk response cache
+already makes re-running an identical config free; `--fast` is only for
+first-generating a NEW config while iterating, then re-run without it to
+record. Not applied to the grower path — that is where replayable runs live.
+
+**Not done, and why.** A model-judged content key was NOT added: `frame_merge`
+measured 0 merges over 408 pairs, the proposer's own pool-dedup removes surface
+variants before they become nodes, and the source never proposes the same
+event twice — the convergence gap is structural (rejoin), not a key gap.
+`defaultContentKey` (normalized-exact-string on `expr`) is already the right
+mechanism and correctly finds nothing here.
+
+---
+
+## Gate 0 red re-scored on the trimmed instrument (2026-09-12)
+
+`cont_red_red_woods-red_tell-red_flowers` (the only two-arm n=60 batch),
+`--resume` from the human v1 file (carries `possible`), `--labels` Claude for
+`consistent`+`advances`, `--rater claude`. `usable = possible ∧ consistent ∧
+advances`. Graded file `...graded.claude.json`, labels
+`labels_red_gate0_full.claude.json`.
+
+| across all nodes | possible | consistent | advances | usable |
+|---|---|---|---|---|
+| sentence | 25/30 | **25/30** | 24/30 | **21/30** |
+| json | 21/30 | **16/30** | 28/30 | **13/30** |
+
+**The sentence arm's edge is consistency, and it survives the real
+instrument.** 25/30 (83%) vs 16/30 (53%) — the inverse of the taxonomy's
+state-contradiction rate (7% sentence vs 30% json), now scored per-sample on
+both arms. `usable` widens it: 21/30 vs 13/30 (70% vs 43%), the column closest
+to what `growth.js` accepts.
+
+**`advances` runs the other way — json 28 vs sentence 24.** The sentence arm
+spends draws on non-events (thoughts, fragments: "Red thinks to call her
+grandmother by name", "walks past the wolf and says"); the JSON arm almost
+always changes a location or fact, even when that change contradicts the
+history. So the two failure shapes are opposite: the sentence boundary risks
+saying nothing, the JSON boundary risks saying something false. Consistency is
+the axis that matters for a grown graph, and it is the one the sentence
+boundary wins.
+
+**Contamination, restated (NOTES §"Next config" item 0).** Claude built the
+failure taxonomy by reading these exact samples, so these `consistent` labels
+reproduce that classification rather than measure it independently. 25 vs 16
+is therefore a *confirmation* that the trimmed instrument reads the taxonomy's
+signal, not a fresh datum. An independent `consistent` number needs a batch
+Claude has not already classified — the next fresh probe, not this one.
+
+---
+
+## Fresh red batch, graded cold: the big consistency gap does NOT replicate (2026-09-12)
+
+New batch, nodes Claude had never classified — `red_meet`, `red_leave`,
+`red_grandma`, K=10, run seed 23, 4B CUDA, both arms. Claude graded
+`consistent`+`advances` cold (no resume, no prior labels).
+`cont_red_red_meet-red_leave-red_grandma.json`,
+labels `labels_red_fresh.claude.json`, `...graded.claude.json`.
+
+| across all nodes | consistent | advances | usable |
+|---|---|---|---|
+| sentence | 22/30 (73%) | 27/30 | **19/30** |
+| json | 19/30 (63%) | 27/30 | **18/30** |
+
+**The 83%/53% consistency split from the Gate 0 batch did not hold.** Cold, on
+nodes not pre-classified, the sentence arm leads consistency by 3 samples
+(22 vs 19) and `usable` is a wash (19 vs 18). `advances` is a dead tie.
+
+**Read:** the Gate 0 gap (25 vs 16) was inflated. The most likely cause is the
+contamination flagged there — Claude's Gate 0 `consistent` labels reproduced
+its own failure taxonomy, which had catalogued the JSON arm's state
+regressions specifically. Graded cold, the JSON arm's consistency (63%) is far
+better than the taxonomy's 53% implied, and the frame boundary's edge shrinks
+to modest.
+
+**Confound, stated:** the node sets differ. `red_grandma` is near the climax
+(wolf at the door, few degrees of freedom), where both arms stay on-rails and
+score alike; the Gate 0 nodes were earlier/looser. So node difficulty moves
+between the two batches as well as contamination. This is not a clean A/B of
+"contaminated vs not" — but the strong claim ("frames win consistency by 30
+points") is falsified either way.
+
+**Where the frame boundary still visibly differs:** the two arms fail
+oppositely, as the Gate 0 read already noted. Sentence failures are non-events
+and fragments ("the wolf smiles a smile that promises more", "Red is scared and
+does not know what to say") — `advances`-type misses. JSON failures are
+confident contradictions ("Red is still in the woods, but now she has met her
+grandmother"; "meet(wolf,red) … face to face … not afraid" regressing four
+nodes). Consistency alone does not separate them cleanly on fresh nodes; the
+*kind* of failure still does.
+
+### Consequence
+
+The frame boundary is not the consistency win the Gate 0 batch suggested. Its
+real, replicated property is a different failure MODE (silence vs falsehood),
+not a higher plausibility rate. Any claim that frames beat JSON on graded
+quality now rests on n=30 with a 1-sample `usable` margin — inside noise. The
+honest status: **undecided on quality, distinct on failure shape.**
+
+---
+
+## Are the "silence" failures cheaply recoverable? (2026-09-12)
+
+Tested reject-and-redraw on the sentence arm's `advances`-misses (non-events:
+thoughts, fragments, restatements). Two parts: can a non-event be DETECTED
+cheaply, and does redrawing RECOVER a usable sample.
+
+### Detection by surface pattern fails — measured
+
+Over the 60 sentence samples with `advances` labels (Gate 0 + fresh: 9
+non-events, 51 advancing). Detector = explicit non-progress hedges ("nothing
+has happened", "neither ... nor", "has not ... yet", "thinks to", "does not
+know", "stock still") OR outcome-content-words ≥0.6 already in the action.
+
+    recall 5/9 non-events    false-positives 6/51 advancing
+
+Both error sides are semantic, not fixable by more regex:
+
+- flagged but ADVANCES: "the wolf has spoken to Red and she has neither agreed
+  nor refused yet" (a demand was made), "the wolf is about to take Red's basket
+  but has not yet done so" (an attempted grab). Same hedge words as real
+  non-events.
+- MISSED non-events: "the wolf knows where she is and where she is going" (pure
+  restatement of history — no hedge, and low action-overlap because it restates
+  the HISTORY, not its own action), "grandmother has a word for Red and is the
+  speaker" (vacuous fragment).
+
+The discriminator is the ACTION VERB'S TYPE — think/smile/be-scared/say(no
+object) are stative or expressive micro-acts; grab/enter/scream/run are
+eventive. That is aktionsart, a semantic property, and n=9 is far too small to
+fit a classifier without overfitting. So a mechanical non-event filter is NOT
+cheap. The principled version is frame-level null transition — outcome asserts
+no fact beyond the folded pre-state, the extension growth.js's exact-match
+rule already points at — but that needs the fact layer the local model cannot
+extract, so it falls to a judge.
+
+### Redraw is cheap; deciding to redraw is the cost
+
+A redraw is an independent draw at the same node, so P(advance) = the base
+rate, ~85% (27/30 fresh, 24/30 Gate 0). Recovering one advancing sample costs
+~1.2 draws — negligible on the GPU profile. All the cost is in DETECTION,
+which needs a judge call per candidate, not a regex.
+
+### The asymmetry, which is the real result
+
+A non-event is a SAFE failure: it asserts nothing, cannot corrupt a grown
+graph, and growth.js already refuses its exact-match form. A JSON contradiction
+is a CORRUPTING failure and equally silent to detect. So the frame boundary's
+characteristic failure mode is the recoverable, non-corrupting one. That is a
+stronger argument for the representation than any of the plausibility numbers,
+which are inside noise (usable 19 vs 18 on the fresh batch).
+
+### Next, if pursued
+
+A judge-gated redraw loop (judge flags non-event/contradiction → redraw with a
+fresh seed, ≤N tries) is the honest mechanism, but it is apparatus and should
+be built only against a decision that it earns its judge calls — i.e. after a
+larger batch confirms the non-event rate is worth a per-candidate judge pass.
+Do not build the syntactic filter; it was measured and it does not work.

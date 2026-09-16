@@ -22,18 +22,25 @@
 //                          only, and the only mode in which the parse rate is
 //                          a measurement rather than 1.0 by construction.
 //   --seed <n>             run seed; every per-sample seed derives from it
-//   --per-actor            sentence arm only: distribute K across the story's
-//                          entity list, forcing one actor per draw by
-//                          restricting the grammar's actor enum. See below.
 //   --fill-actors [m]      sentence arm only: draw K unconditioned, then draw
 //                          m forced samples (default FILL_PER_MISSING_ACTOR)
 //                          for each entity the unconditioned batch never used
-//                          as actor. The gated form of --per-actor; see 7.
+//                          as actor. See 6.
 //   --temp <f>             sampler temperature (default 1.0). Used to tell a
 //                          COLLAPSING sampler from a genuinely narrow node:
 //                          if raising it broadens the candidate set the node
 //                          was sampler-limited, and if it does not the
 //                          possibility space really is that narrow.
+//   --fast                 EXPLORATION ONLY. Sets cache_prompt:true so the
+//                          server reuses the KV cache of the shared prompt
+//                          prefix across the K draws instead of reprocessing
+//                          ~1000 tokens per sample (the pinned cost, NOTES).
+//                          This DESTROYS bit-replay, so a --fast output is not
+//                          replayable and never shares cache with a normal run
+//                          (cache_prompt is part of the cache key). The disk
+//                          cache already makes re-running an identical config
+//                          free; --fast is for first-generating a NEW config
+//                          while iterating, then re-run without it to record.
 //   --out <path>           output file (default experiments/out/cont_<...>.json)
 //
 // ── deliberate deviations from the plan text, flagged not absorbed ─────────
@@ -67,8 +74,8 @@
 //    the sentence arm's one. Only the FIRST branch of each sample is graded;
 //    the rest are recorded under `extraBranches` and are not thrown away.
 //
-// 6. ACTOR-CONDITIONED SAMPLING (`--per-actor`), which the plan does not
-//    describe because the finding that motivates it postdates the plan.
+// 6. GATED ACTOR FILL (`--fill-actors`), which the plan does not describe
+//    because the finding that motivates it postdates the plan.
 //
 //    Unconditioned at trojanHorse/th_lie, 30 samples across temperatures 1.0
 //    to 1.8 used exactly two of the story's four actors — "the Trojans" 24
@@ -76,28 +83,19 @@
 //    ("the Trojans bring the horse into the city") in eight or nine of ten.
 //    That looked like a narrow possibility space. It is not: the TOLD
 //    story's own next event at that node is Cassandra warning, so at least
-//    two continuations exist by construction, and forcing the actor enum to
-//    one entity at a time recovers coherent alternatives for every actor —
-//    Cassandra naming the trick, Sinon asking to address the king, the
+//    two continuations exist by construction, and restricting the grammar's
+//    actor enum to one entity recovers coherent alternatives for every actor
+//    — Cassandra naming the trick, Sinon asking to address the king, the
 //    Greeks leading the Trojans onto the plain. The mass is on one actor,
-//    not on one event.
+//    not on one event. This closed-enum lever is one the JSON arm does not
+//    have: `expr` is free text with no designated actor slot and no closed
+//    vocabulary to condition on.
 //
-//    Distributing K across the entity list therefore enumerates the space
-//    the sampler collapses. This is a lever the JSON arm does not have:
-//    `expr` is free text with no designated actor slot and no closed
-//    vocabulary to condition on. So a `--per-actor` sentence arm is NOT a
-//    like-for-like comparison against the JSON arm and must not be reported
-//    as one — it is the representation being used the way it affords, which
-//    is a different and also interesting question.
-//
-// 7. GATED ACTOR FILL (`--fill-actors`). Round-robin `--per-actor`, rated by
-//    one rater on red, came out 14/30 usable against 15/30 unconditioned —
-//    the same yield — while widening the actors behind the usable samples
-//    from 2/1/2 to 2/3/4 per node. The waste was concentrated: forced draws
-//    for actors the unconditioned batch already covered bought nothing, and
-//    forced draws for absent-but-implausible actors were mostly unusable.
-//    Filling only the actors that never appeared keeps the unconditioned
-//    batch intact and spends extra draws exactly where the mass is missing.
+//    Forcing every actor round-robin was measured (NOTES, "--per-actor")
+//    and dropped: it cost draws on actors the unconditioned batch already
+//    covered and on absent-but-implausible ones. `--fill-actors` is the
+//    survivor — draw K unconditioned, then force ONLY the entities that
+//    never appeared, spending the extra draws where the mass is missing.
 //    Total draws are K + m × (missing actors), so compare per draw, not per
 //    batch — otherwise this mode wins on volume.
 //
@@ -204,7 +202,7 @@ const DEFAULT_NODES = {
 // ── argv ────────────────────────────────────────────────────────────────────
 
 function parseArgs(argv) {
-  const args = { story: "red", k: DEFAULT_K, seed: DEFAULT_RUN_SEED, arms: ["sentence", "json"], unconstrained: false, perActor: false, fillActors: 0, temp: PROBE_SAMPLING.temperature };
+  const args = { story: "red", k: DEFAULT_K, seed: DEFAULT_RUN_SEED, arms: ["sentence", "json"], unconstrained: false, fillActors: 0, temp: PROBE_SAMPLING.temperature, fast: false };
   for (let i = 0; i < argv.length; i += 1) {
     const flag = argv[i];
     const value = argv[i + 1];
@@ -217,7 +215,7 @@ function parseArgs(argv) {
     else if (flag === "--out") { args.out = value; i += 1; }
     else if (flag === "--base-url") { args.baseUrl = value; i += 1; }
     else if (flag === "--unconstrained") { args.unconstrained = true; }
-    else if (flag === "--per-actor") { args.perActor = true; }
+    else if (flag === "--fast") { args.fast = true; }
     else if (flag === "--fill-actors") {
       const next = Number(value);
       if (Number.isInteger(next) && next > 0) { args.fillActors = next; i += 1; } else { args.fillActors = FILL_PER_MISSING_ACTOR; }
@@ -225,17 +223,8 @@ function parseArgs(argv) {
     else throw new Error(`unknown flag: ${flag}`);
   }
   if (!seeds[args.story]) throw new Error(`unknown story: ${args.story}`);
-  if (args.perActor && args.fillActors) throw new Error("--per-actor and --fill-actors are exclusive");
   args.nodes = args.nodes || DEFAULT_NODES[args.story];
   return args;
-}
-
-// Which actor each of the K draws is forced to. Round-robin rather than
-// K/|actors| per actor, so the total stays K — the point is to compare
-// against an unconditioned K=10 batch, and a mode that quietly sampled more
-// would win on volume.
-function actorSchedule(entities, k) {
-  return Array.from({ length: k }, (_, i) => entities[i % entities.length]);
 }
 
 function sha256(text) {
@@ -399,15 +388,22 @@ async function main() {
   const sentenceNPredict = args.unconstrained
     ? DIAGNOSTIC_N_PREDICT
     : constrainedNPredict(entities);
+  // --fast trades bit-replay for KV-cache reuse across the shared prompt
+  // prefix. It is only ever set here, so a normal run's body is byte-identical
+  // to before and keeps hitting the recorded cache.
+  const fast = args.fast ? { cache_prompt: true } : {};
+  if (args.fast) {
+    process.stderr.write("--fast: cache_prompt=true — this run is NOT bit-replayable and its cache entries are separate from normal runs. Re-run without --fast to record.\n");
+  }
   const sentenceClient = createClient({
     baseUrl: args.baseUrl,
     cacheDir: path.join(R, "cache"),
-    sampling: { ...PROBE_SAMPLING, temperature: args.temp, n_predict: sentenceNPredict },
+    sampling: { ...PROBE_SAMPLING, temperature: args.temp, n_predict: sentenceNPredict, ...fast },
   });
   const jsonClient = createClient({
     baseUrl: args.baseUrl,
     cacheDir: path.join(R, "cache"),
-    sampling: { ...PROBE_SAMPLING, temperature: args.temp, n_predict: JSON_ARM_N_PREDICT, stop: undefined },
+    sampling: { ...PROBE_SAMPLING, temperature: args.temp, n_predict: JSON_ARM_N_PREDICT, stop: undefined, ...fast },
   });
 
   const props = await sentenceClient.props();
@@ -427,27 +423,19 @@ async function main() {
 
     if (args.arms.includes("sentence")) {
       const prompt = sentencePrompt(framesTemplate, story, historyFrames);
-      const schedule = args.perActor ? actorSchedule(entities, args.k) : null;
       const result = await drawDistinct(
-        (index) => {
-          const forced = schedule ? schedule[index % schedule.length] : null;
-          return drawSentence({
-            client: sentenceClient,
-            prompt,
-            // Restricting the enum to one entity is the whole mechanism; every
-            // other part of the grammar is unchanged.
-            grammar: args.unconstrained ? null : (forced ? Frames.grammar([forced]) : grammar),
-            entities: forced ? [forced] : entities,
-            seed: sampleSeed(args.seed, `sentence${forced ? `:${forced}` : ""}`, nodeId, index),
-            forcedActor: forced,
-          });
-        },
+        (index) => drawSentence({
+          client: sentenceClient,
+          prompt,
+          grammar: args.unconstrained ? null : grammar,
+          entities,
+          seed: sampleSeed(args.seed, "sentence", nodeId, index),
+        }),
         args.k,
       );
       entry.arms.sentence = {
         prompt, promptSha256: sha256(prompt), constrained: !args.unconstrained,
-        perActor: args.perActor,
-      fillActors: args.fillActors, ...(schedule ? { actorSchedule: schedule } : {}), ...result,
+        fillActors: args.fillActors, ...result,
       };
 
       if (args.fillActors && !args.unconstrained) {
@@ -513,8 +501,8 @@ async function main() {
       runSeed: args.seed,
       arms: args.arms,
       unconstrained: args.unconstrained,
-      perActor: args.perActor,
       fillActors: args.fillActors,
+      fast: args.fast,
       grammarBounds: {
         actionMaxChars: Frames.ACTION_MAX_CHARS,
         outcomeMaxChars: Frames.OUTCOME_MAX_CHARS,
@@ -542,7 +530,7 @@ async function main() {
 
   const outDir = path.join(R, "experiments", "out");
   fs.mkdirSync(outDir, { recursive: true });
-  const suffix = `${args.unconstrained ? "_unconstrained" : ""}${args.perActor ? "_peractor" : ""}${args.fillActors ? "_fill" : ""}`;
+  const suffix = `${args.unconstrained ? "_unconstrained" : ""}${args.fillActors ? "_fill" : ""}`;
   const out = args.out || path.join(outDir, `cont_${args.story}_${args.nodes.join("-")}${suffix}.json`);
   fs.writeFileSync(out, JSON.stringify(output, null, 2));
   process.stderr.write(`\nwrote ${out}\n`);
@@ -552,4 +540,4 @@ if (require.main === module) {
   main().catch((error) => { process.stderr.write(`${error.stack}\n`); process.exit(1); });
 }
 
-module.exports = { PROBE_SAMPLING, sentencePrompt, sampleSeed, drawDistinct, actorSchedule, DEFAULT_NODES };
+module.exports = { PROBE_SAMPLING, sentencePrompt, sampleSeed, drawDistinct, DEFAULT_NODES };

@@ -126,11 +126,19 @@ const Ids = require(path.join(R, "ids.js"));
 // v1 stored under the name `plausible` — so a v1 graded file answers this
 // exact question and is readable without remapping anything (see
 // LEGACY_KEYS).
+// `ask` gates the INTERACTIVE prompt only. The two questions that discriminate
+// on the calibration data — `consistent` (kappa 0.84) and `advances` (0.58) —
+// are asked; `possible` (kappa 0.30, human yes 13/15) and `toldStory`
+// (degenerate kappa, both raters say no to nearly everything) are not, since
+// per-sample they measured noise. They stay fully defined so `--compare`,
+// LEGACY_KEYS, v1 files, `--resume`, and `--labels` all still read and carry
+// them; a labels file may still supply them, and they can be spot-checked by
+// re-adding `ask: true` here. Halving the per-sample ask is the point.
 const QUESTIONS = [
-  { key: "possible", prompt: "could this happen next in this story?" },
-  { key: "consistent", prompt: "is it consistent with what the history already established?" },
-  { key: "advances", prompt: "does the WORLD change - is anything true after it that was not true before?" },
-  { key: "toldStory", prompt: "is this the story's VERY NEXT event (not something it does later)?" },
+  { key: "possible", ask: false, prompt: "could this happen next in this story?" },
+  { key: "consistent", ask: true, prompt: "is it consistent with what the history already established?" },
+  { key: "advances", ask: true, prompt: "does the WORLD change - is anything true after it that was not true before?" },
+  { key: "toldStory", ask: false, prompt: "is this the story's VERY NEXT event (not something it does later)?" },
 ];
 
 // v1 field name → v2 question key. `plausible` and `possible` are the SAME
@@ -247,27 +255,32 @@ function summarize(graded, arm) {
   const has = (key) => rows.some((g) => typeof g[key] === "boolean");
   return {
     n: rows.length,
-    possible: count((g) => g.possible),
+    possible: has("possible") ? count((g) => g.possible) : null,
     consistent: has("consistent") ? count((g) => g.consistent) : null,
     advances: has("advances") ? count((g) => g.advances) : null,
-    // All three at once: possible, non-contradicting, and non-null. This is
-    // the strictest reading and the one closest to what growth.js will accept.
+    // non-contradicting and non-null, plus `possible` when it was asked — the
+    // strictest reading and the one closest to what growth.js will accept.
+    // `possible` was the least informative question, so its absence does not
+    // block the metric; when present it still constrains it.
     usable: has("consistent") && has("advances")
-      ? count((g) => g.possible && g.consistent && g.advances) : null,
-    repeats: count((g) => g.toldStory),
+      ? count((g) => (!has("possible") || g.possible) && g.consistent && g.advances) : null,
+    repeats: has("toldStory") ? count((g) => g.toldStory) : null,
     // "plausible and not already the told story's own next event" — the
     // number a saturated story cannot inflate by regurgitation.
-    possibleAndNew: count((g) => g.possible && !g.toldStory),
+    possibleAndNew: has("possible") && has("toldStory")
+      ? count((g) => g.possible && !g.toldStory) : null,
   };
 }
 
 function formatSummary(label, s) {
   if (!s) return `  ${label}: no samples`;
-  const parts = [`possible ${s.possible}/${s.n}`];
+  const parts = [];
+  if (s.possible !== null) parts.push(`possible ${s.possible}/${s.n}`);
   if (s.consistent !== null) parts.push(`consistent ${s.consistent}/${s.n}`);
   if (s.advances !== null) parts.push(`advances ${s.advances}/${s.n}`);
   if (s.usable !== null) parts.push(`usable ${s.usable}/${s.n}`);
-  parts.push(`repeats ${s.repeats}`, `possible-and-new ${s.possibleAndNew}`);
+  if (s.repeats !== null) parts.push(`repeats ${s.repeats}`);
+  if (s.possibleAndNew !== null) parts.push(`possible-and-new ${s.possibleAndNew}`);
   return `  ${label}: ${parts.join("  ")}`;
 }
 
@@ -429,18 +442,24 @@ async function main() {
 
       let printedHeader = false;
       for (let q = 0; q < QUESTIONS.length; q += 1) {
-        const { key, prompt } = QUESTIONS[q];
+        const { key, prompt, ask: asked } = QUESTIONS[q];
         if (carriedOver[key] !== undefined) { row[key] = carriedOver[key]; carried += 1; continue; }
         if (labels) {
-          // null is a placeholder for an answer expected to carry over. If it
-          // did not carry (the prompt was reworded), it must fail loudly —
-          // Boolean(null) would silently record it as "no".
+          // null/undefined is a placeholder for an answer expected to carry
+          // over. For an asked question that did not carry it must fail loudly
+          // — Boolean(null) would silently record "no". For a NOT-asked
+          // question a missing label is fine: it is simply left unanswered.
           if (fromLabels[q] === undefined || fromLabels[q] === null) {
+            if (asked === false) continue;
             throw new Error(`labels for ${item.labelKey} have no answer for "${key}" and none carried over`);
           }
           row[key] = Boolean(fromLabels[q]);
           continue;
         }
+        // Interactive: skip questions marked not-asked (see QUESTIONS). A
+        // carried or labelled answer above still lands them; this only stops
+        // the terminal from prompting a human for the noise questions.
+        if (asked === false) continue;
         if (!printedHeader) {
           process.stdout.write(`\n[${i + 1}/${order.length}] ${item.display}\n`);
           printedHeader = true;
