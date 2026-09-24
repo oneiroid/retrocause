@@ -4,7 +4,11 @@ Plan v3, Stage 0. One file per finding is not the convention here; this is a
 running log, newest section last. Every config that produced a number is
 written down, because a number without its config is not a result.
 
-Gate 0 was graded by hand on 2026-08-31 and passed; see "Gate 0, graded".
+**Human grades erased (2026-09-24).** The human misunderstood the grading
+questions; both human-graded files are deleted and every figure derived from
+them is void (sections marked VOID). Claude's grades are the only grading
+data. Gate 0's "passed" rested on the human grades and is void with them;
+the cold Claude-graded batch (2026-09-12) is the standing quality result.
 Everything after it is one graded batch of 60 samples at one budget on one
 story — read the failure taxonomy, not the headline ratio.
 
@@ -321,6 +325,8 @@ plausibility:
 
 ## Gate 0, graded (2026-08-31) — passed, with the margin overstated in one direction and understated in the other
 
+> **VOID (2026-09-24).** Human-graded data; the human misunderstood the questions and erased the grades. Numbers here that come from human grades are not results. Kept only as history.
+
 Human grading of the 60 samples above, two y/n per sample, arms interleaved
 in a seeded shuffle. `cont_red_red_woods-red_tell-red_flowers.graded.json`.
 
@@ -428,6 +434,8 @@ note below.
 ---
 
 ## Can Claude do the grading? — unresolved, calibration set up (2026-08-31)
+
+> **VOID (2026-09-24).** Human-graded data; the human misunderstood the questions and erased the grades. Numbers here that come from human grades are not results. Kept only as history.
 
 Asked directly, and the answer is "not yet demonstrated", for reasons that
 are not modesty:
@@ -750,6 +758,8 @@ calibrated rater, not this one.
 
 ## Rater agreement measured: Claude is NOT calibrated (2026-09-10)
 
+> **VOID (2026-09-24).** Human-graded data; the human misunderstood the questions and erased the grades. Numbers here that come from human grades are not results. Kept only as history.
+
 Human graded the 15-sample stratified subset of the trojanHorse batch;
 `grade.js --compare` against Claude's labels for the same samples.
 
@@ -823,6 +833,8 @@ regenerating anything.
 
 ## The instrument, split and measured per question (2026-09-10)
 
+> **VOID (2026-09-24).** Human-graded data; the human misunderstood the questions and erased the grades. Numbers here that come from human grades are not results. Kept only as history.
+
 `grade.js` now asks four questions instead of one conflated one, `--resume`
 carries prior answers so re-scoring costs only the delta, and `--compare`
 reports Cohen's kappa per question and flags one-directional disagreement
@@ -892,6 +904,8 @@ question. Do not keep asking a human for something the engine computes.
 
 ## `--resume` bug: answers carried across a rewording, and a graded file corrupted (2026-09-10)
 
+> **VOID (2026-09-24).** Human-graded data; the human misunderstood the questions and erased the grades. Numbers here that come from human grades are not results. Kept only as history.
+
 After `advances` and `toldStory` were reworded, the human ran the resume
 command and it asked nothing. Cause: resume matched prior answers by question
 **key**, not by the prompt they answered. The file already held answers for
@@ -927,6 +941,8 @@ Claude re-graded `advances` and `toldStory` on the 15 under the new wording
 ---
 
 ## Rewording measured: three of four questions now agree (2026-09-10)
+
+> **VOID (2026-09-24).** Human-graded data; the human misunderstood the questions and erased the grades. Numbers here that come from human grades are not results. Kept only as history.
 
 Human re-answered `advances` and `toldStory` on the 15 under the reworded
 prompts (`--resume`, 30 answers); Claude had re-graded them blind beforehand.
@@ -985,6 +1001,8 @@ those two questions with human spot-checks, not as a replacement, and not on
 ---
 
 ## Rater decision (2026-09-10)
+
+> **VOID (2026-09-24).** Human-graded data; the human misunderstood the questions and erased the grades. Numbers here that come from human grades are not results. Kept only as history.
 
 The human reviewed the calibration results and determined the disagreements
 came from their own misreading of the questions, not from Claude's grading.
@@ -1541,20 +1559,21 @@ mechanism and correctly finds nothing here.
 ## Gate 0 red re-scored on the trimmed instrument (2026-09-12)
 
 `cont_red_red_woods-red_tell-red_flowers` (the only two-arm n=60 batch),
-`--resume` from the human v1 file (carries `possible`), `--labels` Claude for
-`consistent`+`advances`, `--rater claude`. `usable = possible ∧ consistent ∧
-advances`. Graded file `...graded.claude.json`, labels
-`labels_red_gate0_full.claude.json`.
+`--labels` Claude for `consistent`+`advances`, `--rater claude`.
+`usable = consistent ∧ advances`. Graded file `...graded.claude.json`, labels
+`labels_red_gate0_full.claude.json`. (Regenerated 2026-09-24 without the
+human `possible` answers it had carried via `--resume`; json `usable` moved
+13 → 15 because the human `possible` no longer gates it.)
 
-| across all nodes | possible | consistent | advances | usable |
-|---|---|---|---|---|
-| sentence | 25/30 | **25/30** | 24/30 | **21/30** |
-| json | 21/30 | **16/30** | 28/30 | **13/30** |
+| across all nodes | consistent | advances | usable |
+|---|---|---|---|
+| sentence | **25/30** | 24/30 | **21/30** |
+| json | **16/30** | 28/30 | **15/30** |
 
 **The sentence arm's edge is consistency, and it survives the real
 instrument.** 25/30 (83%) vs 16/30 (53%) — the inverse of the taxonomy's
 state-contradiction rate (7% sentence vs 30% json), now scored per-sample on
-both arms. `usable` widens it: 21/30 vs 13/30 (70% vs 43%), the column closest
+both arms. `usable` widens it: 21/30 vs 15/30 (70% vs 50%), the column closest
 to what `growth.js` accepts.
 
 **`advances` runs the other way — json 28 vs sentence 24.** The sentence arm

@@ -153,16 +153,7 @@ A second agency function is now designed but not built (`LOCAL_LLM.md`):
 a local model that selects continuations at branch points, with
 traversal depth and width as an explicit, tunable *resolution* — the
 first time §7's "resolution" would be a parameter rather than a word.
-The tag stays `partial` until that code exists and its runs are shown to
-replay. An agency function whose choices cannot be re-derived is not an
-implementation of §7; it is noise wearing the shape of one.
-
-> **Disagreement flagged, 2026-09-24.** The human demoted reproducibility
-> to a secondary goal (see `CLAUDE.md` "Priorities"). That conflicts with
-> the claim above, which makes replay the test for an agency function.
-> Proposed reading until resolved: a *recorded* choice (manifest +
-> response cache) is re-derivable enough for §7; byte-replay from a cold
-> cache is not required. Left open, not absorbed.
+The tag stays `partial` until that code exists and runs.
 
 Free will, in these terms, is the agency function — whether it is
 determined by G's structure (the appearance of choice is an artifact
@@ -197,7 +188,7 @@ Two consequences the project takes seriously:
   than removing it: finding a monomyth in graphs grown by a model
   trained on monomyth criticism would prove nothing. What it does buy is
   that the assumptions stop being *this* analyst's, become legible
-  (pinned weights, versioned prompts, replayable runs), and get cheap
+  (pinned weights, versioned prompts, recorded runs), and get cheap
   enough to vary deliberately — which is a precondition for the external
   test, not a substitute for it.
 

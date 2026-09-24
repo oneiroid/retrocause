@@ -163,7 +163,7 @@
     "grammar": "root ::= \"Then \" actor \" \" action \", and now \" outcome \".\"\nactor ::= \"Red's grandmother\" | \"the woodcutter\" | \"Red's mother\" | \"the wolf\" | \"Red\"\naction ::= [^,.\\n]{1,80}\noutcome ::= [^.\\n]{1,110}\n",
     "grammarSha256": "042146cbb9434b8cea55ec2c39f41f6d3e08dd24fdb68f791f748179396f8553",
     "generatedAt": "2026-08-31T12:15:11.845Z",
-    "gradedAt": "2026-09-12T10:50:23.100Z",
+    "gradedAt": "2026-09-24T14:27:00.972Z",
     "rater": "claude",
     "gradeSchema": 2,
     "questions": [
@@ -187,9 +187,7 @@
         "ask": false,
         "prompt": "is this the story's VERY NEXT event (not something it does later)?"
       }
-    ],
-    "resumedFrom": "cont_red_red_woods-red_tell-red_flowers.graded.json",
-    "supersededAnswers": 60
+    ]
   },
   "grades": [
     {
@@ -201,15 +199,6 @@
       "expr": "the wolf | hears Red coming with her basket | the wolf is aware of Red's approach while she is unaware of it herself",
       "seed": 3131785701,
       "labelKey": "sentence:red_woods#4",
-      "superseded": {
-        "toldStory": [
-          {
-            "value": false,
-            "prompt": "is this the told story's own next event?"
-          }
-        ]
-      },
-      "possible": true,
       "consistent": true,
       "advances": true
     },
@@ -222,15 +211,6 @@
       "expr": "Red's grandmother | opens the door and says | Red has passed the door and seen her grandmother who is standing there with her basket and a smile on her face",
       "seed": 3198896177,
       "labelKey": "sentence:red_woods#8",
-      "superseded": {
-        "toldStory": [
-          {
-            "value": false,
-            "prompt": "is this the told story's own next event?"
-          }
-        ]
-      },
-      "possible": false,
       "consistent": false,
       "advances": true
     },
@@ -243,15 +223,6 @@
       "expr": "Red | hears a voice in the woods | Red is in the woods alone and the voice is somewhere nearby",
       "seed": 3081452844,
       "labelKey": "sentence:red_woods#7",
-      "superseded": {
-        "toldStory": [
-          {
-            "value": false,
-            "prompt": "is this the told story's own next event?"
-          }
-        ]
-      },
-      "possible": true,
       "consistent": true,
       "advances": true
     },
@@ -264,15 +235,6 @@
       "expr": "Red's grandmother | says | Red's grandmother has a word for Red and is the speaker in it",
       "seed": 3115008082,
       "labelKey": "sentence:red_woods#5",
-      "superseded": {
-        "toldStory": [
-          {
-            "value": false,
-            "prompt": "is this the told story's own next event?"
-          }
-        ]
-      },
-      "possible": false,
       "consistent": false,
       "advances": false
     },
@@ -285,15 +247,6 @@
       "expr": "leave(red, woods)",
       "seed": 1429640087,
       "labelKey": "json:red_woods#3",
-      "superseded": {
-        "toldStory": [
-          {
-            "value": false,
-            "prompt": "is this the told story's own next event?"
-          }
-        ]
-      },
-      "possible": true,
       "consistent": true,
       "advances": true
     },
@@ -306,15 +259,6 @@
       "expr": "leave(red, path)",
       "seed": 1412862468,
       "labelKey": "json:red_woods#2",
-      "superseded": {
-        "toldStory": [
-          {
-            "value": false,
-            "prompt": "is this the told story's own next event?"
-          }
-        ]
-      },
-      "possible": true,
       "consistent": true,
       "advances": true
     },
@@ -327,15 +271,6 @@
       "expr": "return(red, woods, home)",
       "seed": 1362529611,
       "labelKey": "json:red_woods#7",
-      "superseded": {
-        "toldStory": [
-          {
-            "value": false,
-            "prompt": "is this the told story's own next event?"
-          }
-        ]
-      },
-      "possible": true,
       "consistent": false,
       "advances": true
     },
@@ -348,15 +283,6 @@
       "expr": "find(red, grandmother_house)",
       "seed": 1463195325,
       "labelKey": "json:red_woods#1",
-      "superseded": {
-        "toldStory": [
-          {
-            "value": false,
-            "prompt": "is this the told story's own next event?"
-          }
-        ]
-      },
-      "possible": true,
       "consistent": true,
       "advances": true
     },
@@ -369,15 +295,6 @@
       "expr": "return(red, home)",
       "seed": 1446417706,
       "labelKey": "json:red_woods#0",
-      "superseded": {
-        "toldStory": [
-          {
-            "value": false,
-            "prompt": "is this the told story's own next event?"
-          }
-        ]
-      },
-      "possible": false,
       "consistent": false,
       "advances": true
     },
@@ -390,15 +307,6 @@
       "expr": "Red | hears a wolf on the path | Red is alone with the wolf in the woods and has neither seen nor heard another human being on the path since",
       "seed": 3098230463,
       "labelKey": "sentence:red_woods#6",
-      "superseded": {
-        "toldStory": [
-          {
-            "value": false,
-            "prompt": "is this the told story's own next event?"
-          }
-        ]
-      },
-      "possible": true,
       "consistent": true,
       "advances": true
     },
@@ -411,15 +319,6 @@
       "expr": "Red | sees the wolf in the bushes | Red is alone on the path and the wolf is near her in the bushes and she knows he is watching her as she walks",
       "seed": 3014342368,
       "labelKey": "sentence:red_woods#3",
-      "superseded": {
-        "toldStory": [
-          {
-            "value": false,
-            "prompt": "is this the told story's own next event?"
-          }
-        ]
-      },
-      "possible": true,
       "consistent": true,
       "advances": true
     },
@@ -432,15 +331,6 @@
       "expr": "enter(red, woods, alternate)",
       "seed": 1379307230,
       "labelKey": "json:red_woods#4",
-      "superseded": {
-        "toldStory": [
-          {
-            "value": false,
-            "prompt": "is this the told story's own next event?"
-          }
-        ]
-      },
-      "possible": true,
       "consistent": true,
       "advances": true
     },
@@ -453,15 +343,6 @@
       "expr": "stay_at_home(red)",
       "seed": 1328974373,
       "labelKey": "json:red_woods#9",
-      "superseded": {
-        "toldStory": [
-          {
-            "value": false,
-            "prompt": "is this the told story's own next event?"
-          }
-        ]
-      },
-      "possible": false,
       "consistent": false,
       "advances": false
     },
@@ -474,15 +355,6 @@
       "expr": "Red | walks along the path and thinks of her grandmother | Red is thinking of her grandmother and has nothing else in her mind",
       "seed": 3064675225,
       "labelKey": "sentence:red_woods#0",
-      "superseded": {
-        "toldStory": [
-          {
-            "value": false,
-            "prompt": "is this the told story's own next event?"
-          }
-        ]
-      },
-      "possible": true,
       "consistent": true,
       "advances": false
     },
@@ -495,15 +367,6 @@
       "expr": "accept(red, wolf, path)",
       "seed": 1396084849,
       "labelKey": "json:red_woods#5",
-      "superseded": {
-        "toldStory": [
-          {
-            "value": false,
-            "prompt": "is this the told story's own next event?"
-          }
-        ]
-      },
-      "possible": false,
       "consistent": false,
       "advances": true
     },
@@ -516,15 +379,6 @@
       "expr": "the wolf | comes down from the tree to catch up to Red | the wolf is on the path after Red with the trees all around them and Red walking with the basket and nothing o",
       "seed": 3182118558,
       "labelKey": "sentence:red_woods#9",
-      "superseded": {
-        "toldStory": [
-          {
-            "value": false,
-            "prompt": "is this the told story's own next event?"
-          }
-        ]
-      },
-      "possible": true,
       "consistent": true,
       "advances": true
     },
@@ -537,15 +391,6 @@
       "expr": "stay(red, home)",
       "seed": 1345751992,
       "labelKey": "json:red_woods#6",
-      "superseded": {
-        "toldStory": [
-          {
-            "value": false,
-            "prompt": "is this the told story's own next event?"
-          }
-        ]
-      },
-      "possible": false,
       "consistent": false,
       "advances": true
     },
@@ -558,15 +403,6 @@
       "expr": "Red | hears someone calling her name | Red is on the path with someone close to her and neither is alone",
       "seed": 3047897606,
       "labelKey": "sentence:red_woods#1",
-      "superseded": {
-        "toldStory": [
-          {
-            "value": false,
-            "prompt": "is this the told story's own next event?"
-          }
-        ]
-      },
-      "possible": true,
       "consistent": true,
       "advances": true
     },
@@ -579,15 +415,6 @@
       "expr": "meet(wolf, red)",
       "seed": 1312196754,
       "labelKey": "json:red_woods#8",
-      "superseded": {
-        "toldStory": [
-          {
-            "value": false,
-            "prompt": "is this the told story's own next event?"
-          }
-        ]
-      },
-      "possible": true,
       "consistent": true,
       "advances": true
     },
@@ -600,15 +427,6 @@
       "expr": "Red | turns the corner of the woods and comes into sight of her grandmother's house | Red has come to the house and her grandmother is waiting for her outside the gate",
       "seed": 3031119987,
       "labelKey": "sentence:red_woods#2",
-      "superseded": {
-        "toldStory": [
-          {
-            "value": false,
-            "prompt": "is this the told story's own next event?"
-          }
-        ]
-      },
-      "possible": true,
       "consistent": true,
       "advances": true
     },
@@ -621,15 +439,6 @@
       "expr": "ignore(mother, red, path)",
       "seed": 3250660550,
       "labelKey": "json:red_tell#3",
-      "superseded": {
-        "toldStory": [
-          {
-            "value": false,
-            "prompt": "is this the told story's own next event?"
-          }
-        ]
-      },
-      "possible": true,
       "consistent": false,
       "advances": true
     },
@@ -642,15 +451,6 @@
       "expr": "the wolf | offers to help her with the basket | Red has been asked for help with something she is carrying but has not yet accepted the offer",
       "seed": 3056339874,
       "labelKey": "sentence:red_tell#8",
-      "superseded": {
-        "toldStory": [
-          {
-            "value": false,
-            "prompt": "is this the told story's own next event?"
-          }
-        ]
-      },
-      "possible": true,
       "consistent": true,
       "advances": true
     },
@@ -663,15 +463,6 @@
       "expr": "the wolf | invites Red into the woods with him | the wolf and Red have gone into the woods together",
       "seed": 3173783207,
       "labelKey": "sentence:red_tell#3",
-      "superseded": {
-        "toldStory": [
-          {
-            "value": false,
-            "prompt": "is this the told story's own next event?"
-          }
-        ]
-      },
-      "possible": true,
       "consistent": true,
       "advances": true
     },
@@ -684,15 +475,6 @@
       "expr": "wait(wolf, red)",
       "seed": 3317771026,
       "labelKey": "json:red_tell#7",
-      "superseded": {
-        "toldStory": [
-          {
-            "value": false,
-            "prompt": "is this the told story's own next event?"
-          }
-        ]
-      },
-      "possible": false,
       "consistent": false,
       "advances": true
     },
@@ -705,15 +487,6 @@
       "expr": "distract(wolf, red, path)",
       "seed": 3368103883,
       "labelKey": "json:red_tell#8",
-      "superseded": {
-        "toldStory": [
-          {
-            "value": false,
-            "prompt": "is this the told story's own next event?"
-          }
-        ]
-      },
-      "possible": true,
       "consistent": true,
       "advances": true
     },
@@ -726,15 +499,6 @@
       "expr": "turn(red, path)",
       "seed": 3351326264,
       "labelKey": "json:red_tell#9",
-      "superseded": {
-        "toldStory": [
-          {
-            "value": false,
-            "prompt": "is this the told story's own next event?"
-          }
-        ]
-      },
-      "possible": true,
       "consistent": true,
       "advances": true
     },
@@ -747,15 +511,6 @@
       "expr": "tell(red, wolf, path)",
       "seed": 3267438169,
       "labelKey": "json:red_tell#2",
-      "superseded": {
-        "toldStory": [
-          {
-            "value": false,
-            "prompt": "is this the told story's own next event?"
-          }
-        ]
-      },
-      "possible": true,
       "consistent": true,
       "advances": false
     },
@@ -768,15 +523,6 @@
       "expr": "Red | walks on without seeing the wolf | Red walks on and the wolf stands on the path behind her, but nothing has happened yet",
       "seed": 3140227969,
       "labelKey": "sentence:red_tell#5",
-      "superseded": {
-        "toldStory": [
-          {
-            "value": false,
-            "prompt": "is this the told story's own next event?"
-          }
-        ]
-      },
-      "possible": true,
       "consistent": false,
       "advances": false
     },
@@ -789,15 +535,6 @@
       "expr": "ignore(red, path)",
       "seed": 3334548645,
       "labelKey": "json:red_tell#6",
-      "superseded": {
-        "toldStory": [
-          {
-            "value": false,
-            "prompt": "is this the told story's own next event?"
-          }
-        ]
-      },
-      "possible": false,
       "consistent": true,
       "advances": true
     },
@@ -810,15 +547,6 @@
       "expr": "the wolf | smiles at her and asks her to come with him | the wolf and Red have a question about the path, and Red has no way out of it yet but she is not refusing",
       "seed": 3207338445,
       "labelKey": "sentence:red_tell#1",
-      "superseded": {
-        "toldStory": [
-          {
-            "value": false,
-            "prompt": "is this the told story's own next event?"
-          }
-        ]
-      },
-      "possible": true,
       "consistent": true,
       "advances": true
     },
@@ -831,15 +559,6 @@
       "expr": "Red | offers him a seat while she fetches her grandmother | the wolf will wait while Red is gone but the basket is still on the path behind Red",
       "seed": 3073117493,
       "labelKey": "sentence:red_tell#9",
-      "superseded": {
-        "toldStory": [
-          {
-            "value": false,
-            "prompt": "is this the told story's own next event?"
-          }
-        ]
-      },
-      "possible": true,
       "consistent": true,
       "advances": true
     },
@@ -852,15 +571,6 @@
       "expr": "Red | walks past the wolf and says | Red has said her words aloud and the wolf has heard them as well as she has",
       "seed": 3089895112,
       "labelKey": "sentence:red_tell#6",
-      "superseded": {
-        "toldStory": [
-          {
-            "value": false,
-            "prompt": "is this the told story's own next event?"
-          }
-        ]
-      },
-      "possible": true,
       "consistent": true,
       "advances": false
     },
@@ -873,15 +583,6 @@
       "expr": "ignore(red, wolf)",
       "seed": 3300993407,
       "labelKey": "json:red_tell#4",
-      "superseded": {
-        "toldStory": [
-          {
-            "value": false,
-            "prompt": "is this the told story's own next event?"
-          }
-        ]
-      },
-      "possible": true,
       "consistent": false,
       "advances": true
     },
@@ -894,15 +595,6 @@
       "expr": "meet(grandmother, red)",
       "seed": 3217105312,
       "labelKey": "json:red_tell#1",
-      "superseded": {
-        "toldStory": [
-          {
-            "value": false,
-            "prompt": "is this the told story's own next event?"
-          }
-        ]
-      },
-      "possible": false,
       "consistent": false,
       "advances": true
     },
@@ -915,15 +607,6 @@
       "expr": "Red | tells him where she is | the wolf knows where she is and where she is going and how she is going there by herself",
       "seed": 3190560826,
       "labelKey": "sentence:red_tell#0",
-      "superseded": {
-        "toldStory": [
-          {
-            "value": false,
-            "prompt": "is this the told story's own next event?"
-          }
-        ]
-      },
-      "possible": true,
       "consistent": true,
       "advances": false
     },
@@ -936,15 +619,6 @@
       "expr": "wait(wolf, path)",
       "seed": 3233882931,
       "labelKey": "json:red_tell#0",
-      "superseded": {
-        "toldStory": [
-          {
-            "value": false,
-            "prompt": "is this the told story's own next event?"
-          }
-        ]
-      },
-      "possible": true,
       "consistent": true,
       "advances": true
     },
@@ -957,15 +631,6 @@
       "expr": "return(red, home)",
       "seed": 3284215788,
       "labelKey": "json:red_tell#5",
-      "superseded": {
-        "toldStory": [
-          {
-            "value": false,
-            "prompt": "is this the told story's own next event?"
-          }
-        ]
-      },
-      "possible": true,
       "consistent": false,
       "advances": true
     },
@@ -978,15 +643,6 @@
       "expr": "the wolf | tells Red that he will go to her grandmother's house and look after her | the wolf has a plan to trick her grandmother into coming to the house he will attack while she waits there for",
       "seed": 3123450350,
       "labelKey": "sentence:red_tell#4",
-      "superseded": {
-        "toldStory": [
-          {
-            "value": false,
-            "prompt": "is this the told story's own next event?"
-          }
-        ]
-      },
-      "possible": true,
       "consistent": true,
       "advances": true
     },
@@ -999,15 +655,6 @@
       "expr": "the wolf | asks her to wait in the house with the door locked and not to let anyone in | the wolf has asked Red to do something and she has refused or agreed to do it as the wolf says",
       "seed": 3106672731,
       "labelKey": "sentence:red_tell#7",
-      "superseded": {
-        "toldStory": [
-          {
-            "value": false,
-            "prompt": "is this the told story's own next event?"
-          }
-        ]
-      },
-      "possible": true,
       "consistent": true,
       "advances": true
     },
@@ -1020,15 +667,6 @@
       "expr": "Red | thinks to call her grandmother by name | Red has thought to call her grandmother by name and has neither agreed nor refused to do so",
       "seed": 3157005588,
       "labelKey": "sentence:red_tell#2",
-      "superseded": {
-        "toldStory": [
-          {
-            "value": false,
-            "prompt": "is this the told story's own next event?"
-          }
-        ]
-      },
-      "possible": false,
       "consistent": true,
       "advances": false
     },
@@ -1041,15 +679,6 @@
       "expr": "find(red, grandmother_house, woods)",
       "seed": 2037877753,
       "labelKey": "json:red_flowers#7",
-      "superseded": {
-        "toldStory": [
-          {
-            "value": false,
-            "prompt": "is this the told story's own next event?"
-          }
-        ]
-      },
-      "possible": true,
       "consistent": true,
       "advances": true
     },
@@ -1062,15 +691,6 @@
       "expr": "follow(wolf, red)",
       "seed": 2071432991,
       "labelKey": "json:red_flowers#1",
-      "superseded": {
-        "toldStory": [
-          {
-            "value": false,
-            "prompt": "is this the told story's own next event?"
-          }
-        ]
-      },
-      "possible": true,
       "consistent": true,
       "advances": true
     },
@@ -1083,15 +703,6 @@
       "expr": "leave(red, path)",
       "seed": 1987544896,
       "labelKey": "json:red_flowers#4",
-      "superseded": {
-        "toldStory": [
-          {
-            "value": false,
-            "prompt": "is this the told story's own next event?"
-          }
-        ]
-      },
-      "possible": true,
       "consistent": true,
       "advances": true
     },
@@ -1104,15 +715,6 @@
       "expr": "the wolf | comes closer and sees the house | the wolf is closer and closer to the house as Red walks slowly on",
       "seed": 4010428989,
       "labelKey": "sentence:red_flowers#2",
-      "superseded": {
-        "toldStory": [
-          {
-            "value": false,
-            "prompt": "is this the told story's own next event?"
-          }
-        ]
-      },
-      "possible": true,
       "consistent": true,
       "advances": true
     },
@@ -1125,15 +727,6 @@
       "expr": "meet(red, wolf)",
       "seed": 2188876324,
       "labelKey": "json:red_flowers#8",
-      "superseded": {
-        "toldStory": [
-          {
-            "value": false,
-            "prompt": "is this the told story's own next event?"
-          }
-        ]
-      },
-      "possible": false,
       "consistent": false,
       "advances": true
     },
@@ -1146,15 +739,6 @@
       "expr": "the wolf | catches Red | the wolf has caught her and is about to take her to the house where her grandmother waits with the Wolf's own",
       "seed": 3993651370,
       "labelKey": "sentence:red_flowers#3",
-      "superseded": {
-        "toldStory": [
-          {
-            "value": false,
-            "prompt": "is this the told story's own next event?"
-          }
-        ]
-      },
-      "possible": true,
       "consistent": true,
       "advances": true
     },
@@ -1167,15 +751,6 @@
       "expr": "meet(grandmother, red)",
       "seed": 2021100134,
       "labelKey": "json:red_flowers#6",
-      "superseded": {
-        "toldStory": [
-          {
-            "value": false,
-            "prompt": "is this the told story's own next event?"
-          }
-        ]
-      },
-      "possible": true,
       "consistent": false,
       "advances": true
     },
@@ -1188,15 +763,6 @@
       "expr": "the wolf | calls Red by name | Red hears a voice in the woods that calls her name and is not her grandmother's",
       "seed": 3909763275,
       "labelKey": "sentence:red_flowers#4",
-      "superseded": {
-        "toldStory": [
-          {
-            "value": false,
-            "prompt": "is this the told story's own next event?"
-          }
-        ]
-      },
-      "possible": true,
       "consistent": true,
       "advances": true
     },
@@ -1209,15 +775,6 @@
       "expr": "arrive(red, grandmother_house)",
       "seed": 2054655372,
       "labelKey": "json:red_flowers#0",
-      "superseded": {
-        "toldStory": [
-          {
-            "value": false,
-            "prompt": "is this the told story's own next event?"
-          }
-        ]
-      },
-      "possible": true,
       "consistent": false,
       "advances": true
     },
@@ -1230,15 +787,6 @@
       "expr": "head(red, grandmother_house)",
       "seed": 2004322515,
       "labelKey": "json:red_flowers#5",
-      "superseded": {
-        "toldStory": [
-          {
-            "value": false,
-            "prompt": "is this the told story's own next event?"
-          }
-        ]
-      },
-      "possible": true,
       "consistent": true,
       "advances": true
     },
@@ -1251,15 +799,6 @@
       "expr": "ask(red, wolf, grandmother_house)",
       "seed": 2088210610,
       "labelKey": "json:red_flowers#2",
-      "superseded": {
-        "toldStory": [
-          {
-            "value": false,
-            "prompt": "is this the told story's own next event?"
-          }
-        ]
-      },
-      "possible": false,
       "consistent": true,
       "advances": true
     },
@@ -1272,15 +811,6 @@
       "expr": "the wolf | eats the flowers | the wolf is eating Red's flowers while Red is still standing there holding the basket",
       "seed": 3960096132,
       "labelKey": "sentence:red_flowers#1",
-      "superseded": {
-        "toldStory": [
-          {
-            "value": false,
-            "prompt": "is this the told story's own next event?"
-          }
-        ]
-      },
-      "possible": true,
       "consistent": true,
       "advances": true
     },
@@ -1293,15 +823,6 @@
       "expr": "the wolf | runs after Red and enters the house | the wolf has been warned and will not run away, and the wolf has run into the house while Red has stopped to g",
       "seed": 3892985656,
       "labelKey": "sentence:red_flowers#5",
-      "superseded": {
-        "toldStory": [
-          {
-            "value": false,
-            "prompt": "is this the told story's own next event?"
-          }
-        ]
-      },
-      "possible": false,
       "consistent": false,
       "advances": true
     },
@@ -1314,15 +835,6 @@
       "expr": "walk(red, path)",
       "seed": 2104988229,
       "labelKey": "json:red_flowers#3",
-      "superseded": {
-        "toldStory": [
-          {
-            "value": false,
-            "prompt": "is this the told story's own next event?"
-          }
-        ]
-      },
-      "possible": true,
       "consistent": false,
       "advances": true
     },
@@ -1335,15 +847,6 @@
       "expr": "the wolf | steps off the path and into the trees behind her | the wolf has walked the path in front of Red and is behind her and in the woods as well",
       "seed": 3842652799,
       "labelKey": "sentence:red_flowers#8",
-      "superseded": {
-        "toldStory": [
-          {
-            "value": false,
-            "prompt": "is this the told story's own next event?"
-          }
-        ]
-      },
-      "possible": true,
       "consistent": true,
       "advances": true
     },
@@ -1356,15 +859,6 @@
       "expr": "Red | sees the wolf lying asleep between her and the house | Red sees the wolf in the path and knows he is sleeping",
       "seed": 3943318513,
       "labelKey": "sentence:red_flowers#6",
-      "superseded": {
-        "toldStory": [
-          {
-            "value": false,
-            "prompt": "is this the told story's own next event?"
-          }
-        ]
-      },
-      "possible": true,
       "consistent": true,
       "advances": true
     },
@@ -1377,15 +871,6 @@
       "expr": "the wolf | runs at her | the wolf is rushing Red and she has nowhere to go but into the house with him",
       "seed": 3976873751,
       "labelKey": "sentence:red_flowers#0",
-      "superseded": {
-        "toldStory": [
-          {
-            "value": false,
-            "prompt": "is this the told story's own next event?"
-          }
-        ]
-      },
-      "possible": true,
       "consistent": true,
       "advances": true
     },
@@ -1398,15 +883,6 @@
       "expr": "halt(wolf, red)",
       "seed": 2205653943,
       "labelKey": "json:red_flowers#9",
-      "superseded": {
-        "toldStory": [
-          {
-            "value": false,
-            "prompt": "is this the told story's own next event?"
-          }
-        ]
-      },
-      "possible": true,
       "consistent": true,
       "advances": true
     },
@@ -1419,15 +895,6 @@
       "expr": "Red | has been told not to stray and now the wolf has come up on her from behind | Red is alone and the wolf is behind her watching the time run out",
       "seed": 3926540894,
       "labelKey": "sentence:red_flowers#7",
-      "superseded": {
-        "toldStory": [
-          {
-            "value": false,
-            "prompt": "is this the told story's own next event?"
-          }
-        ]
-      },
-      "possible": true,
       "consistent": true,
       "advances": true
     },
@@ -1440,15 +907,6 @@
       "expr": "the wolf | takes the chance to step into the path and tell the grandmother | the wolf and Red stand face to face and the house has been told about by the wolf but nobody is waiting for it",
       "seed": 3825875180,
       "labelKey": "sentence:red_flowers#9",
-      "superseded": {
-        "toldStory": [
-          {
-            "value": false,
-            "prompt": "is this the told story's own next event?"
-          }
-        ]
-      },
-      "possible": false,
       "consistent": false,
       "advances": true
     }
@@ -1456,7 +914,7 @@
   "summary": {
     "sentence": {
       "n": 30,
-      "possible": 25,
+      "possible": null,
       "consistent": 25,
       "advances": 24,
       "usable": 21,
@@ -1465,10 +923,10 @@
     },
     "json": {
       "n": 30,
-      "possible": 21,
+      "possible": null,
       "consistent": 16,
       "advances": 28,
-      "usable": 13,
+      "usable": 15,
       "repeats": null,
       "possibleAndNew": null
     }
