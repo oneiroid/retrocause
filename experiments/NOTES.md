@@ -1683,3 +1683,41 @@ fresh seed, ≤N tries) is the honest mechanism, but it is apparatus and should
 be built only against a decision that it earns its judge calls — i.e. after a
 larger batch confirms the non-event rate is worth a per-candidate judge pass.
 Do not build the syntactic filter; it was measured and it does not work.
+
+---
+
+## Binary judge: Jev ruled out, Kev is the local candidate (2026-09-24)
+
+Researched, nothing run. Every open item above that blocks auto-growth or
+auto-merge is a JUDGE problem priced out by per-candidate cost: non-event
+gating (Open #2), same-state for merge, rejoin correctness, grading at scale.
+
+- **Jev** (TypeSafe AI): typed `noul` (yes/no) / `choice` (≤255 options) /
+  `score` with confidence, no text output, 70–500 ms. **Hosted-only → out**
+  (human decision: models stay local).
+- **Kev** (`jaredpalmer/kev`, Apache-2.0): open Jev-like family on
+  Qwen3.5 base — 0.8B / 4B / 9B, LoRA + pointer head, one forward pass per
+  question, Jev-compatible API. Reported Kev-9B vs Jev: accuracy 0.852 vs
+  0.857, Brier 0.237 vs 0.211. Local server is Python (`uv … kev.serve`),
+  CUDA/ROCm/MLX — **not llama.cpp**, so a second server beside
+  `serve_reference.sh`. Trained on ≤384 state tokens (serves 8k): our
+  told-story + path prompts are longer, so expect degradation until
+  fine-tuned. Training script takes labelled JSONL; our graded files and
+  `same_state.js` pairs are that shape.
+- **Zero-dependency baseline to beat first:** read P(yes) from the logprobs
+  of the model we already serve (llama-server `n_probs` on a one-token
+  yes/no answer). Same one-forward-pass shape, no new server.
+
+Plan (no code yet): (1) calibration on existing labels — the 18
+`same_state.js` pairs (bar: >6/9 true merges, zero false incl. role-swap),
+the 9/51 non-event set (bar: recall >5/9 at ≤6/51 FP), graded
+`consistent`/`advances` vs the reference rater; Kev-4B vs logprob baseline.
+(2) winner gates a judge-driven redraw in `frame_proposer`. (3) `choice`
+over the rejoin enum for ranked targets. (4) merge judge as `contentKey`,
+report-only first. (5) cheap grading → the larger cold batch Open #1 needs.
+(6) if Kev wins but lags on long states, fine-tune it on our labels.
+
+**Priority change, same date:** reproducibility is demoted to
+nice-to-have (see `CLAUDE.md` "Priorities"). The judge path does not need
+cold-cache replay; `--fast`-style non-replayable runs are now acceptable
+by default where replay would complicate things.

@@ -157,6 +157,13 @@ The tag stays `partial` until that code exists and its runs are shown to
 replay. An agency function whose choices cannot be re-derived is not an
 implementation of §7; it is noise wearing the shape of one.
 
+> **Disagreement flagged, 2026-09-24.** The human demoted reproducibility
+> to a secondary goal (see `CLAUDE.md` "Priorities"). That conflicts with
+> the claim above, which makes replay the test for an agency function.
+> Proposed reading until resolved: a *recorded* choice (manifest +
+> response cache) is re-derivable enough for §7; byte-replay from a cold
+> cache is not required. Left open, not absorbed.
+
 Free will, in these terms, is the agency function — whether it is
 determined by G's structure (the appearance of choice is an artifact
 of the narrow read-head) or genuinely undetermined (the mind selects

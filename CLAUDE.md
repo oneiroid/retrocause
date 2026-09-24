@@ -14,13 +14,23 @@ into counterfactual alternatives.
    research it draws on.
 4. `LOCAL_LLM.md` — the Node-side grower: automatic DAG growth via a
    small local model through `llama.cpp`, and what it takes to make those
-   runs reproducible. Phases 0–1 have landed (`ids.js`, the GGUF, the
+   runs reproducible (a secondary goal since 2026-09-24 — see
+   "Priorities" below). Phases 0–1 have landed (`ids.js`, the GGUF, the
    reference profile, `llm_client.js`/`grower.js`/`tools/grow.js`); the
    eval harness (Phase 2) landed 2026-08-16 (`tools/eval.js`). **§0 is the
    resume point** — read it before picking the work up.
 5. `experiments/NOTES.md` — the running log for the continuation-generation
    work (plan v3): the frame representation, every config that produced a
    number, and every place the plan and the machine disagree.
+
+**Priorities (human decision, 2026-09-24):** reproducibility is welcome,
+not a gate. Growth quality, auto-merge and iteration speed come first.
+When keeping a run byte-replayable makes other work more complicated,
+drop replayability for that path, label the run non-replayable, and move
+on. Existing replay machinery (content ids, canonical JSON, manifests,
+the response cache) stays where it is cheap; do not extend it at the
+expense of anything else. Models stay **local** — hosted-only models are
+out, by the same decision.
 
 **Conflict resolution:** when the intuitions and the code disagree, the
 disagreement is data — flag it in both, don't silently absorb either
@@ -88,9 +98,10 @@ side. See `CONCEPT.md` §"What each layer commits to".
 - **Ids are content-addressed, never wall-clock.** `ids.nodeId` hashes
   `parentId | normalizedContent(expr) | normalizedContent(label)`;
   collisions get a deterministic `_2` suffix. Never mint an id from
-  `Date.now()` or `Math.random()` — two identical sessions must produce
-  byte-identical graphs, which is what `ids.canonicalJson` (sorted, fixed
-  key order, no `savedAt`) exists to let you assert. See `LOCAL_LLM.md` §3.
+  `Date.now()` or `Math.random()`. The ids are kept because they are
+  cheap and stable (same content → same id helps merging and diffing);
+  byte-identical replay via `ids.canonicalJson` is a welcome by-product,
+  not a requirement (see "Priorities"). See `LOCAL_LLM.md` §3.
 - **Nodes.** A node has an `id`, `label`, a free-form `expr`, a prose
   `state` note, `kind` (`root` / `story` / `branch` / `note`), `tags`, and
   optional branch metadata (`delta`, `invariants`). "Bottleneck" is **not**
