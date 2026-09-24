@@ -160,3 +160,26 @@ dialog::backdrop { background: rgba(2, 6, 23, .72); backdrop-filter: blur(3px); 
   .app-shell { grid-template-columns: 330px 1fr; }
   .panel-right { position: absolute; right: 0; top: 0; bottom: 0; width: 380px; transform: translateX(0); z-index: 9; }
 }
+
+/* Lab panel */
+.lab-head { margin: 6px 0 0; font-size: 12px; color: #cbd5e1; }
+.field-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(64px, 1fr)); gap: 8px; }
+label.check { display: flex; align-items: center; gap: 7px; }
+label.check input { width: auto; }
+.metrics { width: 100%; border-collapse: collapse; font-size: 11px; }
+.metrics th, .metrics td { text-align: right; padding: 2px 4px; border-bottom: 1px solid var(--line); }
+.metrics th:first-child, .metrics td:first-child { text-align: left; }
+.node.fresh rect { stroke: #4ade80; stroke-width: 2.5; }
+.probe-history { font-size: 12px; color: var(--muted); line-height: 1.45; max-height: 22vh; overflow: auto; margin: 10px 0; }
+.probe-list { display: grid; gap: 8px; max-height: 48vh; overflow: auto; }
+.probe-item { border: 1px solid var(--line); border-radius: 8px; padding: 8px; background: #0a1322; display: grid; gap: 6px; }
+.probe-item.done { border-color: #1e3a5f; }
+.probe-text { color: #f1f5f9; font-size: 13px; line-height: 1.4; }
+.probe-controls { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; font-size: 12px; color: var(--muted); }
+.probe-controls button { padding: 3px 9px; font-size: 12px; }
+.probe-controls button.on-yes { background: #14532d; border-color: #4ade80; }
+.probe-controls button.on-no { background: #5f1726; border-color: #fb7185; }
+.arm-tag { font-size: 11px; padding: 1px 7px; border-radius: 999px; border: 1px solid var(--line); }
+.arm-tag.sentence { color: #7dd3fc; border-color: #0369a1; }
+.arm-tag.json { color: #f9a8d4; border-color: #9d174d; }
+#probeDialog { overflow: auto; }

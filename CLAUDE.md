@@ -39,9 +39,17 @@ side. See `CONCEPT.md` §"What each layer commits to".
   sibling `llmfinetune` workspace; the script verifies the GGUF hash before
   serving and pins the whole profile. Nothing in the app or the tests needs
   it.
-- UI Auto-grow (LLM assist panel) needs both servers:
-  `./tools/serve_reference.sh` and `npm run grow:serve`. Without them the
-  button toasts an error and the rest of the page is unaffected.
+- **Lab panel** (right side of the page) needs two terminals:
+  `PROFILE=qwen3-4b-cuda ./tools/serve_reference.sh` and `npm run grow:serve`.
+  It runs, from the selected node: **Grow** (sources `model` / `frames` /
+  `baseline`, §6 metrics beside a matched-count baseline, run recorded in
+  `runs/`), **Continuations A/B** (the Stage 0 probe; candidates shown in
+  grade.js's shuffle with arms hidden, y/n on `consistent`/`advances`, saved
+  as a grade.js graded file under `experiments/out/ui/` with a running tally
+  across all UI batches; any candidate can be added to the graph), and
+  **Recorded runs** (load any `runs/<runId>` with its scores). The `baseline`
+  source works without the model server. Without the bridge the panel says so
+  and the rest of the page is unaffected.
 
 ## Module map
 
@@ -62,10 +70,10 @@ side. See `CONCEPT.md` §"What each layer commits to".
 | `prompts/same.v*.txt` | Few-shot for the "same state?" judge. `same.v1` takes `expr — state` pairs (`same_state.js`); `same.v2` takes rendered frames (`frame_merge.js`) |
 | `prompts/branch.v*.txt` | Versioned few-shot prompts; the sha256 goes in the run manifest. Edits are a new version, never in-place. `branch.v2` (default) carries the told story + ancestor path; `branch.v1` (one node only) is kept selectable via `--prompt` so its manifests stay replayable |
 | `tools/grow.js` | CLI: `npm run grow -- --story red …` emits `runs/<runId>/grown_graph.json` + manifest; `npm run grow:replay -- <manifest>` diffs canonical JSON cache-cold |
-| `tools/grow_server.js` | `npm run grow:serve` — loopback bridge (:8081) behind the UI's Auto-grow button; runs the grower Node-side, persists the run, returns the grown graph. UI runs get `input.seed: null` manifests and are not `grow:replay`-able |
+| `tools/grow_server.js` | `npm run grow:serve` — loopback bridge (:8081) behind the Lab panel. `/grow` (source `model`/`frames`/`baseline`, returns `scoreGrowth` + a matched-count baseline), `/continue` (NDJSON-streamed `continue_probe.probeNode`, writes `experiments/out/ui/cont_ui_<hash>.json`), `/grades` (writes the grade.js graded file, rater `human`), `/runs`. UI runs get `input.seed: null` manifests and are not `grow:replay`-able; non-default sources add a `source` block to the config, the default's config (and runIds) is unchanged |
 | `tools/eval.js` | `npm run eval` — §6 metric table over model runs, recorded run dirs, and the `gen_probe.js` baseline (probe candidate source through the grower's own traversal). `--sources model,frames` adds the frames source; `--frames-prompt` picks its template and `--from <nodeId>` (single story) moves the traversal start. Growing from the root handicaps the frames source specifically — `branch.v2` carries the told story at any depth, `frames.v1` carries only the ancestor path |
 | `tools/serve_reference.sh` | Starts `llama-server` on a hash-pinned profile (`LOCAL_LLM.md` §4.1). Every flag in it is part of that profile. Two profiles: `ref-1.7b-cpu` (default, the Phase 0.5 artifact — every run in `runs/` was grown under it) and `PROFILE=qwen3-4b-cuda` (4B Q5_K_M, all layers on GPU). The two are **different substrates**, not fast/slow versions of one |
-| `experiments/continue_probe.js` | Stage 0 A/B probe: sentence arm (`frames.v1` + grammar) against JSON arm (`branch.v2` + schema), same node, same model, same sampler. Writes candidates to `experiments/out/`; grows nothing and merges nothing |
+| `experiments/continue_probe.js` | Stage 0 A/B probe: sentence arm (`frames.v1` + grammar) against JSON arm (`branch.v2` + schema), same node, same model, same sampler (`frame_proposer.FRAME_SAMPLING`, seeds by `drawSeed`). `probeNode` is the one per-node routine, shared by the CLI and the grow server. Writes candidates to `experiments/out/`; grows nothing and merges nothing |
 | `experiments/grade.js` | Grading CLI over a probe output — four y/n questions defined (`possible`, `consistent`, `advances`, `toldStory`), arms interleaved in a seeded shuffle. Only the two that discriminate on the calibration data — `consistent` and `advances` — are asked per sample (`ask` in `QUESTIONS`); `possible`/`toldStory` measured as noise and are demoted to spot-checks (`--labels` or re-enabling `ask` still records them). `--resume` carries prior answers so re-scoring costs only the delta; `--labels`/`--rater` records a non-human rater; `--compare` reports per-question Cohen's kappa and flags one-directional disagreement. Each prompt names what it asks relative to. Since 2026-09-10 Claude's grading is the reference rater, by the human's decision |
 | `experiments/NOTES.md` | Running log for the continuation work: every config that produced a number, and every deviation from the plan |
 | `experiments/gen_probe.js` | Lexicon-recombiner probe; the traversal `grower.js` will lift and the eval baseline it must beat |

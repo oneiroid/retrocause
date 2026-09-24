@@ -97,8 +97,51 @@
         </details>
       </section>
 
+      <details class="panel-section disclosure" open>
+        <summary>Lab</summary>
+        <div id="labStatus" class="report muted">Bridge: checking…</div>
+
+        <h3 class="lab-head">Grow from selected node</h3>
+        <label>Source<select id="growSource">
+          <option value="model">model · branch.v2 (greedy)</option>
+          <option value="frames">frames · frames.v1 (sampled)</option>
+          <option value="baseline">baseline · lexicon recombiner, no model</option>
+        </select></label>
+        <div class="field-row">
+          <label>Depth<input id="growDepth" type="number" value="2" min="1" max="4"></label>
+          <label>Width<input id="growWidth" type="number" value="2" min="1" max="3"></label>
+          <label>Max nodes<input id="growMaxNodes" type="number" value="8" min="1" max="64"></label>
+          <label>Seed<input id="growSeed" type="number" value="7" min="1"></label>
+        </div>
+        <label class="check"><input id="growRejoin" type="checkbox">Ask each frame candidate for a rejoin target</label>
+        <button id="autoGrowBtn" type="button" class="primary">Grow</button>
+        <div id="growReport" class="report"></div>
+
+        <h3 class="lab-head">Continuations A/B</h3>
+        <div class="field-row">
+          <label>K per arm<input id="probeK" type="number" value="5" min="1" max="20"></label>
+          <label>Seed<input id="probeSeed" type="number" value="7" min="1"></label>
+        </div>
+        <label class="check"><input id="probeSentence" type="checkbox" checked>sentence arm (frames.v1 + grammar)</label>
+        <label class="check"><input id="probeJson" type="checkbox" checked>json arm (branch.v2 + schema)</label>
+        <label class="check"><input id="probeFill" type="checkbox">Fill actors the sentence arm never used</label>
+        <label class="check"><input id="probeFast" type="checkbox">Fast: reuse prompt KV cache (not replayable)</label>
+        <div class="button-row">
+          <button id="probeBtn" type="button" class="primary">Draw continuations</button>
+          <button id="probeShowBtn" type="button" class="secondary" disabled>Open last batch</button>
+        </div>
+        <div id="probeReport" class="report"></div>
+
+        <h3 class="lab-head">Recorded runs</h3>
+        <select id="runSelect" aria-label="Recorded runs"></select>
+        <div class="button-row">
+          <button id="loadRunBtn" type="button" class="secondary">Load run</button>
+          <button id="refreshRunsBtn" type="button" class="secondary">Refresh list</button>
+        </div>
+      </details>
+
       <details class="panel-section disclosure">
-        <summary>LLM assist</summary>
+        <summary>LLM assist (manual)</summary>
         <label>Instruction<textarea id="assistInstruction"></textarea></label>
         <div class="button-row">
           <button id="buildPromptBtn" type="button" class="secondary">Build prompt</button>
@@ -106,11 +149,6 @@
         </div>
         <label>Reviewed JSON import<textarea id="importText" placeholder='{"branches":[{"label":"...","expr":"...","state":"...","rejoinTargetId":"..."}]}'></textarea></label>
         <button id="importJsonBtn" type="button" class="primary">Import reviewed JSON</button>
-        <div class="button-row">
-          <label>Depth<input id="growDepth" type="number" value="2" min="1" max="4"></label>
-          <label>Width<input id="growWidth" type="number" value="2" min="1" max="3"></label>
-        </div>
-        <button id="autoGrowBtn" type="button" class="primary">Auto-grow from selected node</button>
       </details>
 
       <details class="panel-section disclosure">
@@ -136,7 +174,24 @@
     </form>
   </dialog>
 
+  <dialog id="probeDialog">
+    <form method="dialog">
+      <header class="dialog-head">
+        <h2 id="probeTitle">Continuations</h2>
+        <button value="close" aria-label="Close dialog">×</button>
+      </header>
+    </form>
+    <ol id="probeHistory" class="probe-history"></ol>
+    <p class="muted">consistent: nothing contradicts the history above. advances: something is true after it that was not true before.</p>
+    <div id="probeList" class="probe-list"></div>
+    <div class="button-row">
+      <button id="saveGradesBtn" type="button" class="primary">Save grades and show arms</button>
+    </div>
+    <div id="probeTally" class="report"></div>
+  </dialog>
+
   <script src="ids.js"></script>
+  <script src="frames.js"></script>
   <script src="story_builder_engine.js"></script>
   <script src="merge_predicate.js"></script>
   <script src="growth.js"></script>

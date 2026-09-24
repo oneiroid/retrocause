@@ -52,6 +52,32 @@ function sha256(buffer) {
   return crypto.createHash("sha256").update(buffer).digest("hex");
 }
 
+// Streamed, not readFileSync: Node caps one Buffer at 2 GiB, and the 4B
+// Q5_K_M GGUF (2.9 GB) is over it — a whole-file read throws before the run
+// starts. Memoized on (path, size, mtime) because the grow server hashes the
+// model on every request and a multi-GB hash costs seconds.
+const fileHashMemo = new Map();
+
+function sha256File(file) {
+  const { size, mtimeMs } = fs.statSync(file);
+  const memoKey = `${file}|${size}|${mtimeMs}`;
+  if (fileHashMemo.has(memoKey)) return fileHashMemo.get(memoKey);
+  const hash = crypto.createHash("sha256");
+  const CHUNK = 8 * 1024 * 1024;
+  const buffer = Buffer.allocUnsafe(CHUNK);
+  const fd = fs.openSync(file, "r");
+  try {
+    for (let read = 0; (read = fs.readSync(fd, buffer, 0, CHUNK, null)) > 0;) {
+      hash.update(buffer.subarray(0, read));
+    }
+  } finally {
+    fs.closeSync(fd);
+  }
+  const digest = hash.digest("hex");
+  fileHashMemo.set(memoKey, digest);
+  return digest;
+}
+
 // The whole configuration a replay needs, gathered in one place so runId can
 // hash exactly these fields — not `createdAt` (two identical runs would get
 // different ids) and not `result` (an outcome inside the id of the
@@ -61,9 +87,13 @@ function sha256(buffer) {
 // the UI sends over, which have no seed name. The graph hash still pins the
 // input; such manifests carry `input.seed: null` plus an input_graph.json
 // beside them, and `grow:replay` cannot re-run them from the seed table.
+//
+// `source` is set only for a non-default candidate source (the grow server's
+// frames/baseline runs): `{ name, ...details }`. Absent, the config — and so
+// every recorded runId — is exactly what it was before sources existed.
 async function buildConfig({
   story = null, graph = null, from, depth, width, maxNodes, client,
-  promptVersion = DEFAULT_PROMPT_VERSION,
+  promptVersion = DEFAULT_PROMPT_VERSION, source = null,
 }) {
   const props = await client.props();
 
@@ -73,7 +103,7 @@ async function buildConfig({
     // The GGUF is an artifact outside this repo; hash it rather than assume
     // it (§2.4). If the server runs on another machine the path may not
     // resolve here — record null honestly instead of a guess.
-    sha256: fs.existsSync(modelPath) ? sha256(fs.readFileSync(modelPath)) : null,
+    sha256: modelPath && fs.existsSync(modelPath) ? sha256File(modelPath) : null,
   };
 
   const generationDefaults = props.default_generation_settings || {};
@@ -99,6 +129,7 @@ async function buildConfig({
     prompt: { template: promptVersion, sha256: sha256(promptText) },
     traversal: { from, depth, width, maxNodes },
     input: { seed: story, graphSha256: sha256(Ids.canonicalJson(inputGraph)) },
+    ...(source ? { source } : {}),
   };
   return { config, promptText, inputGraph };
 }
@@ -246,4 +277,6 @@ if (require.main === module) {
 // The grow server reuses the config/manifest machinery so UI-triggered runs
 // are provenanced by the same instrument as CLI runs — a second manifest
 // writer would drift.
-module.exports = { buildConfig, runIdOf, DEFAULTS, GRAPH_FILE, MANIFEST_FILE };
+module.exports = {
+  buildConfig, runIdOf, sha256, sha256File, promptPathOf, DEFAULT_PROMPT_VERSION, DEFAULTS, GRAPH_FILE, MANIFEST_FILE,
+};

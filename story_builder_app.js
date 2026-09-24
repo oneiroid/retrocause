@@ -139,6 +139,7 @@
     bindEvents();
     renderAll();
     setTimeout(fitGraph, 350);
+    checkBridge();
     window.__storyDagApp = {
       getGraph: () => structuredClone(state.graph),
       exportJson,
@@ -222,6 +223,14 @@
     el.copyPromptBtn.addEventListener("click", copyPrompt);
     el.importJsonBtn.addEventListener("click", importFromTextArea);
     el.autoGrowBtn.addEventListener("click", autoGrow);
+    el.growSource.addEventListener("change", () => { el.growRejoin.disabled = el.growSource.value !== "frames"; });
+    el.growRejoin.disabled = el.growSource.value !== "frames";
+    el.probeBtn.addEventListener("click", runProbe);
+    el.probeShowBtn.addEventListener("click", openProbe);
+    el.probeList.addEventListener("click", onProbeClick);
+    el.saveGradesBtn.addEventListener("click", saveGrades);
+    el.loadRunBtn.addEventListener("click", loadRun);
+    el.refreshRunsBtn.addEventListener("click", loadRuns);
     el.exportJsonBtn.addEventListener("click", showExportJson);
     el.downloadJsonBtn.addEventListener("click", downloadJson);
     el.saveLocalBtn.addEventListener("click", saveLocal);
@@ -389,7 +398,8 @@
       .classed("selected", (item) => item.id === state.selectedId)
       .classed("search-hit", (item) => matchesSearch(item))
       .classed("dimmed", (item) => state.search && !matchesSearch(item))
-      .classed("locked", (item) => state.lockedIds.has(item.id));
+      .classed("locked", (item) => state.lockedIds.has(item.id))
+      .classed("fresh", (item) => !!state.lastRunId && item.runId === state.lastRunId);
 
     nodeSelection.select("rect")
       .attr("width", (item) => nodeWidth(item))
@@ -629,6 +639,7 @@
     el.selectedNode.innerHTML = `
       <h3>${escapeHtml(selected.label)}</h3>
       <div class="expr">${escapeHtml(selected.expr)}</div>
+      ${selected.frame && window.StoryDagFrames ? `<div>${escapeHtml(window.StoryDagFrames.render(selected.frame))}</div>` : ""}
       <div>${escapeHtml(selected.state || "No state note.")}</div>
       ${selected.reading ? `<div class="muted">${escapeHtml(selected.reading)}</div>` : ""}
       ${selected.delta ? `<div><strong>Changed:</strong> ${escapeHtml(selected.delta)}</div>` : ""}
@@ -661,41 +672,54 @@
     return result.merged ? result : null;
   }
 
+  // One insertion path for every branch source — the form, pasted JSON and
+  // probe candidates: content id, choice edge, optional rejoin, auto-merge.
+  // Returns { id, merged } or { error }.
+  function insertBranch(sourceId, fields, rejoinTarget = "") {
+    const expr = fields.expr || `alternate(${sourceId})`;
+    const id = contentId({ parentId: sourceId, expr, label: fields.label });
+    const branch = {
+      kind: "branch",
+      tags: ["counterfactual"],
+      createdBy: "human",
+      state: "",
+      delta: "",
+      invariants: "",
+      ...fields,
+      id,
+      expr
+    };
+    state.graph.nodes.push(branch);
+    const choice = addEdge({ from: sourceId, to: id, type: "choice", label: branch.delta || "alternative branch", branchId: id });
+    if (!choice.ok) {
+      state.graph.nodes = state.graph.nodes.filter((item) => item.id !== id);
+      return { error: choice.message };
+    }
+    if (rejoinTarget) {
+      const rejoin = addEdge({ from: id, to: rejoinTarget, type: "rejoins", label: "rejoins the story", branchId: id });
+      if (!rejoin.ok) toast(rejoin.message, true);
+    }
+    return { id, merged: tryAutoMerge(id) };
+  }
+
   function addBranchFromForm() {
     const source = getNode(state.selectedId);
     if (!source) return toast("Select a source node first", true);
     const label = el.branchLabel.value.trim();
     if (!label) return toast("Branch title is required", true);
-    const expr = el.branchExpr.value.trim() || `alternate(${source.id})`;
-    const id = contentId({ parentId: source.id, expr, label });
-    const branch = {
-      id,
+    const made = insertBranch(source.id, {
       label,
-      expr,
+      expr: el.branchExpr.value.trim(),
       state: el.branchState.value.trim(),
       delta: el.branchDelta.value.trim(),
-      invariants: el.branchInvariants.value.trim(),
-      kind: "branch",
-      tags: ["counterfactual"],
-      createdBy: "human"
-    };
-    state.graph.nodes.push(branch);
-    const choice = addEdge({ from: source.id, to: id, type: "choice", label: branch.delta || "alternative branch", branchId: id });
-    if (!choice.ok) {
-      state.graph.nodes = state.graph.nodes.filter((item) => item.id !== id);
-      return toast(choice.message, true);
-    }
-    const rejoinTarget = el.rejoinSelect.value;
-    if (rejoinTarget) {
-      const rejoin = addEdge({ from: id, to: rejoinTarget, type: "rejoins", label: "rejoins the story", branchId: id });
-      if (!rejoin.ok) toast(rejoin.message, true);
-    }
+      invariants: el.branchInvariants.value.trim()
+    }, el.rejoinSelect.value);
+    if (made.error) return toast(made.error, true);
     [el.branchLabel, el.branchExpr, el.branchState, el.branchDelta, el.branchInvariants].forEach((input) => { input.value = ""; });
-    const merged = tryAutoMerge(id);
-    state.selectedId = merged ? merged.into : id;
+    state.selectedId = made.merged ? made.merged.into : made.id;
     renderAll();
-    toast(merged
-      ? `Same state in context — merged into “${getNode(merged.into)?.label || merged.into}”`
+    toast(made.merged
+      ? `Same state in context — merged into “${getNode(made.merged.into)?.label || made.merged.into}”`
       : "Branch added");
   }
 
@@ -821,14 +845,6 @@
     return ranks;
   }
 
-  function fillBranchForm(suggestion) {
-    el.branchLabel.value = suggestion.label;
-    el.branchExpr.value = suggestion.expr;
-    el.branchState.value = suggestion.state;
-    el.branchDelta.value = suggestion.delta || "";
-    el.branchInvariants.value = suggestion.invariants || "";
-  }
-
   function showPrompt(openDialog = false) {
     const selected = getNode(state.selectedId);
     if (!selected) return toast("Select a node first", true);
@@ -883,31 +899,27 @@
     }
     if (Array.isArray(data.branches)) {
       const origin = state.selectedId;
+      const failures = [];
       data.branches.forEach((branch) => {
-        state.selectedId = origin;
-        fillBranchForm({
+        const made = insertBranch(origin, {
           label: branch.label || "Assisted branch",
           expr: branch.expr || "alternate(?)",
           state: branch.state || "",
           delta: branch.delta || "LLM-assisted branch",
-          invariants: branch.invariants || ""
-        });
-        el.rejoinSelect.value = branch.rejoinTargetId || "";
-        addBranchFromForm();
-        const made = getNode(state.selectedId);
-        if (made) {
-          made.createdBy = "assist";
-          made.tags = Array.isArray(branch.tags) ? branch.tags : ["counterfactual", "assist"];
-        }
+          invariants: branch.invariants || "",
+          tags: Array.isArray(branch.tags) ? branch.tags : ["counterfactual", "assist"],
+          createdBy: "assist"
+        }, branch.rejoinTargetId || "");
+        if (made.error) failures.push(made.error);
       });
       renderAll();
-      toast("Imported assisted branches");
+      toast(failures.length ? `Imported with ${failures.length} rejected: ${failures[0]}` : "Imported assisted branches", failures.length > 0);
       return;
     }
     importGraph(data);
   }
 
-  function importGraph(data) {
+  function importGraph(data, message = "Graph JSON restored") {
     const candidate = normalizeGraph(structuredClone(data));
     const result = validateGraph(candidate);
     if (!result.ok) {
@@ -920,41 +932,312 @@
     renderSeeds();
     renderAll();
     showValidation(result);
-    toast("Graph JSON restored");
+    toast(message);
   }
 
-  // Auto-grow: hand the current graph to the grow bridge, which drives the
-  // local model Node-side and answers with the grown graph — the same
-  // artifact `npm run grow` writes, arriving over fetch instead of paste.
-  // The reply goes through importGraph, so it passes the same validation as
-  // any hand-pasted JSON.
+  // ── Lab: the grow bridge (tools/grow_server.js) ─────────────────────────
+  // The page never calls the model: it POSTs the graph to the bridge, which
+  // runs the grower or the continuation probe Node-side and records the run
+  // exactly as the CLI would.
+
+  async function bridge(pathname, body) {
+    const response = await fetch(`${GROW_SERVER_URL}${pathname}`, body === undefined ? {} : {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body)
+    });
+    if (!response.ok) {
+      const data = await response.json().catch(() => ({}));
+      throw new Error(data.error || `bridge returned ${response.status}`);
+    }
+    return response;
+  }
+
+  function bridgeError(error, what) {
+    const offline = error instanceof TypeError;
+    toast(offline ? "Grow bridge not reachable — run: npm run grow:serve" : `${what} failed: ${error.message}`, true);
+    if (offline) setLabStatus(false);
+  }
+
+  function setLabStatus(online, modelFile = null) {
+    el.labStatus.className = `report ${online && modelFile ? "good" : online ? "" : "bad"}`;
+    el.labStatus.textContent = !online
+      ? "Bridge offline — run: npm run grow:serve"
+      : modelFile
+        ? `Model: ${modelFile}`
+        : "Model server offline — run: ./tools/serve_reference.sh (baseline source still works)";
+  }
+
+  async function checkBridge() {
+    try {
+      const data = await (await bridge("/health")).json();
+      setLabStatus(true, data.model ? data.modelFile : null);
+      loadRuns();
+    } catch {
+      setLabStatus(false);
+    }
+  }
+
+  // Runs a long bridge call with the button disabled and an elapsed-time
+  // label, restoring both whatever happens.
+  async function busy(button, task) {
+    const label = button.textContent;
+    const started = Date.now();
+    button.disabled = true;
+    const timer = setInterval(() => { button.textContent = `${label} · ${Math.round((Date.now() - started) / 1000)}s`; }, 1000);
+    try {
+      return await task();
+    } finally {
+      clearInterval(timer);
+      button.textContent = label;
+      button.disabled = false;
+    }
+  }
+
+  const fmt = (value) => (value === null || value === undefined ? "—" : typeof value === "number" ? String(+value.toFixed(2)) : String(value));
+
+  // The §6 metric rows eval.js prints, this run beside the model-free
+  // baseline grown to the same node count through the same traversal.
+  const METRIC_ROWS = [
+    ["grown nodes", (s) => s.grownNodes],
+    ["merge rate", (s) => s.mergeRate],
+    ["null transitions", (s) => s.nullTransitionRate],
+    ["duplicate expr", (s) => s.dupExprRate],
+    ["branch diversity", (s) => s.branchDiversity],
+    ["rejoin validity", (s) => s.rejoinValidity],
+    ["rank spread (n, max)", (s) => `${s.maxRankSpread} (${s.scoredRanks}, ${s.maxRankSize})`],
+    ["contradictions", (s) => s.contradictionRate]
+  ];
+
+  function metricsTable(score, baseline, label) {
+    const head = `<tr><th>metric</th><th>${escapeHtml(label)}</th>${baseline ? `<th>baseline@${baseline.grownNodes}</th>` : ""}</tr>`;
+    const rows = METRIC_ROWS.map(([name, pick]) => `<tr><td>${name}</td><td>${escapeHtml(fmt(pick(score)))}</td>${baseline ? `<td>${escapeHtml(fmt(pick(baseline)))}</td>` : ""}</tr>`).join("");
+    return `<table class="metrics">${head}${rows}</table>`;
+  }
+
+  function proposerLine(p) {
+    if (!p) return "";
+    const rejoin = p.rejoinAsked ? ` · rejoin asked ${p.rejoinAsked}, named ${p.rejoinNamed}, none ${p.rejoinNone}` : "";
+    return `<div>frame draws ${p.draws} over ${p.expansions} expansions · forced ${p.forced} · unparseable ${p.parseFailures} · truncated ${p.truncated}${rejoin}</div>`;
+  }
+
+  // Loads a grown graph and marks the run's own nodes (`.fresh`).
+  function showGrown(graph, runId, from) {
+    importGraph(graph, `Loaded ${runId} — its nodes are outlined green`);
+    state.lastRunId = runId;
+    if (from && getNode(from)) state.selectedId = from;
+    renderAll();
+    setTimeout(fitGraph, 350);
+  }
+
   async function autoGrow() {
     const from = state.selectedId;
     if (!from) return toast("Select a node to grow from", true);
-    el.autoGrowBtn.disabled = true;
-    try {
-      const response = await fetch(`${GROW_SERVER_URL}/grow`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
+    const source = el.growSource.value;
+    await busy(el.autoGrowBtn, async () => {
+      try {
+        const data = await (await bridge("/grow", {
           graph: state.graph,
           from,
+          source,
           depth: +el.growDepth.value || 1,
-          width: +el.growWidth.value || 1
-        })
-      });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error || `grow server returned ${response.status}`);
-      importGraph(data.graph);
-      state.selectedId = from;
-      renderAll();
-      toast(`Grown: +${data.stats.created} nodes, ${data.stats.mergedDuplicates} merged (run ${data.runId})`);
-    } catch (error) {
-      const offline = error instanceof TypeError;
-      toast(offline ? "Grow bridge not reachable — run: npm run grow:serve" : `Auto-grow failed: ${error.message}`, true);
-    } finally {
-      el.autoGrowBtn.disabled = false;
+          width: +el.growWidth.value || 1,
+          maxNodes: +el.growMaxNodes.value || 1,
+          seed: +el.growSeed.value || 1,
+          rejoin: source === "frames" && el.growRejoin.checked
+        })).json();
+        showGrown(data.graph, data.runId, from);
+        el.growReport.innerHTML = `<div>${escapeHtml(data.runId)} · +${data.stats.created} nodes, ${data.stats.mergedDuplicates} merged, ${data.stats.rejectedNullTransitions || 0} null, ${data.stats.rejectedCycles} cyclic</div>`
+          + proposerLine(data.proposerStats)
+          + metricsTable(data.score, data.baseline, source);
+        loadRuns();
+      } catch (error) {
+        bridgeError(error, "Grow");
+      }
+    });
+  }
+
+  async function loadRuns() {
+    try {
+      const { runs } = await (await bridge("/runs")).json();
+      el.runSelect.innerHTML = runs.map((run) => `<option value="${escapeHtml(run.runId)}">${escapeHtml([
+        String(run.createdAt || "").slice(0, 16).replace("T", " "),
+        run.source,
+        run.story || "ui graph",
+        `from ${run.from}`,
+        `+${run.created}`
+      ].join(" · "))}</option>`).join("");
+    } catch {
+      el.runSelect.innerHTML = "";
     }
+  }
+
+  async function loadRun() {
+    const runId = el.runSelect.value;
+    if (!runId) return toast("No recorded run selected", true);
+    try {
+      const data = await (await bridge(`/runs/${encodeURIComponent(runId)}`)).json();
+      showGrown(data.graph, runId, data.manifest.traversal && data.manifest.traversal.from);
+      const source = (data.manifest.source && data.manifest.source.name) || "model";
+      el.growReport.innerHTML = `<div>${escapeHtml(runId)} (recorded)</div>`
+        + proposerLine(data.manifest.proposerStats)
+        + metricsTable(data.score, null, source);
+    } catch (error) {
+      bridgeError(error, "Load run");
+    }
+  }
+
+  // ── Lab: continuations A/B (experiments/continue_probe.js + grade.js) ────
+  // Draws K candidates per arm at the selected node, shows them in grade.js's
+  // seeded shuffle with the arm hidden, and records y/n answers as a grade.js
+  // graded file. Arms are revealed once grades are saved.
+
+  const GRADE_KEYS = ["consistent", "advances"];
+
+  async function runProbe() {
+    const from = state.selectedId;
+    if (!from) return toast("Select a node to continue from", true);
+    const arms = [el.probeSentence.checked && "sentence", el.probeJson.checked && "json"].filter(Boolean);
+    if (!arms.length) return toast("Pick at least one arm", true);
+    await busy(el.probeBtn, async () => {
+      try {
+        const response = await bridge("/continue", {
+          graph: state.graph,
+          from,
+          arms,
+          k: +el.probeK.value || 1,
+          seed: +el.probeSeed.value || 1,
+          fillActors: el.probeFill.checked ? 1 : 0,
+          fast: el.probeFast.checked
+        });
+        let done = null;
+        await readNdjson(response, (event) => {
+          if (event.type === "progress") {
+            el.probeReport.textContent = Object.entries(event.counts)
+              .map(([arm, c]) => `${arm}: ${c.samples} kept / ${c.attempts} drawn`).join(" · ");
+          } else if (event.type === "error") {
+            throw new Error(event.error);
+          } else if (event.type === "done") {
+            done = event;
+          }
+        });
+        if (!done) throw new Error("bridge closed the stream early");
+        state.probe = { ...done, from, revealed: Object.keys(done.answers).length > 0 };
+        el.probeReport.textContent = Object.entries(done.stats)
+          .map(([arm, c]) => `${arm}: ${c.samples} kept / ${c.attempts} drawn${c.saturated ? " (saturated)" : ""}`).join(" · ");
+        el.probeShowBtn.disabled = false;
+        openProbe();
+      } catch (error) {
+        bridgeError(error, "Draw");
+      }
+    });
+  }
+
+  async function readNdjson(response, onEvent) {
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffered = "";
+    for (;;) {
+      const { value, done } = await reader.read();
+      buffered += decoder.decode(value || new Uint8Array(), { stream: !done });
+      const lines = buffered.split("\n");
+      buffered = lines.pop();
+      lines.filter(Boolean).forEach((line) => onEvent(JSON.parse(line)));
+      if (done) break;
+    }
+  }
+
+  function openProbe() {
+    const probe = state.probe;
+    if (!probe) return;
+    el.probeTitle.textContent = `Continuations after “${getNode(probe.from)?.label || probe.from}”`;
+    el.probeHistory.innerHTML = probe.history.map((line) => `<li>${escapeHtml(line)}</li>`).join("");
+    renderProbeList();
+    renderTally(probe.tally);
+    if (!el.probeDialog.open) el.probeDialog.showModal();
+  }
+
+  function renderProbeList() {
+    const probe = state.probe;
+    el.probeList.innerHTML = probe.pool.map((item, index) => {
+      const given = probe.answers[item.labelKey] || {};
+      const complete = GRADE_KEYS.every((key) => typeof given[key] === "boolean");
+      const toggles = GRADE_KEYS.map((key) => `${key}
+        <button type="button" data-i="${index}" data-key="${key}" data-value="yes" class="${given[key] === true ? "on-yes" : ""}">y</button>
+        <button type="button" data-i="${index}" data-key="${key}" data-value="no" class="${given[key] === false ? "on-no" : ""}">n</button>`).join(" ");
+      const arm = probe.revealed
+        ? `<span class="arm-tag ${item.arm}">${item.arm}${item.forcedActor ? " · forced actor" : ""}</span>`
+        : "";
+      return `<div class="probe-item${complete ? " done" : ""}">
+        <div class="probe-text">${index + 1}. ${escapeHtml(item.display)}</div>
+        <div class="probe-controls">${toggles} ${arm}
+          <button type="button" data-i="${index}" data-add="1">Add to graph</button></div>
+      </div>`;
+    }).join("");
+  }
+
+  function onProbeClick(event) {
+    const button = event.target.closest("button[data-i]");
+    if (!button) return;
+    const item = state.probe.pool[+button.dataset.i];
+    if (button.dataset.add) return addProbeCandidate(item);
+    const answers = state.probe.answers;
+    answers[item.labelKey] = { ...(answers[item.labelKey] || {}), [button.dataset.key]: button.dataset.value === "yes" };
+    renderProbeList();
+  }
+
+  // A sentence candidate becomes a frame-carrying node exactly as the
+  // grower's frames source would make it (frame_proposer.js), so the probe
+  // can continue from it; a json candidate becomes the branch it proposed.
+  function addProbeCandidate(item) {
+    const frames = window.StoryDagFrames;
+    const fields = item.node.frame
+      ? {
+        label: `${item.node.frame.actor} ${item.node.frame.action}`,
+        expr: frames.frameExpr(item.node.frame),
+        state: item.node.frame.outcome,
+        frame: item.node.frame
+      }
+      : {
+        label: item.node.branch.label || item.node.branch.expr,
+        expr: item.node.branch.expr,
+        state: item.node.branch.state || "",
+        delta: item.node.branch.delta || "",
+        invariants: item.node.branch.invariants || ""
+      };
+    const made = insertBranch(state.probe.from, { ...fields, tags: ["counterfactual", "probe"], createdBy: "probe" });
+    if (made.error) return toast(made.error, true);
+    state.selectedId = made.merged ? made.merged.into : made.id;
+    renderAll();
+    toast(made.merged ? "Same state in context — merged" : "Candidate added as a branch");
+  }
+
+  async function saveGrades() {
+    const probe = state.probe;
+    const complete = probe.pool.filter((item) => GRADE_KEYS.every((key) => typeof (probe.answers[item.labelKey] || {})[key] === "boolean"));
+    if (!complete.length) return toast("Answer both questions for at least one candidate", true);
+    try {
+      const data = await (await bridge("/grades", { file: probe.file, answers: probe.answers })).json();
+      probe.revealed = true;
+      probe.tally = data;
+      renderProbeList();
+      renderTally(data);
+      toast(`Saved ${data.graded}/${probe.pool.length} graded → experiments/out/ui/${data.gradedFile}`);
+    } catch (error) {
+      bridgeError(error, "Save grades");
+    }
+  }
+
+  function tallyTable(title, summaries) {
+    const rows = Object.entries(summaries || {}).filter(([, s]) => s).map(([arm, s]) =>
+      `<tr><td>${escapeHtml(arm)}</td><td>${s.n}</td><td>${fmt(s.consistent)}</td><td>${fmt(s.advances)}</td><td>${fmt(s.usable)}</td></tr>`).join("");
+    return `<table class="metrics"><tr><th>${escapeHtml(title)}</th><th>n</th><th>consistent</th><th>advances</th><th>usable</th></tr>${rows}</table>`;
+  }
+
+  function renderTally(data) {
+    el.probeTally.innerHTML = data
+      ? tallyTable("this batch", data.summary) + tallyTable(`all UI batches (${data.cumulative.batches})`, data.cumulative.arms)
+      : "";
   }
 
   function exportJson() {

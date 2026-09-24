@@ -14,7 +14,8 @@ const path = require("node:path");
 
 const Ids = require("../ids.js");
 const { createClient } = require("../llm_client.js");
-const { createHandler, MAX_UI_NODES } = require("../tools/grow_server.js");
+const { createHandler, gradePool, MAX_UI_NODES, MAX_UI_K } = require("../tools/grow_server.js");
+const Grade = require("../experiments/grade.js");
 const { seeds } = require("../seeds.js");
 
 const FIXTURES = JSON.parse(
@@ -36,9 +37,11 @@ function fixtureFetch() {
 }
 
 const outRoot = fs.mkdtempSync(path.join(os.tmpdir(), "grow_server_test_"));
+const probeDir = path.join(outRoot, "ui");
 const handler = createHandler({
   clientFactory: (sampling) => createClient({ fetch: fixtureFetch(), sampling }),
   outRoot,
+  probeDir,
 });
 const server = http.createServer((req, res) => {
   handler(req, res).catch(() => res.end());
@@ -103,4 +106,77 @@ test("bad requests are 400, unknown routes 404", async () => {
   assert.strictEqual(noFrom.status, 400);
   const lost = await fetch(`${base}/nope`);
   assert.strictEqual(lost.status, 404);
+});
+
+test("POST /grow source=baseline grows without a model and records its source", async () => {
+  const res = await growRequest({ source: "baseline", from: "red_tell", depth: 1 });
+  assert.strictEqual(res.status, 200);
+  const data = await res.json();
+  assert.ok(data.score.grownNodes > 0);
+  assert.strictEqual(data.baseline, undefined, "no baseline row beside the baseline itself");
+  const manifest = JSON.parse(fs.readFileSync(path.join(outRoot, data.runId, "growth_manifest.json"), "utf8"));
+  assert.deepStrictEqual(manifest.source, { name: "baseline" });
+});
+
+test("POST /grow source=model returns §6 scores and a matched-count baseline", async () => {
+  const data = await (await growRequest()).json();
+  assert.strictEqual(data.score.grownNodes, data.stats.created);
+  assert.ok(data.baseline && data.baseline.grownNodes <= data.score.grownNodes);
+  const manifest = JSON.parse(fs.readFileSync(path.join(outRoot, data.runId, "growth_manifest.json"), "utf8"));
+  assert.strictEqual(manifest.source, undefined, "the default source's config is unchanged");
+});
+
+test("GET /runs lists recorded runs; GET /runs/:id rescores one and rejects bad ids", async () => {
+  const { runs } = await (await fetch(`${base}/runs`)).json();
+  assert.ok(runs.length > 0);
+  assert.ok(runs.some((r) => r.source === "baseline"));
+  const one = await (await fetch(`${base}/runs/${runs[0].runId}`)).json();
+  assert.ok(Array.isArray(one.graph.nodes));
+  assert.strictEqual(typeof one.score.grownNodes, "number");
+  assert.strictEqual((await fetch(`${base}/runs/..%2F..%2Fetc`)).status, 400);
+});
+
+async function probeEvents(body) {
+  const res = await fetch(`${base}/continue`, { method: "POST", body: JSON.stringify(body) });
+  assert.strictEqual(res.status, 200);
+  return (await res.text()).trim().split("\n").map((line) => JSON.parse(line));
+}
+
+test("POST /continue streams progress, then the pool in grade order; /grades writes a grade.js file", async () => {
+  // json arm only: the fixture transport answers branch-schema prompts.
+  const events = await probeEvents({ graph: seeds.red, from: "red_start", arms: ["json"], k: 2 });
+  const done = events.at(-1);
+  assert.strictEqual(done.type, "done", JSON.stringify(done));
+  assert.ok(events.slice(0, -1).every((e) => e.type === "progress"));
+  assert.ok(done.pool.length > 0);
+
+  const probeFile = JSON.parse(fs.readFileSync(path.join(probeDir, done.file), "utf8"));
+  assert.deepStrictEqual(done.pool.map((p) => p.labelKey), gradePool(probeFile).map((r) => r.labelKey));
+
+  // Half-answered rows are dropped, not recorded as "no".
+  const answers = Object.fromEntries(done.pool.map((p, i) => [p.labelKey, i === 0 ? { consistent: true } : { consistent: false, advances: true }]));
+  const graded = await (await fetch(`${base}/grades`, { method: "POST", body: JSON.stringify({ file: done.file, answers }) })).json();
+  assert.strictEqual(graded.graded, done.pool.length - 1);
+  assert.strictEqual(graded.cumulative.batches, 1);
+  const file = JSON.parse(fs.readFileSync(path.join(probeDir, graded.gradedFile), "utf8"));
+  assert.strictEqual(file.manifest.rater, "human");
+  assert.deepStrictEqual(Grade.summarize(file.grades, "json"), graded.summary.json);
+
+  // Re-drawing the same batch lands on the same file and carries its grades.
+  const again = (await probeEvents({ graph: seeds.red, from: "red_start", arms: ["json"], k: 2 })).at(-1);
+  assert.strictEqual(again.file, done.file);
+  assert.strictEqual(Object.keys(again.answers).length, done.pool.length - 1);
+});
+
+test("POST /continue caps K and reports a frameless path as a stream error", async () => {
+  const graph = { ...seeds.red, nodes: seeds.red.nodes.map(({ frame, ...n }) => n) };
+  const done = (await probeEvents({ graph, from: "red_tell", arms: ["sentence"], k: 10000 })).at(-1);
+  assert.strictEqual(done.type, "error");
+  assert.match(done.error, /no frame/);
+  assert.ok(MAX_UI_K < 10000);
+});
+
+test("POST /grades refuses files outside the UI probe directory", async () => {
+  const res = await fetch(`${base}/grades`, { method: "POST", body: JSON.stringify({ file: "../../package.json", answers: {} }) });
+  assert.strictEqual(res.status, 400);
 });

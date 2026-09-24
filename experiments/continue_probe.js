@@ -74,6 +74,11 @@
 //    the sentence arm's one. Only the FIRST branch of each sample is graded;
 //    the rest are recorded under `extraBranches` and are not thrown away.
 //
+// 5. TRUNCATION. llm_client treats a length-stop as a hard error. Here a
+//    truncated sample is data — "the model ran past the one-sentence format"
+//    is exactly what the unconstrained batch measures — so it is caught and
+//    recorded as an unusable sample with its partial text, not re-raised.
+//
 // 6. GATED ACTOR FILL (`--fill-actors`), which the plan does not describe
 //    because the finding that motivates it postdates the plan.
 //
@@ -98,17 +103,11 @@
 //    never appeared, spending the extra draws where the mass is missing.
 //    Total draws are K + m × (missing actors), so compare per draw, not per
 //    batch — otherwise this mode wins on volume.
-//
-// 5. TRUNCATION. llm_client treats a length-stop as a hard error. Here a
-//    truncated sample is data — "the model ran past the one-sentence format"
-//    is exactly what the unconstrained batch measures — so it is caught and
-//    recorded as an unusable sample with its partial text, not re-raised.
 
 "use strict";
 
 const fs = require("fs");
 const path = require("path");
-const crypto = require("crypto");
 
 const R = path.join(__dirname, "..");
 const Engine = require(path.join(R, "story_builder_engine.js"));
@@ -116,10 +115,14 @@ const Frames = require(path.join(R, "frames.js"));
 const Ids = require(path.join(R, "ids.js"));
 const Grower = require(path.join(R, "grower.js"));
 const { createClient } = require(path.join(R, "llm_client.js"));
+const { FRAME_SAMPLING, drawSeed } = require(path.join(R, "frame_proposer.js"));
+const { sha256, sha256File } = require(path.join(R, "tools", "grow.js"));
 const { seeds } = require(path.join(R, "seeds.js"));
 
-// The sampling block both arms share. Not the reference profile: that one is
-// greedy by design, and a greedy client cannot produce K alternatives.
+// The sampling block both arms share — the grower's frames source samples
+// with the same block (frame_proposer.js), so the probe's measurements say
+// something about what the grower grows. Not the reference profile: that one
+// is greedy by design, and a greedy client cannot produce K alternatives.
 //
 //   temperature 1.0 / min_p 0.05  — the plan's pinned pair. min_p rather than
 //                                   top_p because it scales the cutoff with
@@ -132,16 +135,7 @@ const { seeds } = require(path.join(R, "seeds.js"));
 //   n_predict                     — see below; it differs per arm and per
 //                                   mode, and getting it wrong is not benign.
 //   samplers                      — explicit order, same reason as §4.1.
-const PROBE_SAMPLING = {
-  temperature: 1.0,
-  top_k: 0,
-  min_p: 0.05,
-  samplers: ["top_k", "min_p", "temperature"],
-  repeat_penalty: 1.0,
-  dry_multiplier: 0,
-  cache_prompt: false,
-  stop: ["\n"],
-};
+const PROBE_SAMPLING = FRAME_SAMPLING;
 
 // The plan's ~40-token cap. It belongs to the UNCONSTRAINED diagnostic only,
 // where "the model ran past the one-sentence format" is the measurement and a
@@ -150,7 +144,8 @@ const DIAGNOSTIC_N_PREDICT = 40;
 
 // Under the grammar the cap must NEVER bind — the grammar's bounded character
 // classes are already the length limit, and a token cap on top of them is a
-// second, tighter limit that silently wins.
+// second, tighter limit that silently wins. So it is derived from the grammar
+// (Frames.tokenBudget) rather than chosen.
 //
 // This was a real confound, not a hypothetical one. The first run had the
 // grammar admitting 246-char sentences under a 40-token cap: a fifth of
@@ -158,18 +153,6 @@ const DIAGNOSTIC_N_PREDICT = 40;
 // longest, most elaborate continuations were exactly the ones cut. The
 // surviving set was biased short, and it was being compared against a JSON
 // arm that had 512 tokens to work with.
-//
-// So the cap is derived from the grammar rather than chosen. Three chars per
-// token is deliberately pessimistic for English (~4 is typical), and the
-// doubling on top of that is headroom for a tokenizer that splits worse than
-// expected on some name.
-const CHARS_PER_TOKEN_FLOOR = 3;
-const N_PREDICT_SAFETY_FACTOR = 2;
-
-function constrainedNPredict(entities) {
-  const chars = Frames.maxSentenceChars(entities);
-  return Math.ceil(chars / CHARS_PER_TOKEN_FLOOR) * N_PREDICT_SAFETY_FACTOR;
-}
 
 // The JSON arm needs room for a whole object (label + expr + state + delta +
 // invariants, up to three branches), so its cap stays the reference profile's
@@ -190,6 +173,10 @@ const DEFAULT_K = 10;
 // 4 of 6 forced draws, and one draw would miss that about a third of the time.
 const FILL_PER_MISSING_ACTOR = 2;
 const DEFAULT_RUN_SEED = 7;
+
+const FRAMES_TEMPLATE = "frames.v1";
+const BRANCH_TEMPLATE = "branch.v2";
+const templatePathOf = (name) => path.join(R, "prompts", `${name}.txt`);
 
 // Mid-story nodes: far enough in that there is a history to condition on,
 // short of the ending, where "what could happen next" is nearly closed.
@@ -227,36 +214,10 @@ function parseArgs(argv) {
   return args;
 }
 
-function sha256(text) {
-  return crypto.createHash("sha256").update(text).digest("hex");
-}
-
-// Streamed, not readFileSync: `fs.readFileSync` allocates one Buffer and
-// Node caps those at 2 GiB. The 1.7B GGUF (1.8 GB) slid under that and the
-// 4B Q5_K_M (2.9 GB) does not, so the whole-file read threw before writing
-// the manifest — after the sampling was already done.
-function sha256File(file) {
-  const hash = crypto.createHash("sha256");
-  const CHUNK = 8 * 1024 * 1024;
-  const buffer = Buffer.allocUnsafe(CHUNK);
-  const fd = fs.openSync(file, "r");
-  try {
-    for (let read = 0; (read = fs.readSync(fd, buffer, 0, CHUNK, null)) > 0;) {
-      hash.update(buffer.subarray(0, read));
-    }
-  } finally {
-    fs.closeSync(fd);
-  }
-  return hash.digest("hex");
-}
-
 // Per-sample seeds are derived, not drawn: (run seed, arm, node, index) must
-// give the same integer on a rerun or the file does not replay. `shortHash`
-// is the repo's one hash, so the derivation stays in one place.
-function sampleSeed(runSeed, arm, nodeId, index) {
-  const digest = Ids.shortHash(`${runSeed}|${arm}|${nodeId}|${index}`);
-  return parseInt(digest.slice(0, 8), 16);
-}
+// give the same integer on a rerun or the file does not replay. The grower's
+// frames source uses the identical derivation (frame_proposer.drawSeed).
+const sampleSeed = drawSeed;
 
 // ── prompts ─────────────────────────────────────────────────────────────────
 
@@ -330,7 +291,9 @@ async function drawJson({ client, prompt, seed }) {
 // Draw until `k` DISTINCT usable samples exist or the refill budget is spent.
 // Distinctness is on normalized expr, the repo's one content key, so the two
 // arms are deduped by the same rule despite different surface forms.
-async function drawDistinct(draw, k) {
+// `onAttempt` sees every record as it lands, duplicates marked — the grow
+// server streams them to the page so a batch is visible while it draws.
+async function drawDistinct(draw, k, onAttempt = null) {
   const samples = [];
   const attempts = [];
   const seen = new Set();
@@ -339,11 +302,12 @@ async function drawDistinct(draw, k) {
   for (let index = 0; index < budget && samples.length < k; index += 1) {
     const record = await draw(index);
     attempts.push(record);
-    if (record.error) continue;
-    const key = Ids.normalizedContent(record.expr);
-    if (seen.has(key)) { record.duplicateOf = key; continue; }
-    seen.add(key);
-    samples.push(record);
+    if (!record.error) {
+      const key = Ids.normalizedContent(record.expr);
+      if (seen.has(key)) record.duplicateOf = key;
+      else { seen.add(key); samples.push(record); }
+    }
+    if (onAttempt) onAttempt(record);
   }
 
   return {
@@ -370,116 +334,178 @@ async function drawDistinct(draw, k) {
 
 // ── run ─────────────────────────────────────────────────────────────────────
 
+// One client per arm. Unconstrained: the plan's diagnostic cap, where
+// truncation is the point. Constrained: derived so the grammar binds and the
+// cap never does. --fast trades bit-replay for KV-cache reuse across the
+// shared prompt prefix; only ever set by the caller, so a normal run's body
+// is byte-identical to before and keeps hitting the recorded cache.
+// `create` is injectable so the grow server's tests run the probe over the
+// fixture transport.
+function createProbeClients({
+  baseUrl, entities, temp = PROBE_SAMPLING.temperature, unconstrained = false, fast = false,
+  create = (sampling) => createClient({ baseUrl, cacheDir: path.join(R, "cache"), sampling }),
+}) {
+  const extra = fast ? { cache_prompt: true } : {};
+  return {
+    sentence: create({
+      ...PROBE_SAMPLING, temperature: temp,
+      n_predict: unconstrained ? DIAGNOSTIC_N_PREDICT : Frames.tokenBudget(entities), ...extra,
+    }),
+    json: create({ ...PROBE_SAMPLING, temperature: temp, n_predict: JSON_ARM_N_PREDICT, stop: undefined, ...extra }),
+  };
+}
+
+function readTemplates() {
+  return {
+    frames: fs.readFileSync(templatePathOf(FRAMES_TEMPLATE), "utf8"),
+    branch: fs.readFileSync(templatePathOf(BRANCH_TEMPLATE), "utf8"),
+  };
+}
+
+// Both arms (or the ones asked for) at one node. `graph` is any normalized
+// graph whose path to `nodeId` is fully framed — a seed, or a graph the page
+// sent over. Returns the node's entry in the probe file's `results`.
+async function probeNode({
+  graph, nodeId, clients, templates = readTemplates(),
+  k = DEFAULT_K, arms = ["sentence", "json"], runSeed = DEFAULT_RUN_SEED,
+  fillActors = 0, unconstrained = false, onAttempt = null,
+}) {
+  const byId = new Map(graph.nodes.map((n) => [n.id, n]));
+  const node = byId.get(nodeId);
+  if (!node) throw new Error(`no node ${nodeId} in the graph`);
+  const entities = graph.entities;
+  const title = graph.title || (graph.meta && graph.meta.title) || "";
+
+  const pathIds = Grower.ancestorPath(graph, nodeId);
+  const historyFrames = pathIds.map((id) => (byId.get(id) || {}).frame).filter(Boolean);
+  const entry = { nodeId, path: pathIds, history: historyFrames.map((f) => Frames.render(f)), arms: {} };
+
+  if (arms.includes("sentence")) {
+    if (!Array.isArray(entities) || !entities.length) throw new Error("sentence arm: graph has no entities list");
+    if (historyFrames.length !== pathIds.length) throw new Error(`${nodeId}: some node on the path has no frame`);
+    const prompt = sentencePrompt(templates.frames, { title }, historyFrames);
+    const result = await drawDistinct(
+      (index) => drawSentence({
+        client: clients.sentence,
+        prompt,
+        grammar: unconstrained ? null : Frames.grammar(entities),
+        entities,
+        seed: sampleSeed(runSeed, "sentence", nodeId, index),
+      }),
+      k,
+      onAttempt,
+    );
+    entry.arms.sentence = {
+      prompt, promptSha256: sha256(prompt), constrained: !unconstrained,
+      fillActors, ...result,
+    };
+
+    if (fillActors && !unconstrained) {
+      const present = new Set(result.samples.map((sample) => sample.frame.actor));
+      const missing = entities.filter((e) => !present.has(e));
+      const filled = [];
+      let fillAttempts = 0;
+      for (const actor of missing) {
+        const fill = await drawDistinct(
+          (index) => drawSentence({
+            client: clients.sentence,
+            prompt,
+            grammar: Frames.grammar([actor]),
+            entities: [actor],
+            seed: sampleSeed(runSeed, `fill:${actor}`, nodeId, index),
+            forcedActor: actor,
+          }),
+          fillActors,
+          onAttempt,
+        );
+        fillAttempts += fill.attempts;
+        filled.push(...fill.samples);
+      }
+      entry.arms.sentence.samples = [...result.samples, ...filled];
+      entry.arms.sentence.fill = {
+        perMissingActor: fillActors, missing, added: filled.length,
+        attempts: fillAttempts, totalDraws: result.attempts + fillAttempts,
+      };
+    }
+  }
+
+  if (arms.includes("json")) {
+    const context = Grower.promptContext(graph, node);
+    const prompt = Grower.renderPrompt(templates.branch, node, context);
+    const result = await drawDistinct(
+      (index) => drawJson({
+        client: clients.json,
+        prompt,
+        seed: sampleSeed(runSeed, "json", nodeId, index),
+      }),
+      k,
+      onAttempt,
+    );
+    entry.arms.json = { prompt, promptSha256: sha256(prompt), constrained: true, ...result };
+  }
+  return entry;
+}
+
+// The probe file's manifest — what grade.js reads (`arms`, `runSeed`) plus
+// everything a number from this batch needs to be traced to its config.
+function probeManifest({ story, k, runSeed, arms, unconstrained, fillActors, fast, clients, props, entities }) {
+  const grammar = Frames.grammar(entities);
+  const modelPath = props.model_path || "";
+  return {
+    probe: "continue_probe v1 (continuation plan v3, Stage 0)",
+    story,
+    k,
+    runSeed,
+    arms,
+    unconstrained,
+    fillActors,
+    fast,
+    grammarBounds: {
+      actionMaxChars: Frames.ACTION_MAX_CHARS,
+      outcomeMaxChars: Frames.OUTCOME_MAX_CHARS,
+      maxSentenceChars: Frames.maxSentenceChars(entities),
+    },
+    sampling: { sentence: clients.sentence.sampling, json: clients.json.sampling },
+    model: {
+      props,
+      sha256: modelPath && fs.existsSync(modelPath) && process.env.SKIP_SHA256 !== "1"
+        ? sha256File(modelPath)
+        : null,
+    },
+    templates: {
+      sentence: { name: FRAMES_TEMPLATE, sha256: sha256File(templatePathOf(FRAMES_TEMPLATE)) },
+      json: { name: BRANCH_TEMPLATE, sha256: sha256File(templatePathOf(BRANCH_TEMPLATE)) },
+    },
+    entities,
+    entitiesSha256: sha256(JSON.stringify(entities)),
+    grammar,
+    grammarSha256: sha256(grammar),
+    generatedAt: new Date().toISOString(),
+  };
+}
+
 async function main() {
   const args = parseArgs(process.argv.slice(2));
   const story = seeds[args.story];
   const graph = Engine.normalizeGraph(story);
-  const byId = new Map(graph.nodes.map((n) => [n.id, n]));
   const entities = story.entities;
 
-  const framesTemplatePath = path.join(R, "prompts", "frames.v1.txt");
-  const branchTemplatePath = path.join(R, "prompts", "branch.v2.txt");
-  const framesTemplate = fs.readFileSync(framesTemplatePath, "utf8");
-  const branchTemplate = fs.readFileSync(branchTemplatePath, "utf8");
-  const grammar = Frames.grammar(entities);
-
-  // Unconstrained: the plan's diagnostic cap, where truncation is the point.
-  // Constrained: derived so the grammar binds and the cap never does.
-  const sentenceNPredict = args.unconstrained
-    ? DIAGNOSTIC_N_PREDICT
-    : constrainedNPredict(entities);
-  // --fast trades bit-replay for KV-cache reuse across the shared prompt
-  // prefix. It is only ever set here, so a normal run's body is byte-identical
-  // to before and keeps hitting the recorded cache.
-  const fast = args.fast ? { cache_prompt: true } : {};
   if (args.fast) {
     process.stderr.write("--fast: cache_prompt=true — this run is NOT bit-replayable and its cache entries are separate from normal runs. Re-run without --fast to record.\n");
   }
-  const sentenceClient = createClient({
-    baseUrl: args.baseUrl,
-    cacheDir: path.join(R, "cache"),
-    sampling: { ...PROBE_SAMPLING, temperature: args.temp, n_predict: sentenceNPredict, ...fast },
+  const clients = createProbeClients({
+    baseUrl: args.baseUrl, entities, temp: args.temp, unconstrained: args.unconstrained, fast: args.fast,
   });
-  const jsonClient = createClient({
-    baseUrl: args.baseUrl,
-    cacheDir: path.join(R, "cache"),
-    sampling: { ...PROBE_SAMPLING, temperature: args.temp, n_predict: JSON_ARM_N_PREDICT, stop: undefined, ...fast },
-  });
-
-  const props = await sentenceClient.props();
+  const templates = readTemplates();
+  const props = await clients.sentence.props();
   const results = [];
 
   for (const nodeId of args.nodes) {
-    const node = byId.get(nodeId);
-    if (!node) throw new Error(`no node ${nodeId} in ${args.story}`);
-
-    const pathIds = Grower.ancestorPath(graph, nodeId);
-    const historyFrames = pathIds.map((id) => (byId.get(id) || {}).frame).filter(Boolean);
-    if (historyFrames.length !== pathIds.length) {
-      throw new Error(`${nodeId}: some node on the path has no frame`);
-    }
-
-    const entry = { nodeId, path: pathIds, history: historyFrames.map((f) => Frames.render(f)), arms: {} };
-
-    if (args.arms.includes("sentence")) {
-      const prompt = sentencePrompt(framesTemplate, story, historyFrames);
-      const result = await drawDistinct(
-        (index) => drawSentence({
-          client: sentenceClient,
-          prompt,
-          grammar: args.unconstrained ? null : grammar,
-          entities,
-          seed: sampleSeed(args.seed, "sentence", nodeId, index),
-        }),
-        args.k,
-      );
-      entry.arms.sentence = {
-        prompt, promptSha256: sha256(prompt), constrained: !args.unconstrained,
-        fillActors: args.fillActors, ...result,
-      };
-
-      if (args.fillActors && !args.unconstrained) {
-        const present = new Set(result.samples.map((s) => s.frame.actor));
-        const missing = entities.filter((e) => !present.has(e));
-        const filled = [];
-        let fillAttempts = 0;
-        for (const actor of missing) {
-          const fill = await drawDistinct(
-            (index) => drawSentence({
-              client: sentenceClient,
-              prompt,
-              grammar: Frames.grammar([actor]),
-              entities: [actor],
-              seed: sampleSeed(args.seed, `fill:${actor}`, nodeId, index),
-              forcedActor: actor,
-            }),
-            args.fillActors,
-          );
-          fillAttempts += fill.attempts;
-          filled.push(...fill.samples);
-        }
-        entry.arms.sentence.samples = [...result.samples, ...filled];
-        entry.arms.sentence.fill = {
-          perMissingActor: args.fillActors, missing, added: filled.length,
-          attempts: fillAttempts, totalDraws: result.attempts + fillAttempts,
-        };
-      }
-    }
-
-    if (args.arms.includes("json")) {
-      const context = Grower.promptContext(graph, node);
-      const prompt = Grower.renderPrompt(branchTemplate, node, context);
-      const result = await drawDistinct(
-        (index) => drawJson({
-          client: jsonClient,
-          prompt,
-          seed: sampleSeed(args.seed, "json", nodeId, index),
-        }),
-        args.k,
-      );
-      entry.arms.json = { prompt, promptSha256: sha256(prompt), constrained: true, ...result };
-    }
-
+    const entry = await probeNode({
+      graph, nodeId, clients, templates,
+      k: args.k, arms: args.arms, runSeed: args.seed,
+      fillActors: args.fillActors, unconstrained: args.unconstrained,
+    });
     results.push(entry);
     const line = args.arms
       .map((arm) => {
@@ -492,39 +518,12 @@ async function main() {
     process.stderr.write(`${nodeId}: ${line}\n`);
   }
 
-  const modelPath = props.model_path || "";
   const output = {
-    manifest: {
-      probe: "continue_probe v1 (continuation plan v3, Stage 0)",
-      story: args.story,
-      k: args.k,
-      runSeed: args.seed,
-      arms: args.arms,
-      unconstrained: args.unconstrained,
-      fillActors: args.fillActors,
-      fast: args.fast,
-      grammarBounds: {
-        actionMaxChars: Frames.ACTION_MAX_CHARS,
-        outcomeMaxChars: Frames.OUTCOME_MAX_CHARS,
-        maxSentenceChars: Frames.maxSentenceChars(entities),
-      },
-      sampling: { sentence: sentenceClient.sampling, json: jsonClient.sampling },
-      model: {
-        props,
-        sha256: modelPath && fs.existsSync(modelPath) && process.env.SKIP_SHA256 !== "1"
-          ? sha256File(modelPath)
-          : null,
-      },
-      templates: {
-        sentence: { name: "frames.v1", sha256: sha256File(framesTemplatePath) },
-        json: { name: "branch.v2", sha256: sha256File(branchTemplatePath) },
-      },
-      entities,
-      entitiesSha256: sha256(JSON.stringify(entities)),
-      grammar,
-      grammarSha256: sha256(grammar),
-      generatedAt: new Date().toISOString(),
-    },
+    manifest: probeManifest({
+      story: args.story, k: args.k, runSeed: args.seed, arms: args.arms,
+      unconstrained: args.unconstrained, fillActors: args.fillActors, fast: args.fast,
+      clients, props, entities,
+    }),
     results,
   };
 
@@ -540,4 +539,7 @@ if (require.main === module) {
   main().catch((error) => { process.stderr.write(`${error.stack}\n`); process.exit(1); });
 }
 
-module.exports = { PROBE_SAMPLING, sentencePrompt, sampleSeed, drawDistinct, DEFAULT_NODES };
+module.exports = {
+  PROBE_SAMPLING, DEFAULT_K, sentencePrompt, sampleSeed, drawDistinct,
+  createProbeClients, readTemplates, probeNode, probeManifest, DEFAULT_NODES,
+};

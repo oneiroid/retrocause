@@ -87,9 +87,9 @@ const PROPOSALS_PER_EXPANSION = 3;
 //
 // Why an ENUM rather than a free id: branch.v2 lets the model write an id and
 // measured `rejoinValidity` 0 — every rejoin it attempted named a node that
-// did not exist. Here the grammar's alternatives ARE the told story's own
-// rendered sentences plus "NONE", so an invalid target is unreachable rather
-// than validated-and-dropped. This is the same closed-enum lever that the
+// did not exist. Here the grammar's alternatives ARE the rendered frames of
+// the legal targets — seed or grown — plus "NONE", so an invalid target is
+// unreachable rather than validated-and-dropped. This is the same closed-enum lever that the
 // actor slot already demonstrated.
 //
 // Only nodes INCOMPARABLE with the source are offered: an ancestor would be a

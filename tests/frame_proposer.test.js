@@ -132,7 +132,7 @@ test("draw seeds are derived: same run seed replays, another source differs", as
 // The grower bridge and the Stage 0 probe must sample the same way, or the
 // probe's measurements say nothing about what the grower grows.
 test("FRAME_SAMPLING is the probe's sampling block, and n_predict is grammar-derived", () => {
-  assert.deepStrictEqual(FRAME_SAMPLING, PROBE_SAMPLING);
+  assert.strictEqual(PROBE_SAMPLING, FRAME_SAMPLING, "one block, not two copies");
   const entities = seeds.red.entities;
   assert.strictEqual(frameSamplingFor(entities).n_predict, Frames.tokenBudget(entities));
   assert.strictEqual(Frames.tokenBudget(entities), Math.ceil(Frames.maxSentenceChars(entities) / 3) * 2);
