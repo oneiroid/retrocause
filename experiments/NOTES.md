@@ -1765,6 +1765,12 @@ would lift the sentence arm's criedWolf consistency by about 10 samples.
   more analysis.
 - Item 2 (non-event redraw loop): **drop it.** Non-events are 9% of sentence
   samples and a minority of failures; the redraw loop targeted the wrong mode.
-- New: the dominant failure in both arms is state inconsistency. The one
-  lever measured so far that touches it is structural — `--fill-actors`
-  (a different actor breaks the cycle at `cw_cry3`) — untested on this node.
+- New: the dominant failure in both arms is state inconsistency.
+  `--fill-actors` does NOT fix it (tested at `cw_cry3`, seed 31, 2 per
+  missing actor, `cont_criedWolf_cw_cry3_fill.json`): forcing the boy and the
+  wolf as actors gave 1/4 consistent. The actor changes and the outcome slot
+  still has the villagers coming ("the villagers are on their way to hunt
+  it"). The cycle lives in the outcome, not the actor, so the closed-enum
+  lever does not reach it. What would reach it is unmeasured; the obvious
+  candidate is showing the current state separately from the event
+  history, which is what branch.v2's `State:` line does for the JSON arm.

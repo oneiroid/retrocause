@@ -1,0 +1,610 @@
+{
+  "manifest": {
+    "probe": "continue_probe v1 (continuation plan v3, Stage 0)",
+    "story": "criedWolf",
+    "k": 10,
+    "runSeed": 31,
+    "arms": [
+      "sentence"
+    ],
+    "unconstrained": false,
+    "fillActors": 2,
+    "fast": false,
+    "grammarBounds": {
+      "actionMaxChars": 80,
+      "outcomeMaxChars": 170,
+      "maxSentenceChars": 280
+    },
+    "sampling": {
+      "sentence": {
+        "temperature": 1,
+        "top_k": 0,
+        "seed": 7,
+        "samplers": [
+          "top_k",
+          "min_p",
+          "temperature"
+        ],
+        "repeat_penalty": 1,
+        "dry_multiplier": 0,
+        "n_predict": 188,
+        "cache_prompt": false,
+        "min_p": 0.05,
+        "stop": [
+          "\n"
+        ]
+      },
+      "json": {
+        "temperature": 1,
+        "top_k": 0,
+        "seed": 7,
+        "samplers": [
+          "top_k",
+          "min_p",
+          "temperature"
+        ],
+        "repeat_penalty": 1,
+        "dry_multiplier": 0,
+        "n_predict": 512,
+        "cache_prompt": false,
+        "min_p": 0.05
+      }
+    },
+    "model": {
+      "props": {
+        "default_generation_settings": {
+          "params": {
+            "seed": 4294967295,
+            "temperature": 0.800000011920929,
+            "dynatemp_range": 0,
+            "dynatemp_exponent": 1,
+            "top_k": 40,
+            "top_p": 0.949999988079071,
+            "min_p": 0.05000000074505806,
+            "top_n_sigma": -1,
+            "xtc_probability": 0,
+            "xtc_threshold": 0.10000000149011612,
+            "typical_p": 1,
+            "repeat_last_n": 64,
+            "repeat_penalty": 1,
+            "presence_penalty": 0,
+            "frequency_penalty": 0,
+            "dry_multiplier": 0,
+            "dry_base": 1.75,
+            "dry_allowed_length": 2,
+            "dry_penalty_last_n": -1,
+            "mirostat": 0,
+            "mirostat_tau": 5,
+            "mirostat_eta": 0.10000000149011612,
+            "adaptive_target": -1,
+            "adaptive_decay": 0.8999999761581421,
+            "max_tokens": -1,
+            "n_predict": -1,
+            "n_keep": 0,
+            "n_discard": 0,
+            "ignore_eos": false,
+            "stream": false,
+            "n_probs": 0,
+            "min_keep": 0,
+            "chat_format": "Content-only",
+            "reasoning_format": "none",
+            "reasoning_in_content": false,
+            "generation_prompt": "",
+            "samplers": [
+              "penalties",
+              "dry",
+              "top_n_sigma",
+              "top_k",
+              "typ_p",
+              "top_p",
+              "min_p",
+              "xtc",
+              "temperature"
+            ],
+            "speculative.types": "none",
+            "timings_per_token": false,
+            "post_sampling_probs": false,
+            "backend_sampling": false,
+            "lora": []
+          },
+          "n_ctx": 4096
+        },
+        "total_slots": 1,
+        "model_alias": "/media/oneiroid/sub/workspace/llmfinetune/models/qwen3-4b-base-Q5_K_M.gguf",
+        "model_ftype": "Q5_K - Medium",
+        "model_path": "/media/oneiroid/sub/workspace/llmfinetune/models/qwen3-4b-base-Q5_K_M.gguf",
+        "modalities": {
+          "vision": false,
+          "video": false,
+          "audio": false
+        },
+        "media_marker": "<__media_QpIJ5XHHKQaNABFADY4Y979S7mjDt2CM__>",
+        "endpoint_slots": true,
+        "endpoint_props": false,
+        "endpoint_metrics": false,
+        "ui": true,
+        "ui_settings": {},
+        "chat_template": "{%- if tools %}\n    {{- '<|im_start|>system\\n' }}\n    {%- if messages[0].role == 'system' %}\n        {{- messages[0].content + '\\n\\n' }}\n    {%- endif %}\n    {{- \"# Tools\\n\\nYou may call one or more functions to assist with the user query.\\n\\nYou are provided with function signatures within <tools></tools> XML tags:\\n<tools>\" }}\n    {%- for tool in tools %}\n        {{- \"\\n\" }}\n        {{- tool | tojson }}\n    {%- endfor %}\n    {{- \"\\n</tools>\\n\\nFor each function call, return a json object with function name and arguments within <tool_call></tool_call> XML tags:\\n<tool_call>\\n{\\\"name\\\": <function-name>, \\\"arguments\\\": <args-json-object>}\\n</tool_call><|im_end|>\\n\" }}\n{%- else %}\n    {%- if messages[0].role == 'system' %}\n        {{- '<|im_start|>system\\n' + messages[0].content + '<|im_end|>\\n' }}\n    {%- endif %}\n{%- endif %}\n{%- set ns = namespace(multi_step_tool=true, last_query_index=messages|length - 1) %}\n{%- for message in messages[::-1] %}\n    {%- set index = (messages|length - 1) - loop.index0 %}\n    {%- if ns.multi_step_tool and message.role == \"user\" and not(message.content.startswith('<tool_response>') and message.content.endswith('</tool_response>')) %}\n        {%- set ns.multi_step_tool = false %}\n        {%- set ns.last_query_index = index %}\n    {%- endif %}\n{%- endfor %}\n{%- for message in messages %}\n    {%- if (message.role == \"user\") or (message.role == \"system\" and not loop.first) %}\n        {{- '<|im_start|>' + message.role + '\\n' + message.content + '<|im_end|>' + '\\n' }}\n    {%- elif message.role == \"assistant\" %}\n        {%- set content = message.content %}\n        {%- set reasoning_content = '' %}\n        {%- if message.reasoning_content is defined and message.reasoning_content is not none %}\n            {%- set reasoning_content = message.reasoning_content %}\n        {%- else %}\n            {%- if '</think>' in message.content %}\n                {%- set content = message.content.split('</think>')[-1].lstrip('\\n') %}\n                {%- set reasoning_content = message.content.split('</think>')[0].rstrip('\\n').split('<think>')[-1].lstrip('\\n') %}\n            {%- endif %}\n        {%- endif %}\n        {%- if loop.index0 > ns.last_query_index %}\n            {%- if loop.last or (not loop.last and reasoning_content) %}\n                {{- '<|im_start|>' + message.role + '\\n<think>\\n' + reasoning_content.strip('\\n') + '\\n</think>\\n\\n' + content.lstrip('\\n') }}\n            {%- else %}\n                {{- '<|im_start|>' + message.role + '\\n' + content }}\n            {%- endif %}\n        {%- else %}\n            {{- '<|im_start|>' + message.role + '\\n' + content }}\n        {%- endif %}\n        {%- if message.tool_calls %}\n            {%- for tool_call in message.tool_calls %}\n                {%- if (loop.first and content) or (not loop.first) %}\n                    {{- '\\n' }}\n                {%- endif %}\n                {%- if tool_call.function %}\n                    {%- set tool_call = tool_call.function %}\n                {%- endif %}\n                {{- '<tool_call>\\n{\"name\": \"' }}\n                {{- tool_call.name }}\n                {{- '\", \"arguments\": ' }}\n                {%- if tool_call.arguments is string %}\n                    {{- tool_call.arguments }}\n                {%- else %}\n                    {{- tool_call.arguments | tojson }}\n                {%- endif %}\n                {{- '}\\n</tool_call>' }}\n            {%- endfor %}\n        {%- endif %}\n        {{- '<|im_end|>\\n' }}\n    {%- elif message.role == \"tool\" %}\n        {%- if loop.first or (messages[loop.index0 - 1].role != \"tool\") %}\n            {{- '<|im_start|>user' }}\n        {%- endif %}\n        {{- '\\n<tool_response>\\n' }}\n        {{- message.content }}\n        {{- '\\n</tool_response>' }}\n        {%- if loop.last or (messages[loop.index0 + 1].role != \"tool\") %}\n            {{- '<|im_end|>\\n' }}\n        {%- endif %}\n    {%- endif %}\n{%- endfor %}\n{%- if add_generation_prompt %}\n    {{- '<|im_start|>assistant\\n' }}\n    {%- if enable_thinking is defined and enable_thinking is false %}\n        {{- '<think>\\n\\n</think>\\n\\n' }}\n    {%- endif %}\n{%- endif %}",
+        "chat_template_caps": {
+          "supports_object_arguments": true,
+          "supports_parallel_tool_calls": true,
+          "supports_preserve_reasoning": false,
+          "supports_string_content": true,
+          "supports_system_role": true,
+          "supports_tool_calls": true,
+          "supports_tools": true,
+          "supports_typed_content": false
+        },
+        "bos_token": "<|endoftext|>",
+        "eos_token": "<|im_end|>",
+        "build_info": "b1-f5b9bd3",
+        "is_sleeping": false,
+        "cors_proxy_enabled": false
+      },
+      "sha256": "699936b83664f71a4c1d129a1e10b02c1909e8edfdd32962cea75259f4f92093"
+    },
+    "templates": {
+      "sentence": {
+        "name": "frames.v1",
+        "sha256": "764b9b3db52ab23b3686824ebce2fbe18d1ecdd0fb1c32b5f96cfa2e795cf685"
+      },
+      "json": {
+        "name": "branch.v2",
+        "sha256": "ced2b702a8bfc7f42d06f7d5cf984b1c77311b378bca39e6dd96dc6034502dbc"
+      }
+    },
+    "entities": [
+      "the boy",
+      "the villagers",
+      "the wolf"
+    ],
+    "entitiesSha256": "0a1b8d9390756a8d75508c66f35a663663bbadd6a43b013d4a93d289a5713e0d",
+    "grammar": "root ::= \"Then \" actor \" \" action \", and now \" outcome \".\"\nactor ::= \"the villagers\" | \"the wolf\" | \"the boy\"\naction ::= edge mid{0,78} edge\noutcome ::= edge mid{0,168} edge\nedge ::= [a-zA-Z0-9']\nmid ::= edge | \" \"\n",
+    "grammarSha256": "02d4b293b6d7c5f77d92aaf0347a9cc2797a215743e5959b33a714ea0f41885c",
+    "generatedAt": "2026-09-24T02:00:17.841Z"
+  },
+  "results": [
+    {
+      "nodeId": "cw_cry3",
+      "path": [
+        "cw_watch",
+        "cw_cry1",
+        "cw_run1",
+        "cw_laugh",
+        "cw_cry2",
+        "cw_run2",
+        "cw_doubt",
+        "cw_wolf",
+        "cw_cry3"
+      ],
+      "history": [
+        "Then the villagers send the boy up the hillside to watch the flock, and now the boy is alone with the flock on the hillside and the villagers are in earshot below.",
+        "Then the boy shouts that a wolf is at the flock for the fun of it, and now the boy has raised the alarm and there is no wolf.",
+        "Then the villagers drop their work and run up the hill, and now the villagers are at the flock with nothing to fight.",
+        "Then the boy laughs at them for coming, and now the villagers go back down knowing the boy called them for a joke.",
+        "Then the boy shouts wolf a second time, and now the boy has raised the alarm again and there is still no wolf.",
+        "Then the villagers climb the hill once more, and now the villagers stand at the flock and again find nothing.",
+        "Then the villagers agree among themselves that his cry means nothing, and now the villagers will not come again and the boy does not know it.",
+        "Then the wolf comes out of the trees to the flock, and now a wolf is among the sheep and the boy is alone with it.",
+        "Then the boy shouts wolf a third time and means it, and now the boy has raised the alarm truthfully."
+      ],
+      "arms": {
+        "sentence": {
+          "prompt": "STORY: The Tortoise and the Hare\nThen the hare boasts that nothing on the road can outrun him, and now the hare has staked his name on his speed.\nThen the tortoise takes the boast seriously and names a course, and now a race is agreed and the course is set.\nThen the fox drops his paw to start them, and now both runners are on the road.\nNEXT EVENT: Then the hare opens a lead wide enough to look settled, and now the hare is far ahead and the tortoise is out of sight behind him.\n\nSTORY: The Tortoise and the Hare\nThen the hare boasts that nothing on the road can outrun him, and now the hare has staked his name on his speed.\nThen the tortoise takes the boast seriously and names a course, and now a race is agreed and the course is set.\nThen the fox drops his paw to start them, and now both runners are on the road.\nThen the hare opens a lead wide enough to look settled, and now the hare is far ahead and the tortoise is out of sight behind him.\nThen the hare lies down at the roadside to rest, and now the hare is asleep and the gap has stopped growing.\nNEXT EVENT: Then the tortoise holds a pace that does not depend on the gap, and now the tortoise is still moving while the hare is not.\n\nSTORY: The Boy Who Cried Wolf\nThen the villagers send the boy up the hillside to watch the flock, and now the boy is alone with the flock on the hillside and the villagers are in earshot below.\nThen the boy shouts that a wolf is at the flock for the fun of it, and now the boy has raised the alarm and there is no wolf.\nThen the villagers drop their work and run up the hill, and now the villagers are at the flock with nothing to fight.\nThen the boy laughs at them for coming, and now the villagers go back down knowing the boy called them for a joke.\nThen the boy shouts wolf a second time, and now the boy has raised the alarm again and there is still no wolf.\nThen the villagers climb the hill once more, and now the villagers stand at the flock and again find nothing.\nThen the villagers agree among themselves that his cry means nothing, and now the villagers will not come again and the boy does not know it.\nThen the wolf comes out of the trees to the flock, and now a wolf is among the sheep and the boy is alone with it.\nThen the boy shouts wolf a third time and means it, and now the boy has raised the alarm truthfully.\nNEXT EVENT: ",
+          "promptSha256": "7d321bf80cc655a8caa71af62fe309c1ab27331dc8143270cca242f641d773ea",
+          "constrained": true,
+          "fillActors": 2,
+          "samples": [
+            {
+              "arm": "sentence",
+              "seed": 1475343052,
+              "raw": "Then the villagers see the wolf and run up the hill, and now the villagers arrive too late and the boy has been bitten by the wolf.",
+              "stopType": "eos",
+              "cached": true,
+              "cacheKey": "f1aa7d5e639771e4",
+              "sentence": "Then the villagers see the wolf and run up the hill, and now the villagers arrive too late and the boy has been bitten by the wolf.",
+              "frame": {
+                "actor": "the villagers",
+                "action": "see the wolf and run up the hill",
+                "outcome": "the villagers arrive too late and the boy has been bitten by the wolf"
+              },
+              "expr": "the villagers | see the wolf and run up the hill | the villagers arrive too late and the boy has been bitten by the wolf",
+              "display": "Then the villagers see the wolf and run up the hill, and now the villagers arrive too late and the boy has been bitten by the wolf."
+            },
+            {
+              "arm": "sentence",
+              "seed": 1492120671,
+              "raw": "Then the villagers come running up the hill, and now the villagers find the boy dead and the sheep dead in the sheep pen with the wolf among them.",
+              "stopType": "eos",
+              "cached": true,
+              "cacheKey": "e9df6c8b8e346581",
+              "sentence": "Then the villagers come running up the hill, and now the villagers find the boy dead and the sheep dead in the sheep pen with the wolf among them.",
+              "frame": {
+                "actor": "the villagers",
+                "action": "come running up the hill",
+                "outcome": "the villagers find the boy dead and the sheep dead in the sheep pen with the wolf among them"
+              },
+              "expr": "the villagers | come running up the hill | the villagers find the boy dead and the sheep dead in the sheep pen with the wolf among them",
+              "display": "Then the villagers come running up the hill, and now the villagers find the boy dead and the sheep dead in the sheep pen with the wolf among them."
+            },
+            {
+              "arm": "sentence",
+              "seed": 1508898290,
+              "raw": "Then the villagers come rushing up the hillside, and now the villagers are at the flock to face the wolf.",
+              "stopType": "eos",
+              "cached": true,
+              "cacheKey": "f67aa926978095e0",
+              "sentence": "Then the villagers come rushing up the hillside, and now the villagers are at the flock to face the wolf.",
+              "frame": {
+                "actor": "the villagers",
+                "action": "come rushing up the hillside",
+                "outcome": "the villagers are at the flock to face the wolf"
+              },
+              "expr": "the villagers | come rushing up the hillside | the villagers are at the flock to face the wolf",
+              "display": "Then the villagers come rushing up the hillside, and now the villagers are at the flock to face the wolf."
+            },
+            {
+              "arm": "sentence",
+              "seed": 1525675909,
+              "raw": "Then the villagers arrive in time and kill the wolf, and now the villagers kill the wolf before it can hurt the flock.",
+              "stopType": "eos",
+              "cached": true,
+              "cacheKey": "f43fc159577d6a93",
+              "sentence": "Then the villagers arrive in time and kill the wolf, and now the villagers kill the wolf before it can hurt the flock.",
+              "frame": {
+                "actor": "the villagers",
+                "action": "arrive in time and kill the wolf",
+                "outcome": "the villagers kill the wolf before it can hurt the flock"
+              },
+              "expr": "the villagers | arrive in time and kill the wolf | the villagers kill the wolf before it can hurt the flock",
+              "display": "Then the villagers arrive in time and kill the wolf, and now the villagers kill the wolf before it can hurt the flock."
+            },
+            {
+              "arm": "sentence",
+              "seed": 1408232576,
+              "raw": "Then the villagers drop their work and run up the hill, and now the villagers are at the flock with a wolf to fight.",
+              "stopType": "eos",
+              "cached": true,
+              "cacheKey": "4a459072e228ceec",
+              "sentence": "Then the villagers drop their work and run up the hill, and now the villagers are at the flock with a wolf to fight.",
+              "frame": {
+                "actor": "the villagers",
+                "action": "drop their work and run up the hill",
+                "outcome": "the villagers are at the flock with a wolf to fight"
+              },
+              "expr": "the villagers | drop their work and run up the hill | the villagers are at the flock with a wolf to fight",
+              "display": "Then the villagers drop their work and run up the hill, and now the villagers are at the flock with a wolf to fight."
+            },
+            {
+              "arm": "sentence",
+              "seed": 1425010195,
+              "raw": "Then the villagers see the wolf and drop their work and run up the hillside, and now the villagers arrive and the flock is safe from the wolf.",
+              "stopType": "eos",
+              "cached": true,
+              "cacheKey": "a12922922cab11c4",
+              "sentence": "Then the villagers see the wolf and drop their work and run up the hillside, and now the villagers arrive and the flock is safe from the wolf.",
+              "frame": {
+                "actor": "the villagers",
+                "action": "see the wolf and drop their work and run up the hillside",
+                "outcome": "the villagers arrive and the flock is safe from the wolf"
+              },
+              "expr": "the villagers | see the wolf and drop their work and run up the hillside | the villagers arrive and the flock is safe from the wolf",
+              "display": "Then the villagers see the wolf and drop their work and run up the hillside, and now the villagers arrive and the flock is safe from the wolf."
+            },
+            {
+              "arm": "sentence",
+              "seed": 1441787814,
+              "raw": "Then the villagers rush up the hill with their spears and catch the wolf, and now the villagers rescue the flock and punish the boy who has told them the truth the first time.",
+              "stopType": "eos",
+              "cached": true,
+              "cacheKey": "706c954bf7018931",
+              "sentence": "Then the villagers rush up the hill with their spears and catch the wolf, and now the villagers rescue the flock and punish the boy who has told them the truth the first time.",
+              "frame": {
+                "actor": "the villagers",
+                "action": "rush up the hill with their spears and catch the wolf",
+                "outcome": "the villagers rescue the flock and punish the boy who has told them the truth the first time"
+              },
+              "expr": "the villagers | rush up the hill with their spears and catch the wolf | the villagers rescue the flock and punish the boy who has told them the truth the first time",
+              "display": "Then the villagers rush up the hill with their spears and catch the wolf, and now the villagers rescue the flock and punish the boy who has told them the truth the first time."
+            },
+            {
+              "arm": "sentence",
+              "seed": 1458565433,
+              "raw": "Then the villagers come running up the hill, and now the villagers arrive to find the boy and the flock slaughtered.",
+              "stopType": "eos",
+              "cached": true,
+              "cacheKey": "094cff404c533982",
+              "sentence": "Then the villagers come running up the hill, and now the villagers arrive to find the boy and the flock slaughtered.",
+              "frame": {
+                "actor": "the villagers",
+                "action": "come running up the hill",
+                "outcome": "the villagers arrive to find the boy and the flock slaughtered"
+              },
+              "expr": "the villagers | come running up the hill | the villagers arrive to find the boy and the flock slaughtered",
+              "display": "Then the villagers come running up the hill, and now the villagers arrive to find the boy and the flock slaughtered."
+            },
+            {
+              "arm": "sentence",
+              "seed": 1609564004,
+              "raw": "Then the villagers come and help the boy kill the wolf, and now the wolf is dead and the boy is rescued with the villagers' help.",
+              "stopType": "eos",
+              "cached": true,
+              "cacheKey": "dc56cc67d210439d",
+              "sentence": "Then the villagers come and help the boy kill the wolf, and now the wolf is dead and the boy is rescued with the villagers' help.",
+              "frame": {
+                "actor": "the villagers",
+                "action": "come and help the boy kill the wolf",
+                "outcome": "the wolf is dead and the boy is rescued with the villagers' help"
+              },
+              "expr": "the villagers | come and help the boy kill the wolf | the wolf is dead and the boy is rescued with the villagers' help",
+              "display": "Then the villagers come and help the boy kill the wolf, and now the wolf is dead and the boy is rescued with the villagers' help."
+            },
+            {
+              "arm": "sentence",
+              "seed": 1626341623,
+              "raw": "Then the villagers run up the hill in terror, and now the villagers are at the flock with nothing to fight but the boy does not know it.",
+              "stopType": "eos",
+              "cached": true,
+              "cacheKey": "ce0af13040570c32",
+              "sentence": "Then the villagers run up the hill in terror, and now the villagers are at the flock with nothing to fight but the boy does not know it.",
+              "frame": {
+                "actor": "the villagers",
+                "action": "run up the hill in terror",
+                "outcome": "the villagers are at the flock with nothing to fight but the boy does not know it"
+              },
+              "expr": "the villagers | run up the hill in terror | the villagers are at the flock with nothing to fight but the boy does not know it",
+              "display": "Then the villagers run up the hill in terror, and now the villagers are at the flock with nothing to fight but the boy does not know it."
+            },
+            {
+              "arm": "sentence",
+              "seed": 808663791,
+              "forcedActor": "the boy",
+              "raw": "Then the boy sees that the villagers are at the flock and will stop the wolf, and now the villagers will help to stop the wolf and the boy is safe from it.",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "8e2ae05ba3afd5c5",
+              "sentence": "Then the boy sees that the villagers are at the flock and will stop the wolf, and now the villagers will help to stop the wolf and the boy is safe from it.",
+              "frame": {
+                "actor": "the boy",
+                "action": "sees that the villagers are at the flock and will stop the wolf",
+                "outcome": "the villagers will help to stop the wolf and the boy is safe from it"
+              },
+              "expr": "the boy | sees that the villagers are at the flock and will stop the wolf | the villagers will help to stop the wolf and the boy is safe from it",
+              "display": "Then the boy sees that the villagers are at the flock and will stop the wolf, and now the villagers will help to stop the wolf and the boy is safe from it."
+            },
+            {
+              "arm": "sentence",
+              "seed": 791886172,
+              "forcedActor": "the boy",
+              "raw": "Then the boy calls out for help and the villagers do not believe him, and now the boy has cried out for help and the villagers will not come to him again.",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "1899779a9fe1485c",
+              "sentence": "Then the boy calls out for help and the villagers do not believe him, and now the boy has cried out for help and the villagers will not come to him again.",
+              "frame": {
+                "actor": "the boy",
+                "action": "calls out for help and the villagers do not believe him",
+                "outcome": "the boy has cried out for help and the villagers will not come to him again"
+              },
+              "expr": "the boy | calls out for help and the villagers do not believe him | the boy has cried out for help and the villagers will not come to him again",
+              "display": "Then the boy calls out for help and the villagers do not believe him, and now the boy has cried out for help and the villagers will not come to him again."
+            },
+            {
+              "arm": "sentence",
+              "seed": 1352155619,
+              "forcedActor": "the wolf",
+              "raw": "Then the wolf breaks one sheep and runs to the village, and now the wolf has escaped and the villagers are on their way to hunt it.",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "5c440d1b5ee50be5",
+              "sentence": "Then the wolf breaks one sheep and runs to the village, and now the wolf has escaped and the villagers are on their way to hunt it.",
+              "frame": {
+                "actor": "the wolf",
+                "action": "breaks one sheep and runs to the village",
+                "outcome": "the wolf has escaped and the villagers are on their way to hunt it"
+              },
+              "expr": "the wolf | breaks one sheep and runs to the village | the wolf has escaped and the villagers are on their way to hunt it",
+              "display": "Then the wolf breaks one sheep and runs to the village, and now the wolf has escaped and the villagers are on their way to hunt it."
+            },
+            {
+              "arm": "sentence",
+              "seed": 1335378000,
+              "forcedActor": "the wolf",
+              "raw": "Then the wolf runs and the villagers run and the boy runs too, and now they are all running together and the wolf is at bay.",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "2e99d7f9a87d7797",
+              "sentence": "Then the wolf runs and the villagers run and the boy runs too, and now they are all running together and the wolf is at bay.",
+              "frame": {
+                "actor": "the wolf",
+                "action": "runs and the villagers run and the boy runs too",
+                "outcome": "they are all running together and the wolf is at bay"
+              },
+              "expr": "the wolf | runs and the villagers run and the boy runs too | they are all running together and the wolf is at bay",
+              "display": "Then the wolf runs and the villagers run and the boy runs too, and now they are all running together and the wolf is at bay."
+            }
+          ],
+          "attempts": 10,
+          "refused": 0,
+          "truncated": 0,
+          "duplicates": 0,
+          "parseRate": 1,
+          "truncationRate": 0,
+          "saturated": false,
+          "allAttempts": [
+            {
+              "arm": "sentence",
+              "seed": 1475343052,
+              "raw": "Then the villagers see the wolf and run up the hill, and now the villagers arrive too late and the boy has been bitten by the wolf.",
+              "stopType": "eos",
+              "cached": true,
+              "cacheKey": "f1aa7d5e639771e4",
+              "sentence": "Then the villagers see the wolf and run up the hill, and now the villagers arrive too late and the boy has been bitten by the wolf.",
+              "frame": {
+                "actor": "the villagers",
+                "action": "see the wolf and run up the hill",
+                "outcome": "the villagers arrive too late and the boy has been bitten by the wolf"
+              },
+              "expr": "the villagers | see the wolf and run up the hill | the villagers arrive too late and the boy has been bitten by the wolf",
+              "display": "Then the villagers see the wolf and run up the hill, and now the villagers arrive too late and the boy has been bitten by the wolf."
+            },
+            {
+              "arm": "sentence",
+              "seed": 1492120671,
+              "raw": "Then the villagers come running up the hill, and now the villagers find the boy dead and the sheep dead in the sheep pen with the wolf among them.",
+              "stopType": "eos",
+              "cached": true,
+              "cacheKey": "e9df6c8b8e346581",
+              "sentence": "Then the villagers come running up the hill, and now the villagers find the boy dead and the sheep dead in the sheep pen with the wolf among them.",
+              "frame": {
+                "actor": "the villagers",
+                "action": "come running up the hill",
+                "outcome": "the villagers find the boy dead and the sheep dead in the sheep pen with the wolf among them"
+              },
+              "expr": "the villagers | come running up the hill | the villagers find the boy dead and the sheep dead in the sheep pen with the wolf among them",
+              "display": "Then the villagers come running up the hill, and now the villagers find the boy dead and the sheep dead in the sheep pen with the wolf among them."
+            },
+            {
+              "arm": "sentence",
+              "seed": 1508898290,
+              "raw": "Then the villagers come rushing up the hillside, and now the villagers are at the flock to face the wolf.",
+              "stopType": "eos",
+              "cached": true,
+              "cacheKey": "f67aa926978095e0",
+              "sentence": "Then the villagers come rushing up the hillside, and now the villagers are at the flock to face the wolf.",
+              "frame": {
+                "actor": "the villagers",
+                "action": "come rushing up the hillside",
+                "outcome": "the villagers are at the flock to face the wolf"
+              },
+              "expr": "the villagers | come rushing up the hillside | the villagers are at the flock to face the wolf",
+              "display": "Then the villagers come rushing up the hillside, and now the villagers are at the flock to face the wolf."
+            },
+            {
+              "arm": "sentence",
+              "seed": 1525675909,
+              "raw": "Then the villagers arrive in time and kill the wolf, and now the villagers kill the wolf before it can hurt the flock.",
+              "stopType": "eos",
+              "cached": true,
+              "cacheKey": "f43fc159577d6a93",
+              "sentence": "Then the villagers arrive in time and kill the wolf, and now the villagers kill the wolf before it can hurt the flock.",
+              "frame": {
+                "actor": "the villagers",
+                "action": "arrive in time and kill the wolf",
+                "outcome": "the villagers kill the wolf before it can hurt the flock"
+              },
+              "expr": "the villagers | arrive in time and kill the wolf | the villagers kill the wolf before it can hurt the flock",
+              "display": "Then the villagers arrive in time and kill the wolf, and now the villagers kill the wolf before it can hurt the flock."
+            },
+            {
+              "arm": "sentence",
+              "seed": 1408232576,
+              "raw": "Then the villagers drop their work and run up the hill, and now the villagers are at the flock with a wolf to fight.",
+              "stopType": "eos",
+              "cached": true,
+              "cacheKey": "4a459072e228ceec",
+              "sentence": "Then the villagers drop their work and run up the hill, and now the villagers are at the flock with a wolf to fight.",
+              "frame": {
+                "actor": "the villagers",
+                "action": "drop their work and run up the hill",
+                "outcome": "the villagers are at the flock with a wolf to fight"
+              },
+              "expr": "the villagers | drop their work and run up the hill | the villagers are at the flock with a wolf to fight",
+              "display": "Then the villagers drop their work and run up the hill, and now the villagers are at the flock with a wolf to fight."
+            },
+            {
+              "arm": "sentence",
+              "seed": 1425010195,
+              "raw": "Then the villagers see the wolf and drop their work and run up the hillside, and now the villagers arrive and the flock is safe from the wolf.",
+              "stopType": "eos",
+              "cached": true,
+              "cacheKey": "a12922922cab11c4",
+              "sentence": "Then the villagers see the wolf and drop their work and run up the hillside, and now the villagers arrive and the flock is safe from the wolf.",
+              "frame": {
+                "actor": "the villagers",
+                "action": "see the wolf and drop their work and run up the hillside",
+                "outcome": "the villagers arrive and the flock is safe from the wolf"
+              },
+              "expr": "the villagers | see the wolf and drop their work and run up the hillside | the villagers arrive and the flock is safe from the wolf",
+              "display": "Then the villagers see the wolf and drop their work and run up the hillside, and now the villagers arrive and the flock is safe from the wolf."
+            },
+            {
+              "arm": "sentence",
+              "seed": 1441787814,
+              "raw": "Then the villagers rush up the hill with their spears and catch the wolf, and now the villagers rescue the flock and punish the boy who has told them the truth the first time.",
+              "stopType": "eos",
+              "cached": true,
+              "cacheKey": "706c954bf7018931",
+              "sentence": "Then the villagers rush up the hill with their spears and catch the wolf, and now the villagers rescue the flock and punish the boy who has told them the truth the first time.",
+              "frame": {
+                "actor": "the villagers",
+                "action": "rush up the hill with their spears and catch the wolf",
+                "outcome": "the villagers rescue the flock and punish the boy who has told them the truth the first time"
+              },
+              "expr": "the villagers | rush up the hill with their spears and catch the wolf | the villagers rescue the flock and punish the boy who has told them the truth the first time",
+              "display": "Then the villagers rush up the hill with their spears and catch the wolf, and now the villagers rescue the flock and punish the boy who has told them the truth the first time."
+            },
+            {
+              "arm": "sentence",
+              "seed": 1458565433,
+              "raw": "Then the villagers come running up the hill, and now the villagers arrive to find the boy and the flock slaughtered.",
+              "stopType": "eos",
+              "cached": true,
+              "cacheKey": "094cff404c533982",
+              "sentence": "Then the villagers come running up the hill, and now the villagers arrive to find the boy and the flock slaughtered.",
+              "frame": {
+                "actor": "the villagers",
+                "action": "come running up the hill",
+                "outcome": "the villagers arrive to find the boy and the flock slaughtered"
+              },
+              "expr": "the villagers | come running up the hill | the villagers arrive to find the boy and the flock slaughtered",
+              "display": "Then the villagers come running up the hill, and now the villagers arrive to find the boy and the flock slaughtered."
+            },
+            {
+              "arm": "sentence",
+              "seed": 1609564004,
+              "raw": "Then the villagers come and help the boy kill the wolf, and now the wolf is dead and the boy is rescued with the villagers' help.",
+              "stopType": "eos",
+              "cached": true,
+              "cacheKey": "dc56cc67d210439d",
+              "sentence": "Then the villagers come and help the boy kill the wolf, and now the wolf is dead and the boy is rescued with the villagers' help.",
+              "frame": {
+                "actor": "the villagers",
+                "action": "come and help the boy kill the wolf",
+                "outcome": "the wolf is dead and the boy is rescued with the villagers' help"
+              },
+              "expr": "the villagers | come and help the boy kill the wolf | the wolf is dead and the boy is rescued with the villagers' help",
+              "display": "Then the villagers come and help the boy kill the wolf, and now the wolf is dead and the boy is rescued with the villagers' help."
+            },
+            {
+              "arm": "sentence",
+              "seed": 1626341623,
+              "raw": "Then the villagers run up the hill in terror, and now the villagers are at the flock with nothing to fight but the boy does not know it.",
+              "stopType": "eos",
+              "cached": true,
+              "cacheKey": "ce0af13040570c32",
+              "sentence": "Then the villagers run up the hill in terror, and now the villagers are at the flock with nothing to fight but the boy does not know it.",
+              "frame": {
+                "actor": "the villagers",
+                "action": "run up the hill in terror",
+                "outcome": "the villagers are at the flock with nothing to fight but the boy does not know it"
+              },
+              "expr": "the villagers | run up the hill in terror | the villagers are at the flock with nothing to fight but the boy does not know it",
+              "display": "Then the villagers run up the hill in terror, and now the villagers are at the flock with nothing to fight but the boy does not know it."
+            }
+          ],
+          "fill": {
+            "perMissingActor": 2,
+            "missing": [
+              "the boy",
+              "the wolf"
+            ],
+            "added": 4,
+            "attempts": 4,
+            "totalDraws": 14
+          }
+        }
+      }
+    }
+  ]
+}
