@@ -1,0 +1,362 @@
+{
+  "sentence:red_warn#4": [
+    null,
+    false,
+    true,
+    null
+  ],
+  "json:red_warn#7": [
+    null,
+    true,
+    true,
+    null
+  ],
+  "json:red_warn#6": [
+    null,
+    true,
+    true,
+    null
+  ],
+  "json:red_warn#4": [
+    null,
+    true,
+    true,
+    null
+  ],
+  "sentence:red_warn#7": [
+    null,
+    true,
+    true,
+    null
+  ],
+  "sentence:red_warn#8": [
+    null,
+    true,
+    false,
+    null
+  ],
+  "json:red_warn#2": [
+    null,
+    false,
+    false,
+    null
+  ],
+  "sentence:red_warn#0": [
+    null,
+    true,
+    false,
+    null
+  ],
+  "sentence:red_warn#1": [
+    null,
+    true,
+    true,
+    null
+  ],
+  "json:red_warn#5": [
+    null,
+    true,
+    true,
+    null
+  ],
+  "sentence:red_warn#6": [
+    null,
+    false,
+    true,
+    null
+  ],
+  "sentence:red_warn#9": [
+    null,
+    false,
+    true,
+    null
+  ],
+  "sentence:red_warn#5": [
+    null,
+    true,
+    true,
+    null
+  ],
+  "sentence:red_warn#2": [
+    null,
+    true,
+    false,
+    null
+  ],
+  "json:red_warn#0": [
+    null,
+    true,
+    true,
+    null
+  ],
+  "json:red_warn#1": [
+    null,
+    true,
+    true,
+    null
+  ],
+  "json:red_warn#9": [
+    null,
+    true,
+    true,
+    null
+  ],
+  "json:red_warn#3": [
+    null,
+    true,
+    true,
+    null
+  ],
+  "sentence:red_warn#3": [
+    null,
+    true,
+    true,
+    null
+  ],
+  "json:red_warn#8": [
+    null,
+    true,
+    true,
+    null
+  ],
+  "sentence:red_disguise#7": [
+    null,
+    false,
+    true,
+    null
+  ],
+  "sentence:red_disguise#1": [
+    null,
+    true,
+    true,
+    null
+  ],
+  "sentence:red_disguise#9": [
+    null,
+    true,
+    true,
+    null
+  ],
+  "json:red_disguise#6": [
+    null,
+    true,
+    true,
+    null
+  ],
+  "json:red_disguise#0": [
+    null,
+    false,
+    true,
+    null
+  ],
+  "sentence:red_disguise#5": [
+    null,
+    true,
+    true,
+    null
+  ],
+  "sentence:red_disguise#4": [
+    null,
+    true,
+    true,
+    null
+  ],
+  "sentence:red_disguise#2": [
+    null,
+    true,
+    true,
+    null
+  ],
+  "sentence:red_disguise#8": [
+    null,
+    false,
+    true,
+    null
+  ],
+  "sentence:red_disguise#6": [
+    null,
+    true,
+    true,
+    null
+  ],
+  "sentence:red_disguise#0": [
+    null,
+    false,
+    true,
+    null
+  ],
+  "json:red_disguise#7": [
+    null,
+    false,
+    true,
+    null
+  ],
+  "json:red_disguise#8": [
+    null,
+    true,
+    true,
+    null
+  ],
+  "json:red_disguise#9": [
+    null,
+    false,
+    true,
+    null
+  ],
+  "json:red_disguise#2": [
+    null,
+    false,
+    true,
+    null
+  ],
+  "json:red_disguise#5": [
+    null,
+    false,
+    true,
+    null
+  ],
+  "json:red_disguise#3": [
+    null,
+    false,
+    true,
+    null
+  ],
+  "json:red_disguise#4": [
+    null,
+    false,
+    true,
+    null
+  ],
+  "json:red_disguise#1": [
+    null,
+    false,
+    true,
+    null
+  ],
+  "sentence:red_disguise#3": [
+    null,
+    true,
+    true,
+    null
+  ],
+  "json:red_arrive#1": [
+    null,
+    false,
+    true,
+    null
+  ],
+  "sentence:red_arrive#8": [
+    null,
+    true,
+    false,
+    null
+  ],
+  "json:red_arrive#5": [
+    null,
+    false,
+    true,
+    null
+  ],
+  "sentence:red_arrive#3": [
+    null,
+    true,
+    true,
+    null
+  ],
+  "json:red_arrive#0": [
+    null,
+    true,
+    true,
+    null
+  ],
+  "json:red_arrive#3": [
+    null,
+    false,
+    true,
+    null
+  ],
+  "sentence:red_arrive#1": [
+    null,
+    true,
+    true,
+    null
+  ],
+  "sentence:red_arrive#5": [
+    null,
+    false,
+    false,
+    null
+  ],
+  "sentence:red_arrive#7": [
+    null,
+    true,
+    true,
+    null
+  ],
+  "json:red_arrive#2": [
+    null,
+    true,
+    false,
+    null
+  ],
+  "sentence:red_arrive#4": [
+    null,
+    true,
+    true,
+    null
+  ],
+  "json:red_arrive#7": [
+    null,
+    true,
+    true,
+    null
+  ],
+  "sentence:red_arrive#2": [
+    null,
+    false,
+    true,
+    null
+  ],
+  "json:red_arrive#9": [
+    null,
+    false,
+    true,
+    null
+  ],
+  "sentence:red_arrive#0": [
+    null,
+    false,
+    true,
+    null
+  ],
+  "sentence:red_arrive#9": [
+    null,
+    false,
+    true,
+    null
+  ],
+  "json:red_arrive#6": [
+    null,
+    false,
+    true,
+    null
+  ],
+  "sentence:red_arrive#6": [
+    null,
+    false,
+    true,
+    null
+  ],
+  "json:red_arrive#4": [
+    null,
+    false,
+    true,
+    null
+  ],
+  "json:red_arrive#8": [
+    null,
+    false,
+    true,
+    null
+  ]
+}

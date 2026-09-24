@@ -1683,3 +1683,88 @@ fresh seed, ≤N tries) is the honest mechanism, but it is apparatus and should
 be built only against a decision that it earns its judge calls — i.e. after a
 larger batch confirms the non-event rate is worth a per-candidate judge pass.
 Do not build the syntactic filter; it was measured and it does not work.
+
+---
+
+## Larger cold batch — pre-registration (2026-09-24, written before drawing)
+
+Open item 1 said quality is undecided at n=30 and needs a larger cold batch.
+This is that batch. Config, fixed before any sample exists:
+
+- 4B CUDA profile, K=10 per arm per node, both arms, run seed 31, no fill,
+  no `--fast` (replayable).
+- Ten nodes nobody has graded: criedWolf `cw_run1 cw_cry2 cw_doubt cw_cry3`
+  (the story has never been A/B-probed), trojanHorse `th_sail th_ignore
+  th_enter`, red `red_warn red_disguise red_arrive`.
+- Rater: Claude, cold, on the trimmed instrument (`consistent`, `advances`),
+  via `--labels --rater claude`. Samples read in grade.js's shuffle order.
+
+Decision rule, per arm over ~100 samples: SE of a difference of two
+proportions near 0.65 is ≈0.067, so a `usable` gap under 13 points is a TIE
+and gets reported as one. The failure-mode claim (sentence fails by silence,
+json by contradiction) is tested separately: among each arm's failures, the
+share that are `advances=no` vs `consistent=no`. If the sentence arm's
+failures are not majority non-advance, the "fails safe" claim is falsified.
+
+## Larger cold batch — result (2026-09-24)
+
+Files: `cont_criedWolf_cw_run1-cw_cry2-cw_doubt-cw_cry3.json`,
+`cont_trojanHorse_th_sail-th_ignore-th_enter.json`,
+`cont_red_red_warn-red_disguise-red_arrive.json`, each with
+`labels_cold_<story>.claude.json` and `.graded.claude.json`. Graded cold by
+Claude, in shuffle order under opaque indices (the surface format still gives
+the arm away, as always).
+
+| per arm, n=100 | consistent | advances | usable |
+|---|---|---|---|
+| sentence | 66 | 91 | **61** |
+| json | 58 | 88 | **50** |
+
+By story, usable sentence/json: criedWolf 25/23 (of 40), trojanHorse 21/14,
+red 15/13. Pooled with the 2026-09-12 cold batch (n=130 per arm): 80 vs 68.
+
+**Quality: a TIE under the pre-registered rule.** The gap is 11 points,
+against a 13-point threshold. It points the same way as every earlier batch,
+though, and the pooled 62% vs 52% is suggestive. A few more batches would
+settle it; the Lab panel's A/B tool now produces them.
+
+**The "fails safe" claim is FALSIFIED.** Pre-registered test: among each
+arm's failures, the share that are non-events vs contradictions.
+
+| failures | total | inconsistent | non-event | non-event only |
+|---|---|---|---|---|
+| sentence | 39 | 34 | 9 | 5 |
+| json | 50 | 42 | 12 | 8 |
+
+Both arms fail mostly by contradiction. The sentence boundary does not
+characteristically fail by silence; the 2026-09-12 "asymmetry" section was
+read off n=30 on red and does not replicate. Retire the "non-corrupting
+failure mode" argument for frames.
+
+**Where the sentence arm's contradictions come from: the story's own cycle.**
+`cw_cry3` scored 0/10 consistent for sentences (json 7/10). All ten are the
+villagers running up the hill. The history has them do exactly that twice
+(lines 3 and 6) before line 7 establishes they will not come again. The
+sentence arm continues the *surface pattern* of the history and ignores the
+state line that breaks it. The same shape shows at `red_disguise`/`red_arrive`
+for the json arm (2/10, 2/10): events placed where the state says the actor is
+not (Red in the house before she arrives, in the woods after she entered).
+Both are one failure — the model tracks the event sequence and loses the
+current location/intention state. That is the "state consistency" wall
+recorded at every earlier step, now measured at n=100 per arm.
+
+Grading rule used for `consistent`, stated so the numbers are reproducible:
+an event contradicting an established *intention* (villagers "will not come
+again") counted as inconsistent unless the sample gave a cause for the change.
+That rule alone decides `cw_cry3` (and `cw_doubt` #41/#56) — a laxer reading
+would lift the sentence arm's criedWolf consistency by about 10 samples.
+
+### Open list, updated
+
+- Item 1 (quality): still a tie at n=100; lean sentence. More batches, not
+  more analysis.
+- Item 2 (non-event redraw loop): **drop it.** Non-events are 9% of sentence
+  samples and a minority of failures; the redraw loop targeted the wrong mode.
+- New: the dominant failure in both arms is state inconsistency. The one
+  lever measured so far that touches it is structural — `--fill-actors`
+  (a different actor breaks the cycle at `cw_cry3`) — untested on this node.
