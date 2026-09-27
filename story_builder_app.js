@@ -89,7 +89,6 @@
     showEdgeLabels: true,
     search: "",
     viewMode: "all",
-    promptText: "",
     draggingId: null,
     lockedIds: new Set(),
     // Nodes a drag dropped in place (kept fx/fy so they STAY put). Distinct
@@ -219,12 +218,9 @@
     el.searchInput.addEventListener("input", () => { state.search = el.searchInput.value.trim().toLowerCase(); renderGraph(); });
     el.viewMode.addEventListener("change", () => { state.viewMode = el.viewMode.value; renderAll(); });
     el.saveNodeBtn.addEventListener("click", saveSelectedNodeEdits);
-    el.buildPromptBtn.addEventListener("click", () => showPrompt(true));
-    el.copyPromptBtn.addEventListener("click", copyPrompt);
     el.importJsonBtn.addEventListener("click", importFromTextArea);
     el.autoGrowBtn.addEventListener("click", autoGrow);
-    el.growSource.addEventListener("change", () => { el.growRejoin.disabled = el.growSource.value !== "frames"; });
-    el.growRejoin.disabled = el.growSource.value !== "frames";
+    el.growSource.addEventListener("change", () => { el.growPrompt.disabled = el.growSource.value === "baseline"; });
     el.probeBtn.addEventListener("click", runProbe);
     el.probeShowBtn.addEventListener("click", openProbe);
     el.probeList.addEventListener("click", onProbeClick);
@@ -639,7 +635,7 @@
     el.selectedNode.innerHTML = `
       <h3>${escapeHtml(selected.label)}</h3>
       <div class="expr">${escapeHtml(selected.expr)}</div>
-      ${selected.frame && window.StoryDagFrames ? `<div>${escapeHtml(window.StoryDagFrames.render(selected.frame))}</div>` : ""}
+      ${selected.actor ? `<div><strong>Actor:</strong> ${escapeHtml(selected.actor)}</div>` : ""}
       <div>${escapeHtml(selected.state || "No state note.")}</div>
       ${selected.reading ? `<div class="muted">${escapeHtml(selected.reading)}</div>` : ""}
       ${selected.delta ? `<div><strong>Changed:</strong> ${escapeHtml(selected.delta)}</div>` : ""}
@@ -845,51 +841,8 @@
     return ranks;
   }
 
-  function showPrompt(openDialog = false) {
-    const selected = getNode(state.selectedId);
-    if (!selected) return toast("Select a node first", true);
-    const downstream = state.graph.edges.filter((edgeItem) => edgeItem.from === selected.id).map((edgeItem) => getNode(edgeItem.to)).filter(Boolean);
-    state.promptText = `You are helping enrich a causal narrative DAG. Return only JSON.\n\n${JSON.stringify({
-      task: el.assistInstruction.value,
-      story: state.graph.meta.title,
-      selected,
-      downstream,
-      allowedEdgeTypes: EDGE_TYPES,
-      requiredJsonShape: {
-        branches: [{
-          label: "short node label",
-          expr: "expression(actor, object)",
-          state: "state after this branch",
-          delta: "what changed from the original story",
-          invariants: "facts preserved from the original story",
-          tags: ["counterfactual"],
-          rejoinTargetId: "optional existing node id"
-        }]
-      },
-      constraints: [
-        "Preserve DAG acyclicity.",
-        "Make causal change explicit, not just a prose variation.",
-        "Prefer one branch that rejoins a later node and one branch that remains open.",
-        "Do not rewrite upstream nodes."
-      ]
-    }, null, 2)}`;
-    if (openDialog) showDialog("LLM assist prompt", state.promptText);
-    return state.promptText;
-  }
-
-  async function copyPrompt() {
-    const text = showPrompt(false);
-    try {
-      await navigator.clipboard.writeText(text);
-      toast("Prompt copied");
-    } catch {
-      showDialog("LLM assist prompt", text);
-      toast("Clipboard unavailable; opened prompt", true);
-    }
-  }
-
   function importFromTextArea() {
-    const raw = el.importText.value.trim() || el.jsonText.value.trim();
+    const raw = el.jsonText.value.trim();
     if (!raw) return toast("Paste JSON first", true);
     let data;
     try {
@@ -1015,12 +968,6 @@
     return `<table class="metrics">${head}${rows}</table>`;
   }
 
-  function proposerLine(p) {
-    if (!p) return "";
-    const rejoin = p.rejoinAsked ? ` · rejoin asked ${p.rejoinAsked}, named ${p.rejoinNamed}, none ${p.rejoinNone}` : "";
-    return `<div>frame draws ${p.draws} over ${p.expansions} expansions · forced ${p.forced} · unparseable ${p.parseFailures} · truncated ${p.truncated}${rejoin}</div>`;
-  }
-
   // Loads a grown graph and marks the run's own nodes (`.fresh`).
   function showGrown(graph, runId, from) {
     importGraph(graph, `Loaded ${runId} — its nodes are outlined green`);
@@ -1044,12 +991,11 @@
           width: +el.growWidth.value || 1,
           maxNodes: +el.growMaxNodes.value || 1,
           seed: +el.growSeed.value || 1,
-          rejoin: source === "frames" && el.growRejoin.checked
+          prompt: el.growPrompt.value
         })).json();
         showGrown(data.graph, data.runId, from);
         el.growReport.innerHTML = `<div>${escapeHtml(data.runId)} · +${data.stats.created} nodes, ${data.stats.mergedDuplicates} merged, ${data.stats.rejectedNullTransitions || 0} null, ${data.stats.rejectedCycles} cyclic</div>`
-          + proposerLine(data.proposerStats)
-          + metricsTable(data.score, data.baseline, source);
+          + metricsTable(data.score, data.baseline, source === "baseline" ? "baseline" : el.growPrompt.value);
         loadRuns();
       } catch (error) {
         bridgeError(error, "Grow");
@@ -1078,37 +1024,32 @@
     try {
       const data = await (await bridge(`/runs/${encodeURIComponent(runId)}`)).json();
       showGrown(data.graph, runId, data.manifest.traversal && data.manifest.traversal.from);
-      const source = (data.manifest.source && data.manifest.source.name) || "model";
-      el.growReport.innerHTML = `<div>${escapeHtml(runId)} (recorded)</div>`
-        + proposerLine(data.manifest.proposerStats)
-        + metricsTable(data.score, null, source);
+      const label = data.manifest.source ? data.manifest.source.name : data.manifest.prompt.template;
+      el.growReport.innerHTML = `<div>${escapeHtml(runId)} (recorded)</div>` + metricsTable(data.score, null, label);
     } catch (error) {
       bridgeError(error, "Load run");
     }
   }
 
-  // ── Lab: continuations A/B (experiments/continue_probe.js + grade.js) ────
-  // Draws K candidates per arm at the selected node, shows them in grade.js's
-  // seeded shuffle with the arm hidden, and records y/n answers as a grade.js
-  // graded file. Arms are revealed once grades are saved.
+  // ── Lab: prompt A/B (experiments/continue_probe.js + grade.js) ──────────
+  // Draws K alternatives per prompt version at the selected node, shows them
+  // in grade.js's seeded shuffle with the version hidden, and records y/n
+  // answers as a grade.js graded file. Versions are revealed once saved.
+  const PROBE_ARMS = ["branch.v2", "branch.v3"];
 
   const GRADE_KEYS = ["consistent", "advances"];
 
   async function runProbe() {
     const from = state.selectedId;
     if (!from) return toast("Select a node to continue from", true);
-    const arms = [el.probeSentence.checked && "sentence", el.probeJson.checked && "json"].filter(Boolean);
-    if (!arms.length) return toast("Pick at least one arm", true);
     await busy(el.probeBtn, async () => {
       try {
         const response = await bridge("/continue", {
           graph: state.graph,
           from,
-          arms,
+          arms: PROBE_ARMS,
           k: +el.probeK.value || 1,
-          seed: +el.probeSeed.value || 1,
-          fillActors: el.probeFill.checked ? 1 : 0,
-          fast: el.probeFast.checked
+          seed: +el.probeSeed.value || 1
         });
         let done = null;
         await readNdjson(response, (event) => {
@@ -1150,7 +1091,7 @@
   function openProbe() {
     const probe = state.probe;
     if (!probe) return;
-    el.probeTitle.textContent = `Continuations after “${getNode(probe.from)?.label || probe.from}”`;
+    el.probeTitle.textContent = `Alternatives after “${getNode(probe.from)?.label || probe.from}”`;
     el.probeHistory.innerHTML = probe.history.map((line) => `<li>${escapeHtml(line)}</li>`).join("");
     renderProbeList();
     renderTally(probe.tally);
@@ -1166,7 +1107,7 @@
         <button type="button" data-i="${index}" data-key="${key}" data-value="yes" class="${given[key] === true ? "on-yes" : ""}">y</button>
         <button type="button" data-i="${index}" data-key="${key}" data-value="no" class="${given[key] === false ? "on-no" : ""}">n</button>`).join(" ");
       const arm = probe.revealed
-        ? `<span class="arm-tag ${item.arm}">${item.arm}${item.forcedActor ? " · forced actor" : ""}</span>`
+        ? `<span class="arm-tag${item.arm === "branch.v3" ? " v3" : ""}">${escapeHtml(item.arm)}</span>`
         : "";
       return `<div class="probe-item${complete ? " done" : ""}">
         <div class="probe-text">${index + 1}. ${escapeHtml(item.display)}</div>
@@ -1186,30 +1127,25 @@
     renderProbeList();
   }
 
-  // A sentence candidate becomes a frame-carrying node exactly as the
-  // grower's frames source would make it (frame_proposer.js), so the probe
-  // can continue from it; a json candidate becomes the branch it proposed.
+  // A candidate becomes the branch it proposed, rejoin included — the same
+  // node the grower would make from it.
   function addProbeCandidate(item) {
-    const frames = window.StoryDagFrames;
-    const fields = item.node.frame
-      ? {
-        label: `${item.node.frame.actor} ${item.node.frame.action}`,
-        expr: frames.frameExpr(item.node.frame),
-        state: item.node.frame.outcome,
-        frame: item.node.frame
-      }
-      : {
-        label: item.node.branch.label || item.node.branch.expr,
-        expr: item.node.branch.expr,
-        state: item.node.branch.state || "",
-        delta: item.node.branch.delta || "",
-        invariants: item.node.branch.invariants || ""
-      };
-    const made = insertBranch(state.probe.from, { ...fields, tags: ["counterfactual", "probe"], createdBy: "probe" });
+    const branch = item.branch;
+    const rejoin = branch.rejoinTargetId || (branch.rejoin && branch.rejoin !== "none" ? branch.rejoin : "");
+    const made = insertBranch(state.probe.from, {
+      label: branch.label || branch.expr,
+      expr: branch.expr,
+      state: branch.state || "",
+      delta: branch.delta || "",
+      invariants: branch.invariants || "",
+      ...(branch.actor ? { actor: branch.actor } : {}),
+      tags: ["counterfactual", "probe"],
+      createdBy: "probe"
+    }, getNode(rejoin) ? rejoin : "");
     if (made.error) return toast(made.error, true);
     state.selectedId = made.merged ? made.merged.into : made.id;
     renderAll();
-    toast(made.merged ? "Same state in context — merged" : "Candidate added as a branch");
+    toast(made.merged ? "Same state in context — merged" : "Added as a branch");
   }
 
   async function saveGrades() {

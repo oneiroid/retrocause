@@ -102,32 +102,32 @@
         <div id="labStatus" class="report muted">Bridge: checking…</div>
 
         <h3 class="lab-head">Grow from selected node</h3>
-        <label>Source<select id="growSource">
-          <option value="model">model · branch.v2 (greedy)</option>
-          <option value="frames">frames · frames.v1 (sampled)</option>
-          <option value="baseline">baseline · lexicon recombiner, no model</option>
-        </select></label>
+        <div class="field-row">
+          <label>Source<select id="growSource">
+            <option value="model">model</option>
+            <option value="baseline">baseline (no model)</option>
+          </select></label>
+          <label>Prompt<select id="growPrompt">
+            <option value="branch.v3">branch.v3</option>
+            <option value="branch.v2">branch.v2</option>
+          </select></label>
+        </div>
         <div class="field-row">
           <label>Depth<input id="growDepth" type="number" value="2" min="1" max="4"></label>
           <label>Width<input id="growWidth" type="number" value="2" min="1" max="3"></label>
           <label>Max nodes<input id="growMaxNodes" type="number" value="8" min="1" max="64"></label>
           <label>Seed<input id="growSeed" type="number" value="7" min="1"></label>
         </div>
-        <label class="check"><input id="growRejoin" type="checkbox">Ask each frame candidate for a rejoin target</label>
         <button id="autoGrowBtn" type="button" class="primary">Grow</button>
         <div id="growReport" class="report"></div>
 
-        <h3 class="lab-head">Continuations A/B</h3>
+        <h3 class="lab-head">Prompt A/B: branch.v2 vs branch.v3</h3>
         <div class="field-row">
-          <label>K per arm<input id="probeK" type="number" value="5" min="1" max="20"></label>
+          <label>K per prompt<input id="probeK" type="number" value="5" min="1" max="20"></label>
           <label>Seed<input id="probeSeed" type="number" value="7" min="1"></label>
         </div>
-        <label class="check"><input id="probeSentence" type="checkbox" checked>sentence arm (frames.v1 + grammar)</label>
-        <label class="check"><input id="probeJson" type="checkbox" checked>json arm (branch.v2 + schema)</label>
-        <label class="check"><input id="probeFill" type="checkbox">Fill actors the sentence arm never used</label>
-        <label class="check"><input id="probeFast" type="checkbox">Fast: reuse prompt KV cache (not replayable)</label>
         <div class="button-row">
-          <button id="probeBtn" type="button" class="primary">Draw continuations</button>
+          <button id="probeBtn" type="button" class="primary">Draw alternatives</button>
           <button id="probeShowBtn" type="button" class="secondary" disabled>Open last batch</button>
         </div>
         <div id="probeReport" class="report"></div>
@@ -141,23 +141,13 @@
       </details>
 
       <details class="panel-section disclosure">
-        <summary>LLM assist (manual)</summary>
-        <label>Instruction<textarea id="assistInstruction"></textarea></label>
-        <div class="button-row">
-          <button id="buildPromptBtn" type="button" class="secondary">Build prompt</button>
-          <button id="copyPromptBtn" type="button" class="secondary">Copy prompt</button>
-        </div>
-        <label>Reviewed JSON import<textarea id="importText" placeholder='{"branches":[{"label":"...","expr":"...","state":"...","rejoinTargetId":"..."}]}'></textarea></label>
-        <button id="importJsonBtn" type="button" class="primary">Import reviewed JSON</button>
-      </details>
-
-      <details class="panel-section disclosure">
         <summary>Save / restore</summary>
         <div class="button-row">
           <button id="exportJsonBtn" type="button" class="secondary">Show JSON</button>
           <button id="downloadJsonBtn" type="button" class="secondary">Download JSON</button>
           <button id="saveLocalBtn" type="button" class="secondary">Save local</button>
           <button id="loadLocalBtn" type="button" class="secondary">Restore local</button>
+          <button id="importJsonBtn" type="button" class="secondary">Load JSON below</button>
         </div>
         <textarea id="jsonText" class="json-box" aria-label="Graph JSON"></textarea>
       </details>
@@ -177,7 +167,7 @@
   <dialog id="probeDialog">
     <form method="dialog">
       <header class="dialog-head">
-        <h2 id="probeTitle">Continuations</h2>
+        <h2 id="probeTitle">Alternatives</h2>
         <button value="close" aria-label="Close dialog">×</button>
       </header>
     </form>
@@ -191,7 +181,6 @@
   </dialog>
 
   <script src="ids.js"></script>
-  <script src="frames.js"></script>
   <script src="story_builder_engine.js"></script>
   <script src="merge_predicate.js"></script>
   <script src="growth.js"></script>

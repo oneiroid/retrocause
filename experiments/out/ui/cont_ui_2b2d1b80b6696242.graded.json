@@ -1,0 +1,267 @@
+{
+  "manifest": {
+    "probe": "continue_probe v1 (continuation plan v3, Stage 0)",
+    "story": "The Boy Who Cried Wolf",
+    "k": 5,
+    "runSeed": 7,
+    "arms": [
+      "json"
+    ],
+    "unconstrained": false,
+    "fillActors": 0,
+    "fast": false,
+    "grammarBounds": {
+      "actionMaxChars": 80,
+      "outcomeMaxChars": 170,
+      "maxSentenceChars": 280
+    },
+    "sampling": {
+      "sentence": {
+        "temperature": 1,
+        "top_k": 0,
+        "seed": 7,
+        "samplers": [
+          "top_k",
+          "min_p",
+          "temperature"
+        ],
+        "repeat_penalty": 1,
+        "dry_multiplier": 0,
+        "n_predict": 188,
+        "cache_prompt": false,
+        "min_p": 0.05,
+        "stop": [
+          "\n"
+        ]
+      },
+      "json": {
+        "temperature": 1,
+        "top_k": 0,
+        "seed": 7,
+        "samplers": [
+          "top_k",
+          "min_p",
+          "temperature"
+        ],
+        "repeat_penalty": 1,
+        "dry_multiplier": 0,
+        "n_predict": 512,
+        "cache_prompt": false,
+        "min_p": 0.05
+      }
+    },
+    "model": {
+      "props": {
+        "default_generation_settings": {
+          "params": {
+            "seed": 4294967295,
+            "temperature": 0.800000011920929,
+            "dynatemp_range": 0,
+            "dynatemp_exponent": 1,
+            "top_k": 40,
+            "top_p": 0.949999988079071,
+            "min_p": 0.05000000074505806,
+            "top_n_sigma": -1,
+            "xtc_probability": 0,
+            "xtc_threshold": 0.10000000149011612,
+            "typical_p": 1,
+            "repeat_last_n": 64,
+            "repeat_penalty": 1,
+            "presence_penalty": 0,
+            "frequency_penalty": 0,
+            "dry_multiplier": 0,
+            "dry_base": 1.75,
+            "dry_allowed_length": 2,
+            "dry_penalty_last_n": -1,
+            "mirostat": 0,
+            "mirostat_tau": 5,
+            "mirostat_eta": 0.10000000149011612,
+            "adaptive_target": -1,
+            "adaptive_decay": 0.8999999761581421,
+            "max_tokens": -1,
+            "n_predict": -1,
+            "n_keep": 0,
+            "n_discard": 0,
+            "ignore_eos": false,
+            "stream": false,
+            "n_probs": 0,
+            "min_keep": 0,
+            "chat_format": "Content-only",
+            "reasoning_format": "none",
+            "reasoning_in_content": false,
+            "generation_prompt": "",
+            "samplers": [
+              "penalties",
+              "dry",
+              "top_n_sigma",
+              "top_k",
+              "typ_p",
+              "top_p",
+              "min_p",
+              "xtc",
+              "temperature"
+            ],
+            "speculative.types": "none",
+            "timings_per_token": false,
+            "post_sampling_probs": false,
+            "backend_sampling": false,
+            "lora": []
+          },
+          "n_ctx": 4096
+        },
+        "total_slots": 1,
+        "model_alias": "/media/oneiroid/sub/workspace/llmfinetune/models/qwen3-4b-base-Q5_K_M.gguf",
+        "model_ftype": "Q5_K - Medium",
+        "model_path": "/media/oneiroid/sub/workspace/llmfinetune/models/qwen3-4b-base-Q5_K_M.gguf",
+        "modalities": {
+          "vision": false,
+          "video": false,
+          "audio": false
+        },
+        "media_marker": "<__media_LPTpELh4wlx6nhZr2CYC47YSay911teY__>",
+        "endpoint_slots": true,
+        "endpoint_props": false,
+        "endpoint_metrics": false,
+        "ui": true,
+        "ui_settings": {},
+        "chat_template": "{%- if tools %}\n    {{- '<|im_start|>system\\n' }}\n    {%- if messages[0].role == 'system' %}\n        {{- messages[0].content + '\\n\\n' }}\n    {%- endif %}\n    {{- \"# Tools\\n\\nYou may call one or more functions to assist with the user query.\\n\\nYou are provided with function signatures within <tools></tools> XML tags:\\n<tools>\" }}\n    {%- for tool in tools %}\n        {{- \"\\n\" }}\n        {{- tool | tojson }}\n    {%- endfor %}\n    {{- \"\\n</tools>\\n\\nFor each function call, return a json object with function name and arguments within <tool_call></tool_call> XML tags:\\n<tool_call>\\n{\\\"name\\\": <function-name>, \\\"arguments\\\": <args-json-object>}\\n</tool_call><|im_end|>\\n\" }}\n{%- else %}\n    {%- if messages[0].role == 'system' %}\n        {{- '<|im_start|>system\\n' + messages[0].content + '<|im_end|>\\n' }}\n    {%- endif %}\n{%- endif %}\n{%- set ns = namespace(multi_step_tool=true, last_query_index=messages|length - 1) %}\n{%- for message in messages[::-1] %}\n    {%- set index = (messages|length - 1) - loop.index0 %}\n    {%- if ns.multi_step_tool and message.role == \"user\" and not(message.content.startswith('<tool_response>') and message.content.endswith('</tool_response>')) %}\n        {%- set ns.multi_step_tool = false %}\n        {%- set ns.last_query_index = index %}\n    {%- endif %}\n{%- endfor %}\n{%- for message in messages %}\n    {%- if (message.role == \"user\") or (message.role == \"system\" and not loop.first) %}\n        {{- '<|im_start|>' + message.role + '\\n' + message.content + '<|im_end|>' + '\\n' }}\n    {%- elif message.role == \"assistant\" %}\n        {%- set content = message.content %}\n        {%- set reasoning_content = '' %}\n        {%- if message.reasoning_content is defined and message.reasoning_content is not none %}\n            {%- set reasoning_content = message.reasoning_content %}\n        {%- else %}\n            {%- if '</think>' in message.content %}\n                {%- set content = message.content.split('</think>')[-1].lstrip('\\n') %}\n                {%- set reasoning_content = message.content.split('</think>')[0].rstrip('\\n').split('<think>')[-1].lstrip('\\n') %}\n            {%- endif %}\n        {%- endif %}\n        {%- if loop.index0 > ns.last_query_index %}\n            {%- if loop.last or (not loop.last and reasoning_content) %}\n                {{- '<|im_start|>' + message.role + '\\n<think>\\n' + reasoning_content.strip('\\n') + '\\n</think>\\n\\n' + content.lstrip('\\n') }}\n            {%- else %}\n                {{- '<|im_start|>' + message.role + '\\n' + content }}\n            {%- endif %}\n        {%- else %}\n            {{- '<|im_start|>' + message.role + '\\n' + content }}\n        {%- endif %}\n        {%- if message.tool_calls %}\n            {%- for tool_call in message.tool_calls %}\n                {%- if (loop.first and content) or (not loop.first) %}\n                    {{- '\\n' }}\n                {%- endif %}\n                {%- if tool_call.function %}\n                    {%- set tool_call = tool_call.function %}\n                {%- endif %}\n                {{- '<tool_call>\\n{\"name\": \"' }}\n                {{- tool_call.name }}\n                {{- '\", \"arguments\": ' }}\n                {%- if tool_call.arguments is string %}\n                    {{- tool_call.arguments }}\n                {%- else %}\n                    {{- tool_call.arguments | tojson }}\n                {%- endif %}\n                {{- '}\\n</tool_call>' }}\n            {%- endfor %}\n        {%- endif %}\n        {{- '<|im_end|>\\n' }}\n    {%- elif message.role == \"tool\" %}\n        {%- if loop.first or (messages[loop.index0 - 1].role != \"tool\") %}\n            {{- '<|im_start|>user' }}\n        {%- endif %}\n        {{- '\\n<tool_response>\\n' }}\n        {{- message.content }}\n        {{- '\\n</tool_response>' }}\n        {%- if loop.last or (messages[loop.index0 + 1].role != \"tool\") %}\n            {{- '<|im_end|>\\n' }}\n        {%- endif %}\n    {%- endif %}\n{%- endfor %}\n{%- if add_generation_prompt %}\n    {{- '<|im_start|>assistant\\n' }}\n    {%- if enable_thinking is defined and enable_thinking is false %}\n        {{- '<think>\\n\\n</think>\\n\\n' }}\n    {%- endif %}\n{%- endif %}",
+        "chat_template_caps": {
+          "supports_object_arguments": true,
+          "supports_parallel_tool_calls": true,
+          "supports_preserve_reasoning": false,
+          "supports_string_content": true,
+          "supports_system_role": true,
+          "supports_tool_calls": true,
+          "supports_tools": true,
+          "supports_typed_content": false
+        },
+        "bos_token": "<|endoftext|>",
+        "eos_token": "<|im_end|>",
+        "build_info": "b1-f5b9bd3",
+        "is_sleeping": false,
+        "cors_proxy_enabled": false
+      },
+      "sha256": "699936b83664f71a4c1d129a1e10b02c1909e8edfdd32962cea75259f4f92093"
+    },
+    "templates": {
+      "sentence": {
+        "name": "frames.v1",
+        "sha256": "764b9b3db52ab23b3686824ebce2fbe18d1ecdd0fb1c32b5f96cfa2e795cf685"
+      },
+      "json": {
+        "name": "branch.v2",
+        "sha256": "ced2b702a8bfc7f42d06f7d5cf984b1c77311b378bca39e6dd96dc6034502dbc"
+      }
+    },
+    "entities": [
+      "the boy",
+      "the villagers",
+      "the wolf"
+    ],
+    "entitiesSha256": "0a1b8d9390756a8d75508c66f35a663663bbadd6a43b013d4a93d289a5713e0d",
+    "grammar": "root ::= \"Then \" actor \" \" action \", and now \" outcome \".\"\nactor ::= \"the villagers\" | \"the wolf\" | \"the boy\"\naction ::= edge mid{0,78} edge\noutcome ::= edge mid{0,168} edge\nedge ::= [a-zA-Z0-9']\nmid ::= edge | \" \"\n",
+    "grammarSha256": "02d4b293b6d7c5f77d92aaf0347a9cc2797a215743e5959b33a714ea0f41885c",
+    "generatedAt": "2026-09-25T22:06:11.074Z",
+    "inputGraphSha256": "a1475d9426014ace0d5cd8068da5d6df70c560cb561820586ee522ab153aff72",
+    "from": "n_7f406c6029adbb3e",
+    "gradedAt": "2026-09-25T22:07:25.247Z",
+    "rater": "human",
+    "gradeSchema": 2,
+    "questions": [
+      {
+        "key": "possible",
+        "ask": false,
+        "prompt": "could this happen next in this story?"
+      },
+      {
+        "key": "consistent",
+        "ask": true,
+        "prompt": "is it consistent with what the history already established?"
+      },
+      {
+        "key": "advances",
+        "ask": true,
+        "prompt": "does the WORLD change - is anything true after it that was not true before?"
+      },
+      {
+        "key": "toldStory",
+        "ask": false,
+        "prompt": "is this the story's VERY NEXT event (not something it does later)?"
+      }
+    ],
+    "gradedIn": "ui"
+  },
+  "grades": [
+    {
+      "nodeId": "n_7f406c6029adbb3e",
+      "position": 1,
+      "arm": "json",
+      "index": 3,
+      "display": "leave(villagers, flock) — The villagers are gone, leaving the boy and the wolf alone.",
+      "expr": "leave(villagers, flock)",
+      "seed": 1895810550,
+      "labelKey": "json:n_7f406c6029adbb3e#3",
+      "consistent": true,
+      "advances": true
+    },
+    {
+      "nodeId": "n_7f406c6029adbb3e",
+      "position": 2,
+      "arm": "json",
+      "index": 2,
+      "display": "leave(boy, flock) — The boy departs the flock, leaving the wolf to finish the sheep.",
+      "expr": "leave(boy, flock)",
+      "seed": 1912588169,
+      "labelKey": "json:n_7f406c6029adbb3e#2",
+      "consistent": true,
+      "advances": true
+    },
+    {
+      "nodeId": "n_7f406c6029adbb3e",
+      "position": 3,
+      "arm": "json",
+      "index": 0,
+      "display": "run(boy, hillside) — The boy flees the scene and leaves the wolf alone.",
+      "expr": "run(boy, hillside)",
+      "seed": 1879032931,
+      "labelKey": "json:n_7f406c6029adbb3e#0",
+      "consistent": true,
+      "advances": true
+    },
+    {
+      "nodeId": "n_7f406c6029adbb3e",
+      "position": 4,
+      "arm": "json",
+      "index": 1,
+      "display": "desert(wolf, flock) — The wolf leaves the flock, leaving the boy alone.",
+      "expr": "desert(wolf, flock)",
+      "seed": 1862255312,
+      "labelKey": "json:n_7f406c6029adbb3e#1",
+      "consistent": true,
+      "advances": true
+    },
+    {
+      "nodeId": "n_7f406c6029adbb3e",
+      "position": 5,
+      "arm": "json",
+      "index": 4,
+      "display": "accept(villagers, boy) — The villagers realize the boy is serious and prepare to defend the flock.",
+      "expr": "accept(villagers, boy)",
+      "seed": 1929365788,
+      "labelKey": "json:n_7f406c6029adbb3e#4",
+      "consistent": true,
+      "advances": true
+    }
+  ],
+  "summary": {
+    "json": {
+      "n": 5,
+      "possible": null,
+      "consistent": 5,
+      "advances": 5,
+      "usable": 5,
+      "repeats": null,
+      "possibleAndNew": null
+    }
+  }
+}

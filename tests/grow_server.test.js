@@ -143,8 +143,7 @@ async function probeEvents(body) {
 }
 
 test("POST /continue streams progress, then the pool in grade order; /grades writes a grade.js file", async () => {
-  // json arm only: the fixture transport answers branch-schema prompts.
-  const events = await probeEvents({ graph: seeds.red, from: "red_start", arms: ["json"], k: 2 });
+  const events = await probeEvents({ graph: seeds.red, from: "red_start", arms: ["branch.v2"], k: 2 });
   const done = events.at(-1);
   assert.strictEqual(done.type, "done", JSON.stringify(done));
   assert.ok(events.slice(0, -1).every((e) => e.type === "progress"));
@@ -160,20 +159,27 @@ test("POST /continue streams progress, then the pool in grade order; /grades wri
   assert.strictEqual(graded.cumulative.batches, 1);
   const file = JSON.parse(fs.readFileSync(path.join(probeDir, graded.gradedFile), "utf8"));
   assert.strictEqual(file.manifest.rater, "human");
-  assert.deepStrictEqual(Grade.summarize(file.grades, "json"), graded.summary.json);
+  assert.deepStrictEqual(Grade.summarize(file.grades, "branch.v2"), graded.summary["branch.v2"]);
 
   // Re-drawing the same batch lands on the same file and carries its grades.
-  const again = (await probeEvents({ graph: seeds.red, from: "red_start", arms: ["json"], k: 2 })).at(-1);
+  const again = (await probeEvents({ graph: seeds.red, from: "red_start", arms: ["branch.v2"], k: 2 })).at(-1);
   assert.strictEqual(again.file, done.file);
   assert.strictEqual(Object.keys(again.answers).length, done.pool.length - 1);
 });
 
-test("POST /continue caps K and reports a frameless path as a stream error", async () => {
-  const graph = { ...seeds.red, nodes: seeds.red.nodes.map(({ frame, ...n }) => n) };
-  const done = (await probeEvents({ graph, from: "red_tell", arms: ["sentence"], k: 10000 })).at(-1);
-  assert.strictEqual(done.type, "error");
-  assert.match(done.error, /no frame/);
-  assert.ok(MAX_UI_K < 10000);
+test("POST /continue rejects arms that are not prompt versions", async () => {
+  const res = await fetch(`${base}/continue`, {
+    method: "POST", body: JSON.stringify({ graph: seeds.red, from: "red_start", arms: ["sentence"] }),
+  });
+  assert.strictEqual(res.status, 400);
+  assert.ok(MAX_UI_K > 0);
+});
+
+test("POST /grow takes a prompt version and records it", async () => {
+  const data = await (await growRequest({ prompt: "branch.v2" })).json();
+  const manifest = JSON.parse(fs.readFileSync(path.join(outRoot, data.runId, "growth_manifest.json"), "utf8"));
+  assert.strictEqual(manifest.prompt.template, "branch.v2");
+  assert.strictEqual((await growRequest({ prompt: "frames.v1" })).status, 400);
 });
 
 test("POST /grades refuses files outside the UI probe directory", async () => {

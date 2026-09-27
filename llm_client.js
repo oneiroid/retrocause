@@ -53,7 +53,9 @@ const REFERENCE_SAMPLING = {
 // the reference block's order is (§5.5.2).
 const OPTIONAL_SAMPLING_KEYS = ["min_p", "top_p", "stop"];
 
-const DEFAULT_BASE_URL = "http://127.0.0.1:8080";
+// Overridable because ports collide. Where the server listens is not part of
+// the request body, so it is not part of the cache key or of any manifest.
+const DEFAULT_BASE_URL = process.env.LLAMA_URL || "http://127.0.0.1:8080";
 
 // On this build a completion that ends at EOS reports
 // `"stop_type": "eos", "stopped_limit": null` — the boolean-looking field is
@@ -104,8 +106,8 @@ function createClient({
   //          block's single pinned seed, a temperature>0 run would return the
   //          same completion K times — silently, and looking like a
   //          degenerate model rather than a degenerate request.
-  // grammar: the frame grammar enumerates one story's entities, so it is
-  //          content-dependent and cannot be pinned per client.
+  // grammar: a GBNF grammar is content-dependent (it may enumerate one
+  //          story's entities), so it cannot be pinned per client.
   //
   // Both fold into the cache key by construction: they are part of the body.
   function requestBody(prompt, schema, { seed, grammar } = {}) {
@@ -175,9 +177,8 @@ function createClient({
       error.truncated = true;
       // The partial text rides along. For the grower a truncation is a run
       // failure and the content is noise; for the unconstrained diagnostic
-      // batch of the frame probe, a truncated sample IS the measurement (how
-      // often does the model run past the one-sentence format), and losing
-      // its text would lose the finding.
+      // probe, a truncated sample IS data (continue_probe.js records it as an
+      // unusable sample), and losing its text would lose the finding.
       error.content = response.content;
       error.cacheKey = key;
       throw error;

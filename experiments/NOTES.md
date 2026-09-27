@@ -1774,3 +1774,44 @@ would lift the sentence arm's criedWolf consistency by about 10 samples.
   lever does not reach it. What would reach it is unmeasured; the obvious
   candidate is showing the current state separately from the event
   history, which is what branch.v2's `State:` line does for the JSON arm.
+
+---
+
+## Decision: frames removed, JSON kept, branch.v3 carries the two levers (2026-09-27)
+
+The human's call, on the evidence above: the sentence format measured no
+better than JSON (61 vs 50 usable at n=100, under the pre-registered
+threshold), failed the same way (state contradiction), and cost structural
+things JSON does not — no content convergence (0/408 merges), a closed
+character list, and a hand-authored frame required on every path node.
+
+Removed: `frames.js`, `frame_proposer.js`, `prompts/frames.v*`,
+`prompts/rejoin.v1`, `prompts/same.v2`, `experiments/frame_merge.js`, the
+seed frames, and the frames source in eval/grow_server/UI. Everything
+recorded here and under `experiments/out/` stays as the record; those files
+are no longer replayable from the current tree.
+
+Kept, because they were never about the sentence: the two closed choices.
+`branch.v3` = branch.v2 + `Characters:` line + `actor` (enum over the
+story's `entities`) + required `rejoin` (enum over legal told-story ids plus
+`none`). The schema is built per expansion (`grower.branchSchemaV3`).
+
+One correction found while porting: the frames rejoin excluded the source's
+DESCENDANTS as targets. That was wrong — the edge starts at the new node,
+which reaches nothing yet, so only the source and its ancestors can close a
+cycle. Rejoining a later told event is the ordinary detour. The frames
+rejoin numbers (3 right / 2 marginal / 5 wrong over 10) were therefore
+measured on a target set missing the most natural answers.
+
+First live v3 growth (4B CUDA, criedWolf from `cw_cry2`, depth 2 / width 2):
+5 created, 1 merged, 3 rejoins, all valid — two into `cw_run2`, one into
+`cw_wolf`. Not yet graded.
+
+`continue_probe.js` is now a prompt-version A/B (v2 vs v3), JSON only. Both
+arms render `expr — state`, so grading is blind in a way the frames-vs-JSON
+probe never was. Its sampling block and seed derivation are unchanged in
+value, so a v2 arm drawn now differs from the old `json` arm only by seed tag.
+
+Not built: forcing the actor slot (the lever that surfaced Cassandra). v3
+exposes the slot; whether to force it waits on seeing v3's natural actor
+spread.

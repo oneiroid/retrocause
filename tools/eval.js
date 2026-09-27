@@ -6,19 +6,9 @@
 //   node tools/eval.js score runs/<runId> [runs/<runId> ...]
 //   node tools/eval.js sweep --stories red,criedWolf,trojanHorse
 //                            [--depth 2] [--width 2] [--max-nodes 8] [--seed 7]
-//                            [--sources model,frames] [--frames-prompt frames.v2]
+//                            [--prompt branch.v2,branch.v3]
 //                            [--from <nodeId>, with a single --stories]
-//                            [--frames-rejoin]
 //                            [--replay] [--baseline-only] [--show]
-//
-// `--sources` picks the non-baseline rows (default `model`). `frames` is the
-// continuation plan v3 candidate source (frame_proposer.js): frames.v1 +
-// grammar + gated actor fill, through the SAME growGraph traversal. Read its
-// row against the others with two things in mind. It samples at temperature
-// 1.0 with a derived seed per draw, where the `model` row is greedy — a
-// sampler difference on top of the representation difference. And its
-// grown→seed convergence is zero by construction: seed exprs are
-// `deed(args)`, frame-grown exprs are frameExprs, and the two never collide.
 //
 // `sweep` grows one model run and one baseline run per story on the same
 // budgets and scores both; each model row that lands under the node cap also
@@ -53,8 +43,7 @@ const Engine = require(path.join(REPO, "story_builder_engine.js"));
 const Ids = require(path.join(REPO, "ids.js"));
 const Probe = require(path.join(REPO, "experiments", "gen_probe.js"));
 const { createClient } = require(path.join(REPO, "llm_client.js"));
-const { growGraph } = require(path.join(REPO, "grower.js"));
-const { createFrameProposer, frameSamplingFor, REJOIN_NONE } = require(path.join(REPO, "frame_proposer.js"));
+const { growGraph, schemaForPrompt } = require(path.join(REPO, "grower.js"));
 const { seeds } = require(path.join(REPO, "seeds.js"));
 
 const promptPathOf = (version) => path.join(REPO, "prompts", `${version}.txt`);
@@ -63,17 +52,7 @@ const ROLES_PATH = path.join(REPO, "experiments", "roles.json");
 // v2 (told story + ancestor path) at equal budgets is the whole point of
 // changing the template, and the baseline is unaffected either way — the
 // recombiner reads only the last `State:` line.
-const DEFAULTS = { depth: 2, width: 2, maxNodes: 8, seed: 7, prompt: "branch.v2" };
-// The frames source's default template, selectable with `--frames-prompt`.
-// v1 (path only) is the DEFAULT even though it gives the frames source less
-// context than branch.v2 gives the JSON source. v2 closed that gap by adding
-// the told story and was measured to destroy the source: 16 of 17 grown nodes
-// came back as verbatim copies of seed frames. Kept selectable, never
-// deleted, because its manifests must stay replayable.
-const FRAMES_PROMPT = "frames.v1";
-// The frames source's rejoin question, used only with `--frames-rejoin`.
-const REJOIN_PROMPT = "rejoin.v1";
-const SOURCES = ["model", "frames"];
+const DEFAULTS = { depth: 2, width: 2, maxNodes: 8, seed: 7, prompt: "branch.v3" };
 // The grower's schema allows at most 3 branches per expansion (§5.3); the
 // baseline offers the same number so neither source gets a wider funnel.
 const PROPOSALS_PER_EXPANSION = 3;
@@ -235,31 +214,16 @@ function createBaselineClient({ inputGraph, seed, proposals = PROPOSALS_PER_EXPA
 
 async function evalRun({
   source, story, depth, width, maxNodes, seed, replay, baseUrl,
-  prompt = DEFAULTS.prompt, framesPrompt = FRAMES_PROMPT, from = null, rejoin = false,
+  prompt = DEFAULTS.prompt, from = null,
 }) {
   const inputGraph = Engine.normalizeGraph(seeds[story]);
   const promptTemplate = fs.readFileSync(promptPathOf(prompt), "utf8");
   const cacheDir = path.join(REPO, "cache");
   // One factory per source, called once per pass: cache-cold for the model on
-  // replay, a fresh RNG stream for the baseline, fresh counters for frames.
-  let makeSource;
-  if (source === "baseline") {
-    makeSource = () => ({ client: createBaselineClient({ inputGraph, seed }) });
-  } else if (source === "frames") {
-    const template = fs.readFileSync(promptPathOf(framesPrompt), "utf8");
-    makeSource = () => ({
-      proposer: createFrameProposer({
-        client: createClient({ baseUrl, cacheDir, sampling: frameSamplingFor(inputGraph.entities) }),
-        template,
-        runSeed: seed,
-        // Opt-in: it costs one extra constrained draw per offered candidate,
-        // and every recorded frames row so far ran without it.
-        rejoinTemplate: rejoin ? fs.readFileSync(promptPathOf(REJOIN_PROMPT), "utf8") : null,
-      }),
-    });
-  } else {
-    makeSource = () => ({ client: createClient({ baseUrl, cacheDir, sampling: { seed } }) });
-  }
+  // replay, a fresh RNG stream for the baseline.
+  const makeSource = source === "baseline"
+    ? () => ({ client: createBaselineClient({ inputGraph, seed }) })
+    : () => ({ client: createClient({ baseUrl, cacheDir, sampling: { seed } }), schemaFor: schemaForPrompt(prompt) });
   // `from` defaults to the root, which is what every recorded sweep used. It
   // is settable because the probe measured mid-story nodes and the grower
   // measured the root, and that difference is itself a live hypothesis about
@@ -281,9 +245,7 @@ async function evalRun({
     replayOk = Ids.canonicalJson(second.graph) === Ids.canonicalJson(graph);
   }
   return {
-    source, story, from: startAt, prompt: source === "frames" ? framesPrompt : prompt,
-    ...score, replayOk, graph,
-    ...(first.proposer ? { proposerStats: { ...first.proposer.stats } } : {}),
+    source, story, from: startAt, prompt, ...score, replayOk, graph,
   };
 }
 
@@ -317,14 +279,6 @@ function printReport(rows, { show }) {
     console.log(`\n${label}/${r.story} — in-degree histogram: ${JSON.stringify(r.histogram)}`);
     console.log("  per-rank in-degree (rank: n, min..max):",
       r.spreadByRank.map((s) => `${s.rank}: ${s.n}, ${s.min}..${s.max}`).join("  "));
-    if (r.proposerStats) {
-      const p = r.proposerStats;
-      console.log(`  frame draws: ${p.draws} over ${p.expansions} expansions — ` +
-        `forced ${p.forced} (${p.missingActors} missing actors), truncated ${p.truncated}, unparseable ${p.parseFailures}`);
-      if (p.rejoinAsked) {
-        console.log(`  rejoin: asked ${p.rejoinAsked}, named a target ${p.rejoinNamed}, NONE ${p.rejoinNone}`);
-      }
-    }
     if (show && r.contradictions.length) {
       console.log("  contradictions (delta == invariants):");
       for (const c of r.contradictions) console.log(`    ${c.expr}  delta="${c.delta}"`);
@@ -334,7 +288,7 @@ function printReport(rows, { show }) {
 
 // ── CLI ─────────────────────────────────────────────────────────────────────
 
-const BOOL_FLAGS = new Set(["replay", "baseline-only", "show", "frames-rejoin"]);
+const BOOL_FLAGS = new Set(["replay", "baseline-only", "show"]);
 
 function parseArgs(argv) {
   const args = { positional: [] };
@@ -367,13 +321,6 @@ async function sweep(args) {
       process.exit(1);
     }
   }
-  const sources = String(args.sources || "model").split(",");
-  for (const s of sources) {
-    if (!SOURCES.includes(s)) {
-      console.error(`unknown source: ${s} (have: ${SOURCES.join(", ")})`);
-      process.exit(1);
-    }
-  }
   const budget = {
     depth: +(args.depth || DEFAULTS.depth),
     width: +(args.width || DEFAULTS.width),
@@ -381,9 +328,7 @@ async function sweep(args) {
     seed: +(args.seed || DEFAULTS.seed),
     replay: !!args.replay,
     baseUrl: args.baseUrl,
-    framesPrompt: args.framesPrompt || FRAMES_PROMPT,
     from: args.from || null,
-    rejoin: !!args.framesRejoin,
   };
   // One `--from` cannot mean anything across several stories: a node id
   // belongs to exactly one of them.
@@ -397,7 +342,7 @@ async function sweep(args) {
       process.exit(1);
     }
   }
-  console.log(`sweep: stories=${stories.join(",")} sources=${sources.join(",")} prompts=${prompts.join(",")} ` +
+  console.log(`sweep: stories=${stories.join(",")} prompts=${prompts.join(",")} ` +
     `depth=${budget.depth} width=${budget.width} ` +
     `maxNodes=${budget.maxNodes} seed=${budget.seed} replay=${budget.replay}`);
 
@@ -410,15 +355,9 @@ async function sweep(args) {
     rows.push(await evalRun({ source: "baseline", story, prompt: prompts[0], ...budget }));
   }
   if (!args.baselineOnly) {
-    // Model rows keep their prompt-outer / story-inner order; frames rows
-    // follow, once per story (the prompt dimension does not apply to them).
+    // Prompt-outer / story-inner order.
     const cells = [];
-    if (sources.includes("model")) {
-      for (const prompt of prompts) for (const story of stories) cells.push({ source: "model", story, prompt });
-    }
-    if (sources.includes("frames")) {
-      for (const story of stories) cells.push({ source: "frames", story, prompt: prompts[0] });
-    }
+    for (const prompt of prompts) for (const story of stories) cells.push({ source: "model", story, prompt });
     for (const cell of cells) {
       const row = await evalRun({ ...cell, ...budget });
       rows.push(row);

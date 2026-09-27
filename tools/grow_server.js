@@ -7,9 +7,9 @@
 //
 //   GET  /health   → { ok, model, modelFile }
 //   POST /grow     { graph, from, depth?, width?, maxNodes?, seed?,
-//                    source?: "model" | "frames" | "baseline", rejoin? }
-//                  → { runId, graph, stats, proposerStats?, score, baseline?, validation }
-//   POST /continue { graph, from, k?, arms?, seed?, fillActors?, fast? }
+//                    source?: "model" | "baseline", prompt? }
+//                  → { runId, graph, stats, score, baseline?, validation }
+//   POST /continue { graph, from, k?, arms?: [promptVersion…], seed? }
 //                  → NDJSON: { type: "progress" }… then { type: "done", file, pool, answers }
 //   POST /grades   { file, answers: { labelKey: { consistent, advances } } }
 //                  → { gradedFile, summary, cumulative }
@@ -37,13 +37,12 @@ const REPO = path.join(__dirname, "..");
 const Ids = require(path.join(REPO, "ids.js"));
 const Engine = require(path.join(REPO, "story_builder_engine.js"));
 const { createClient } = require(path.join(REPO, "llm_client.js"));
-const { growGraph } = require(path.join(REPO, "grower.js"));
-const { createFrameProposer, frameSamplingFor } = require(path.join(REPO, "frame_proposer.js"));
+const { growGraph, schemaForPrompt } = require(path.join(REPO, "grower.js"));
 const { scoreGrowth, createBaselineClient } = require(path.join(REPO, "tools", "eval.js"));
 const Probe = require(path.join(REPO, "experiments", "continue_probe.js"));
 const Grade = require(path.join(REPO, "experiments", "grade.js"));
 const {
-  buildConfig, runIdOf, sha256, promptPathOf, DEFAULT_PROMPT_VERSION, DEFAULTS, GRAPH_FILE, MANIFEST_FILE,
+  buildConfig, runIdOf, sha256, DEFAULT_PROMPT_VERSION, DEFAULTS, GRAPH_FILE, MANIFEST_FILE,
 } = require(path.join(REPO, "tools", "grow.js"));
 
 // One above llama-server's 8080 so both fit in one head. Overridable because
@@ -57,11 +56,10 @@ const MAX_UI_NODES = 64;
 // up to 1 + MAX_REFILL_ROUNDS draws.
 const MAX_UI_K = 20;
 
-const SOURCES = ["model", "frames", "baseline"];
-// The frames source's templates — eval.js's defaults (frames.v2 is rejected,
-// see experiments/NOTES.md).
-const FRAMES_PROMPT = "frames.v1";
-const REJOIN_PROMPT = "rejoin.v1";
+const SOURCES = ["model", "baseline"];
+// Prompt versions the page may pick, for growing and as A/B arms. v1 (one
+// node, no story) is kept for replay only.
+const PROMPTS = ["branch.v2", "branch.v3"];
 const RUN_ID_PATTERN = /^run_[0-9a-f]+$/;
 const PROBE_FILE_PATTERN = /^cont_ui_[0-9a-f]+\.json$/;
 const GRADED_SUFFIX = ".graded.json";
@@ -110,7 +108,6 @@ function gradePool(probe) {
       entry.arms[arm].samples.forEach((sample, index) => {
         pool.push({
           arm, index, display: sample.display, expr: sample.expr, seed: sample.seed,
-          ...(sample.forcedActor ? { forcedActor: sample.forcedActor } : {}),
           labelKey: `${arm}:${entry.nodeId}#${index}`,
         });
       });
@@ -160,24 +157,10 @@ function createHandler({
     }
   }
 
-  // One (client, promptTemplate) or proposer per source, plus the manifest's
-  // `source` block. The default source's config is unchanged, so its runIds
-  // are the ones every earlier run recorded.
-  function sourceFor({ source, inputGraph, seed, rejoin }) {
-    if (source === "frames") {
-      if (!Array.isArray(inputGraph.entities) || !inputGraph.entities.length) {
-        throw new Error("frames source needs a graph with an entities list (a seed story)");
-      }
-      const template = fs.readFileSync(promptPathOf(FRAMES_PROMPT), "utf8");
-      const rejoinTemplate = rejoin ? fs.readFileSync(promptPathOf(REJOIN_PROMPT), "utf8") : null;
-      const client = clientFactory(frameSamplingFor(inputGraph.entities));
-      return {
-        client,
-        promptVersion: FRAMES_PROMPT,
-        proposer: createFrameProposer({ client, template, runSeed: seed, rejoinTemplate }),
-        source: { name: "frames", runSeed: seed, rejoin: rejoinTemplate ? { template: REJOIN_PROMPT, sha256: sha256(rejoinTemplate) } : null },
-      };
-    }
+  // The client per source, plus the manifest's `source` block. The default
+  // source's config is unchanged, so its runIds are the ones every earlier
+  // run recorded.
+  function sourceFor({ source, inputGraph, seed }) {
     if (source === "baseline") {
       return { client: createBaselineClient({ inputGraph, seed }), source: { name: "baseline" } };
     }
@@ -194,20 +177,19 @@ function createHandler({
     const width = intOr(body.width, DEFAULTS.width);
     const maxNodes = Math.min(intOr(body.maxNodes, DEFAULTS.maxNodes), MAX_UI_NODES);
     const seed = intOr(body.seed, DEFAULTS.seed);
+    const promptVersion = body.prompt || DEFAULT_PROMPT_VERSION;
+    if (!PROMPTS.includes(promptVersion)) return send(res, 400, { error: `body.prompt must be one of ${PROMPTS.join(", ")}` });
 
-    const picked = sourceFor({ source, inputGraph: Engine.normalizeGraph(graph), seed, rejoin: !!body.rejoin });
+    const picked = sourceFor({ source, inputGraph: Engine.normalizeGraph(graph), seed });
     const { config, promptText, inputGraph } = await buildConfig({
-      graph, from, depth, width, maxNodes, client: picked.client,
-      ...(picked.promptVersion ? { promptVersion: picked.promptVersion } : {}),
-      source: picked.source,
+      graph, from, depth, width, maxNodes, client: picked.client, promptVersion, source: picked.source,
     });
     const runId = runIdOf(config);
-    const budget = { graph: inputGraph, promptTemplate: promptText, from, depth, width, runId };
+    const budget = {
+      graph: inputGraph, promptTemplate: promptText, schemaFor: schemaForPrompt(promptVersion), from, depth, width, runId,
+    };
 
-    const { graph: grown, stats, validation } = await growGraph({
-      ...budget, maxNodes, client: picked.client, ...(picked.proposer ? { proposer: picked.proposer } : {}),
-    });
-    const proposerStats = picked.proposer ? { ...picked.proposer.stats } : undefined;
+    const { graph: grown, stats, validation } = await growGraph({ ...budget, maxNodes, client: picked.client });
     const score = scoreGrowth({ graph: grown, stats });
 
     // §6's comparison bar: the model-free recombiner grown to the same node
@@ -215,9 +197,8 @@ function createHandler({
     // milliseconds from the input graph and the seed.
     let baseline;
     if (source !== "baseline" && score.grownNodes > 0) {
-      const branchTemplate = fs.readFileSync(promptPathOf(DEFAULT_PROMPT_VERSION), "utf8");
       const matched = await growGraph({
-        ...budget, promptTemplate: branchTemplate, runId: undefined,
+        ...budget, runId: undefined,
         maxNodes: score.grownNodes, client: createBaselineClient({ inputGraph, seed }),
       });
       baseline = scoreGrowth(matched);
@@ -229,15 +210,12 @@ function createHandler({
     fs.writeFileSync(path.join(outDir, GRAPH_FILE), Ids.canonicalJson(grown));
     fs.writeFileSync(
       path.join(outDir, MANIFEST_FILE),
-      JSON.stringify({
-        runId, createdAt: new Date().toISOString(), ...config, result: stats,
-        ...(proposerStats ? { proposerStats } : {}),
-      }, null, 2),
+      JSON.stringify({ runId, createdAt: new Date().toISOString(), ...config, result: stats }, null, 2),
     );
-    return send(res, 200, { runId, graph: grown, stats, proposerStats, score, baseline, validation });
+    return send(res, 200, { runId, graph: grown, stats, score, baseline, validation });
   }
 
-  // The Stage 0 probe at one node of the page's graph. Progress streams as
+  // The prompt-version A/B probe at one node of the page's graph. Progress streams as
   // counts only: the pool is revealed in grade order once drawing ends, so
   // the order the samples arrived in cannot leak which arm is which.
   async function probe(body, res) {
@@ -245,23 +223,21 @@ function createHandler({
     if (!graph || !Array.isArray(graph.nodes)) return send(res, 400, { error: "body.graph must be a graph object" });
     if (!from) return send(res, 400, { error: "body.from must name the node to continue" });
     const k = Math.min(intOr(body.k, Probe.DEFAULT_K), MAX_UI_K);
-    const arms = (Array.isArray(body.arms) && body.arms.length ? body.arms : ["sentence", "json"])
-      .filter((arm) => arm === "sentence" || arm === "json");
+    const arms = (Array.isArray(body.arms) && body.arms.length ? body.arms : Probe.DEFAULT_ARMS)
+      .filter((arm) => PROMPTS.includes(arm));
+    if (!arms.length) return send(res, 400, { error: `body.arms must name prompt versions: ${PROMPTS.join(", ")}` });
     const runSeed = intOr(body.seed, DEFAULTS.seed);
-    const fillActors = body.fillActors ? intOr(body.fillActors, 1) : 0;
-    const fast = !!body.fast;
 
     const inputGraph = Engine.normalizeGraph(graph);
-    const entities = inputGraph.entities || [];
-    const clients = Probe.createProbeClients({ entities, fast, create: clientFactory });
-    const props = await clients.sentence.props();
+    const client = Probe.createProbeClient({ create: clientFactory });
+    const props = await client.props();
 
     res.writeHead(200, { "Content-Type": "application/x-ndjson", ...CORS_HEADERS });
     const emit = (event) => res.write(`${JSON.stringify(event)}\n`);
     const counts = Object.fromEntries(arms.map((arm) => [arm, { attempts: 0, samples: 0 }]));
     try {
       const entry = await Probe.probeNode({
-        graph: inputGraph, nodeId: from, clients, k, arms, runSeed, fillActors,
+        graph: inputGraph, nodeId: from, client, k, arms, runSeed,
         onAttempt: (record) => {
           const c = counts[record.arm];
           c.attempts += 1;
@@ -272,9 +248,7 @@ function createHandler({
       const title = inputGraph.title || (inputGraph.meta && inputGraph.meta.title) || "";
       const probeFile = {
         manifest: {
-          ...Probe.probeManifest({
-            story: title, k, runSeed, arms, unconstrained: false, fillActors, fast, clients, props, entities,
-          }),
+          ...Probe.probeManifest({ story: title, k, runSeed, arms, fast: false, client, props }),
           inputGraphSha256: sha256(Ids.canonicalJson(inputGraph)),
           from,
         },
@@ -283,7 +257,7 @@ function createHandler({
       // Named by configuration, so re-drawing the same batch (cache-served)
       // lands on the same file and finds its grades.
       const name = `cont_ui_${Ids.shortHash(JSON.stringify({
-        graph: probeFile.manifest.inputGraphSha256, from, k, arms, runSeed, fillActors, fast,
+        graph: probeFile.manifest.inputGraphSha256, from, k, arms, runSeed,
         model: probeFile.manifest.model.sha256 || props.model_path || "",
       }))}.json`;
       fs.mkdirSync(probeDir, { recursive: true });
@@ -302,19 +276,12 @@ function createHandler({
         type: "done",
         file: name,
         history: entry.history,
-        pool: gradePool(probeFile).map(({ labelKey, arm: armName, display, forcedActor }) => {
-          const sample = arm(armName).samples[+labelKey.split("#")[1]];
-          return {
-            labelKey, arm: armName, display, forcedActor,
-            node: sample.frame
-              ? { frame: sample.frame }
-              : { branch: sample.branch },
-          };
-        }),
+        pool: gradePool(probeFile).map(({ labelKey, arm: armName, index, display }) => ({
+          labelKey, arm: armName, display, branch: arm(armName).samples[index].branch,
+        })),
         stats: Object.fromEntries(arms.map((a) => [a, {
           attempts: arm(a).attempts, samples: arm(a).samples.length, duplicates: arm(a).duplicates,
           refused: arm(a).refused, truncated: arm(a).truncated, saturated: arm(a).saturated,
-          ...(arm(a).fill ? { fill: arm(a).fill } : {}),
         }])),
         answers,
       });

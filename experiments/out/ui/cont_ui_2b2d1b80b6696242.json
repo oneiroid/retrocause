@@ -1,0 +1,513 @@
+{
+  "manifest": {
+    "probe": "continue_probe v1 (continuation plan v3, Stage 0)",
+    "story": "The Boy Who Cried Wolf",
+    "k": 5,
+    "runSeed": 7,
+    "arms": [
+      "json"
+    ],
+    "unconstrained": false,
+    "fillActors": 0,
+    "fast": false,
+    "grammarBounds": {
+      "actionMaxChars": 80,
+      "outcomeMaxChars": 170,
+      "maxSentenceChars": 280
+    },
+    "sampling": {
+      "sentence": {
+        "temperature": 1,
+        "top_k": 0,
+        "seed": 7,
+        "samplers": [
+          "top_k",
+          "min_p",
+          "temperature"
+        ],
+        "repeat_penalty": 1,
+        "dry_multiplier": 0,
+        "n_predict": 188,
+        "cache_prompt": false,
+        "min_p": 0.05,
+        "stop": [
+          "\n"
+        ]
+      },
+      "json": {
+        "temperature": 1,
+        "top_k": 0,
+        "seed": 7,
+        "samplers": [
+          "top_k",
+          "min_p",
+          "temperature"
+        ],
+        "repeat_penalty": 1,
+        "dry_multiplier": 0,
+        "n_predict": 512,
+        "cache_prompt": false,
+        "min_p": 0.05
+      }
+    },
+    "model": {
+      "props": {
+        "default_generation_settings": {
+          "params": {
+            "seed": 4294967295,
+            "temperature": 0.800000011920929,
+            "dynatemp_range": 0,
+            "dynatemp_exponent": 1,
+            "top_k": 40,
+            "top_p": 0.949999988079071,
+            "min_p": 0.05000000074505806,
+            "top_n_sigma": -1,
+            "xtc_probability": 0,
+            "xtc_threshold": 0.10000000149011612,
+            "typical_p": 1,
+            "repeat_last_n": 64,
+            "repeat_penalty": 1,
+            "presence_penalty": 0,
+            "frequency_penalty": 0,
+            "dry_multiplier": 0,
+            "dry_base": 1.75,
+            "dry_allowed_length": 2,
+            "dry_penalty_last_n": -1,
+            "mirostat": 0,
+            "mirostat_tau": 5,
+            "mirostat_eta": 0.10000000149011612,
+            "adaptive_target": -1,
+            "adaptive_decay": 0.8999999761581421,
+            "max_tokens": -1,
+            "n_predict": -1,
+            "n_keep": 0,
+            "n_discard": 0,
+            "ignore_eos": false,
+            "stream": false,
+            "n_probs": 0,
+            "min_keep": 0,
+            "chat_format": "Content-only",
+            "reasoning_format": "none",
+            "reasoning_in_content": false,
+            "generation_prompt": "",
+            "samplers": [
+              "penalties",
+              "dry",
+              "top_n_sigma",
+              "top_k",
+              "typ_p",
+              "top_p",
+              "min_p",
+              "xtc",
+              "temperature"
+            ],
+            "speculative.types": "none",
+            "timings_per_token": false,
+            "post_sampling_probs": false,
+            "backend_sampling": false,
+            "lora": []
+          },
+          "n_ctx": 4096
+        },
+        "total_slots": 1,
+        "model_alias": "/media/oneiroid/sub/workspace/llmfinetune/models/qwen3-4b-base-Q5_K_M.gguf",
+        "model_ftype": "Q5_K - Medium",
+        "model_path": "/media/oneiroid/sub/workspace/llmfinetune/models/qwen3-4b-base-Q5_K_M.gguf",
+        "modalities": {
+          "vision": false,
+          "video": false,
+          "audio": false
+        },
+        "media_marker": "<__media_LPTpELh4wlx6nhZr2CYC47YSay911teY__>",
+        "endpoint_slots": true,
+        "endpoint_props": false,
+        "endpoint_metrics": false,
+        "ui": true,
+        "ui_settings": {},
+        "chat_template": "{%- if tools %}\n    {{- '<|im_start|>system\\n' }}\n    {%- if messages[0].role == 'system' %}\n        {{- messages[0].content + '\\n\\n' }}\n    {%- endif %}\n    {{- \"# Tools\\n\\nYou may call one or more functions to assist with the user query.\\n\\nYou are provided with function signatures within <tools></tools> XML tags:\\n<tools>\" }}\n    {%- for tool in tools %}\n        {{- \"\\n\" }}\n        {{- tool | tojson }}\n    {%- endfor %}\n    {{- \"\\n</tools>\\n\\nFor each function call, return a json object with function name and arguments within <tool_call></tool_call> XML tags:\\n<tool_call>\\n{\\\"name\\\": <function-name>, \\\"arguments\\\": <args-json-object>}\\n</tool_call><|im_end|>\\n\" }}\n{%- else %}\n    {%- if messages[0].role == 'system' %}\n        {{- '<|im_start|>system\\n' + messages[0].content + '<|im_end|>\\n' }}\n    {%- endif %}\n{%- endif %}\n{%- set ns = namespace(multi_step_tool=true, last_query_index=messages|length - 1) %}\n{%- for message in messages[::-1] %}\n    {%- set index = (messages|length - 1) - loop.index0 %}\n    {%- if ns.multi_step_tool and message.role == \"user\" and not(message.content.startswith('<tool_response>') and message.content.endswith('</tool_response>')) %}\n        {%- set ns.multi_step_tool = false %}\n        {%- set ns.last_query_index = index %}\n    {%- endif %}\n{%- endfor %}\n{%- for message in messages %}\n    {%- if (message.role == \"user\") or (message.role == \"system\" and not loop.first) %}\n        {{- '<|im_start|>' + message.role + '\\n' + message.content + '<|im_end|>' + '\\n' }}\n    {%- elif message.role == \"assistant\" %}\n        {%- set content = message.content %}\n        {%- set reasoning_content = '' %}\n        {%- if message.reasoning_content is defined and message.reasoning_content is not none %}\n            {%- set reasoning_content = message.reasoning_content %}\n        {%- else %}\n            {%- if '</think>' in message.content %}\n                {%- set content = message.content.split('</think>')[-1].lstrip('\\n') %}\n                {%- set reasoning_content = message.content.split('</think>')[0].rstrip('\\n').split('<think>')[-1].lstrip('\\n') %}\n            {%- endif %}\n        {%- endif %}\n        {%- if loop.index0 > ns.last_query_index %}\n            {%- if loop.last or (not loop.last and reasoning_content) %}\n                {{- '<|im_start|>' + message.role + '\\n<think>\\n' + reasoning_content.strip('\\n') + '\\n</think>\\n\\n' + content.lstrip('\\n') }}\n            {%- else %}\n                {{- '<|im_start|>' + message.role + '\\n' + content }}\n            {%- endif %}\n        {%- else %}\n            {{- '<|im_start|>' + message.role + '\\n' + content }}\n        {%- endif %}\n        {%- if message.tool_calls %}\n            {%- for tool_call in message.tool_calls %}\n                {%- if (loop.first and content) or (not loop.first) %}\n                    {{- '\\n' }}\n                {%- endif %}\n                {%- if tool_call.function %}\n                    {%- set tool_call = tool_call.function %}\n                {%- endif %}\n                {{- '<tool_call>\\n{\"name\": \"' }}\n                {{- tool_call.name }}\n                {{- '\", \"arguments\": ' }}\n                {%- if tool_call.arguments is string %}\n                    {{- tool_call.arguments }}\n                {%- else %}\n                    {{- tool_call.arguments | tojson }}\n                {%- endif %}\n                {{- '}\\n</tool_call>' }}\n            {%- endfor %}\n        {%- endif %}\n        {{- '<|im_end|>\\n' }}\n    {%- elif message.role == \"tool\" %}\n        {%- if loop.first or (messages[loop.index0 - 1].role != \"tool\") %}\n            {{- '<|im_start|>user' }}\n        {%- endif %}\n        {{- '\\n<tool_response>\\n' }}\n        {{- message.content }}\n        {{- '\\n</tool_response>' }}\n        {%- if loop.last or (messages[loop.index0 + 1].role != \"tool\") %}\n            {{- '<|im_end|>\\n' }}\n        {%- endif %}\n    {%- endif %}\n{%- endfor %}\n{%- if add_generation_prompt %}\n    {{- '<|im_start|>assistant\\n' }}\n    {%- if enable_thinking is defined and enable_thinking is false %}\n        {{- '<think>\\n\\n</think>\\n\\n' }}\n    {%- endif %}\n{%- endif %}",
+        "chat_template_caps": {
+          "supports_object_arguments": true,
+          "supports_parallel_tool_calls": true,
+          "supports_preserve_reasoning": false,
+          "supports_string_content": true,
+          "supports_system_role": true,
+          "supports_tool_calls": true,
+          "supports_tools": true,
+          "supports_typed_content": false
+        },
+        "bos_token": "<|endoftext|>",
+        "eos_token": "<|im_end|>",
+        "build_info": "b1-f5b9bd3",
+        "is_sleeping": false,
+        "cors_proxy_enabled": false
+      },
+      "sha256": "699936b83664f71a4c1d129a1e10b02c1909e8edfdd32962cea75259f4f92093"
+    },
+    "templates": {
+      "sentence": {
+        "name": "frames.v1",
+        "sha256": "764b9b3db52ab23b3686824ebce2fbe18d1ecdd0fb1c32b5f96cfa2e795cf685"
+      },
+      "json": {
+        "name": "branch.v2",
+        "sha256": "ced2b702a8bfc7f42d06f7d5cf984b1c77311b378bca39e6dd96dc6034502dbc"
+      }
+    },
+    "entities": [
+      "the boy",
+      "the villagers",
+      "the wolf"
+    ],
+    "entitiesSha256": "0a1b8d9390756a8d75508c66f35a663663bbadd6a43b013d4a93d289a5713e0d",
+    "grammar": "root ::= \"Then \" actor \" \" action \", and now \" outcome \".\"\nactor ::= \"the villagers\" | \"the wolf\" | \"the boy\"\naction ::= edge mid{0,78} edge\noutcome ::= edge mid{0,168} edge\nedge ::= [a-zA-Z0-9']\nmid ::= edge | \" \"\n",
+    "grammarSha256": "02d4b293b6d7c5f77d92aaf0347a9cc2797a215743e5959b33a714ea0f41885c",
+    "generatedAt": "2026-09-25T22:06:11.074Z",
+    "inputGraphSha256": "a1475d9426014ace0d5cd8068da5d6df70c560cb561820586ee522ab153aff72",
+    "from": "n_7f406c6029adbb3e"
+  },
+  "results": [
+    {
+      "nodeId": "n_7f406c6029adbb3e",
+      "path": [
+        "cw_watch",
+        "cw_cry1",
+        "cw_run1",
+        "cw_laugh",
+        "cw_cry2",
+        "cw_wolf",
+        "n_7f406c6029adbb3e"
+      ],
+      "history": [
+        "Then the villagers send the boy up the hillside to watch the flock, and now the boy is alone with the flock on the hillside and the villagers are in earshot below.",
+        "Then the boy shouts that a wolf is at the flock for the fun of it, and now the boy has raised the alarm and there is no wolf.",
+        "Then the villagers drop their work and run up the hill, and now the villagers are at the flock with nothing to fight.",
+        "Then the boy laughs at them for coming, and now the villagers go back down knowing the boy called them for a joke.",
+        "Then the boy shouts wolf a second time, and now the boy has raised the alarm again and there is still no wolf.",
+        "Then the wolf comes out of the trees to the flock, and now a wolf is among the sheep and the boy is alone with it."
+      ],
+      "arms": {
+        "json": {
+          "prompt": "Story states are events written as schema(arguments). You are given a told story in order, the path taken through it to reach one state, and that state. List the alternatives that could have followed instead of what the told story did next.\n\nEach alternative has a short label, its event expr, a state note describing what is now true, a delta naming the one thing that changed from the told story, and invariants naming what stayed the same. Use only the people, places and things that appear in the told story you are given — never ones from an earlier example. An alternative that leads back into the told story may name the state it rejoins as rejoinTargetId, using one of the bracketed ids.\n\nStory: The Tortoise and the Hare\n  [t_boast] boast(hare, speed) — The hare declares nothing on the road can outrun him.\n  [t_challenge] challenge(tortoise, hare) — The tortoise takes the boast seriously and names a course.\n  [t_start] start(fox, race) — The fox drops his paw; both are on the road.\n  [t_lead] outpace(hare, tortoise) — The hare opens a lead wide enough to make the result look settled.\n  [t_nap] nap(hare, roadside) — The hare converts the lead into rest and the gap stops growing.\n  [t_plod] plod(tortoise, road) — The tortoise holds a rate that does not depend on the gap.\n  [t_finish] win(tortoise, race) — The slower runner arrives first because the faster one stopped.\n\nPath: boast(hare, speed) → challenge(tortoise, hare) → start(fox, race) → outpace(hare, tortoise)\nState: outpace(hare, tortoise)\nNote: The hare opens a lead wide enough to make the result look settled.\nAlternatives:\n{\"branches\": [{\"label\": \"Hare spends the lead\", \"expr\": \"run(hare, finish)\", \"state\": \"The hare keeps running and crosses the line while the tortoise is still on the road.\", \"delta\": \"the hare never stops to rest\", \"invariants\": \"the tortoise still holds her pace\"}, {\"label\": \"Tortoise leaves the course\", \"expr\": \"leave(tortoise, road)\", \"state\": \"The tortoise cuts away from the marked course to save distance.\", \"delta\": \"the tortoise is no longer on the agreed course\", \"invariants\": \"the hare is still ahead\"}]}\n\nPath: boast(hare, speed) → challenge(tortoise, hare) → start(fox, race) → outpace(hare, tortoise) → nap(hare, roadside)\nState: nap(hare, roadside)\nNote: The hare converts the lead into rest and the gap stops growing.\nAlternatives:\n{\"branches\": [{\"label\": \"Fox wakes the hare\", \"expr\": \"wake(fox, hare)\", \"state\": \"The judge rouses the sleeper and the lead is still there to defend.\", \"delta\": \"the sleep is cut short\", \"invariants\": \"the tortoise is still behind\", \"rejoinTargetId\": \"t_finish\"}, {\"label\": \"Tortoise stops too\", \"expr\": \"rest(tortoise, roadside)\", \"state\": \"Both runners are stopped and the race is decided by who wakes first.\", \"delta\": \"the tortoise also stops moving\", \"invariants\": \"the hare is still asleep\"}]}\n\nStory: The Boy Who Cried Wolf\n  [cw_watch] send(villagers, boy, flock) — The boy is alone on the hillside with the sheep. The village is within earshot.\n  [cw_cry1] cry(boy, wolf) — The boy has raised the alarm. There is no wolf.\n  [cw_run1] arrive(villagers, flock) — The villagers are at the flock, armed, and there is nothing to fight.\n  [cw_laugh] mock(boy, villagers) — The villagers know they were called out for a joke. The sheep are unharmed.\n  [cw_cry2] cry(boy, wolf) — The boy has raised the alarm a second time. There is still no wolf.\n  [cw_run2] arrive(villagers, flock) — The villagers are at the flock again and again find nothing.\n  [cw_doubt] distrust(villagers, boy) — The villagers have decided the boy's cry means nothing. The boy does not know this.\n  [cw_wolf] arrive(wolf, flock) — A wolf is at the flock. The boy is alone with it.\n  [cw_cry3] cry(boy, wolf) — The boy has raised the alarm a third time, and this time it is true.\n  [cw_dismiss] ignore(villagers, boy) — The villagers hear the cry and stay where they are.\n  [cw_loss] devour(wolf, flock) — The sheep are dead. The boy is unhurt and alone.\n\nPath: send(villagers, boy, flock) → cry(boy, wolf) → arrive(villagers, flock) → mock(boy, villagers) → cry(boy, wolf) → arrive(wolf, flock) → leave(wolf, flock)\nState: leave(wolf, flock)\nNote: The wolf departs the flock, leaving the boy alone.\nAlternatives:\n",
+          "promptSha256": "5dc6d5c08a1a1b75011a284ddf9fb09dc09111ade51faed5f1f6388b99f62e8c",
+          "constrained": true,
+          "samples": [
+            {
+              "arm": "json",
+              "seed": 1879032931,
+              "raw": "{\"branches\": [{\"label\": \"Boy runs away\", \"expr\": \"run(boy, hillside)\", \"state\": \"The boy flees the scene and leaves the wolf alone.\", \"delta\": \"the boy leaves the area\", \"invariants\": \"the wolf remains\"}, {\"label\": \"Wolf leaves for good\", \"expr\": \"leave(wolf, hillside)\", \"state\": \"The wolf departs the hillside, never returning.\", \"delta\": \"the wolf leaves the area\", \"invariants\": \"the boy remains\"}]}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "f0996c2a8d87adb8",
+              "branch": {
+                "label": "Boy runs away",
+                "expr": "run(boy, hillside)",
+                "state": "The boy flees the scene and leaves the wolf alone.",
+                "delta": "the boy leaves the area",
+                "invariants": "the wolf remains"
+              },
+              "extraBranches": [
+                {
+                  "label": "Wolf leaves for good",
+                  "expr": "leave(wolf, hillside)",
+                  "state": "The wolf departs the hillside, never returning.",
+                  "delta": "the wolf leaves the area",
+                  "invariants": "the boy remains"
+                }
+              ],
+              "expr": "run(boy, hillside)",
+              "display": "run(boy, hillside) — The boy flees the scene and leaves the wolf alone."
+            },
+            {
+              "arm": "json",
+              "seed": 1862255312,
+              "raw": "{\"branches\": [{\"label\": \"Wolf abandons the sheep\", \"expr\": \"desert(wolf, flock)\", \"state\": \"The wolf leaves the flock, leaving the boy alone.\", \"delta\": \"the wolf abandons the sheep\", \"invariants\": \"the boy is still alone\"}, {\"label\": \"Boy leaves the hill\", \"expr\": \"leave(boy, hill)\", \"state\": \"The boy leaves the hill to avoid the wolf.\", \"delta\": \"the boy is no longer on the hill\", \"invariants\": \"the wolf is still on the hill\"}] }",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "d25b54b85732f07a",
+              "branch": {
+                "label": "Wolf abandons the sheep",
+                "expr": "desert(wolf, flock)",
+                "state": "The wolf leaves the flock, leaving the boy alone.",
+                "delta": "the wolf abandons the sheep",
+                "invariants": "the boy is still alone"
+              },
+              "extraBranches": [
+                {
+                  "label": "Boy leaves the hill",
+                  "expr": "leave(boy, hill)",
+                  "state": "The boy leaves the hill to avoid the wolf.",
+                  "delta": "the boy is no longer on the hill",
+                  "invariants": "the wolf is still on the hill"
+                }
+              ],
+              "expr": "desert(wolf, flock)",
+              "display": "desert(wolf, flock) — The wolf leaves the flock, leaving the boy alone."
+            },
+            {
+              "arm": "json",
+              "seed": 1912588169,
+              "raw": "{\"branches\": [{\"label\": \"Boy leaves flock\", \"expr\": \"leave(boy, flock)\", \"state\": \"The boy departs the flock, leaving the wolf to finish the sheep.\", \"delta\": \"the boy is no longer with the flock\", \"invariants\": \"the wolf remains at the flock\"}, {\"label\": \"Villagers arrive and attack wolf\", \"expr\": \"fight(villagers, wolf)\", \"state\": \"The villagers confront the wolf and drive it away. The boy is unharmed.\", \"delta\": \"the wolf is killed by the villagers\", \"invariants\": \"the flock is now safe\"}, {\"label\": \"Wolf hides in forest\", \"expr\": \"hide(wolf, forest)\", \"state\": \"The wolf hides in the nearby forest, leaving the flock unguarded.\", \"delta\": \"the wolf is no longer at the flock\", \"invariants\": \"the boy remains alone\"}]}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "36f236494fda8027",
+              "branch": {
+                "label": "Boy leaves flock",
+                "expr": "leave(boy, flock)",
+                "state": "The boy departs the flock, leaving the wolf to finish the sheep.",
+                "delta": "the boy is no longer with the flock",
+                "invariants": "the wolf remains at the flock"
+              },
+              "extraBranches": [
+                {
+                  "label": "Villagers arrive and attack wolf",
+                  "expr": "fight(villagers, wolf)",
+                  "state": "The villagers confront the wolf and drive it away. The boy is unharmed.",
+                  "delta": "the wolf is killed by the villagers",
+                  "invariants": "the flock is now safe"
+                },
+                {
+                  "label": "Wolf hides in forest",
+                  "expr": "hide(wolf, forest)",
+                  "state": "The wolf hides in the nearby forest, leaving the flock unguarded.",
+                  "delta": "the wolf is no longer at the flock",
+                  "invariants": "the boy remains alone"
+                }
+              ],
+              "expr": "leave(boy, flock)",
+              "display": "leave(boy, flock) — The boy departs the flock, leaving the wolf to finish the sheep."
+            },
+            {
+              "arm": "json",
+              "seed": 1895810550,
+              "raw": "{\"branches\": [{\"label\": \"Villagers leave\", \"expr\": \"leave(villagers, flock)\", \"state\": \"The villagers are gone, leaving the boy and the wolf alone.\", \"delta\": \"the villagers do not help\", \"invariants\": \"the boy and the wolf remain together\"}, {\"label\": \"Wolf eats the sheep\", \"expr\": \"devour(wolf, flock)\", \"state\": \"The wolf eats the sheep and the boy is left alone.\", \"delta\": \"the sheep are dead\", \"invariants\": \"the boy is unhurt\", \"rejoinTargetId\": \"cw_loss\"}] }",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "35f64989924741bf",
+              "branch": {
+                "label": "Villagers leave",
+                "expr": "leave(villagers, flock)",
+                "state": "The villagers are gone, leaving the boy and the wolf alone.",
+                "delta": "the villagers do not help",
+                "invariants": "the boy and the wolf remain together"
+              },
+              "extraBranches": [
+                {
+                  "label": "Wolf eats the sheep",
+                  "expr": "devour(wolf, flock)",
+                  "state": "The wolf eats the sheep and the boy is left alone.",
+                  "delta": "the sheep are dead",
+                  "invariants": "the boy is unhurt",
+                  "rejoinTargetId": "cw_loss"
+                }
+              ],
+              "expr": "leave(villagers, flock)",
+              "display": "leave(villagers, flock) — The villagers are gone, leaving the boy and the wolf alone."
+            },
+            {
+              "arm": "json",
+              "seed": 1929365788,
+              "raw": "{\"branches\": [{\"label\": \"Villagers stop mocking\", \"expr\": \"accept(villagers, boy)\", \"state\": \"The villagers realize the boy is serious and prepare to defend the flock.\", \"delta\": \"the villagers no longer mock\", \"invariants\": \"the wolf is still at the flock\", \"rejoinTargetId\": \"cw_dismiss\"}, {\"label\": \"Wolf attacks anyway\", \"expr\": \"attack(wolf, flock)\", \"state\": \"The wolf ignores the villagers and attacks the flock directly.\", \"delta\": \"the wolf attacks the flock\", \"invariants\": \"the villagers still mock\"}] }",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "850a415d5875bf93",
+              "branch": {
+                "label": "Villagers stop mocking",
+                "expr": "accept(villagers, boy)",
+                "state": "The villagers realize the boy is serious and prepare to defend the flock.",
+                "delta": "the villagers no longer mock",
+                "invariants": "the wolf is still at the flock",
+                "rejoinTargetId": "cw_dismiss"
+              },
+              "extraBranches": [
+                {
+                  "label": "Wolf attacks anyway",
+                  "expr": "attack(wolf, flock)",
+                  "state": "The wolf ignores the villagers and attacks the flock directly.",
+                  "delta": "the wolf attacks the flock",
+                  "invariants": "the villagers still mock"
+                }
+              ],
+              "expr": "accept(villagers, boy)",
+              "display": "accept(villagers, boy) — The villagers realize the boy is serious and prepare to defend the flock."
+            }
+          ],
+          "attempts": 6,
+          "refused": 0,
+          "truncated": 0,
+          "duplicates": 1,
+          "parseRate": 1,
+          "truncationRate": 0,
+          "saturated": false,
+          "allAttempts": [
+            {
+              "arm": "json",
+              "seed": 1879032931,
+              "raw": "{\"branches\": [{\"label\": \"Boy runs away\", \"expr\": \"run(boy, hillside)\", \"state\": \"The boy flees the scene and leaves the wolf alone.\", \"delta\": \"the boy leaves the area\", \"invariants\": \"the wolf remains\"}, {\"label\": \"Wolf leaves for good\", \"expr\": \"leave(wolf, hillside)\", \"state\": \"The wolf departs the hillside, never returning.\", \"delta\": \"the wolf leaves the area\", \"invariants\": \"the boy remains\"}]}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "f0996c2a8d87adb8",
+              "branch": {
+                "label": "Boy runs away",
+                "expr": "run(boy, hillside)",
+                "state": "The boy flees the scene and leaves the wolf alone.",
+                "delta": "the boy leaves the area",
+                "invariants": "the wolf remains"
+              },
+              "extraBranches": [
+                {
+                  "label": "Wolf leaves for good",
+                  "expr": "leave(wolf, hillside)",
+                  "state": "The wolf departs the hillside, never returning.",
+                  "delta": "the wolf leaves the area",
+                  "invariants": "the boy remains"
+                }
+              ],
+              "expr": "run(boy, hillside)",
+              "display": "run(boy, hillside) — The boy flees the scene and leaves the wolf alone."
+            },
+            {
+              "arm": "json",
+              "seed": 1862255312,
+              "raw": "{\"branches\": [{\"label\": \"Wolf abandons the sheep\", \"expr\": \"desert(wolf, flock)\", \"state\": \"The wolf leaves the flock, leaving the boy alone.\", \"delta\": \"the wolf abandons the sheep\", \"invariants\": \"the boy is still alone\"}, {\"label\": \"Boy leaves the hill\", \"expr\": \"leave(boy, hill)\", \"state\": \"The boy leaves the hill to avoid the wolf.\", \"delta\": \"the boy is no longer on the hill\", \"invariants\": \"the wolf is still on the hill\"}] }",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "d25b54b85732f07a",
+              "branch": {
+                "label": "Wolf abandons the sheep",
+                "expr": "desert(wolf, flock)",
+                "state": "The wolf leaves the flock, leaving the boy alone.",
+                "delta": "the wolf abandons the sheep",
+                "invariants": "the boy is still alone"
+              },
+              "extraBranches": [
+                {
+                  "label": "Boy leaves the hill",
+                  "expr": "leave(boy, hill)",
+                  "state": "The boy leaves the hill to avoid the wolf.",
+                  "delta": "the boy is no longer on the hill",
+                  "invariants": "the wolf is still on the hill"
+                }
+              ],
+              "expr": "desert(wolf, flock)",
+              "display": "desert(wolf, flock) — The wolf leaves the flock, leaving the boy alone."
+            },
+            {
+              "arm": "json",
+              "seed": 1912588169,
+              "raw": "{\"branches\": [{\"label\": \"Boy leaves flock\", \"expr\": \"leave(boy, flock)\", \"state\": \"The boy departs the flock, leaving the wolf to finish the sheep.\", \"delta\": \"the boy is no longer with the flock\", \"invariants\": \"the wolf remains at the flock\"}, {\"label\": \"Villagers arrive and attack wolf\", \"expr\": \"fight(villagers, wolf)\", \"state\": \"The villagers confront the wolf and drive it away. The boy is unharmed.\", \"delta\": \"the wolf is killed by the villagers\", \"invariants\": \"the flock is now safe\"}, {\"label\": \"Wolf hides in forest\", \"expr\": \"hide(wolf, forest)\", \"state\": \"The wolf hides in the nearby forest, leaving the flock unguarded.\", \"delta\": \"the wolf is no longer at the flock\", \"invariants\": \"the boy remains alone\"}]}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "36f236494fda8027",
+              "branch": {
+                "label": "Boy leaves flock",
+                "expr": "leave(boy, flock)",
+                "state": "The boy departs the flock, leaving the wolf to finish the sheep.",
+                "delta": "the boy is no longer with the flock",
+                "invariants": "the wolf remains at the flock"
+              },
+              "extraBranches": [
+                {
+                  "label": "Villagers arrive and attack wolf",
+                  "expr": "fight(villagers, wolf)",
+                  "state": "The villagers confront the wolf and drive it away. The boy is unharmed.",
+                  "delta": "the wolf is killed by the villagers",
+                  "invariants": "the flock is now safe"
+                },
+                {
+                  "label": "Wolf hides in forest",
+                  "expr": "hide(wolf, forest)",
+                  "state": "The wolf hides in the nearby forest, leaving the flock unguarded.",
+                  "delta": "the wolf is no longer at the flock",
+                  "invariants": "the boy remains alone"
+                }
+              ],
+              "expr": "leave(boy, flock)",
+              "display": "leave(boy, flock) — The boy departs the flock, leaving the wolf to finish the sheep."
+            },
+            {
+              "arm": "json",
+              "seed": 1895810550,
+              "raw": "{\"branches\": [{\"label\": \"Villagers leave\", \"expr\": \"leave(villagers, flock)\", \"state\": \"The villagers are gone, leaving the boy and the wolf alone.\", \"delta\": \"the villagers do not help\", \"invariants\": \"the boy and the wolf remain together\"}, {\"label\": \"Wolf eats the sheep\", \"expr\": \"devour(wolf, flock)\", \"state\": \"The wolf eats the sheep and the boy is left alone.\", \"delta\": \"the sheep are dead\", \"invariants\": \"the boy is unhurt\", \"rejoinTargetId\": \"cw_loss\"}] }",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "35f64989924741bf",
+              "branch": {
+                "label": "Villagers leave",
+                "expr": "leave(villagers, flock)",
+                "state": "The villagers are gone, leaving the boy and the wolf alone.",
+                "delta": "the villagers do not help",
+                "invariants": "the boy and the wolf remain together"
+              },
+              "extraBranches": [
+                {
+                  "label": "Wolf eats the sheep",
+                  "expr": "devour(wolf, flock)",
+                  "state": "The wolf eats the sheep and the boy is left alone.",
+                  "delta": "the sheep are dead",
+                  "invariants": "the boy is unhurt",
+                  "rejoinTargetId": "cw_loss"
+                }
+              ],
+              "expr": "leave(villagers, flock)",
+              "display": "leave(villagers, flock) — The villagers are gone, leaving the boy and the wolf alone."
+            },
+            {
+              "arm": "json",
+              "seed": 1946143407,
+              "raw": "{\"branches\": [{\"label\": \"Boy leaves wolf\", \"expr\": \"leave(boy, flock)\", \"state\": \"The boy also leaves the flock, leaving it alone with the wolf.\", \"delta\": \"the boy goes away\", \"invariants\": \"the wolf is still there\"}, {\"label\": \"Wolf eats boy\", \"expr\": \"eat(wolf, boy)\", \"state\": \"The wolf finds the boy and eats him.\", \"delta\": \"the boy is dead\", \"invariants\": \"the wolf is still there\"}] }",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "eb258fd8a8ea7832",
+              "branch": {
+                "label": "Boy leaves wolf",
+                "expr": "leave(boy, flock)",
+                "state": "The boy also leaves the flock, leaving it alone with the wolf.",
+                "delta": "the boy goes away",
+                "invariants": "the wolf is still there"
+              },
+              "extraBranches": [
+                {
+                  "label": "Wolf eats boy",
+                  "expr": "eat(wolf, boy)",
+                  "state": "The wolf finds the boy and eats him.",
+                  "delta": "the boy is dead",
+                  "invariants": "the wolf is still there"
+                }
+              ],
+              "expr": "leave(boy, flock)",
+              "display": "leave(boy, flock) — The boy also leaves the flock, leaving it alone with the wolf.",
+              "duplicateOf": "leave(boy, flock)"
+            },
+            {
+              "arm": "json",
+              "seed": 1929365788,
+              "raw": "{\"branches\": [{\"label\": \"Villagers stop mocking\", \"expr\": \"accept(villagers, boy)\", \"state\": \"The villagers realize the boy is serious and prepare to defend the flock.\", \"delta\": \"the villagers no longer mock\", \"invariants\": \"the wolf is still at the flock\", \"rejoinTargetId\": \"cw_dismiss\"}, {\"label\": \"Wolf attacks anyway\", \"expr\": \"attack(wolf, flock)\", \"state\": \"The wolf ignores the villagers and attacks the flock directly.\", \"delta\": \"the wolf attacks the flock\", \"invariants\": \"the villagers still mock\"}] }",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "850a415d5875bf93",
+              "branch": {
+                "label": "Villagers stop mocking",
+                "expr": "accept(villagers, boy)",
+                "state": "The villagers realize the boy is serious and prepare to defend the flock.",
+                "delta": "the villagers no longer mock",
+                "invariants": "the wolf is still at the flock",
+                "rejoinTargetId": "cw_dismiss"
+              },
+              "extraBranches": [
+                {
+                  "label": "Wolf attacks anyway",
+                  "expr": "attack(wolf, flock)",
+                  "state": "The wolf ignores the villagers and attacks the flock directly.",
+                  "delta": "the wolf attacks the flock",
+                  "invariants": "the villagers still mock"
+                }
+              ],
+              "expr": "accept(villagers, boy)",
+              "display": "accept(villagers, boy) — The villagers realize the boy is serious and prepare to defend the flock."
+            }
+          ]
+        }
+      }
+    }
+  ]
+}

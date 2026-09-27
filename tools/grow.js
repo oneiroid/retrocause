@@ -4,7 +4,7 @@
 //
 //   npm run grow -- --story red [--from red_start] [--depth 3] [--width 2]
 //                   [--max-nodes 24] [--seed 7] [--out runs]
-//                   [--prompt branch.v2]
+//                   [--prompt branch.v3]
 //   npm run grow:replay -- runs/<runId>/growth_manifest.json [--cached]
 //
 // Replay re-runs from the manifest and diffs canonical JSON. It is
@@ -23,13 +23,14 @@ const REPO = path.join(__dirname, "..");
 const Engine = require(path.join(REPO, "story_builder_engine.js"));
 const Ids = require(path.join(REPO, "ids.js"));
 const { createClient } = require(path.join(REPO, "llm_client.js"));
-const { growGraph } = require(path.join(REPO, "grower.js"));
+const { growGraph, schemaForPrompt } = require(path.join(REPO, "grower.js"));
 const { seeds } = require(path.join(REPO, "seeds.js"));
 
-// v2 carries the told story and the ancestor path; v1 carried one node and is
-// kept selectable because §6 scores prompt versions against each other, and a
-// deleted template makes its recorded manifests unreplayable.
-const DEFAULT_PROMPT_VERSION = "branch.v2";
+// v3 adds a closed `actor` and a closed `rejoin` (grower.js, branchSchemaV3);
+// v2 carries the told story and the ancestor path; v1 carried one node. The
+// older ones stay selectable because §6 scores prompt versions against each
+// other, and a deleted template makes its recorded manifests unreplayable.
+const DEFAULT_PROMPT_VERSION = "branch.v3";
 const promptPathOf = (version) => path.join(REPO, "prompts", `${version}.txt`);
 const PROFILE = "reference";
 const DEFAULTS = { depth: 3, width: 2, maxNodes: 24, seed: 7, out: "runs" };
@@ -89,7 +90,7 @@ function sha256File(file) {
 // beside them, and `grow:replay` cannot re-run them from the seed table.
 //
 // `source` is set only for a non-default candidate source (the grow server's
-// frames/baseline runs): `{ name, ...details }`. Absent, the config — and so
+// baseline runs): `{ name, ...details }`. Absent, the config — and so
 // every recorded runId — is exactly what it was before sources existed.
 async function buildConfig({
   story = null, graph = null, from, depth, width, maxNodes, client,
@@ -165,6 +166,7 @@ async function grow(args) {
     graph: inputGraph,
     client,
     promptTemplate: promptText,
+    schemaFor: schemaForPrompt(config.prompt.template),
     from,
     depth,
     width,
@@ -245,6 +247,7 @@ async function replay(args) {
     graph: inputGraph,
     client,
     promptTemplate: promptText,
+    schemaFor: schemaForPrompt(manifest.prompt.template),
     from: manifest.traversal.from,
     depth: manifest.traversal.depth,
     width: manifest.traversal.width,

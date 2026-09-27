@@ -273,3 +273,70 @@ test("BRANCH_SCHEMA is sent with every completion request", async () => {
   assert.ok(bodies.length > 0);
   for (const body of bodies) assert.deepStrictEqual(body.json_schema, BRANCH_SCHEMA);
 });
+
+// ── branch.v3: closed actor and closed rejoin ──────────────────────────────
+
+const { branchSchemaV3, rejoinTargets, schemaForPrompt } = require("../grower.js");
+const Engine = require("../story_builder_engine.js");
+
+test("v3 schema: actor ranges over the story's entities, rejoin over legal targets plus none", () => {
+  const graph = Engine.normalizeGraph(seeds.red);
+  const source = graph.nodes.find((n) => n.id === "red_tell");
+  const item = branchSchemaV3(graph, source).properties.branches.items;
+  assert.deepStrictEqual(item.properties.actor.enum, seeds.red.entities);
+  const targets = item.properties.rejoin.enum;
+  assert.strictEqual(targets.at(-1), "none");
+  // Descendants are legal (the canonical detour); the source and its
+  // ancestors are not — rejoining them would close a cycle.
+  assert.ok(targets.includes("red_leave") && targets.includes("red_rescue"));
+  for (const id of ["red_tell", "red_meet", "red_start"]) assert.ok(!targets.includes(id), id);
+  assert.ok(item.required.includes("rejoin") && item.required.includes("actor"));
+});
+
+test("v3 schema: grown nodes are never rejoin targets; no entities means a free actor", () => {
+  const graph = Engine.normalizeGraph({
+    ...seeds.red,
+    entities: undefined,
+    nodes: [...seeds.red.nodes, { id: "g1", label: "g", expr: "g()", createdBy: "grown" }],
+    edges: [...seeds.red.edges, { from: "red_tell", to: "g1", type: "choice" }],
+  });
+  const source = graph.nodes.find((n) => n.id === "red_meet");
+  const item = branchSchemaV3(graph, source).properties.branches.items;
+  assert.ok(!rejoinTargets(graph, source).includes("g1"));
+  assert.deepStrictEqual(item.properties.actor, { type: "string" });
+});
+
+test("v1/v2 keep the static schema; unknown versions fail loudly", () => {
+  assert.strictEqual(schemaForPrompt("branch.v2")(), BRANCH_SCHEMA);
+  assert.throws(() => schemaForPrompt("frames.v1"), /no schema/);
+});
+
+test("v3 growth: actor lands on the node, rejoin id makes an edge, none makes none", async () => {
+  const replies = {
+    "tell(red, wolf, grandmother_house)": { branches: [
+      { label: "Red lies", actor: "Red", expr: "lie(red, wolf)", state: "The wolf has a wrong address.", delta: "d1", invariants: "i1", rejoin: "red_leave" },
+      { label: "Mother arrives", actor: "Red's mother", expr: "arrive(mother, woods)", state: "Red is not alone.", delta: "d2", invariants: "i2", rejoin: "none" },
+    ] },
+  };
+  const seen = [];
+  const stub = createClient({
+    fetch: async (url, options) => {
+      if (url.endsWith("/props")) return { ok: true, json: async () => FIXTURES.props };
+      const body = JSON.parse(options.body);
+      seen.push(body);
+      const expr = [...body.prompt.matchAll(/^State: (.*)$/gm)].at(-1)[1];
+      return { ok: true, json: async () => ({ content: JSON.stringify(replies[expr] || { branches: [] }), stop_type: "eos" }) };
+    },
+  });
+  const { graph } = await growGraph({
+    graph: seeds.red, client: stub, promptTemplate: templateOf("branch.v3"), schemaFor: schemaForPrompt("branch.v3"),
+    from: "red_tell", depth: 1, width: 2, maxNodes: 4,
+  });
+  assert.ok(seen[0].prompt.includes(`Characters: ${seeds.red.entities.join(", ")}`));
+  assert.deepStrictEqual(seen[0].json_schema.properties.branches.items.properties.actor.enum, seeds.red.entities);
+  const lies = graph.nodes.find((n) => n.label === "Red lies");
+  const mother = graph.nodes.find((n) => n.label === "Mother arrives");
+  assert.strictEqual(lies.actor, "Red");
+  assert.ok(graph.edges.some((e) => e.type === "rejoins" && e.from === lies.id && e.to === "red_leave"));
+  assert.ok(!graph.edges.some((e) => e.type === "rejoins" && e.from === mother.id));
+});

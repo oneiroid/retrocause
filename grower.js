@@ -54,6 +54,92 @@ const BRANCH_SCHEMA = {
   },
 };
 
+// ── branch.v3: closed actor and closed rejoin, per request ──────────────────
+//
+// Two findings from the (removed) frames boundary, carried over without the
+// sentence format, which measured no better than JSON (experiments/NOTES.md,
+// "Larger cold batch — result"):
+//
+//   rejoin  v2's free-text `rejoinTargetId` measured rejoinValidity 0 — every
+//           rejoin it attempted named a node that did not exist. An enum
+//           over real ids measured 1.0. Here `rejoin` is REQUIRED and ranges
+//           over the legal targets plus "none", so an invalid target is
+//           unreachable rather than validated-and-dropped, and the model has
+//           to decide rather than forget the field.
+//   actor   who drives the alternative, over the story's closed `entities`
+//           list. `expr` has no actor slot a grammar can close, so this is
+//           the only place the actor is a constrained choice — and the slot
+//           an actor-forcing pass would restrict.
+//
+// The schema therefore depends on the graph and the source node, so it is
+// built per request. Its serialization is part of the request body and so of
+// the cache key; every ordering in it is pinned for that reason.
+const REJOIN_NONE = "none";
+
+// Legal rejoin targets for an alternative that branches off `source`: told-
+// story nodes (the ones the prompt lists with ids) that are not the source
+// or its ancestors. An ancestor would close a cycle through the new node.
+// Descendants ARE legal — rejoining a later told event is the canonical
+// detour — which the frames version got wrong by excluding them, leaving a
+// seed spine with no targets at all.
+function rejoinTargets(graph, source) {
+  const ranks = Engine.topoRanks(graph);
+  return graph.nodes
+    .filter((n) => n.createdBy !== "grown" && n.id !== source.id && !Engine.reachable(graph, n.id, source.id))
+    .sort((a, b) => (ranks[a.id] - ranks[b.id]) || String(a.id).localeCompare(String(b.id)))
+    .map((n) => n.id);
+}
+
+function branchSchemaV3(graph, source) {
+  const entities = Array.isArray(graph.entities) ? graph.entities : [];
+  return {
+    type: "object",
+    required: ["branches"],
+    properties: {
+      branches: {
+        type: "array",
+        minItems: 1,
+        maxItems: 3,
+        items: {
+          type: "object",
+          required: ["label", "actor", "expr", "state", "delta", "invariants", "rejoin"],
+          properties: {
+            label: { type: "string" },
+            // A graph without a character list (a blank UI graph) still
+            // grows; its actor is just unconstrained.
+            actor: entities.length ? { enum: [...entities] } : { type: "string" },
+            expr: { type: "string" },
+            state: { type: "string" },
+            delta: { type: "string" },
+            invariants: { type: "string" },
+            rejoin: { enum: [...rejoinTargets(graph, source), REJOIN_NONE] },
+          },
+        },
+      },
+    },
+  };
+}
+
+// Prompt version → the schema its requests carry. v1/v2 keep the static
+// schema so their recorded manifests replay byte-identically.
+const SCHEMA_BY_PROMPT = {
+  "branch.v1": () => BRANCH_SCHEMA,
+  "branch.v2": () => BRANCH_SCHEMA,
+  "branch.v3": branchSchemaV3,
+};
+
+function schemaForPrompt(version) {
+  const schemaFor = SCHEMA_BY_PROMPT[version];
+  if (!schemaFor) throw new Error(`no schema registered for prompt ${version}`);
+  return schemaFor;
+}
+
+// The one place a proposed rejoin is read, for both field conventions.
+function rejoinOf(candidate) {
+  if (candidate.rejoinTargetId) return candidate.rejoinTargetId;
+  return candidate.rejoin && candidate.rejoin !== REJOIN_NONE ? candidate.rejoin : null;
+}
+
 // Deterministic template rendering: pure string substitution on the node's
 // resolved fields plus the graph context below. The rendered prompt is a
 // cache key (§5.7), so nothing non-deterministic may enter it.
@@ -67,6 +153,7 @@ function renderPrompt(template, node, context = {}) {
     .replaceAll("{{state}}", node.state || "")
     .replaceAll("{{title}}", context.title || "")
     .replaceAll("{{story}}", context.story || "")
+    .replaceAll("{{entities}}", context.entities || "")
     .replaceAll("{{path}}", context.path || "");
 }
 
@@ -142,6 +229,7 @@ function promptContext(graph, node) {
   return {
     title: graph.title || (graph.meta && graph.meta.title) || "the told story",
     story: storySpine(graph),
+    entities: (Array.isArray(graph.entities) ? graph.entities : []).join(", "),
     path: ancestorPath(graph, node.id)
       .map((id) => (byId.get(id) || {}).expr || id)
       .join(" → "),
@@ -174,13 +262,9 @@ async function growGraph({
   graph: inputGraph,
   client,
   promptTemplate,
-  // Optional candidate source that replaces the client + template path:
-  // `async (graph, source, { bypassCache }) => branches[]`. Everything after
-  // proposal — the deterministic sort, the width cap, merge-on-insert, the
-  // refusal counters — is shared, which is what makes two sources comparable
-  // (eval.js's "swap only the candidate source"). Absent, behaviour is the
-  // client path exactly as before.
-  proposer = null,
+  // (graph, source) → the JSON schema for this expansion. Defaults to the
+  // static v1/v2 schema; branch.v3 passes schemaForPrompt("branch.v3").
+  schemaFor = () => BRANCH_SCHEMA,
   from,
   depth,
   width,
@@ -214,16 +298,12 @@ async function growGraph({
 
       let proposed;
       try {
-        if (proposer) {
-          proposed = await proposer(graph, source, { bypassCache });
-        } else {
-          const { content } = await client.complete(
-            renderPrompt(promptTemplate, source, promptContext(graph, source)),
-            BRANCH_SCHEMA,
-            { bypassCache },
-          );
-          proposed = JSON.parse(content).branches;
-        }
+        const { content } = await client.complete(
+          renderPrompt(promptTemplate, source, promptContext(graph, source)),
+          schemaFor(graph, source),
+          { bypassCache },
+        );
+        proposed = JSON.parse(content).branches;
       } catch (error) {
         // Truncation is a counted hard failure for this expansion point, not
         // a retry with a bigger cap — that would make the run irreproducible
@@ -247,11 +327,9 @@ async function growGraph({
           delta: candidate.delta,
           invariants: candidate.invariants,
           tags: Array.isArray(candidate.tags) && candidate.tags.length ? candidate.tags : ["counterfactual"],
-          // A frame-sourced candidate carries its frame, so the grown node can
-          // be a history line for the next expansion (frame_proposer.js).
-          // JSON candidates have none and emit none — their canonical JSON is
-          // unchanged.
-          ...(candidate.frame ? { frame: candidate.frame } : {}),
+          // branch.v3 only; v1/v2 nodes emit no key, so their canonical JSON
+          // is unchanged.
+          ...(candidate.actor ? { actor: candidate.actor } : {}),
           createdBy: "grown",
           ...(runId ? { runId } : {}),
         };
@@ -279,11 +357,12 @@ async function growGraph({
         // §5.5.6 — a rejoin that names a missing node or would cycle is
         // dropped and counted; the branch node itself stays. An open branch
         // is a legitimate outcome that validateGraph warns about.
-        if (candidate.rejoinTargetId) {
-          const rejoin = graph.nodes.some((n) => n.id === candidate.rejoinTargetId)
+        const rejoinTarget = rejoinOf(candidate);
+        if (rejoinTarget) {
+          const rejoin = graph.nodes.some((n) => n.id === rejoinTarget)
             ? Engine.addEdge(graph, {
               from: landedId,
-              to: candidate.rejoinTargetId,
+              to: rejoinTarget,
               type: "rejoins",
               label: "rejoins the story",
               branchId: landedId,
@@ -302,4 +381,7 @@ async function growGraph({
   return { graph, stats, validation };
 }
 
-module.exports = { growGraph, renderPrompt, promptContext, ancestorPath, storySpine, BRANCH_SCHEMA };
+module.exports = {
+  growGraph, renderPrompt, promptContext, ancestorPath, storySpine,
+  BRANCH_SCHEMA, branchSchemaV3, rejoinTargets, schemaForPrompt, rejoinOf, REJOIN_NONE,
+};
