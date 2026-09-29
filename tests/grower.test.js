@@ -185,6 +185,22 @@ test("a proposal that is a seed state collapses INTO the told story", async () =
   assert.strictEqual(graph.nodes.find((n) => n.id === "red_arrive").createdBy, "seed");
 });
 
+test("a draw that merges into the told story is not expanded further", async () => {
+  // The told next event, drawn at the root: it merges into red_warn, and the
+  // run must stop there rather than grow on from a node nobody selected.
+  const bodies = [];
+  const toldNext = async (url, options) => {
+    if (url.endsWith("/props")) return { ok: true, json: async () => FIXTURES.props };
+    bodies.push(JSON.parse(options.body));
+    return reply(stepLine(2, { label: "Mother warns her", expr: "warn(mother, red, path)", state: "Red has been told to stay on the path." }));
+  };
+  const { stats } = await growGraph({ ...CONFIG, graph: seeds.red, width: 1, client: createClient({ fetch: toldNext }) });
+  assert.strictEqual(stats.mergedDuplicates, 1);
+  assert.strictEqual(stats.created, 0);
+  assert.strictEqual(stats.expansions, 1);
+  assert.strictEqual(bodies.length, 1);
+});
+
 test("grown nodes carry provenance and resolved labels", async () => {
   const { graph } = await growGraph({ ...CONFIG, graph: seeds.red, client: client() });
   const grown = graph.nodes.filter((n) => n.createdBy === "grown");

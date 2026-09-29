@@ -1,0 +1,539 @@
+{
+  "manifest": {
+    "probe": "continue_probe v2 (prompt-version A/B)",
+    "story": "The Boy Who Cried Wolf",
+    "k": 5,
+    "runSeed": 7,
+    "arms": [
+      "branch.v4"
+    ],
+    "fast": false,
+    "sampling": {
+      "temperature": 1,
+      "top_k": 0,
+      "seed": 7,
+      "samplers": [
+        "top_k",
+        "min_p",
+        "temperature"
+      ],
+      "repeat_penalty": 1,
+      "dry_multiplier": 0,
+      "n_predict": 512,
+      "cache_prompt": false,
+      "min_p": 0.05
+    },
+    "model": {
+      "props": {
+        "default_generation_settings": {
+          "params": {
+            "seed": 4294967295,
+            "temperature": 0.800000011920929,
+            "dynatemp_range": 0,
+            "dynatemp_exponent": 1,
+            "top_k": 40,
+            "top_p": 0.949999988079071,
+            "min_p": 0.05000000074505806,
+            "top_n_sigma": -1,
+            "xtc_probability": 0,
+            "xtc_threshold": 0.10000000149011612,
+            "typical_p": 1,
+            "repeat_last_n": 64,
+            "repeat_penalty": 1,
+            "presence_penalty": 0,
+            "frequency_penalty": 0,
+            "dry_multiplier": 0,
+            "dry_base": 1.75,
+            "dry_allowed_length": 2,
+            "dry_penalty_last_n": -1,
+            "mirostat": 0,
+            "mirostat_tau": 5,
+            "mirostat_eta": 0.10000000149011612,
+            "adaptive_target": -1,
+            "adaptive_decay": 0.8999999761581421,
+            "max_tokens": -1,
+            "n_predict": -1,
+            "n_keep": 0,
+            "n_discard": 0,
+            "ignore_eos": false,
+            "stream": false,
+            "n_probs": 0,
+            "min_keep": 0,
+            "chat_format": "Content-only",
+            "reasoning_format": "none",
+            "reasoning_in_content": false,
+            "generation_prompt": "",
+            "samplers": [
+              "penalties",
+              "dry",
+              "top_n_sigma",
+              "top_k",
+              "typ_p",
+              "top_p",
+              "min_p",
+              "xtc",
+              "temperature"
+            ],
+            "speculative.types": "none",
+            "timings_per_token": false,
+            "post_sampling_probs": false,
+            "backend_sampling": false,
+            "lora": []
+          },
+          "n_ctx": 4096
+        },
+        "total_slots": 1,
+        "model_alias": "/media/oneiroid/sub/workspace/llmfinetune/models/qwen3-4b-base-Q5_K_M.gguf",
+        "model_ftype": "Q5_K - Medium",
+        "model_path": "/media/oneiroid/sub/workspace/llmfinetune/models/qwen3-4b-base-Q5_K_M.gguf",
+        "modalities": {
+          "vision": false,
+          "video": false,
+          "audio": false
+        },
+        "media_marker": "<__media_XIkPyIXwQxdcH3P0TQCZ7JN21K9EA07k__>",
+        "endpoint_slots": true,
+        "endpoint_props": false,
+        "endpoint_metrics": false,
+        "ui": true,
+        "ui_settings": {},
+        "chat_template": "{%- if tools %}\n    {{- '<|im_start|>system\\n' }}\n    {%- if messages[0].role == 'system' %}\n        {{- messages[0].content + '\\n\\n' }}\n    {%- endif %}\n    {{- \"# Tools\\n\\nYou may call one or more functions to assist with the user query.\\n\\nYou are provided with function signatures within <tools></tools> XML tags:\\n<tools>\" }}\n    {%- for tool in tools %}\n        {{- \"\\n\" }}\n        {{- tool | tojson }}\n    {%- endfor %}\n    {{- \"\\n</tools>\\n\\nFor each function call, return a json object with function name and arguments within <tool_call></tool_call> XML tags:\\n<tool_call>\\n{\\\"name\\\": <function-name>, \\\"arguments\\\": <args-json-object>}\\n</tool_call><|im_end|>\\n\" }}\n{%- else %}\n    {%- if messages[0].role == 'system' %}\n        {{- '<|im_start|>system\\n' + messages[0].content + '<|im_end|>\\n' }}\n    {%- endif %}\n{%- endif %}\n{%- set ns = namespace(multi_step_tool=true, last_query_index=messages|length - 1) %}\n{%- for message in messages[::-1] %}\n    {%- set index = (messages|length - 1) - loop.index0 %}\n    {%- if ns.multi_step_tool and message.role == \"user\" and not(message.content.startswith('<tool_response>') and message.content.endswith('</tool_response>')) %}\n        {%- set ns.multi_step_tool = false %}\n        {%- set ns.last_query_index = index %}\n    {%- endif %}\n{%- endfor %}\n{%- for message in messages %}\n    {%- if (message.role == \"user\") or (message.role == \"system\" and not loop.first) %}\n        {{- '<|im_start|>' + message.role + '\\n' + message.content + '<|im_end|>' + '\\n' }}\n    {%- elif message.role == \"assistant\" %}\n        {%- set content = message.content %}\n        {%- set reasoning_content = '' %}\n        {%- if message.reasoning_content is defined and message.reasoning_content is not none %}\n            {%- set reasoning_content = message.reasoning_content %}\n        {%- else %}\n            {%- if '</think>' in message.content %}\n                {%- set content = message.content.split('</think>')[-1].lstrip('\\n') %}\n                {%- set reasoning_content = message.content.split('</think>')[0].rstrip('\\n').split('<think>')[-1].lstrip('\\n') %}\n            {%- endif %}\n        {%- endif %}\n        {%- if loop.index0 > ns.last_query_index %}\n            {%- if loop.last or (not loop.last and reasoning_content) %}\n                {{- '<|im_start|>' + message.role + '\\n<think>\\n' + reasoning_content.strip('\\n') + '\\n</think>\\n\\n' + content.lstrip('\\n') }}\n            {%- else %}\n                {{- '<|im_start|>' + message.role + '\\n' + content }}\n            {%- endif %}\n        {%- else %}\n            {{- '<|im_start|>' + message.role + '\\n' + content }}\n        {%- endif %}\n        {%- if message.tool_calls %}\n            {%- for tool_call in message.tool_calls %}\n                {%- if (loop.first and content) or (not loop.first) %}\n                    {{- '\\n' }}\n                {%- endif %}\n                {%- if tool_call.function %}\n                    {%- set tool_call = tool_call.function %}\n                {%- endif %}\n                {{- '<tool_call>\\n{\"name\": \"' }}\n                {{- tool_call.name }}\n                {{- '\", \"arguments\": ' }}\n                {%- if tool_call.arguments is string %}\n                    {{- tool_call.arguments }}\n                {%- else %}\n                    {{- tool_call.arguments | tojson }}\n                {%- endif %}\n                {{- '}\\n</tool_call>' }}\n            {%- endfor %}\n        {%- endif %}\n        {{- '<|im_end|>\\n' }}\n    {%- elif message.role == \"tool\" %}\n        {%- if loop.first or (messages[loop.index0 - 1].role != \"tool\") %}\n            {{- '<|im_start|>user' }}\n        {%- endif %}\n        {{- '\\n<tool_response>\\n' }}\n        {{- message.content }}\n        {{- '\\n</tool_response>' }}\n        {%- if loop.last or (messages[loop.index0 + 1].role != \"tool\") %}\n            {{- '<|im_end|>\\n' }}\n        {%- endif %}\n    {%- endif %}\n{%- endfor %}\n{%- if add_generation_prompt %}\n    {{- '<|im_start|>assistant\\n' }}\n    {%- if enable_thinking is defined and enable_thinking is false %}\n        {{- '<think>\\n\\n</think>\\n\\n' }}\n    {%- endif %}\n{%- endif %}",
+        "chat_template_caps": {
+          "supports_object_arguments": true,
+          "supports_parallel_tool_calls": true,
+          "supports_preserve_reasoning": false,
+          "supports_string_content": true,
+          "supports_system_role": true,
+          "supports_tool_calls": true,
+          "supports_tools": true,
+          "supports_typed_content": false
+        },
+        "bos_token": "<|endoftext|>",
+        "eos_token": "<|im_end|>",
+        "build_info": "b1-f5b9bd3",
+        "is_sleeping": false,
+        "cors_proxy_enabled": false
+      },
+      "sha256": "699936b83664f71a4c1d129a1e10b02c1909e8edfdd32962cea75259f4f92093"
+    },
+    "templates": {
+      "branch.v4": {
+        "sha256": "82e216fac7655f30688bb3b5cd1039398ae67739487a2090a1f681df6d24969b"
+      }
+    },
+    "generatedAt": "2026-09-29T02:03:42.812Z",
+    "inputGraphSha256": "4407b524f043a27b572cf1d94c9075dcb006d5eedbe2a5c15ed1d85f31799fa5",
+    "from": "cw_cry2"
+  },
+  "results": [
+    {
+      "nodeId": "cw_cry2",
+      "path": [
+        "cw_watch",
+        "cw_cry1",
+        "cw_run1",
+        "cw_laugh",
+        "cw_cry2"
+      ],
+      "history": [
+        "send(villagers, boy, flock) — The boy is alone on the hillside with the sheep. The village is within earshot.",
+        "cry(boy, wolf) — The boy has raised the alarm. There is no wolf.",
+        "arrive(villagers, flock) — The villagers are at the flock, armed, and there is nothing to fight.",
+        "mock(boy, villagers) — The villagers know they were called out for a joke. The sheep are unharmed.",
+        "cry(boy, wolf) — The boy has raised the alarm a second time. There is still no wolf."
+      ],
+      "arms": {
+        "branch.v4": {
+          "prompt": "==> stories/the_tortoise_and_the_hare.jsonl <==\n{\"title\": \"The Tortoise and the Hare\", \"characters\": [\"the hare\", \"the tortoise\", \"the fox\"]}\n{\"step\": 1, \"event\": \"The hare boasts of his speed\", \"action\": \"boast(hare, speed)\", \"state\": \"The hare has told everyone on the road that nothing can outrun him.\"}\n{\"step\": 2, \"event\": \"The tortoise challenges him to a race\", \"action\": \"challenge(tortoise, hare)\", \"state\": \"A race between the hare and the tortoise is agreed, over a course the tortoise named.\"}\n{\"step\": 3, \"event\": \"The fox starts the race\", \"action\": \"start(fox, race)\", \"state\": \"Both runners are on the road and the race has begun.\"}\n{\"step\": 4, \"event\": \"The hare takes the lead\", \"action\": \"outpace(hare, tortoise)\", \"state\": \"The hare is far ahead. The tortoise is still near the start.\"}\n{\"step\": 5, \"event\": \"The hare lies down by the road\", \"action\": \"nap(hare, roadside)\", \"state\": \"The hare is asleep by the road. The tortoise is still walking.\"}\n{\"step\": 6, \"event\": \"The tortoise passes the sleeping hare\", \"action\": \"pass(tortoise, hare)\", \"state\": \"The tortoise is ahead on the road. The hare has not woken.\"}\n{\"step\": 7, \"event\": \"The tortoise wins the race\", \"action\": \"win(tortoise, race)\", \"state\": \"The tortoise has crossed the finish line first. The race is over.\"}\n\n==> stories/the_boy_who_cried_wolf.jsonl <==\n{\"title\": \"The Boy Who Cried Wolf\", \"characters\": [\"the boy\", \"the villagers\", \"the wolf\"]}\n{\"step\": 1, \"event\": \"The boy is set to watch the flock\", \"action\": \"send(villagers, boy, flock)\", \"state\": \"The boy is alone on the hillside with the sheep. The village is within earshot.\"}\n{\"step\": 2, \"event\": \"The boy cries wolf for fun\", \"action\": \"cry(boy, wolf)\", \"state\": \"The boy has raised the alarm. There is no wolf.\"}\n{\"step\": 3, \"event\": \"The villagers come running\", \"action\": \"arrive(villagers, flock)\", \"state\": \"The villagers are at the flock, armed, and there is nothing to fight.\"}\n{\"step\": 4, \"event\": \"The boy laughs at them\", \"action\": \"mock(boy, villagers)\", \"state\": \"The villagers know they were called out for a joke. The sheep are unharmed.\"}\n{\"step\": 5, \"event\": \"The boy cries wolf again\", \"action\": \"cry(boy, wolf)\", \"state\": \"The boy has raised the alarm a second time. There is still no wolf.\"}\n",
+          "promptSha256": "9930f7e9ffe6b9508a7b73cf527a300e7c3a4145ddd6d7b54fd52bc8a9ce09d8",
+          "grammar": "root ::= \"{\\\"step\\\": 6, \\\"event\\\": \\\"\" text \"\\\", \\\"action\\\": \\\"\" action \"\\\", \\\"state\\\": \\\"\" text \"\\\"}\"\ntext ::= [^\"\\\\\\x7F\\x00-\\x1F]+\naction ::= word \"(\" word (\", \" word)* \")\"\nword ::= [a-z] [a-z0-9_]*",
+          "samples": [
+            {
+              "arm": "branch.v4",
+              "seed": 21440595,
+              "raw": "{\"step\": 6, \"event\": \"The villagers are unresponsive\", \"action\": \"ignore(villagers, boy)\", \"state\": \"The villagers are not coming to the flock. The boy is desperate.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "750ea38daadb4ec3",
+              "branch": {
+                "label": "The villagers are unresponsive",
+                "expr": "ignore(villagers, boy)",
+                "state": "The villagers are not coming to the flock. The boy is desperate."
+              },
+              "expr": "ignore(villagers, boy)",
+              "display": "ignore(villagers, boy) — The villagers are not coming to the flock. The boy is desperate."
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 155661547,
+              "raw": "{\"step\": 6, \"event\": \"The villagers arrive but find no wolf\", \"action\": \"arrive(villagers, flock)\", \"state\": \"The villagers have been called out a second time, but the flock is unharmed.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "e1e9897743cff421",
+              "branch": {
+                "label": "The villagers arrive but find no wolf",
+                "expr": "arrive(villagers, flock)",
+                "state": "The villagers have been called out a second time, but the flock is unharmed."
+              },
+              "expr": "arrive(villagers, flock)",
+              "display": "arrive(villagers, flock) — The villagers have been called out a second time, but the flock is unharmed."
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 1728206549,
+              "raw": "{\"step\": 6, \"event\": \"The villagers come again, but less prepared\", \"action\": \"arrive(villagers, flock, less)\", \"state\": \"The villagers arrive, less armed, but there is still no wolf.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "be3a24e374f1a73d",
+              "branch": {
+                "label": "The villagers come again, but less prepared",
+                "expr": "arrive(villagers, flock, less)",
+                "state": "The villagers arrive, less armed, but there is still no wolf."
+              },
+              "expr": "arrive(villagers, flock, less)",
+              "display": "arrive(villagers, flock, less) — The villagers arrive, less armed, but there is still no wolf."
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 1761761787,
+              "raw": "{\"step\": 6, \"event\": \"The villagers do not believe him\", \"action\": \"disbelieve(villagers, boy)\", \"state\": \"The villagers think the boy is lying. They do not help the flock.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "aa79190852c26eb2",
+              "branch": {
+                "label": "The villagers do not believe him",
+                "expr": "disbelieve(villagers, boy)",
+                "state": "The villagers think the boy is lying. They do not help the flock."
+              },
+              "expr": "disbelieve(villagers, boy)",
+              "display": "disbelieve(villagers, boy) — The villagers think the boy is lying. They do not help the flock."
+            }
+          ],
+          "attempts": 20,
+          "refused": 0,
+          "truncated": 0,
+          "duplicates": 16,
+          "saturated": true,
+          "allAttempts": [
+            {
+              "arm": "branch.v4",
+              "seed": 21440595,
+              "raw": "{\"step\": 6, \"event\": \"The villagers are unresponsive\", \"action\": \"ignore(villagers, boy)\", \"state\": \"The villagers are not coming to the flock. The boy is desperate.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "750ea38daadb4ec3",
+              "branch": {
+                "label": "The villagers are unresponsive",
+                "expr": "ignore(villagers, boy)",
+                "state": "The villagers are not coming to the flock. The boy is desperate."
+              },
+              "expr": "ignore(villagers, boy)",
+              "display": "ignore(villagers, boy) — The villagers are not coming to the flock. The boy is desperate."
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 4662976,
+              "raw": "{\"step\": 6, \"event\": \"The villagers ignore the boy\", \"action\": \"ignore(villagers, boy)\", \"state\": \"The villagers have not come again. There is still no wolf.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "4afe85fd26a10c57",
+              "branch": {
+                "label": "The villagers ignore the boy",
+                "expr": "ignore(villagers, boy)",
+                "state": "The villagers have not come again. There is still no wolf."
+              },
+              "expr": "ignore(villagers, boy)",
+              "display": "ignore(villagers, boy) — The villagers have not come again. There is still no wolf.",
+              "duplicateOf": "ignore(villagers, boy)"
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 54995833,
+              "raw": "{\"step\": 6, \"event\": \"The villagers refuse to help\", \"action\": \"ignore(villagers, boy)\", \"state\": \"The villagers are reluctant to come out of the house when they know he is joking.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "dcb7d4a1db42b44b",
+              "branch": {
+                "label": "The villagers refuse to help",
+                "expr": "ignore(villagers, boy)",
+                "state": "The villagers are reluctant to come out of the house when they know he is joking."
+              },
+              "expr": "ignore(villagers, boy)",
+              "display": "ignore(villagers, boy) — The villagers are reluctant to come out of the house when they know he is joking.",
+              "duplicateOf": "ignore(villagers, boy)"
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 38218214,
+              "raw": "{\"step\": 6, \"event\": \"The villagers ignore the boy\", \"action\": \"ignore(villagers, boy)\", \"state\": \"The villagers do not believe the boy this time, and there is still nothing to fight.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "6bdcfd0432a0b142",
+              "branch": {
+                "label": "The villagers ignore the boy",
+                "expr": "ignore(villagers, boy)",
+                "state": "The villagers do not believe the boy this time, and there is still nothing to fight."
+              },
+              "expr": "ignore(villagers, boy)",
+              "display": "ignore(villagers, boy) — The villagers do not believe the boy this time, and there is still nothing to fight.",
+              "duplicateOf": "ignore(villagers, boy)"
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 88551071,
+              "raw": "{\"step\": 6, \"event\": \"The villagers do not believe him\", \"action\": \"ignore(villagers, boy)\", \"state\": \"The villagers know they have been lied to before. They refuse to come this time.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "b2e801ee878b5c84",
+              "branch": {
+                "label": "The villagers do not believe him",
+                "expr": "ignore(villagers, boy)",
+                "state": "The villagers know they have been lied to before. They refuse to come this time."
+              },
+              "expr": "ignore(villagers, boy)",
+              "display": "ignore(villagers, boy) — The villagers know they have been lied to before. They refuse to come this time.",
+              "duplicateOf": "ignore(villagers, boy)"
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 71773452,
+              "raw": "{\"step\": 6, \"event\": \"The villagers are not fooled\", \"action\": \"ignore(villagers, boy)\", \"state\": \"The villagers refuse to come. There is nothing to fight.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "86b988e731c4e3a5",
+              "branch": {
+                "label": "The villagers are not fooled",
+                "expr": "ignore(villagers, boy)",
+                "state": "The villagers refuse to come. There is nothing to fight."
+              },
+              "expr": "ignore(villagers, boy)",
+              "display": "ignore(villagers, boy) — The villagers refuse to come. There is nothing to fight.",
+              "duplicateOf": "ignore(villagers, boy)"
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 122106309,
+              "raw": "{\"step\": 6, \"event\": \"The villagers ignore him this time\", \"action\": \"ignore(villagers, boy)\", \"state\": \"The villagers know not to believe the boy when he cries wolf.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "5d69a5c379c80ea1",
+              "branch": {
+                "label": "The villagers ignore him this time",
+                "expr": "ignore(villagers, boy)",
+                "state": "The villagers know not to believe the boy when he cries wolf."
+              },
+              "expr": "ignore(villagers, boy)",
+              "display": "ignore(villagers, boy) — The villagers know not to believe the boy when he cries wolf.",
+              "duplicateOf": "ignore(villagers, boy)"
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 105328690,
+              "raw": "{\"step\": 6, \"event\": \"The villagers no longer come\", \"action\": \"ignore(villagers, boy)\", \"state\": \"The villagers have heard the boy before. They do not run for no reason.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "01a4adf39f973a5d",
+              "branch": {
+                "label": "The villagers no longer come",
+                "expr": "ignore(villagers, boy)",
+                "state": "The villagers have heard the boy before. They do not run for no reason."
+              },
+              "expr": "ignore(villagers, boy)",
+              "display": "ignore(villagers, boy) — The villagers have heard the boy before. They do not run for no reason.",
+              "duplicateOf": "ignore(villagers, boy)"
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 155661547,
+              "raw": "{\"step\": 6, \"event\": \"The villagers arrive but find no wolf\", \"action\": \"arrive(villagers, flock)\", \"state\": \"The villagers have been called out a second time, but the flock is unharmed.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "e1e9897743cff421",
+              "branch": {
+                "label": "The villagers arrive but find no wolf",
+                "expr": "arrive(villagers, flock)",
+                "state": "The villagers have been called out a second time, but the flock is unharmed."
+              },
+              "expr": "arrive(villagers, flock)",
+              "display": "arrive(villagers, flock) — The villagers have been called out a second time, but the flock is unharmed."
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 138883928,
+              "raw": "{\"step\": 6, \"event\": \"The villagers ignore him\", \"action\": \"ignore(villagers, boy)\", \"state\": \"The boy has ignored. There is no wolf. The sheep are unharmed.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "e21e8a2bbb997e0d",
+              "branch": {
+                "label": "The villagers ignore him",
+                "expr": "ignore(villagers, boy)",
+                "state": "The boy has ignored. There is no wolf. The sheep are unharmed."
+              },
+              "expr": "ignore(villagers, boy)",
+              "display": "ignore(villagers, boy) — The boy has ignored. There is no wolf. The sheep are unharmed.",
+              "duplicateOf": "ignore(villagers, boy)"
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 1610763216,
+              "raw": "{\"step\": 6, \"event\": \"The villagers do not respond\", \"action\": \"ignore(villagers, boy)\", \"state\": \"The villagers know the boy has lied. There is nothing to fight.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "3f770f1c6371b3be",
+              "branch": {
+                "label": "The villagers do not respond",
+                "expr": "ignore(villagers, boy)",
+                "state": "The villagers know the boy has lied. There is nothing to fight."
+              },
+              "expr": "ignore(villagers, boy)",
+              "display": "ignore(villagers, boy) — The villagers know the boy has lied. There is nothing to fight.",
+              "duplicateOf": "ignore(villagers, boy)"
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 1627540835,
+              "raw": "{\"step\": 6, \"event\": \"The villagers come running again\", \"action\": \"arrive(villagers, flock)\", \"state\": \"The villagers are at the flock, armed, and still nothing to fight.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "d6ce3a88547e97c2",
+              "branch": {
+                "label": "The villagers come running again",
+                "expr": "arrive(villagers, flock)",
+                "state": "The villagers are at the flock, armed, and still nothing to fight."
+              },
+              "expr": "arrive(villagers, flock)",
+              "display": "arrive(villagers, flock) — The villagers are at the flock, armed, and still nothing to fight.",
+              "duplicateOf": "arrive(villagers, flock)"
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 1644318454,
+              "raw": "{\"step\": 6, \"event\": \"The villagers ignore the alarm\", \"action\": \"ignore(villagers, boy)\", \"state\": \"The villagers realize the boy is lying. They will not believe him now.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "54995e6b4ca1e405",
+              "branch": {
+                "label": "The villagers ignore the alarm",
+                "expr": "ignore(villagers, boy)",
+                "state": "The villagers realize the boy is lying. They will not believe him now."
+              },
+              "expr": "ignore(villagers, boy)",
+              "display": "ignore(villagers, boy) — The villagers realize the boy is lying. They will not believe him now.",
+              "duplicateOf": "ignore(villagers, boy)"
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 1661096073,
+              "raw": "{\"step\": 6, \"event\": \"The villagers do not come this time\", \"action\": \"ignore(villagers, boy)\", \"state\": \"The villagers stay in the village. The boy thinks he's more important than everyone.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "b2c0acd8c36ff6ae",
+              "branch": {
+                "label": "The villagers do not come this time",
+                "expr": "ignore(villagers, boy)",
+                "state": "The villagers stay in the village. The boy thinks he's more important than everyone."
+              },
+              "expr": "ignore(villagers, boy)",
+              "display": "ignore(villagers, boy) — The villagers stay in the village. The boy thinks he's more important than everyone.",
+              "duplicateOf": "ignore(villagers, boy)"
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 1677873692,
+              "raw": "{\"step\": 6, \"event\": \"The villagers ignore the boy\", \"action\": \"ignore(villagers, boy)\", \"state\": \"The villagers are wary of being misled again. They stay where they are.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "588b03cb42f55139",
+              "branch": {
+                "label": "The villagers ignore the boy",
+                "expr": "ignore(villagers, boy)",
+                "state": "The villagers are wary of being misled again. They stay where they are."
+              },
+              "expr": "ignore(villagers, boy)",
+              "display": "ignore(villagers, boy) — The villagers are wary of being misled again. They stay where they are.",
+              "duplicateOf": "ignore(villagers, boy)"
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 1694651311,
+              "raw": "{\"step\": 6, \"event\": \"The villagers come running again\", \"action\": \"arrive(villagers, flock)\", \"state\": \"The villagers are at the flock, armed, and there is still nothing to fight.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "ef97d04861214c86",
+              "branch": {
+                "label": "The villagers come running again",
+                "expr": "arrive(villagers, flock)",
+                "state": "The villagers are at the flock, armed, and there is still nothing to fight."
+              },
+              "expr": "arrive(villagers, flock)",
+              "display": "arrive(villagers, flock) — The villagers are at the flock, armed, and there is still nothing to fight.",
+              "duplicateOf": "arrive(villagers, flock)"
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 1711428930,
+              "raw": "{\"step\": 6, \"event\": \"The villagers ignore him again\", \"action\": \"ignore(villagers, boy)\", \"state\": \"The villagers have learned to distrust the boy. The wolf is still not there.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "c9ac679d35a922bb",
+              "branch": {
+                "label": "The villagers ignore him again",
+                "expr": "ignore(villagers, boy)",
+                "state": "The villagers have learned to distrust the boy. The wolf is still not there."
+              },
+              "expr": "ignore(villagers, boy)",
+              "display": "ignore(villagers, boy) — The villagers have learned to distrust the boy. The wolf is still not there.",
+              "duplicateOf": "ignore(villagers, boy)"
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 1728206549,
+              "raw": "{\"step\": 6, \"event\": \"The villagers come again, but less prepared\", \"action\": \"arrive(villagers, flock, less)\", \"state\": \"The villagers arrive, less armed, but there is still no wolf.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "be3a24e374f1a73d",
+              "branch": {
+                "label": "The villagers come again, but less prepared",
+                "expr": "arrive(villagers, flock, less)",
+                "state": "The villagers arrive, less armed, but there is still no wolf."
+              },
+              "expr": "arrive(villagers, flock, less)",
+              "display": "arrive(villagers, flock, less) — The villagers arrive, less armed, but there is still no wolf."
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 1744984168,
+              "raw": "{\"step\": 6, \"event\": \"The villagers refuse to help\", \"action\": \"ignore(villagers, boy)\", \"state\": \"The villagers do not believe the boy. They think he is lying again.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "bfdd60bd7d1e7d0f",
+              "branch": {
+                "label": "The villagers refuse to help",
+                "expr": "ignore(villagers, boy)",
+                "state": "The villagers do not believe the boy. They think he is lying again."
+              },
+              "expr": "ignore(villagers, boy)",
+              "display": "ignore(villagers, boy) — The villagers do not believe the boy. They think he is lying again.",
+              "duplicateOf": "ignore(villagers, boy)"
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 1761761787,
+              "raw": "{\"step\": 6, \"event\": \"The villagers do not believe him\", \"action\": \"disbelieve(villagers, boy)\", \"state\": \"The villagers think the boy is lying. They do not help the flock.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "aa79190852c26eb2",
+              "branch": {
+                "label": "The villagers do not believe him",
+                "expr": "disbelieve(villagers, boy)",
+                "state": "The villagers think the boy is lying. They do not help the flock."
+              },
+              "expr": "disbelieve(villagers, boy)",
+              "display": "disbelieve(villagers, boy) — The villagers think the boy is lying. They do not help the flock."
+            }
+          ]
+        }
+      }
+    }
+  ]
+}

@@ -307,9 +307,19 @@ async function growGraph({
           continue;
         }
 
-        if (result.merged) stats.mergedDuplicates += 1;
-        else stats.created += 1;
-        next.add(result.merged ? result.into : result.node.id);
+        // Only a node this draw CREATED joins the next frontier. A merge ends
+        // the branch: the node it landed on is either a told-story node —
+        // whose continuation is already authored, and which the user did not
+        // select — or a node this run grew, which is already on a frontier.
+        // Expanding merge targets walked the run down the told story
+        // (criedWolf from cw_cry2, 2026-09-29: draws matching cw_run2 and
+        // cw_dismiss put both on round 2's frontier).
+        if (result.merged) {
+          stats.mergedDuplicates += 1;
+          continue;
+        }
+        stats.created += 1;
+        next.add(result.node.id);
       }
     }
     frontier = [...next];

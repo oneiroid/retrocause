@@ -1857,3 +1857,29 @@ their manifests as records and are no longer replayable. The eval's
 `rejoinValidity` still scores those recorded runs; v4 runs score null.
 
 Not yet measured: any v4 draw on a live model.
+
+## First v4 grow in the Lab — the walk down the told story (2026-09-29)
+
+criedWolf from `cw_cry2`, depth 2 / width 3, 4B CUDA, sampled profile
+(`runs/run_f6e0086e64aa4db8`, trace in `trace.json`). Round 1's three draws:
+`ignore(villagers, boy)` once, `arrive(villagers, flock)` twice. All three
+merged into told nodes — the two `arrive` into `cw_run2` (the told next
+event), the `ignore` into `cw_dismiss`, four steps later. The grower then
+put both merge targets on round 2's frontier and grew from them, so the
+"branches" hung off told nodes the user never selected. 4 created, 5 merged.
+
+The model did its job: two draws continued as told, one jumped ahead.
+Two grower faults, one fixed:
+
+1. **Fixed:** merge targets joined the frontier. Now only nodes a draw
+   created do; a merge ends that branch (`grower.js`, test "a draw that
+   merges into the told story is not expanded further").
+2. **Flagged, not changed:** the `ignore` merge is wrong. The surface key
+   (normalized `expr`) called "villagers ignore the boy, no wolf" at step 6
+   the same state as `cw_dismiss` (a wolf at the flock, step 10). Neither
+   node reaches the other, so `sameInContext` treats them as parallel and
+   merges — and the merge draws a `cw_cry2 → cw_dismiss` shortcut edge. This
+   is the known limit of the content key (`history_key.js`: merges need the
+   route's accumulated state, not the event alone). With v4 drawing genuine
+   continuations, told-story expr collisions are now the common case, not
+   the rare one, so this limit will show up in most runs.
