@@ -18,6 +18,14 @@ silently absorbed — §5.5.4 is the substantive one.
 
 ## 0. Where the work stands, and how to resume it
 
+> **Priority change, 2026-09-24 (human decision).** This document was
+> written with reproducibility as the governing constraint. It is now a
+> secondary goal: welcome where cheap, dropped where it complicates
+> anything else. Growth quality and auto-merge come first. Where a section
+> below argues from replay ("this alone decides it", "fix this first or
+> nothing downstream is measurable"), read it as the old ranking. Local
+> models stay a hard requirement — hosted-only models are out.
+
 Written for a session starting cold on branch `claude/local-llm-phase0`.
 Verified 2026-08-16.
 
@@ -432,11 +440,13 @@ Reproducibility is not a nice-to-have here; it is the difference between
 
 ### 2.4 Why local, and why small
 
-**Local over hosted**, in order of weight:
+**Local over hosted**, in order of weight (amended 2026-09-24: local is
+now a human decision in its own right — hosted-only models are out —
+and reason 1 no longer carries the weight it was given, see §0):
 
 1. **You can pin weights by SHA-256. You cannot pin a hosted model.**
    A hosted endpoint is silently re-versioned; a manifest that names it
-   is a manifest that lies. This alone decides it.
+   is a manifest that lies. ~~This alone decides it.~~
 2. Corpus-scale runs are free. Growing hundreds of graphs, then
    re-growing them to verify replay, is a rounding error locally and a
    bill remotely.

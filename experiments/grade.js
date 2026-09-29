@@ -67,7 +67,9 @@
 // RATER STATUS, 2026-09-10: after the calibration runs the human determined
 // the disagreements came from their own misreading of the questions and
 // designated Claude's grading the reference. From that date Claude-rated
-// files are data, not provisional.
+// files are data, not provisional. 2026-09-24: the human-graded files were
+// erased; the calibration figures below that cite human answers are history
+// only. Claude's labels are the only grading data.
 
 "use strict";
 

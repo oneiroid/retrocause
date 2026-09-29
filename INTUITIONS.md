@@ -153,9 +153,7 @@ A second agency function is now designed but not built (`LOCAL_LLM.md`):
 a local model that selects continuations at branch points, with
 traversal depth and width as an explicit, tunable *resolution* — the
 first time §7's "resolution" would be a parameter rather than a word.
-The tag stays `partial` until that code exists and its runs are shown to
-replay. An agency function whose choices cannot be re-derived is not an
-implementation of §7; it is noise wearing the shape of one.
+The tag stays `partial` until that code exists and runs.
 
 Free will, in these terms, is the agency function — whether it is
 determined by G's structure (the appearance of choice is an artifact
@@ -190,7 +188,7 @@ Two consequences the project takes seriously:
   than removing it: finding a monomyth in graphs grown by a model
   trained on monomyth criticism would prove nothing. What it does buy is
   that the assumptions stop being *this* analyst's, become legible
-  (pinned weights, versioned prompts, replayable runs), and get cheap
+  (pinned weights, versioned prompts, recorded runs), and get cheap
   enough to vary deliberately — which is a precondition for the external
   test, not a substitute for it.
 

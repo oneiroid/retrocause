@@ -14,7 +14,8 @@ into counterfactual alternatives.
    research it draws on.
 4. `LOCAL_LLM.md` — the Node-side grower: automatic DAG growth via a
    small local model through `llama.cpp`, and what it takes to make those
-   runs reproducible. Phases 0–1 have landed (`ids.js`, the GGUF, the
+   runs reproducible (a secondary goal since 2026-09-24 — see
+   "Priorities" below). Phases 0–1 have landed (`ids.js`, the GGUF, the
    reference profile, `llm_client.js`/`grower.js`/`tools/grow.js`); the
    eval harness (Phase 2) landed 2026-08-16 (`tools/eval.js`). **§0 is the
    resume point** — read it before picking the work up.
@@ -22,6 +23,15 @@ into counterfactual alternatives.
    work: every config that produced a number, and every place the plan and
    the machine disagree. The frames boundary (a sentence format tested
    against JSON) is recorded there and removed from the code.
+
+**Priorities (human decision, 2026-09-24):** reproducibility is welcome,
+not a gate. Growth quality, auto-merge and iteration speed come first.
+When keeping a run byte-replayable makes other work more complicated,
+drop replayability for that path, label the run non-replayable, and move
+on. Existing replay machinery (content ids, canonical JSON, manifests,
+the response cache) stays where it is cheap; do not extend it at the
+expense of anything else. Models stay **local** — hosted-only models are
+out, by the same decision.
 
 **Conflict resolution:** when the intuitions and the code disagree, the
 disagreement is data — flag it in both, don't silently absorb either
@@ -80,7 +90,7 @@ side. See `CONCEPT.md` §"What each layer commits to".
 | `tools/eval.js` | `npm run eval` — §6 metric table over model runs, recorded run dirs, and the `gen_probe.js` baseline (probe candidate source through the grower's own traversal). `--prompt a,b` scores versions side by side; `--from <nodeId>` (single story) moves the traversal start |
 | `tools/serve_reference.sh` | Starts `llama-server` on a hash-pinned profile (`LOCAL_LLM.md` §4.1). Every flag in it is part of that profile. Two profiles: `ref-1.7b-cpu` (default, the Phase 0.5 artifact — every run in `runs/` was grown under it) and `PROFILE=qwen3-4b-cuda` (4B Q5_K_M, all layers on GPU). The two are **different substrates**, not fast/slow versions of one |
 | `experiments/continue_probe.js` | Continuation probe: K distinct draws per prompt version (default `branch.v4` only) at one node, same model, same sampler (temperature 1.0 / min_p 0.05). Every arm renders `expr — state`, so a multi-arm A/B grades blind. `probeNode` is shared by the CLI and the grow server. Grows nothing and merges nothing |
-| `experiments/grade.js` | Grading CLI over a probe output — four y/n questions defined (`possible`, `consistent`, `advances`, `toldStory`), arms interleaved in a seeded shuffle. Only the two that discriminate on the calibration data — `consistent` and `advances` — are asked per sample (`ask` in `QUESTIONS`); `possible`/`toldStory` measured as noise and are demoted to spot-checks (`--labels` or re-enabling `ask` still records them). `--resume` carries prior answers so re-scoring costs only the delta; `--labels`/`--rater` records a non-human rater; `--compare` reports per-question Cohen's kappa and flags one-directional disagreement. Each prompt names what it asks relative to. Since 2026-09-10 Claude's grading is the reference rater, by the human's decision |
+| `experiments/grade.js` | Grading CLI over a probe output — four y/n questions defined (`possible`, `consistent`, `advances`, `toldStory`), arms interleaved in a seeded shuffle. Only the two that discriminate on the calibration data — `consistent` and `advances` — are asked per sample (`ask` in `QUESTIONS`); `possible`/`toldStory` measured as noise and are demoted to spot-checks (`--labels` or re-enabling `ask` still records them). `--resume` carries prior answers so re-scoring costs only the delta; `--labels`/`--rater` records a non-human rater; `--compare` reports per-question Cohen's kappa and flags one-directional disagreement. Each prompt names what it asks relative to. Since 2026-09-10 Claude's grading is the reference rater, by the human's decision; since 2026-09-24 the human grades are erased (misunderstood questions) and Claude's are the only grading data — the calibration that demoted `possible`/`toldStory` rested on them, so that demotion stands on cost, not on measurement |
 | `experiments/NOTES.md` | Running log for the continuation work: every config that produced a number, and every deviation from the plan |
 | `experiments/gen_probe.js` | Lexicon-recombiner probe; the traversal `grower.js` will lift and the eval baseline it must beat |
 | `experiments/same_state.js` | Can the local model judge "same state?" — 18 hand-labelled pairs. The one task it does well (bounded discrimination, not generation). Model + argument guard: 6/9 true merges vs the surface key's 2, zero false merges |
@@ -101,9 +111,10 @@ side. See `CONCEPT.md` §"What each layer commits to".
 - **Ids are content-addressed, never wall-clock.** `ids.nodeId` hashes
   `parentId | normalizedContent(expr) | normalizedContent(label)`;
   collisions get a deterministic `_2` suffix. Never mint an id from
-  `Date.now()` or `Math.random()` — two identical sessions must produce
-  byte-identical graphs, which is what `ids.canonicalJson` (sorted, fixed
-  key order, no `savedAt`) exists to let you assert. See `LOCAL_LLM.md` §3.
+  `Date.now()` or `Math.random()`. The ids are kept because they are
+  cheap and stable (same content → same id helps merging and diffing);
+  byte-identical replay via `ids.canonicalJson` is a welcome by-product,
+  not a requirement (see "Priorities"). See `LOCAL_LLM.md` §3.
 - **Nodes.** A node has an `id`, `label`, a free-form `expr`, a prose
   `state` note, `kind` (`root` / `story` / `branch` / `note`), `tags`, and
   optional branch metadata (`delta`, `invariants`). "Bottleneck" is **not**
