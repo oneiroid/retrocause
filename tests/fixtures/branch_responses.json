@@ -1,5 +1,5 @@
 {
-  "comment": "Recorded-response fixtures for tests/grower.test.js (LOCAL_LLM.md §5.7 payoff 3, §7). `props` stands in for GET /props; `completions` maps the target state's expr — the last `State:` line of the rendered prompt — to the branch payload the stub transport returns. Shapes match what the reference server actually emits (stop_type eos, stopped_limit null). Designed to exercise: the width cap (three proposals at the root), a valid rejoin (red_woods), an invalid rejoin (no_such_node), a cycle-creating rejoin (red_start from its own descendant), a grown-to-grown merge (shelter(red, cottage) proposed on two parallel paths), and a grown-to-SEED merge (arrive(red, grandmother_house) is red_arrive's own expr). The two merge cases use different exprs on purpose: seeds v2 made arrive(red, grandmother_house) a real seed node, which silently turned the old grown-to-grown case into a grown-to-seed one and cost the test its subject. shelter(red, cottage) appears in no seed and must stay that way.",
+  "comment": "Recorded-response fixtures for tests/grower.test.js and tests/grow_server.test.js (LOCAL_LLM.md §5.7 payoff 3, §7). `props` stands in for GET /props; `completions` maps the source state's action — the last `\"action\"` of the rendered branch.v4 prompt — to the lines the stub returns, one per draw, in draw order (cycling when a caller draws more). A source with no entry is a fixture gap and fails the request. Designed to exercise: a grown-to-grown merge (shelter(red, cottage) drawn on two parallel paths) and a grown-to-SEED merge (arrive(red, grandmother_house) is red_arrive's own action). The two merge cases use different actions on purpose: seeds v2 made arrive(red, grandmother_house) a real seed node, which silently turned an earlier grown-to-grown case into a grown-to-seed one and cost the test its subject. shelter(red, cottage) appears in no seed and must stay that way. Shapes match what the reference server emits (stop_type eos, stopped_limit null).",
   "props": {
     "build_info": "b1-f5b9bd3-fixture",
     "model_path": "/fixtures/qwen3-1.7b-base-Q8_0.gguf",
@@ -7,73 +7,49 @@
     "total_slots": 1,
     "default_generation_settings": {
       "n_ctx": 4096,
-      "params": { "temperature": 0.8, "top_k": 40, "seed": 4294967295 }
+      "params": {
+        "temperature": 0.8,
+        "top_k": 40,
+        "seed": 4294967295
+      }
     }
   },
   "completions": {
-    "send(mother, red, basket)": {
-      "branches": [
-        {
-          "label": "Filler beyond the width cap",
-          "expr": "zzz_filler(red)",
-          "state": "This proposal sorts last and must be cut by width=2.",
-          "delta": "nothing",
-          "invariants": "nothing"
-        },
-        {
-          "label": "Mother comes along",
-          "expr": "escort(mother, red)",
-          "state": "Mother walks with Red; the woods hold no unsupervised stranger contact.",
-          "delta": "Red is not alone",
-          "invariants": "the errand still happens",
-          "rejoinTargetId": "red_woods"
-        },
-        {
-          "label": "Red refuses the errand",
-          "expr": "refuse(red, mother)",
-          "state": "Red stays home; the basket never enters the woods.",
-          "delta": "the errand is abandoned",
-          "invariants": "the wolf has not seen Red",
-          "rejoinTargetId": "no_such_node"
-        }
-      ]
-    },
-    "escort(mother, red)": {
-      "branches": [
-        {
-          "label": "They wait out the day",
-          "expr": "shelter(red, cottage)",
-          "state": "The pair stops at a woodsman's cottage until the light is better.",
-          "delta": "the crossing is postponed",
-          "invariants": "the basket still travels"
-        },
-        {
-          "label": "They turn back",
-          "expr": "turn_back(red, home)",
-          "state": "The pair abandons the trip at the treeline.",
-          "delta": "the visit never happens",
-          "invariants": "everyone is safe at home",
-          "rejoinTargetId": "red_start"
-        }
-      ]
-    },
-    "refuse(red, mother)": {
-      "branches": [
-        {
-          "label": "Red relents and arrives",
-          "expr": "arrive(red, grandmother_house)",
-          "state": "Red reaches the house before any predator does.",
-          "delta": "arrival precedes the wolf",
-          "invariants": "grandmother is unharmed"
-        },
-        {
-          "label": "Red waits it out instead",
-          "expr": "shelter(red, cottage)",
-          "state": "Red stops at a woodsman's cottage until the light is better.",
-          "delta": "the crossing is postponed",
-          "invariants": "the basket still travels"
-        }
-      ]
-    }
+    "send(mother, red, basket)": [
+      {
+        "event": "Red refuses the errand",
+        "action": "refuse(red, mother)",
+        "state": "Red is at home. The basket has not left the house."
+      },
+      {
+        "event": "Mother comes along",
+        "action": "escort(mother, red)",
+        "state": "Red and her mother are walking into the woods together, carrying the basket."
+      }
+    ],
+    "escort(mother, red)": [
+      {
+        "event": "They turn back",
+        "action": "turn_back(red, home)",
+        "state": "Red and her mother are back at the treeline, heading home."
+      },
+      {
+        "event": "They wait out the day",
+        "action": "shelter(red, cottage)",
+        "state": "Red is at a woodsman's cottage, waiting for better light."
+      }
+    ],
+    "refuse(red, mother)": [
+      {
+        "event": "Red relents and arrives",
+        "action": "arrive(red, grandmother_house)",
+        "state": "Red is at her grandmother's house."
+      },
+      {
+        "event": "Red waits it out instead",
+        "action": "shelter(red, cottage)",
+        "state": "Red is at a woodsman's cottage, waiting for better light."
+      }
+    ]
   }
 }

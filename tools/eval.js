@@ -6,7 +6,7 @@
 //   node tools/eval.js score runs/<runId> [runs/<runId> ...]
 //   node tools/eval.js sweep --stories red,criedWolf,trojanHorse
 //                            [--depth 2] [--width 2] [--max-nodes 8] [--seed 7]
-//                            [--prompt branch.v2,branch.v3]
+//                            [--prompt branch.v4]
 //                            [--from <nodeId>, with a single --stories]
 //                            [--replay] [--baseline-only] [--show]
 //
@@ -42,19 +42,20 @@ const REPO = path.join(__dirname, "..");
 const Engine = require(path.join(REPO, "story_builder_engine.js"));
 const Ids = require(path.join(REPO, "ids.js"));
 const Probe = require(path.join(REPO, "experiments", "gen_probe.js"));
-const { createClient } = require(path.join(REPO, "llm_client.js"));
-const { growGraph, schemaForPrompt } = require(path.join(REPO, "grower.js"));
+const { createClient, SAMPLED_SAMPLING } = require(path.join(REPO, "llm_client.js"));
+const { growGraph, formatForPrompt } = require(path.join(REPO, "grower.js"));
 const { seeds } = require(path.join(REPO, "seeds.js"));
 
 const promptPathOf = (version) => path.join(REPO, "prompts", `${version}.txt`);
 const ROLES_PATH = path.join(REPO, "experiments", "roles.json");
-// `prompt` is a swept dimension, not a constant: comparing v1 (one node) with
-// v2 (told story + ancestor path) at equal budgets is the whole point of
-// changing the template, and the baseline is unaffected either way — the
-// recombiner reads only the last `State:` line.
-const DEFAULTS = { depth: 2, width: 2, maxNodes: 8, seed: 7, prompt: "branch.v3" };
-// The grower's schema allows at most 3 branches per expansion (§5.3); the
-// baseline offers the same number so neither source gets a wider funnel.
+// `prompt` is a swept dimension, not a constant: comparing template versions
+// at equal budgets is the whole point of changing the template, and the
+// baseline is unaffected either way — the recombiner reads only the last
+// step's `"action"`.
+const DEFAULTS = { depth: 2, width: 2, maxNodes: 8, seed: 7, prompt: "branch.v4" };
+// Candidates the baseline offers per expansion, before the grower's width
+// cap. The model offers `width` (one per draw), so at width ≤ 3 both sources
+// reach the cap with the same funnel.
 const PROPOSALS_PER_EXPANSION = 3;
 
 // ── metrics ─────────────────────────────────────────────────────────────────
@@ -92,7 +93,9 @@ function scoreGrowth({ graph, stats }) {
   // rejoinTargetId validity — surviving rejoin edges over attempts. The
   // grower stamps `branchId` on the rejoins it creates (grower.js §5.5.6).
   const rejoins = graph.edges.filter((e) => e.type === "rejoins" && grownIds.has(e.branchId)).length;
-  const rejoinAttempts = rejoins + stats.droppedRejoins;
+  // Recorded pre-v4 runs only: branch.v4 proposes no rejoins, so its runs
+  // carry no `droppedRejoins` and score null here.
+  const rejoinAttempts = rejoins + (stats.droppedRejoins || 0);
   const rejoinValidity = rejoinAttempts ? rejoins / rejoinAttempts : null;
 
   // Branch diversity — distinct normalized expr per expansion point, over
@@ -177,7 +180,7 @@ function scoreGrowth({ graph, stats }) {
 // Client-shaped lexicon recombiner (§6): same `complete(prompt, schema,
 // opts)` surface as llm_client, so growGraph cannot tell the sources apart.
 // The target expr is parsed back out of the rendered prompt — the last
-// `State:` line, after the few-shot examples — exactly as the test fixtures
+// step's `"action"`, after the example story — exactly as the test fixtures
 // do, so the baseline exercises the same prompt plumbing as the model.
 function createBaselineClient({ inputGraph, seed, proposals = PROPOSALS_PER_EXPANSION }) {
   // The probe's candidate cache does not key on the inducing graph; stale
@@ -189,9 +192,11 @@ function createBaselineClient({ inputGraph, seed, proposals = PROPOSALS_PER_EXPA
   const typing = Probe.induceTyping(inputGraph, roles);
   const rand = Probe.mulberry32(seed);
 
+  // The source expr is read back off the rendered prompt: the last step's
+  // `"action"`.
   async function complete(prompt) {
-    const stateLines = [...String(prompt).matchAll(/^State: (.*)$/gm)];
-    const expr = stateLines.length ? stateLines[stateLines.length - 1][1] : "";
+    const actions = [...String(prompt).matchAll(/"action": "([^"]*)"/g)];
+    const expr = actions.length ? actions[actions.length - 1][1] : "";
     const cands = Probe.candidatesFor(expr, lex, allowed, typing);
     // The probe's own draw: seeded Fisher–Yates, then take the head. The
     // grower re-sorts by its own key before the width cap (§5.5.3), so the
@@ -210,6 +215,14 @@ function createBaselineClient({ inputGraph, seed, proposals = PROPOSALS_PER_EXPA
   return { complete, props: async () => ({}), sampling: { seed } };
 }
 
+// The baseline answers every expansion in one `{branches}` payload, whatever
+// prompt version the run it stands beside was rendered with.
+const BASELINE_FORMAT = {
+  constrain: () => ({}),
+  parse: (content) => JSON.parse(content).branches,
+  draws: () => 1,
+};
+
 // ── run + score one (source, story) cell ────────────────────────────────────
 
 async function evalRun({
@@ -222,8 +235,8 @@ async function evalRun({
   // One factory per source, called once per pass: cache-cold for the model on
   // replay, a fresh RNG stream for the baseline.
   const makeSource = source === "baseline"
-    ? () => ({ client: createBaselineClient({ inputGraph, seed }) })
-    : () => ({ client: createClient({ baseUrl, cacheDir, sampling: { seed } }), schemaFor: schemaForPrompt(prompt) });
+    ? () => ({ client: createBaselineClient({ inputGraph, seed }), format: BASELINE_FORMAT })
+    : () => ({ client: createClient({ baseUrl, cacheDir, sampling: { ...SAMPLED_SAMPLING, seed } }), format: formatForPrompt(prompt) });
   // `from` defaults to the root, which is what every recorded sweep used. It
   // is settable because the probe measured mid-story nodes and the grower
   // measured the root, and that difference is itself a live hypothesis about
@@ -311,7 +324,7 @@ async function sweep(args) {
       process.exit(1);
     }
   }
-  // `--prompt branch.v1,branch.v2` scores template versions side by side at
+  // `--prompt a,b` scores template versions side by side at
   // one budget, which is the only way to attribute a metric move to the
   // template rather than to the budget.
   const prompts = String(args.prompt || DEFAULTS.prompt).split(",");
@@ -349,7 +362,7 @@ async function sweep(args) {
   const rows = [];
   // The baseline is a required column, not an appendix (§6) — it runs first
   // so a dead model server still leaves the bar on the table. It runs ONCE
-  // regardless of --prompt: the recombiner reads only the last `State:` line,
+  // regardless of --prompt: the recombiner reads only the last step's `"action"`,
   // so a per-prompt baseline row would be the same numbers twice.
   for (const story of stories) {
     rows.push(await evalRun({ source: "baseline", story, prompt: prompts[0], ...budget }));
@@ -418,4 +431,4 @@ if (require.main === module) {
   }
 }
 
-module.exports = { scoreGrowth, createBaselineClient, evalRun };
+module.exports = { scoreGrowth, createBaselineClient, BASELINE_FORMAT, evalRun };

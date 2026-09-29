@@ -1815,3 +1815,45 @@ value, so a v2 arm drawn now differs from the old `json` arm only by seed tag.
 Not built: forcing the actor slot (the lever that surfaced Cassandra). v3
 exposes the slot; whether to force it waits on seeing v3's natural actor
 spread.
+
+## Decision: instruction prompts removed; branch.v4 is a document to continue (2026-09-29)
+
+The human's call. v1–v3 were instructions ("List the alternatives that
+could have followed instead…") sent to Qwen3 **base** models, which have no
+instruction tuning to read them with — and they asked for alternatives
+outright rather than letting the model continue the story. Every number
+above was measured under that mismatch.
+
+`branch.v4` asks for nothing. The prompt is a `head`-style dump of JSON Lines
+story files: one complete example story (Tortoise and Hare, states written
+as world state, not gloss), then `==> stories/<slug>.jsonl <==`, a header
+line (`title`, `characters`), and one line per path node:
+`{"step": n, "event": <label>, "action": <expr>, "state": <state>}`. The
+completion is the next line. A GBNF grammar (not a JSON schema) pins it: the
+step number is a literal, text fields exclude quote/backslash/control chars,
+`action` must be `verb(arg, …)` in lowercase snake_case.
+
+What v4 gives up, by construction:
+- **rejoin** — the told story's future is not shown (in a continued document
+  a visible future is something to copy), so there is nothing to name. Rejoins
+  now happen only through merge-on-insert.
+- **delta / invariants** — relative to the told story; no natural slot.
+- **actor** — seed nodes carry none, so the key has nothing above it to
+  continue. The actor-forcing lever (Cassandra at `th_lie`) is unreachable.
+
+Branching is now sampling: the grower draws `width` one-line completions per
+expansion, each with a seed derived from (client seed, source id, index).
+Under the greedy reference profile every draw would be the same line, so
+(human's call, same day) grow, eval and the bridge now run under
+`llm_client.SAMPLED_SAMPLING` — the probe's temperature 1.0 / min_p 0.05 /
+top_k 0, now shared by both. Manifests record `profile: "sampled"` and the
+full sampling block, so replay still pins it. The reference profile remains
+the default for the greedy tools (same-state judge, extractor).
+
+Removed: `prompts/branch.v1–v3.txt`, `BRANCH_SCHEMA`, `branchSchemaV3`,
+`rejoinTargets`, the grower's rejoin-edge path and `droppedRejoins` stat, and
+the prompt selector in the Lab. Runs in `runs/` recorded under v1–v3 keep
+their manifests as records and are no longer replayable. The eval's
+`rejoinValidity` still scores those recorded runs; v4 runs score null.
+
+Not yet measured: any v4 draw on a live model.

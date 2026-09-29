@@ -336,8 +336,8 @@
   // ── entities: the closed character list per story ───────────────────────
   //
   // Who can ACT in the story — not everything mentioned (`the flock` owns
-  // effects in criedWolf but never acts). branch.v3 renders it into the prompt
-  // and constrains each alternative's `actor` field to it, per request.
+  // effects in criedWolf but never acts). branch.v4 renders it into the story
+  // file's header line as `characters`; nothing constrains to it since v3.
   //
   // Closed on purpose, and the cost is real: no generated alternative can be
   // driven by a character the author did not list. What it buys was measured

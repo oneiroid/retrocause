@@ -1,14 +1,14 @@
-// Prompt-version A/B probe: at one node, on one model, under one sampler,
-// draw K distinct alternatives per JSON prompt version and write them out for
+// Continuation probe: at one node, on one model, under one sampler, draw K
+// distinct continuations per prompt version ("arm") and write them out for
 // grading (experiments/grade.js, or the Lab panel's grading dialog).
 //
 //   node experiments/continue_probe.js --story red --nodes red_woods,red_tell
-//   node experiments/continue_probe.js --story criedWolf --arms branch.v2,branch.v3
+//   node experiments/continue_probe.js --story criedWolf --k 20
 //
 //   --story <key>          seed story (red | criedWolf | trojanHorse)
 //   --nodes <id,id,...>    nodes to expand; default: three mid-story nodes
 //   --k <n>                distinct samples wanted per arm per node (10)
-//   --arms <a,b>           prompt versions to compare (branch.v2,branch.v3)
+//   --arms <a,b>           prompt versions to compare (branch.v4)
 //   --seed <n>             run seed; every per-sample seed derives from it
 //   --temp <f>             sampler temperature (default 1.0)
 //   --fast                 EXPLORATION ONLY: cache_prompt:true, so the server
@@ -17,13 +17,11 @@
 //                          never collide with a normal run's.
 //   --out <path>           output file (default experiments/out/cont_<...>.json)
 //
-// It grows nothing and merges nothing. Both arms render the same line per
-// sample (`expr — state`), so a grader cannot tell them apart by format —
-// which the frames-vs-JSON version of this probe could never offer.
+// It grows nothing and merges nothing. Every arm renders the same line per
+// sample (`expr — state`), so a grader cannot tell arms apart by format.
 //
-// Only the FIRST branch of each completion is graded (a completion returns up
-// to three); the rest are kept under `extraBranches`. One draw, one graded
-// sample, in both arms.
+// One draw, one graded sample: a completion is one line, so one node. Should
+// a format ever return several, the rest are kept under `extraBranches`.
 //
 // A truncated completion is data here, not a run failure: it is recorded as
 // an unusable sample with its partial text.
@@ -37,30 +35,13 @@ const R = path.join(__dirname, "..");
 const Engine = require(path.join(R, "story_builder_engine.js"));
 const Ids = require(path.join(R, "ids.js"));
 const Grower = require(path.join(R, "grower.js"));
-const { createClient } = require(path.join(R, "llm_client.js"));
+const { createClient, SAMPLED_SAMPLING } = require(path.join(R, "llm_client.js"));
 const { sha256, sha256File } = require(path.join(R, "tools", "grow.js"));
 const { seeds } = require(path.join(R, "seeds.js"));
 
-// Not the grower's reference profile: that one is greedy by design, and a
-// greedy client returns one completion K times.
-//
-//   temperature 1.0 / min_p 0.05  — min_p scales the cutoff with the top
-//                                   token's own probability, so a confident
-//                                   position does not admit noise.
-//   top_k 0                       — off, or it re-imposes greedy truncation.
-//   n_predict 512                 — room for up to three whole branches; the
-//                                   reference profile's cap.
-//   samplers                      — explicit order, same reason as §4.1.
-const PROBE_SAMPLING = {
-  temperature: 1.0,
-  top_k: 0,
-  min_p: 0.05,
-  samplers: ["top_k", "min_p", "temperature"],
-  repeat_penalty: 1.0,
-  dry_multiplier: 0,
-  cache_prompt: false,
-  n_predict: 512,
-};
+// The grower's own sampled profile (llm_client.js), so a probed line and a
+// grown line are drawn the same way.
+const PROBE_SAMPLING = SAMPLED_SAMPLING;
 
 // Refill rounds after the first: a node that still cannot fill K distinct
 // samples is SATURATED, which is a finding (criedWolf is the known case), not
@@ -68,7 +49,7 @@ const PROBE_SAMPLING = {
 const MAX_REFILL_ROUNDS = 3;
 const DEFAULT_K = 10;
 const DEFAULT_RUN_SEED = 7;
-const DEFAULT_ARMS = ["branch.v2", "branch.v3"];
+const DEFAULT_ARMS = ["branch.v4"];
 
 const templatePathOf = (name) => path.join(R, "prompts", `${name}.txt`);
 
@@ -113,10 +94,12 @@ function sampleSeed(runSeed, arm, nodeId, index) {
 
 // One draw. Returns a record that is ALWAYS written: a truncation and a good
 // sample are both outcomes of the measurement.
-async function drawJson({ client, prompt, schema, seed, arm }) {
+async function drawJson({ client, prompt, constraint, parse, seed, arm }) {
   const record = { arm, seed };
   try {
-    const { content, stopType, cached, cacheKey } = await client.complete(prompt, schema, { seed });
+    const { content, stopType, cached, cacheKey } = await client.complete(
+      prompt, constraint.schema, { seed, grammar: constraint.grammar },
+    );
     Object.assign(record, { raw: content, stopType, cached, cacheKey });
   } catch (error) {
     if (!error.truncated) throw error;
@@ -125,9 +108,9 @@ async function drawJson({ client, prompt, schema, seed, arm }) {
     return record;
   }
 
-  let payload;
-  try { payload = JSON.parse(record.raw); } catch (error) { record.error = `unparseable JSON: ${error.message}`; return record; }
-  const branches = Array.isArray(payload.branches) ? payload.branches : [];
+  let branches;
+  try { branches = parse(record.raw); } catch (error) { record.error = `unparseable JSON: ${error.message}`; return record; }
+  if (!Array.isArray(branches)) branches = [];
   if (branches.length === 0) { record.error = "no branches"; return record; }
 
   const [first, ...rest] = branches;
@@ -196,14 +179,17 @@ async function probeNode({
   const entry = { nodeId, path: Grower.ancestorPath(graph, nodeId), history: historyOf(graph, nodeId), arms: {} };
 
   for (const arm of arms) {
-    const prompt = Grower.renderPrompt(templates[arm], node, context);
-    const schema = Grower.schemaForPrompt(arm)(graph, node);
+    const prompt = Grower.renderPrompt(templates[arm], context);
+    const format = Grower.formatForPrompt(arm);
+    const constraint = format.constrain(graph, node);
     const result = await drawDistinct(
-      (index) => drawJson({ client, prompt, schema, arm, seed: sampleSeed(runSeed, arm, nodeId, index) }),
+      (index) => drawJson({
+        client, prompt, constraint, parse: format.parse, arm, seed: sampleSeed(runSeed, arm, nodeId, index),
+      }),
       k,
       onAttempt,
     );
-    entry.arms[arm] = { prompt, promptSha256: sha256(prompt), ...result };
+    entry.arms[arm] = { prompt, promptSha256: sha256(prompt), ...constraint, ...result };
   }
   return entry;
 }

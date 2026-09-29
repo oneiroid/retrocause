@@ -24,163 +24,113 @@ const Engine = require("./story_builder_engine.js");
 const Growth = require("./growth.js");
 const Ids = require("./ids.js");
 
-// The branch payload contract (§5.3) — matches what the app's import path
-// already accepts (story_builder_app.js:778-801). Enforced by the sampler as
-// a grammar, so "did the output parse" is structural, not probabilistic.
-// `rejoinTargetId` cannot be constrained to existing ids by JSON Schema; it
-// is validated after the fact and dropped when invalid (§5.5.6).
-const BRANCH_SCHEMA = {
-  type: "object",
-  required: ["branches"],
-  properties: {
-    branches: {
-      type: "array",
-      minItems: 1,
-      maxItems: 3,
-      items: {
-        type: "object",
-        required: ["label", "expr", "state", "delta", "invariants"],
-        properties: {
-          label: { type: "string" },
-          expr: { type: "string" },
-          state: { type: "string" },
-          delta: { type: "string" },
-          invariants: { type: "string" },
-          tags: { type: "array", items: { type: "string" } },
-          rejoinTargetId: { type: "string" },
-        },
-      },
-    },
+// ── branch.v4: a document the base model continues by one line ─────────────
+//
+// v1–v3 (removed 2026-09-29) were instructions ("List the alternatives…")
+// sent to a BASE model, which has no instruction tuning to read them with,
+// and they asked for alternatives outright. v4 asks for nothing. The prompt
+// is a `head`-style dump of story files in JSON Lines — one complete story,
+// then the current story's path up to the source node — and the completion is
+// the next line of that file. Branching comes from sampling that one line
+// several times (`width` draws per expansion, each with a derived seed), not
+// from asking the model to differ from the told story; a draw that repeats
+// the told next event is merged by growth.js like any other duplicate.
+//
+// The told story's future is deliberately NOT shown: in a document a base
+// model continues, a visible future is something to copy. So v4 has no
+// `rejoin`, and no `delta`/`invariants` — those are relative to the told
+// story, and the line format has nowhere natural to put them. Rejoins
+// arrive only through merge: a draw whose content equals an existing state
+// on a parallel path collapses into it. `actor` is
+// gone too: seed nodes carry none, and a key present on the generated line
+// but absent from every line above it is not a continuation of the file.
+//
+// The grammar pins the line's shape rather than the prompt asking for it:
+// the step number is a literal, text fields cannot contain a quote, backslash
+// or control character (so the line is valid JSON by construction and cannot
+// run onto a second line), and `action` must be `verb(arg, …)` in the seeds'
+// lowercase snake_case.
+const JSONL_STRING_CHAR = String.raw`[^"\\\x7F\x00-\x1F]`;
+
+// One flat JSON object on one line, in the `{"k": v, "k2": [a, b]}` spacing
+// Python's json.dumps writes — the common form of a .jsonl file, and the form
+// the grammar's literals use.
+function jsonLine(object) {
+  const value = (v) => (Array.isArray(v) ? `[${v.map((x) => JSON.stringify(x)).join(", ")}]` : JSON.stringify(v));
+  return `{${Object.entries(object).map(([k, v]) => `${JSON.stringify(k)}: ${value(v)}`).join(", ")}}`;
+}
+
+// The file line for one node. Key order is fixed: it is the order the model
+// reads and writes a step in — what happened in prose first, then its
+// formal action, then what is true afterwards.
+function stepLine(step, node) {
+  return jsonLine({ step, event: node.label || node.expr || "", action: node.expr || "", state: node.state || "" });
+}
+
+function storyFileName(title) {
+  const slug = String(title).toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "");
+  return `${slug || "story"}.jsonl`;
+}
+
+function nextStepGrammar(graph, source) {
+  const step = ancestorPath(graph, source.id).length + 1;
+  const open = JSON.stringify(`{"step": ${step}, "event": "`);
+  return [
+    `root ::= ${open} text ${JSON.stringify('", "action": "')} action ${JSON.stringify('", "state": "')} text ${JSON.stringify('"}')}`,
+    `text ::= ${JSONL_STRING_CHAR}+`,
+    `action ::= word "(" word (", " word)* ")"`,
+    `word ::= [a-z] [a-z0-9_]*`,
+  ].join("\n");
+}
+
+function parseNextStep(content) {
+  const line = JSON.parse(content);
+  return [{ label: line.event, expr: line.action, state: line.state }];
+}
+
+// Prompt version → how its requests are constrained (`constrain(graph,
+// source)` → { schema } or { grammar }), how a completion becomes candidates,
+// and how many completions one expansion draws. v4 is the only version; the
+// indirection stays because the eval baseline is a second format.
+const PROMPT_FORMATS = {
+  "branch.v4": {
+    constrain: (graph, source) => ({ grammar: nextStepGrammar(graph, source) }),
+    parse: parseNextStep,
+    draws: (width) => width,
   },
 };
+const DEFAULT_PROMPT_VERSION = "branch.v4";
 
-// ── branch.v3: closed actor and closed rejoin, per request ──────────────────
-//
-// Two findings from the (removed) frames boundary, carried over without the
-// sentence format, which measured no better than JSON (experiments/NOTES.md,
-// "Larger cold batch — result"):
-//
-//   rejoin  v2's free-text `rejoinTargetId` measured rejoinValidity 0 — every
-//           rejoin it attempted named a node that did not exist. An enum
-//           over real ids measured 1.0. Here `rejoin` is REQUIRED and ranges
-//           over the legal targets plus "none", so an invalid target is
-//           unreachable rather than validated-and-dropped, and the model has
-//           to decide rather than forget the field.
-//   actor   who drives the alternative, over the story's closed `entities`
-//           list. `expr` has no actor slot a grammar can close, so this is
-//           the only place the actor is a constrained choice — and the slot
-//           an actor-forcing pass would restrict.
-//
-// The schema therefore depends on the graph and the source node, so it is
-// built per request. Its serialization is part of the request body and so of
-// the cache key; every ordering in it is pinned for that reason.
-const REJOIN_NONE = "none";
-
-// Legal rejoin targets for an alternative that branches off `source`: told-
-// story nodes (the ones the prompt lists with ids) that are not the source
-// or its ancestors. An ancestor would close a cycle through the new node.
-// Descendants ARE legal — rejoining a later told event is the canonical
-// detour — which the frames version got wrong by excluding them, leaving a
-// seed spine with no targets at all.
-function rejoinTargets(graph, source) {
-  const ranks = Engine.topoRanks(graph);
-  return graph.nodes
-    .filter((n) => n.createdBy !== "grown" && n.id !== source.id && !Engine.reachable(graph, n.id, source.id))
-    .sort((a, b) => (ranks[a.id] - ranks[b.id]) || String(a.id).localeCompare(String(b.id)))
-    .map((n) => n.id);
+function formatForPrompt(version) {
+  const format = PROMPT_FORMATS[version];
+  if (!format) throw new Error(`no format registered for prompt ${version}`);
+  return format;
 }
 
-function branchSchemaV3(graph, source) {
-  const entities = Array.isArray(graph.entities) ? graph.entities : [];
-  return {
-    type: "object",
-    required: ["branches"],
-    properties: {
-      branches: {
-        type: "array",
-        minItems: 1,
-        maxItems: 3,
-        items: {
-          type: "object",
-          required: ["label", "actor", "expr", "state", "delta", "invariants", "rejoin"],
-          properties: {
-            label: { type: "string" },
-            // A graph without a character list (a blank UI graph) still
-            // grows; its actor is just unconstrained.
-            actor: entities.length ? { enum: [...entities] } : { type: "string" },
-            expr: { type: "string" },
-            state: { type: "string" },
-            delta: { type: "string" },
-            invariants: { type: "string" },
-            rejoin: { enum: [...rejoinTargets(graph, source), REJOIN_NONE] },
-          },
-        },
-      },
-    },
-  };
+// Per-draw seeds are derived, not drawn: (client seed, source, index) must
+// give the same integer on a rerun or the run does not replay. The callers
+// grow under llm_client's SAMPLED_SAMPLING; under the greedy reference
+// profile every draw would return the same line and merge into the first.
+function drawSeed(clientSeed, sourceId, index) {
+  return parseInt(Ids.shortHash(`${clientSeed}|${sourceId}|${index}`).slice(0, 8), 16);
 }
 
-// Prompt version → the schema its requests carry. v1/v2 keep the static
-// schema so their recorded manifests replay byte-identically.
-const SCHEMA_BY_PROMPT = {
-  "branch.v1": () => BRANCH_SCHEMA,
-  "branch.v2": () => BRANCH_SCHEMA,
-  "branch.v3": branchSchemaV3,
-};
-
-function schemaForPrompt(version) {
-  const schemaFor = SCHEMA_BY_PROMPT[version];
-  if (!schemaFor) throw new Error(`no schema registered for prompt ${version}`);
-  return schemaFor;
-}
-
-// The one place a proposed rejoin is read, for both field conventions.
-function rejoinOf(candidate) {
-  if (candidate.rejoinTargetId) return candidate.rejoinTargetId;
-  return candidate.rejoin && candidate.rejoin !== REJOIN_NONE ? candidate.rejoin : null;
-}
-
-// Deterministic template rendering: pure string substitution on the node's
-// resolved fields plus the graph context below. The rendered prompt is a
-// cache key (§5.7), so nothing non-deterministic may enter it.
-//
-// `context` is optional so `branch.v1.txt` — which has no {{story}} or
-// {{path}} — still renders exactly as it did.
-function renderPrompt(template, node, context = {}) {
+// Deterministic template rendering: pure string substitution of the graph
+// context below. The rendered prompt is a cache key (§5.7), so nothing
+// non-deterministic may enter it.
+function renderPrompt(template, context = {}) {
   return String(template)
-    .replaceAll("{{label}}", node.label || "")
-    .replaceAll("{{expr}}", node.expr || "")
-    .replaceAll("{{state}}", node.state || "")
-    .replaceAll("{{title}}", context.title || "")
-    .replaceAll("{{story}}", context.story || "")
-    .replaceAll("{{entities}}", context.entities || "")
-    .replaceAll("{{path}}", context.path || "");
+    .replaceAll("{{file}}", context.file || "")
+    .replaceAll("{{header}}", context.header || "")
+    .replaceAll("{{steps}}", context.steps || "");
 }
 
-// ── prompt context (branch.v2) ──────────────────────────────────────────────
+// ── prompt context ──────────────────────────────────────────────────────────
 //
 // Everything the model is told about the graph is derived here, and every
 // ordering in it is pinned for the same reason the traversal's orderings are:
 // the rendered prompt IS the cache key, so a context that reordered between
 // runs would be a different prompt for the same state and replay would fail.
-//
-// v1 gave the model one node — no story, no ancestors. The observed failure
-// was not drift but contamination: with nothing else to condition on, the
-// strongest signal in the window was the few-shot, and by depth 3 the model
-// was completing the demonstration instead of the story.
-
-// The told story: every node this run did not grow, in topological order.
-// Ids are exposed because `rejoinTargetId` is unusable without them — the
-// model cannot name a target it has never been shown, which is why v1
-// produced zero rejoins edges despite the schema accepting them.
-function storySpine(graph) {
-  const ranks = Engine.topoRanks(graph);
-  return graph.nodes
-    .filter((n) => n.createdBy !== "grown")
-    .sort((a, b) => (ranks[a.id] - ranks[b.id]) || String(a.id).localeCompare(String(b.id)))
-    .map((n) => `  [${n.id}] ${n.expr}${n.state ? ` — ${n.state}` : ""}`)
-    .join("\n");
-}
 
 // The lexicographically-first shortest path from the graph's root to `to`.
 // A node in a DAG can be reached several ways, and "whichever path we found"
@@ -222,17 +172,16 @@ function ancestorPath(graph, to) {
 }
 
 // Computed at expansion time, which is a pinned point in a pinned order: the
-// spine is stable across a run (grown nodes are filtered out), while the path
-// reflects the graph as the traversal has left it.
+// path reflects the graph as the traversal has left it.
 function promptContext(graph, node) {
   const byId = new Map(graph.nodes.map((n) => [n.id, n]));
+  const title = graph.title || (graph.meta && graph.meta.title) || "the told story";
+  const entities = Array.isArray(graph.entities) ? graph.entities : [];
+  const pathNodes = ancestorPath(graph, node.id).map((id) => byId.get(id) || { expr: id });
   return {
-    title: graph.title || (graph.meta && graph.meta.title) || "the told story",
-    story: storySpine(graph),
-    entities: (Array.isArray(graph.entities) ? graph.entities : []).join(", "),
-    path: ancestorPath(graph, node.id)
-      .map((id) => (byId.get(id) || {}).expr || id)
-      .join(" → "),
+    file: storyFileName(title),
+    header: jsonLine({ title, ...(entities.length ? { characters: entities } : {}) }),
+    steps: pathNodes.map((n, i) => stepLine(i + 1, n)).join("\n"),
   };
 }
 
@@ -262,9 +211,8 @@ async function growGraph({
   graph: inputGraph,
   client,
   promptTemplate,
-  // (graph, source) → the JSON schema for this expansion. Defaults to the
-  // static v1/v2 schema; branch.v3 passes schemaForPrompt("branch.v3").
-  schemaFor = () => BRANCH_SCHEMA,
+  // How requests are constrained and completions read — formatForPrompt(v).
+  format = PROMPT_FORMATS[DEFAULT_PROMPT_VERSION],
   from,
   depth,
   width,
@@ -285,9 +233,13 @@ async function growGraph({
     rejectedCycles: 0,
     rejectedNullTransitions: 0,
     truncated: 0,
-    droppedRejoins: 0,
     expansions: 0,
   };
+  const clientSeed = client.sampling && client.sampling.seed;
+  // Every request as sent and every completion as received, per expansion —
+  // what the Lab shows as "the prompts". Not part of the graph or the stats,
+  // so it cannot move a canonical-JSON comparison.
+  const trace = [];
 
   let frontier = [from];
   for (let round = 1; round <= depth && frontier.length && stats.created < maxNodes; round += 1) {
@@ -295,26 +247,37 @@ async function growGraph({
     for (const sourceId of orderFrontier(graph, frontier)) {
       if (stats.created >= maxNodes) break;
       const source = graph.nodes.find((n) => n.id === sourceId);
+      const prompt = renderPrompt(promptTemplate, promptContext(graph, source));
+      const { schema, grammar } = format.constrain(graph, source);
+      const draws = format.draws ? format.draws(width) : 1;
 
-      let proposed;
-      try {
-        const { content } = await client.complete(
-          renderPrompt(promptTemplate, source, promptContext(graph, source)),
-          schemaFor(graph, source),
-          { bypassCache },
-        );
-        proposed = JSON.parse(content).branches;
-      } catch (error) {
-        // Truncation is a counted hard failure for this expansion point, not
-        // a retry with a bigger cap — that would make the run irreproducible
-        // (§5.3). Anything else is a real error and stops the run.
-        if (!error.truncated) throw error;
-        stats.truncated += 1;
-        continue;
+      const proposed = [];
+      const expansion = { from: sourceId, prompt, ...(grammar ? { grammar } : {}), ...(schema ? { schema } : {}), draws: [] };
+      trace.push(expansion);
+      let answered = false;
+      for (let index = 0; index < draws; index += 1) {
+        const seed = draws > 1 ? drawSeed(clientSeed, sourceId, index) : clientSeed;
+        try {
+          const { content } = await client.complete(prompt, schema, {
+            bypassCache, grammar,
+            ...(draws > 1 ? { seed } : {}),
+          });
+          expansion.draws.push({ seed, content });
+          proposed.push(...format.parse(content));
+          answered = true;
+        } catch (error) {
+          // Truncation is a counted hard failure for this draw, not a retry
+          // with a bigger cap — that would make the run irreproducible
+          // (§5.3). Anything else is a real error and stops the run.
+          if (!error.truncated) throw error;
+          expansion.draws.push({ seed, content: error.content || "", truncated: true });
+          stats.truncated += 1;
+        }
       }
+      if (!answered) continue;
       stats.expansions += 1;
 
-      for (const candidate of [...proposed].sort(byCandidateKey).slice(0, width)) {
+      for (const candidate of proposed.sort(byCandidateKey).slice(0, width)) {
         if (stats.created >= maxNodes) break;
         const node = {
           // The engine would later default an empty label to the node id —
@@ -324,12 +287,7 @@ async function growGraph({
           kind: "branch",
           expr: candidate.expr,
           state: candidate.state,
-          delta: candidate.delta,
-          invariants: candidate.invariants,
-          tags: Array.isArray(candidate.tags) && candidate.tags.length ? candidate.tags : ["counterfactual"],
-          // branch.v3 only; v1/v2 nodes emit no key, so their canonical JSON
-          // is unchanged.
-          ...(candidate.actor ? { actor: candidate.actor } : {}),
+          tags: ["counterfactual"],
           createdBy: "grown",
           ...(runId ? { runId } : {}),
         };
@@ -338,7 +296,7 @@ async function growGraph({
           from: sourceId,
           node,
           type: "choice",
-          label: node.delta || "alternative branch",
+          label: "",
         });
         if (result.ok === false) {
           // Two distinct refusals, counted apart: a cycle is a structural
@@ -349,27 +307,9 @@ async function growGraph({
           continue;
         }
 
-        const landedId = result.merged ? result.into : result.node.id;
         if (result.merged) stats.mergedDuplicates += 1;
         else stats.created += 1;
-        next.add(landedId);
-
-        // §5.5.6 — a rejoin that names a missing node or would cycle is
-        // dropped and counted; the branch node itself stays. An open branch
-        // is a legitimate outcome that validateGraph warns about.
-        const rejoinTarget = rejoinOf(candidate);
-        if (rejoinTarget) {
-          const rejoin = graph.nodes.some((n) => n.id === rejoinTarget)
-            ? Engine.addEdge(graph, {
-              from: landedId,
-              to: rejoinTarget,
-              type: "rejoins",
-              label: "rejoins the story",
-              branchId: landedId,
-            })
-            : { ok: false };
-          if (!rejoin.ok) stats.droppedRejoins += 1;
-        }
+        next.add(result.merged ? result.into : result.node.id);
       }
     }
     frontier = [...next];
@@ -378,10 +318,10 @@ async function growGraph({
   // Once per run, never per insert (§8) — per-insert cycle refusal is
   // addEdge's own wouldCreateCycle.
   const validation = Engine.validateGraph(graph);
-  return { graph, stats, validation };
+  return { graph, stats, validation, trace };
 }
 
 module.exports = {
-  growGraph, renderPrompt, promptContext, ancestorPath, storySpine,
-  BRANCH_SCHEMA, branchSchemaV3, rejoinTargets, schemaForPrompt, rejoinOf, REJOIN_NONE,
+  growGraph, renderPrompt, promptContext, ancestorPath, formatForPrompt, drawSeed,
+  nextStepGrammar, stepLine, storyFileName, DEFAULT_PROMPT_VERSION,
 };

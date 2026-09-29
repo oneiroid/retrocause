@@ -41,6 +41,28 @@ const REFERENCE_SAMPLING = {
   cache_prompt: false,
 };
 
+// The sampled profile — what the grower and the continuation probe run under
+// since branch.v4 (2026-09-29). v4 branches by drawing one line several
+// times; under the greedy reference profile every draw is the same line and
+// a grower run cannot branch at all. Still replayable: every draw carries an
+// explicit derived seed, the server has one slot, and cache_prompt is off.
+//
+//   temperature 1.0 / min_p 0.05  — min_p scales the cutoff with the top
+//                                   token's own probability, so a confident
+//                                   position does not admit noise.
+//   top_k 0                       — off, or it re-imposes greedy truncation.
+//   samplers                      — explicit order, same reason as above.
+//
+// The reference profile stays the default for everything else (the
+// same-state judge and the extractor are greedy by design).
+const SAMPLED_SAMPLING = {
+  ...REFERENCE_SAMPLING,
+  temperature: 1.0,
+  top_k: 0,
+  min_p: 0.05,
+  samplers: ["top_k", "min_p", "temperature"],
+};
+
 // Sampling fields that are NOT part of the reference profile and are emitted
 // into the request body only when a caller sets them (continuation plan v3).
 // They are optional rather than defaulted for one reason: the serialized body
@@ -189,4 +211,4 @@ function createClient({
   return { props, complete, sampling: pinned, baseUrl };
 }
 
-module.exports = { createClient, REFERENCE_SAMPLING };
+module.exports = { createClient, REFERENCE_SAMPLING, SAMPLED_SAMPLING };

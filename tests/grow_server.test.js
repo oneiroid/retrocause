@@ -17,21 +17,27 @@ const { createClient } = require("../llm_client.js");
 const { createHandler, gradePool, MAX_UI_NODES, MAX_UI_K } = require("../tools/grow_server.js");
 const Grade = require("../experiments/grade.js");
 const { seeds } = require("../seeds.js");
+const { stepLine } = require("../grower.js");
 
 const FIXTURES = JSON.parse(
   fs.readFileSync(path.join(__dirname, "fixtures", "branch_responses.json"), "utf8"),
 );
 
-// Same stub transport as grower.test.js: keyed on the last `State:` line.
+// Same stub transport as grower.test.js: keyed on the last `"action"`, one
+// fixture line per draw in draw order.
 function fixtureFetch() {
+  const drawn = {};
   return async (url, options) => {
     if (url.endsWith("/props")) return { ok: true, json: async () => FIXTURES.props };
     const prompt = JSON.parse(options.body).prompt;
-    const expr = [...prompt.matchAll(/^State: (.*)$/gm)].at(-1)[1];
-    const payload = FIXTURES.completions[expr] || { branches: [] };
+    const expr = [...prompt.matchAll(/"action": "([^"]*)"/g)].at(-1)[1];
+    const lines = FIXTURES.completions[expr];
+    if (!lines) return { ok: false, status: 500 };
+    drawn[expr] = (drawn[expr] ?? -1) + 1;
+    const line = lines[drawn[expr] % lines.length];
     return {
       ok: true,
-      json: async () => ({ content: JSON.stringify(payload), stop_type: "eos", stopped_limit: null }),
+      json: async () => ({ content: stepLine(0, { label: line.event, expr: line.action, state: line.state }), stop_type: "eos", stopped_limit: null }),
     };
   };
 }
@@ -75,12 +81,35 @@ test("POST /grow grows the graph and persists a provenanced run", async () => {
   assert.ok(data.graph.nodes.length > seeds.red.nodes.length);
   assert.ok(data.graph.nodes.some((n) => n.createdBy === "grown" && n.runId === data.runId));
   const runDir = path.join(outRoot, data.runId);
-  for (const f of ["grown_graph.json", "growth_manifest.json", "input_graph.json"]) {
+  for (const f of ["grown_graph.json", "growth_manifest.json", "input_graph.json", "trace.json"]) {
     assert.ok(fs.existsSync(path.join(runDir, f)), `missing ${f}`);
   }
   const manifest = JSON.parse(fs.readFileSync(path.join(runDir, "growth_manifest.json"), "utf8"));
   // A UI graph has no seed name — the manifest must say so, not guess one.
   assert.strictEqual(manifest.input.seed, null);
+
+  // The trace: one entry per expansion, the prompt as sent, its grammar,
+  // `width` completions each. Persisted, and served back with the run.
+  assert.strictEqual(data.trace.length, data.stats.expansions);
+  const [first] = data.trace;
+  assert.strictEqual(first.from, "red_start");
+  assert.ok(first.prompt.includes('"action": "send(mother, red, basket)"') && first.grammar.startsWith("root ::="));
+  assert.strictEqual(first.draws.length, 2);
+  const loaded = await (await fetch(`${base}/runs/${data.runId}`)).json();
+  assert.deepStrictEqual(loaded.trace, data.trace);
+});
+
+test("POST /prompt previews what a grow would send, without a model call; GET /prompts lists templates", async () => {
+  const preview = await (await fetch(`${base}/prompt`, {
+    method: "POST", body: JSON.stringify({ graph: seeds.red, from: "red_tell" }),
+  })).json();
+  assert.strictEqual(preview.promptVersion, "branch.v4");
+  assert.ok(preview.prompt.trimEnd().endsWith('"action": "tell(red, wolf, grandmother_house)", "state": "The wolf knows Red\'s destination, that her grandmother is alone there, and that she is expected."}'));
+  assert.match(preview.grammar, /"step\\": 6/);
+  assert.strictEqual((await fetch(`${base}/prompt`, { method: "POST", body: JSON.stringify({ graph: seeds.red, from: "nope" }) })).status, 400);
+
+  const { templates } = await (await fetch(`${base}/prompts`)).json();
+  assert.ok(templates.some((t) => t.name === "branch.v4" && t.text.includes("{{steps}}")));
 });
 
 test("identical requests produce identical runIds and byte-identical graphs", async () => {
@@ -143,11 +172,13 @@ async function probeEvents(body) {
 }
 
 test("POST /continue streams progress, then the pool in grade order; /grades writes a grade.js file", async () => {
-  const events = await probeEvents({ graph: seeds.red, from: "red_start", arms: ["branch.v2"], k: 2 });
+  const events = await probeEvents({ graph: seeds.red, from: "red_start", arms: ["branch.v4"], k: 2 });
   const done = events.at(-1);
   assert.strictEqual(done.type, "done", JSON.stringify(done));
   assert.ok(events.slice(0, -1).every((e) => e.type === "progress"));
   assert.ok(done.pool.length > 0);
+  assert.deepStrictEqual(done.prompts.map((p) => p.arm), ["branch.v4"]);
+  assert.ok(done.prompts[0].prompt.includes("==> stories/") && done.prompts[0].grammar);
 
   const probeFile = JSON.parse(fs.readFileSync(path.join(probeDir, done.file), "utf8"));
   assert.deepStrictEqual(done.pool.map((p) => p.labelKey), gradePool(probeFile).map((r) => r.labelKey));
@@ -159,10 +190,10 @@ test("POST /continue streams progress, then the pool in grade order; /grades wri
   assert.strictEqual(graded.cumulative.batches, 1);
   const file = JSON.parse(fs.readFileSync(path.join(probeDir, graded.gradedFile), "utf8"));
   assert.strictEqual(file.manifest.rater, "human");
-  assert.deepStrictEqual(Grade.summarize(file.grades, "branch.v2"), graded.summary["branch.v2"]);
+  assert.deepStrictEqual(Grade.summarize(file.grades, "branch.v4"), graded.summary["branch.v4"]);
 
   // Re-drawing the same batch lands on the same file and carries its grades.
-  const again = (await probeEvents({ graph: seeds.red, from: "red_start", arms: ["branch.v2"], k: 2 })).at(-1);
+  const again = (await probeEvents({ graph: seeds.red, from: "red_start", arms: ["branch.v4"], k: 2 })).at(-1);
   assert.strictEqual(again.file, done.file);
   assert.strictEqual(Object.keys(again.answers).length, done.pool.length - 1);
 });
@@ -176,9 +207,14 @@ test("POST /continue rejects arms that are not prompt versions", async () => {
 });
 
 test("POST /grow takes a prompt version and records it", async () => {
-  const data = await (await growRequest({ prompt: "branch.v2" })).json();
+  const data = await (await growRequest({ prompt: "branch.v4" })).json();
   const manifest = JSON.parse(fs.readFileSync(path.join(outRoot, data.runId, "growth_manifest.json"), "utf8"));
-  assert.strictEqual(manifest.prompt.template, "branch.v2");
+  assert.strictEqual(manifest.prompt.template, "branch.v4");
+  // Grown under the sampled profile: greedy would make every draw one line.
+  assert.deepStrictEqual(
+    [manifest.profile, manifest.sampling.temperature, manifest.sampling.min_p, manifest.sampling.top_k],
+    ["sampled", 1, 0.05, 0],
+  );
   assert.strictEqual((await growRequest({ prompt: "frames.v1" })).status, 400);
 });
 

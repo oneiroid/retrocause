@@ -4,7 +4,7 @@
 //
 //   npm run grow -- --story red [--from red_start] [--depth 3] [--width 2]
 //                   [--max-nodes 24] [--seed 7] [--out runs]
-//                   [--prompt branch.v3]
+//                   [--prompt branch.v4]
 //   npm run grow:replay -- runs/<runId>/growth_manifest.json [--cached]
 //
 // Replay re-runs from the manifest and diffs canonical JSON. It is
@@ -22,17 +22,16 @@ const crypto = require("crypto");
 const REPO = path.join(__dirname, "..");
 const Engine = require(path.join(REPO, "story_builder_engine.js"));
 const Ids = require(path.join(REPO, "ids.js"));
-const { createClient } = require(path.join(REPO, "llm_client.js"));
-const { growGraph, schemaForPrompt } = require(path.join(REPO, "grower.js"));
+const { createClient, SAMPLED_SAMPLING } = require(path.join(REPO, "llm_client.js"));
+const { growGraph, formatForPrompt } = require(path.join(REPO, "grower.js"));
 const { seeds } = require(path.join(REPO, "seeds.js"));
 
-// v3 adds a closed `actor` and a closed `rejoin` (grower.js, branchSchemaV3);
-// v2 carries the told story and the ancestor path; v1 carried one node. The
-// older ones stay selectable because §6 scores prompt versions against each
-// other, and a deleted template makes its recorded manifests unreplayable.
-const DEFAULT_PROMPT_VERSION = "branch.v3";
+// branch.v4 is the only template. v1–v3 were deleted 2026-09-29 (instruction
+// prompts sent to a base model); runs recorded under them keep their
+// manifests as records but are no longer replayable.
+const DEFAULT_PROMPT_VERSION = "branch.v4";
 const promptPathOf = (version) => path.join(REPO, "prompts", `${version}.txt`);
-const PROFILE = "reference";
+const PROFILE = "sampled";
 const DEFAULTS = { depth: 3, width: 2, maxNodes: 24, seed: 7, out: "runs" };
 const GRAPH_FILE = "grown_graph.json";
 const MANIFEST_FILE = "growth_manifest.json";
@@ -154,7 +153,7 @@ async function grow(args) {
   const client = createClient({
     baseUrl: args.baseUrl,
     cacheDir: path.join(REPO, "cache"),
-    sampling: { seed: samplingSeed },
+    sampling: { ...SAMPLED_SAMPLING, seed: samplingSeed },
   });
   const { config, promptText, inputGraph } = await buildConfig({
     story, from, depth, width, maxNodes, client,
@@ -166,7 +165,7 @@ async function grow(args) {
     graph: inputGraph,
     client,
     promptTemplate: promptText,
-    schemaFor: schemaForPrompt(config.prompt.template),
+    format: formatForPrompt(config.prompt.template),
     from,
     depth,
     width,
@@ -223,9 +222,9 @@ async function replay(args) {
     width: manifest.traversal.width,
     maxNodes: manifest.traversal.maxNodes,
     client,
-    // From the manifest, never the current default: rebuilding a v1 run with
-    // v2 would trip the prompt-hash guard below and report a template swap as
-    // a replay failure.
+    // From the manifest, never the current default: rebuilding a run under a
+    // different template would trip the prompt-hash guard below and report a
+    // template swap as a replay failure.
     promptVersion: manifest.prompt.template,
   });
 
@@ -247,7 +246,7 @@ async function replay(args) {
     graph: inputGraph,
     client,
     promptTemplate: promptText,
-    schemaFor: schemaForPrompt(manifest.prompt.template),
+    format: formatForPrompt(manifest.prompt.template),
     from: manifest.traversal.from,
     depth: manifest.traversal.depth,
     width: manifest.traversal.width,

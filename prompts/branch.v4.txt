@@ -1,0 +1,13 @@
+==> stories/the_tortoise_and_the_hare.jsonl <==
+{"title": "The Tortoise and the Hare", "characters": ["the hare", "the tortoise", "the fox"]}
+{"step": 1, "event": "The hare boasts of his speed", "action": "boast(hare, speed)", "state": "The hare has told everyone on the road that nothing can outrun him."}
+{"step": 2, "event": "The tortoise challenges him to a race", "action": "challenge(tortoise, hare)", "state": "A race between the hare and the tortoise is agreed, over a course the tortoise named."}
+{"step": 3, "event": "The fox starts the race", "action": "start(fox, race)", "state": "Both runners are on the road and the race has begun."}
+{"step": 4, "event": "The hare takes the lead", "action": "outpace(hare, tortoise)", "state": "The hare is far ahead. The tortoise is still near the start."}
+{"step": 5, "event": "The hare lies down by the road", "action": "nap(hare, roadside)", "state": "The hare is asleep by the road. The tortoise is still walking."}
+{"step": 6, "event": "The tortoise passes the sleeping hare", "action": "pass(tortoise, hare)", "state": "The tortoise is ahead on the road. The hare has not woken."}
+{"step": 7, "event": "The tortoise wins the race", "action": "win(tortoise, race)", "state": "The tortoise has crossed the finish line first. The race is over."}
+
+==> stories/{{file}} <==
+{{header}}
+{{steps}}

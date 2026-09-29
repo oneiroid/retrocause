@@ -83,6 +83,7 @@
     graph: makeGraph(seeds.red),
     activeSeed: "red",
     selectedId: "red_start",
+    promptLog: [],
     nodes: [],
     edges: [],
     ranks: {},
@@ -220,13 +221,15 @@
     el.saveNodeBtn.addEventListener("click", saveSelectedNodeEdits);
     el.importJsonBtn.addEventListener("click", importFromTextArea);
     el.autoGrowBtn.addEventListener("click", autoGrow);
-    el.growSource.addEventListener("change", () => { el.growPrompt.disabled = el.growSource.value === "baseline"; });
     el.probeBtn.addEventListener("click", runProbe);
     el.probeShowBtn.addEventListener("click", openProbe);
     el.probeList.addEventListener("click", onProbeClick);
     el.saveGradesBtn.addEventListener("click", saveGrades);
     el.loadRunBtn.addEventListener("click", loadRun);
     el.refreshRunsBtn.addEventListener("click", loadRuns);
+    el.promptPreviewBtn.addEventListener("click", previewPrompt);
+    el.promptTemplatesBtn.addEventListener("click", showTemplates);
+    el.promptClearBtn.addEventListener("click", () => { state.promptLog = []; renderPromptLog(); });
     el.exportJsonBtn.addEventListener("click", showExportJson);
     el.downloadJsonBtn.addEventListener("click", downloadJson);
     el.saveLocalBtn.addEventListener("click", saveLocal);
@@ -893,6 +896,9 @@
   // runs the grower or the continuation probe Node-side and records the run
   // exactly as the CLI would.
 
+  // The one prompt template (prompts/branch.v4.txt).
+  const PROMPT_VERSION = "branch.v4";
+
   async function bridge(pathname, body) {
     const response = await fetch(`${GROW_SERVER_URL}${pathname}`, body === undefined ? {} : {
       method: "POST",
@@ -991,11 +997,12 @@
           width: +el.growWidth.value || 1,
           maxNodes: +el.growMaxNodes.value || 1,
           seed: +el.growSeed.value || 1,
-          prompt: el.growPrompt.value
+          prompt: PROMPT_VERSION
         })).json();
         showGrown(data.graph, data.runId, from);
+        logTrace(`grow ${data.runId}`, data.trace);
         el.growReport.innerHTML = `<div>${escapeHtml(data.runId)} · +${data.stats.created} nodes, ${data.stats.mergedDuplicates} merged, ${data.stats.rejectedNullTransitions || 0} null, ${data.stats.rejectedCycles} cyclic</div>`
-          + metricsTable(data.score, data.baseline, source === "baseline" ? "baseline" : el.growPrompt.value);
+          + metricsTable(data.score, data.baseline, source === "baseline" ? "baseline" : PROMPT_VERSION);
         loadRuns();
       } catch (error) {
         bridgeError(error, "Grow");
@@ -1024,6 +1031,8 @@
     try {
       const data = await (await bridge(`/runs/${encodeURIComponent(runId)}`)).json();
       showGrown(data.graph, runId, data.manifest.traversal && data.manifest.traversal.from);
+      if (data.trace) logTrace(`run ${runId}`, data.trace);
+      else logPrompts([{ title: `run ${runId} · no trace`, parts: [{ name: "", text: "No trace.json: the run was grown before tracing, or from the CLI." }] }]);
       const label = data.manifest.source ? data.manifest.source.name : data.manifest.prompt.template;
       el.growReport.innerHTML = `<div>${escapeHtml(runId)} (recorded)</div>` + metricsTable(data.score, null, label);
     } catch (error) {
@@ -1031,11 +1040,83 @@
     }
   }
 
-  // ── Lab: prompt A/B (experiments/continue_probe.js + grade.js) ──────────
-  // Draws K alternatives per prompt version at the selected node, shows them
+  // ── Lab: prompts ───────────────────────────────────────────────────────
+  // Every prompt the page caused the model to see, as sent, with its grammar
+  // and the raw completions — newest first. Plus a no-model preview for the
+  // selected node and the raw templates in prompts/.
+  const PROMPT_LOG_MAX = 60; // entries kept; one grow adds one per expansion
+
+  const nodeLabel = (id) => getNode(id)?.label || id;
+
+  // The request parts every entry shares: the prompt and whichever
+  // constraint it carried.
+  function constraintParts(request) {
+    return [
+      { name: "prompt", text: request.prompt },
+      ...(request.grammar ? [{ name: "grammar (GBNF)", text: request.grammar }] : []),
+      ...(request.schema ? [{ name: "JSON schema", text: JSON.stringify(request.schema, null, 2) }] : [])
+    ];
+  }
+
+  function logTrace(prefix, trace) {
+    logPrompts((trace || []).map((expansion) => ({
+      title: `${prefix} · ${nodeLabel(expansion.from)} · ${expansion.draws.length} draw${expansion.draws.length === 1 ? "" : "s"}`,
+      parts: [
+        ...constraintParts(expansion),
+        {
+          name: "completions",
+          text: expansion.draws.map((d) => `seed ${d.seed}${d.truncated ? " (truncated)" : ""}\n${d.content}`).join("\n\n")
+        }
+      ]
+    })));
+  }
+
+  // A batch goes on top in its own order (a grow's expansions read top-down).
+  function logPrompts(entries) {
+    state.promptLog = [...entries, ...(state.promptLog || [])].slice(0, PROMPT_LOG_MAX);
+    renderPromptLog();
+  }
+
+  function renderPromptLog() {
+    const log = state.promptLog || [];
+    el.promptSummary.textContent = log.length ? `Prompts (${log.length})` : "Prompts";
+    el.promptLog.innerHTML = log.map((entry) => `<details class="prompt-entry">
+      <summary>${escapeHtml(entry.title)}</summary>
+      ${entry.parts.map((part) => `${part.name ? `<div class="prompt-part">${escapeHtml(part.name)}</div>` : ""}<pre class="prompt-text">${escapeHtml(part.text)}</pre>`).join("")}
+    </details>`).join("");
+  }
+
+  async function previewPrompt() {
+    const from = state.selectedId;
+    if (!from) return toast("Select a node", true);
+    try {
+      const data = await (await bridge("/prompt", { graph: state.graph, from, prompt: PROMPT_VERSION })).json();
+      logPrompts([{ title: `preview · ${data.promptVersion} · ${nodeLabel(from)}`, parts: constraintParts(data) }]);
+      el.promptPanel.open = true;
+    } catch (error) {
+      bridgeError(error, "Preview");
+    }
+  }
+
+  async function showTemplates() {
+    try {
+      const { templates } = await (await bridge("/prompts")).json();
+      logPrompts(templates.map((t) => ({
+        title: `template ${t.name} · sha256 ${t.sha256.slice(0, 12)}`,
+        parts: [{ name: "", text: t.text }]
+      })));
+      el.promptPanel.open = true;
+    } catch (error) {
+      bridgeError(error, "Templates");
+    }
+  }
+
+  // ── Lab: continuations (experiments/continue_probe.js + grade.js) ──────
+  // Draws K continuations per prompt version at the selected node, shows them
   // in grade.js's seeded shuffle with the version hidden, and records y/n
   // answers as a grade.js graded file. Versions are revealed once saved.
-  const PROBE_ARMS = ["branch.v2", "branch.v3"];
+  // One version today; the arm machinery stays for the next A/B.
+  const PROBE_ARMS = [PROMPT_VERSION];
 
   const GRADE_KEYS = ["consistent", "advances"];
 
@@ -1064,6 +1145,10 @@
         });
         if (!done) throw new Error("bridge closed the stream early");
         state.probe = { ...done, from, revealed: Object.keys(done.answers).length > 0 };
+        logPrompts((done.prompts || []).map((p) => ({
+          title: `draw · ${p.arm} · ${nodeLabel(from)}`,
+          parts: constraintParts(p)
+        })));
         el.probeReport.textContent = Object.entries(done.stats)
           .map(([arm, c]) => `${arm}: ${c.samples} kept / ${c.attempts} drawn${c.saturated ? " (saturated)" : ""}`).join(" · ");
         el.probeShowBtn.disabled = false;
@@ -1091,7 +1176,7 @@
   function openProbe() {
     const probe = state.probe;
     if (!probe) return;
-    el.probeTitle.textContent = `Alternatives after “${getNode(probe.from)?.label || probe.from}”`;
+    el.probeTitle.textContent = `Continuations after “${getNode(probe.from)?.label || probe.from}”`;
     el.probeHistory.innerHTML = probe.history.map((line) => `<li>${escapeHtml(line)}</li>`).join("");
     renderProbeList();
     renderTally(probe.tally);
@@ -1107,7 +1192,7 @@
         <button type="button" data-i="${index}" data-key="${key}" data-value="yes" class="${given[key] === true ? "on-yes" : ""}">y</button>
         <button type="button" data-i="${index}" data-key="${key}" data-value="no" class="${given[key] === false ? "on-no" : ""}">n</button>`).join(" ");
       const arm = probe.revealed
-        ? `<span class="arm-tag${item.arm === "branch.v3" ? " v3" : ""}">${escapeHtml(item.arm)}</span>`
+        ? `<span class="arm-tag">${escapeHtml(item.arm)}</span>`
         : "";
       return `<div class="probe-item${complete ? " done" : ""}">
         <div class="probe-text">${index + 1}. ${escapeHtml(item.display)}</div>
@@ -1127,21 +1212,16 @@
     renderProbeList();
   }
 
-  // A candidate becomes the branch it proposed, rejoin included — the same
-  // node the grower would make from it.
+  // A candidate becomes the node the grower would make from it.
   function addProbeCandidate(item) {
     const branch = item.branch;
-    const rejoin = branch.rejoinTargetId || (branch.rejoin && branch.rejoin !== "none" ? branch.rejoin : "");
     const made = insertBranch(state.probe.from, {
       label: branch.label || branch.expr,
       expr: branch.expr,
       state: branch.state || "",
-      delta: branch.delta || "",
-      invariants: branch.invariants || "",
-      ...(branch.actor ? { actor: branch.actor } : {}),
       tags: ["counterfactual", "probe"],
       createdBy: "probe"
-    }, getNode(rejoin) ? rejoin : "");
+    });
     if (made.error) return toast(made.error, true);
     state.selectedId = made.merged ? made.merged.into : made.id;
     renderAll();

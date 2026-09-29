@@ -8,13 +8,16 @@
 //   GET  /health   → { ok, model, modelFile }
 //   POST /grow     { graph, from, depth?, width?, maxNodes?, seed?,
 //                    source?: "model" | "baseline", prompt? }
-//                  → { runId, graph, stats, score, baseline?, validation }
+//                  → { runId, graph, stats, score, baseline?, validation, trace }
+//   POST /prompt   { graph, from, prompt? } → { promptVersion, prompt, grammar }
+//                  — what a grow/draw from `from` would send; no model call
+//   GET  /prompts  → { templates: [{ name, sha256, text }] } — prompts/*.txt
 //   POST /continue { graph, from, k?, arms?: [promptVersion…], seed? }
-//                  → NDJSON: { type: "progress" }… then { type: "done", file, pool, answers }
+//                  → NDJSON: { type: "progress" }… then { type: "done", file, pool, answers, prompts }
 //   POST /grades   { file, answers: { labelKey: { consistent, advances } } }
 //                  → { gradedFile, summary, cumulative }
 //   GET  /runs     → recorded runs, newest first
-//   GET  /runs/:id → { graph, manifest, score }
+//   GET  /runs/:id → { graph, manifest, score, trace } (trace null for runs without trace.json)
 //
 // The model call stays Node-side. Every UI grow run is provenanced like a CLI
 // run (same buildConfig, same manifest, same runs/<runId>/ layout) plus an
@@ -36,9 +39,9 @@ const path = require("path");
 const REPO = path.join(__dirname, "..");
 const Ids = require(path.join(REPO, "ids.js"));
 const Engine = require(path.join(REPO, "story_builder_engine.js"));
-const { createClient } = require(path.join(REPO, "llm_client.js"));
-const { growGraph, schemaForPrompt } = require(path.join(REPO, "grower.js"));
-const { scoreGrowth, createBaselineClient } = require(path.join(REPO, "tools", "eval.js"));
+const { createClient, SAMPLED_SAMPLING } = require(path.join(REPO, "llm_client.js"));
+const { growGraph, formatForPrompt, renderPrompt, promptContext } = require(path.join(REPO, "grower.js"));
+const { scoreGrowth, createBaselineClient, BASELINE_FORMAT } = require(path.join(REPO, "tools", "eval.js"));
 const Probe = require(path.join(REPO, "experiments", "continue_probe.js"));
 const Grade = require(path.join(REPO, "experiments", "grade.js"));
 const {
@@ -49,6 +52,11 @@ const {
 // ports collide, not because the choice is configuration-worthy.
 const DEFAULT_PORT = 8081;
 const INPUT_GRAPH_FILE = "input_graph.json";
+// Every prompt a UI run sent and every completion it got back (grower
+// `trace`). Written beside the manifest; runs grown before it existed, and
+// CLI runs, have none.
+const TRACE_FILE = "trace.json";
+const PROMPT_DIR = path.join(REPO, "prompts");
 // A UI click should not fan out into a corpus run; the CLI has no such cap
 // because a terminal user asked for exactly what they typed.
 const MAX_UI_NODES = 64;
@@ -57,9 +65,8 @@ const MAX_UI_NODES = 64;
 const MAX_UI_K = 20;
 
 const SOURCES = ["model", "baseline"];
-// Prompt versions the page may pick, for growing and as A/B arms. v1 (one
-// node, no story) is kept for replay only.
-const PROMPTS = ["branch.v2", "branch.v3"];
+// Prompt versions the page may pick, for growing and as probe arms.
+const PROMPTS = ["branch.v4"];
 const RUN_ID_PATTERN = /^run_[0-9a-f]+$/;
 const PROBE_FILE_PATTERN = /^cont_ui_[0-9a-f]+\.json$/;
 const GRADED_SUFFIX = ".graded.json";
@@ -160,11 +167,13 @@ function createHandler({
   // The client per source, plus the manifest's `source` block. The default
   // source's config is unchanged, so its runIds are the ones every earlier
   // run recorded.
-  function sourceFor({ source, inputGraph, seed }) {
+  function sourceFor({ source, inputGraph, seed, promptVersion }) {
     if (source === "baseline") {
-      return { client: createBaselineClient({ inputGraph, seed }), source: { name: "baseline" } };
+      return {
+        client: createBaselineClient({ inputGraph, seed }), format: BASELINE_FORMAT, source: { name: "baseline" },
+      };
     }
-    return { client: clientFactory({ seed }), source: null };
+    return { client: clientFactory({ ...SAMPLED_SAMPLING, seed }), format: formatForPrompt(promptVersion), source: null };
   }
 
   async function grow(body, res) {
@@ -180,16 +189,16 @@ function createHandler({
     const promptVersion = body.prompt || DEFAULT_PROMPT_VERSION;
     if (!PROMPTS.includes(promptVersion)) return send(res, 400, { error: `body.prompt must be one of ${PROMPTS.join(", ")}` });
 
-    const picked = sourceFor({ source, inputGraph: Engine.normalizeGraph(graph), seed });
+    const picked = sourceFor({ source, inputGraph: Engine.normalizeGraph(graph), seed, promptVersion });
     const { config, promptText, inputGraph } = await buildConfig({
       graph, from, depth, width, maxNodes, client: picked.client, promptVersion, source: picked.source,
     });
     const runId = runIdOf(config);
     const budget = {
-      graph: inputGraph, promptTemplate: promptText, schemaFor: schemaForPrompt(promptVersion), from, depth, width, runId,
+      graph: inputGraph, promptTemplate: promptText, from, depth, width, runId,
     };
 
-    const { graph: grown, stats, validation } = await growGraph({ ...budget, maxNodes, client: picked.client });
+    const { graph: grown, stats, validation, trace } = await growGraph({ ...budget, maxNodes, client: picked.client, format: picked.format });
     const score = scoreGrowth({ graph: grown, stats });
 
     // §6's comparison bar: the model-free recombiner grown to the same node
@@ -199,7 +208,7 @@ function createHandler({
     if (source !== "baseline" && score.grownNodes > 0) {
       const matched = await growGraph({
         ...budget, runId: undefined,
-        maxNodes: score.grownNodes, client: createBaselineClient({ inputGraph, seed }),
+        maxNodes: score.grownNodes, client: createBaselineClient({ inputGraph, seed }), format: BASELINE_FORMAT,
       });
       baseline = scoreGrowth(matched);
     }
@@ -208,14 +217,15 @@ function createHandler({
     fs.mkdirSync(outDir, { recursive: true });
     fs.writeFileSync(path.join(outDir, INPUT_GRAPH_FILE), Ids.canonicalJson(inputGraph));
     fs.writeFileSync(path.join(outDir, GRAPH_FILE), Ids.canonicalJson(grown));
+    fs.writeFileSync(path.join(outDir, TRACE_FILE), JSON.stringify(trace, null, 2));
     fs.writeFileSync(
       path.join(outDir, MANIFEST_FILE),
       JSON.stringify({ runId, createdAt: new Date().toISOString(), ...config, result: stats }, null, 2),
     );
-    return send(res, 200, { runId, graph: grown, stats, score, baseline, validation });
+    return send(res, 200, { runId, graph: grown, stats, score, baseline, validation, trace });
   }
 
-  // The prompt-version A/B probe at one node of the page's graph. Progress streams as
+  // The continuation probe at one node of the page's graph. Progress streams as
   // counts only: the pool is revealed in grade order once drawing ends, so
   // the order the samples arrived in cannot leak which arm is which.
   async function probe(body, res) {
@@ -284,6 +294,12 @@ function createHandler({
           refused: arm(a).refused, truncated: arm(a).truncated, saturated: arm(a).saturated,
         }])),
         answers,
+        // What each arm sent. Shown apart from the pool, so it does not tie
+        // a sample to its arm.
+        prompts: arms.map((a) => ({
+          arm: a, prompt: arm(a).prompt,
+          ...(arm(a).grammar ? { grammar: arm(a).grammar } : {}), ...(arm(a).schema ? { schema: arm(a).schema } : {}),
+        })),
       });
     } catch (error) {
       emit({ type: "error", error: errorMessage(error) });
@@ -351,7 +367,41 @@ function createHandler({
     if (!fs.existsSync(path.join(dir, MANIFEST_FILE))) return send(res, 404, { error: `no run ${runId}` });
     const manifest = readJson(path.join(dir, MANIFEST_FILE));
     const graph = readJson(path.join(dir, GRAPH_FILE));
-    return send(res, 200, { graph, manifest, score: scoreGrowth({ graph: Engine.normalizeGraph(graph), stats: manifest.result }) });
+    const trace = fs.existsSync(path.join(dir, TRACE_FILE)) ? readJson(path.join(dir, TRACE_FILE)) : null;
+    return send(res, 200, {
+      graph, manifest, trace, score: scoreGrowth({ graph: Engine.normalizeGraph(graph), stats: manifest.result }),
+    });
+  }
+
+  // The prompt a grow or draw from `from` would send, without calling the
+  // model: the rendered template plus its grammar or schema.
+  function previewPrompt(body, res) {
+    const { graph, from } = body;
+    if (!graph || !Array.isArray(graph.nodes)) return send(res, 400, { error: "body.graph must be a graph object" });
+    const promptVersion = body.prompt || DEFAULT_PROMPT_VERSION;
+    if (!PROMPTS.includes(promptVersion)) return send(res, 400, { error: `body.prompt must be one of ${PROMPTS.join(", ")}` });
+    const inputGraph = Engine.normalizeGraph(graph);
+    const source = inputGraph.nodes.find((n) => n.id === from);
+    if (!source) return send(res, 400, { error: "body.from must name a node in the graph" });
+    const template = fs.readFileSync(path.join(PROMPT_DIR, `${promptVersion}.txt`), "utf8");
+    return send(res, 200, {
+      promptVersion,
+      prompt: renderPrompt(template, promptContext(inputGraph, source)),
+      ...formatForPrompt(promptVersion).constrain(inputGraph, source),
+    });
+  }
+
+  // Every template in prompts/, raw — including the ones the page never
+  // sends (the same-state judge, the extractor).
+  function listTemplates(res) {
+    const templates = fs.readdirSync(PROMPT_DIR)
+      .filter((name) => name.endsWith(".txt"))
+      .sort()
+      .map((name) => {
+        const text = fs.readFileSync(path.join(PROMPT_DIR, name), "utf8");
+        return { name: name.replace(/\.txt$/, ""), sha256: sha256(text), text };
+      });
+    return send(res, 200, { templates });
   }
 
   return async function handle(req, res) {
@@ -362,8 +412,9 @@ function createHandler({
     try {
       if (req.method === "GET" && req.url === "/health") return await health(res);
       if (req.method === "GET" && req.url === "/runs") return listRuns(res);
+      if (req.method === "GET" && req.url === "/prompts") return listTemplates(res);
       if (req.method === "GET" && req.url.startsWith("/runs/")) return getRun(req.url.slice("/runs/".length), res);
-      if (req.method === "POST" && ["/grow", "/continue", "/grades"].includes(req.url)) {
+      if (req.method === "POST" && ["/grow", "/continue", "/grades", "/prompt"].includes(req.url)) {
         let body;
         try {
           body = JSON.parse(await readBody(req));
@@ -372,6 +423,7 @@ function createHandler({
         }
         if (req.url === "/grow") return await grow(body, res);
         if (req.url === "/continue") return await probe(body, res);
+        if (req.url === "/prompt") return previewPrompt(body, res);
         return grades(body, res);
       }
     } catch (error) {

@@ -107,10 +107,6 @@
             <option value="model">model</option>
             <option value="baseline">baseline (no model)</option>
           </select></label>
-          <label>Prompt<select id="growPrompt">
-            <option value="branch.v3">branch.v3</option>
-            <option value="branch.v2">branch.v2</option>
-          </select></label>
         </div>
         <div class="field-row">
           <label>Depth<input id="growDepth" type="number" value="2" min="1" max="4"></label>
@@ -121,13 +117,13 @@
         <button id="autoGrowBtn" type="button" class="primary">Grow</button>
         <div id="growReport" class="report"></div>
 
-        <h3 class="lab-head">Prompt A/B: branch.v2 vs branch.v3</h3>
+        <h3 class="lab-head">Continuations (branch.v4)</h3>
         <div class="field-row">
-          <label>K per prompt<input id="probeK" type="number" value="5" min="1" max="20"></label>
+          <label>K<input id="probeK" type="number" value="5" min="1" max="20"></label>
           <label>Seed<input id="probeSeed" type="number" value="7" min="1"></label>
         </div>
         <div class="button-row">
-          <button id="probeBtn" type="button" class="primary">Draw alternatives</button>
+          <button id="probeBtn" type="button" class="primary">Draw continuations</button>
           <button id="probeShowBtn" type="button" class="secondary" disabled>Open last batch</button>
         </div>
         <div id="probeReport" class="report"></div>
@@ -138,6 +134,16 @@
           <button id="loadRunBtn" type="button" class="secondary">Load run</button>
           <button id="refreshRunsBtn" type="button" class="secondary">Refresh list</button>
         </div>
+
+        <details id="promptPanel" class="subpanel">
+          <summary id="promptSummary">Prompts</summary>
+          <div class="button-row">
+            <button id="promptPreviewBtn" type="button" class="secondary">Selected node</button>
+            <button id="promptTemplatesBtn" type="button" class="secondary">Templates</button>
+            <button id="promptClearBtn" type="button" class="secondary">Clear</button>
+          </div>
+          <div id="promptLog" class="prompt-log"></div>
+        </details>
       </details>
 
       <details class="panel-section disclosure">

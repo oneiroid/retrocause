@@ -40,18 +40,24 @@ side. See `CONCEPT.md` §"What each layer commits to".
   sibling `llmfinetune` workspace; the script verifies the GGUF hash before
   serving and pins the whole profile. Nothing in the app or the tests needs
   it.
-- **Lab panel** (right side of the page) needs two terminals:
+- **Lab panel** (right side of the page): `./tools/lab.sh` (or `npm run lab`)
+  starts both processes below, waits for them, opens the page; Ctrl-C stops
+  both. By hand it needs two terminals:
   `PROFILE=qwen3-4b-cuda ./tools/serve_reference.sh` and `npm run grow:serve`.
   If 8080 is taken: `PORT=8090 PROFILE=… ./tools/serve_reference.sh` and
   `LLAMA_URL=http://127.0.0.1:8090 npm run grow:serve` (`LLAMA_URL` is read
   by `llm_client.js` everywhere). The panel runs, from the selected node:
-  **Grow** (source `model` / `baseline`, prompt v3 / v2, §6 metrics beside a
-  matched-count baseline, run recorded in `runs/`), **Prompt A/B** (v2 vs v3
-  alternatives in grade.js's shuffle with the version hidden, y/n on
+  **Grow** (source `model` / `baseline`, §6 metrics beside a
+  matched-count baseline, run recorded in `runs/`), **Continuations** (K
+  branch.v4 draws in grade.js's shuffle, y/n on
   `consistent`/`advances`, saved as a grade.js graded file under
   `experiments/out/ui/` with a running tally across all UI batches; any
   candidate can be added to the graph), and
-  **Recorded runs** (load any `runs/<runId>` with its scores). The `baseline`
+  **Recorded runs** (load any `runs/<runId>` with its scores), and a
+  **Prompts** subpanel: every prompt the page caused the model to see, with its
+  grammar and raw completions (a UI grow run persists them as
+  `runs/<runId>/trace.json`), a no-model preview for the selected node
+  (`POST /prompt`), and the raw templates in `prompts/` (`GET /prompts`). The `baseline`
   source works without the model server. Without the bridge the panel says so
   and the rest of the page is unaffected.
 
@@ -64,16 +70,16 @@ side. See `CONCEPT.md` §"What each layer commits to".
 | `story_builder_engine.js` | Graph ops: add/remove nodes & edges, cycle checks, branch composition |
 | `merge_predicate.js` | `sameInContext`: same content + parallel paths ⇒ same state (merge) |
 | `growth.js` | Merge-on-insert: continuations collapse into same-in-context states. Also refuses **null transitions** — a continuation matching its source in both `expr` and `state` advances nothing. That is an edge-validity rule, deliberately not a second definition of "same state" |
-| `seeds.js` | Seed story DAGs (nodes + edges). v2: one node = one event, `state` is world state (the model reads it), `reading` is the authored gloss (nothing renders it into a prompt). Each story carries a closed `entities` character list, which branch.v3 constrains `actor` to |
+| `seeds.js` | Seed story DAGs (nodes + edges). v2: one node = one event, `state` is world state (the model reads it), `reading` is the authored gloss (nothing renders it into a prompt). Each story carries an `entities` character list, rendered into branch.v4's file header as `characters` |
 | `llm_client.js` | llama-server transport; owns the pinned sampling profile and the response cache. **Node-only** — never loaded by the page |
-| `grower.js` | The deterministic traversal: proposes via `llm_client`, inserts via `growth.js`, pins every ordering. `schemaFor(graph, source)` picks the per-request JSON schema by prompt version (`schemaForPrompt`): static for v1/v2, built per expansion for v3. Node-only |
+| `grower.js` | The deterministic traversal: proposes via `llm_client`, inserts via `growth.js`, pins every ordering. `formatForPrompt(v)` gives a version's request constraint (`nextStepGrammar`: GBNF, built per expansion), completion parser, and draws per expansion (`width` for v4, each with a `drawSeed`). Grow/eval/the bridge run it under `llm_client.SAMPLED_SAMPLING` (temperature 1.0 / min_p 0.05, the probe's profile); greedy would make every draw one line. Node-only |
 | `prompts/same.v1.txt` | Few-shot for the "same state?" judge (`same_state.js`), over `expr — state` pairs |
-| `prompts/branch.v*.txt` | Versioned few-shot prompts; the sha256 goes in the run manifest. Edits are a new version, never in-place. `branch.v3` (default) = v2 + a `Characters:` line, an `actor` field closed over `entities`, and a required `rejoin` closed over the legal told-story ids plus `none` (validity by construction; v2's free-text `rejoinTargetId` measured 0). Legal = not the source or its ancestors — descendants are the normal detour target. `branch.v2` carries the told story + ancestor path; `branch.v1` (one node) is replay-only |
+| `prompts/branch.v4.txt` | The one growth prompt; its sha256 goes in the run manifest, and edits are a new version, never in-place. Not an instruction: a `head`-style dump of JSON Lines story files — one complete example story, then the current story's header (`title`, `characters`) and one `{"step", "event", "action", "state"}` line per path node. The base model writes the next line; a GBNF grammar pins its shape (step literal, quote-free text, `verb(args)` action). The told future is not shown, so there is no `rejoin`/`delta`/`invariants`/`actor`. v1–v3 (instruction prompts asking for alternatives) were deleted 2026-09-29; runs recorded under them are no longer replayable |
 | `tools/grow.js` | CLI: `npm run grow -- --story red …` emits `runs/<runId>/grown_graph.json` + manifest; `npm run grow:replay -- <manifest>` diffs canonical JSON cache-cold |
-| `tools/grow_server.js` | `npm run grow:serve` — loopback bridge (:8081) behind the Lab panel. `/grow` (source `model`/`baseline`, `prompt` v2/v3; returns `scoreGrowth` + a matched-count baseline), `/continue` (NDJSON-streamed `continue_probe.probeNode`, writes `experiments/out/ui/cont_ui_<hash>.json`), `/grades` (writes the grade.js graded file, rater `human`), `/runs`. UI runs get `input.seed: null` manifests and are not `grow:replay`-able; the baseline source adds a `source` block to the config, the model source's config (and runIds) is unchanged |
-| `tools/eval.js` | `npm run eval` — §6 metric table over model runs, recorded run dirs, and the `gen_probe.js` baseline (probe candidate source through the grower's own traversal). `--prompt branch.v2,branch.v3` scores versions side by side; `--from <nodeId>` (single story) moves the traversal start |
+| `tools/grow_server.js` | `npm run grow:serve` — loopback bridge (:8081) behind the Lab panel. `/grow` (source `model`/`baseline`; returns `scoreGrowth` + a matched-count baseline + the prompt `trace`, persisted as `trace.json`), `/continue` (NDJSON-streamed `continue_probe.probeNode`, writes `experiments/out/ui/cont_ui_<hash>.json`), `/grades` (writes the grade.js graded file, rater `human`), `/runs`, `/prompt` (no-model preview), `/prompts` (templates). UI runs get `input.seed: null` manifests and are not `grow:replay`-able; the baseline source adds a `source` block to the config, the model source's config (and runIds) is unchanged |
+| `tools/eval.js` | `npm run eval` — §6 metric table over model runs, recorded run dirs, and the `gen_probe.js` baseline (probe candidate source through the grower's own traversal). `--prompt a,b` scores versions side by side; `--from <nodeId>` (single story) moves the traversal start |
 | `tools/serve_reference.sh` | Starts `llama-server` on a hash-pinned profile (`LOCAL_LLM.md` §4.1). Every flag in it is part of that profile. Two profiles: `ref-1.7b-cpu` (default, the Phase 0.5 artifact — every run in `runs/` was grown under it) and `PROFILE=qwen3-4b-cuda` (4B Q5_K_M, all layers on GPU). The two are **different substrates**, not fast/slow versions of one |
-| `experiments/continue_probe.js` | Prompt-version A/B probe: K distinct alternatives per JSON prompt version (default `branch.v2,branch.v3`) at one node, same model, same sampler (temperature 1.0 / min_p 0.05). Both arms render `expr — state`, so grading is blind. `probeNode` is shared by the CLI and the grow server. Grows nothing and merges nothing |
+| `experiments/continue_probe.js` | Continuation probe: K distinct draws per prompt version (default `branch.v4` only) at one node, same model, same sampler (temperature 1.0 / min_p 0.05). Every arm renders `expr — state`, so a multi-arm A/B grades blind. `probeNode` is shared by the CLI and the grow server. Grows nothing and merges nothing |
 | `experiments/grade.js` | Grading CLI over a probe output — four y/n questions defined (`possible`, `consistent`, `advances`, `toldStory`), arms interleaved in a seeded shuffle. Only the two that discriminate on the calibration data — `consistent` and `advances` — are asked per sample (`ask` in `QUESTIONS`); `possible`/`toldStory` measured as noise and are demoted to spot-checks (`--labels` or re-enabling `ask` still records them). `--resume` carries prior answers so re-scoring costs only the delta; `--labels`/`--rater` records a non-human rater; `--compare` reports per-question Cohen's kappa and flags one-directional disagreement. Each prompt names what it asks relative to. Since 2026-09-10 Claude's grading is the reference rater, by the human's decision |
 | `experiments/NOTES.md` | Running log for the continuation work: every config that produced a number, and every deviation from the plan |
 | `experiments/gen_probe.js` | Lexicon-recombiner probe; the traversal `grower.js` will lift and the eval baseline it must beat |
@@ -116,12 +122,11 @@ side. See `CONCEPT.md` §"What each layer commits to".
   teaches the model to produce gloss (`LOCAL_LLM.md` §8). The
   interpretive layer lives in the optional `reading` field, which has no
   default and is never rendered into a prompt.
-- **`actor` is a closed choice.** branch.v3's `actor` ranges over the story's
-  `entities`, so no generated alternative can be driven by a character the
-  author did not list. The payoff, measured on the (removed) frames boundary:
-  sampling collapses onto one or two actors, and restricting the actor to one
-  entity recovers continuations the sampler never proposes (Cassandra at
-  `th_lie`). v3 exposes the slot; forcing it is not built yet.
+- **No closed `actor` since v4.** branch.v3 closed an `actor` field over
+  `entities`; v4 has no actor slot (seed nodes carry none, so the file has
+  no such key to continue). The measured lever it held — restricting the
+  actor recovers continuations the sampler never proposes (Cassandra at
+  `th_lie`, experiments/NOTES.md) — is not reachable from v4 as built.
 
 - **One node, one event.** If a node's `label` and `expr` disagree, it is
   usually bundling several events and wants splitting — that mismatch is
