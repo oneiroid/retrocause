@@ -174,10 +174,10 @@ async function grow(args) {
     cacheDir: path.join(REPO, "cache"),
     sampling: { ...SAMPLED_SAMPLING, seed: samplingSeed },
   });
+  // The reference (greedy) client: the merge judge and v5's formalizer.
+  const refClient = createClient({ baseUrl: args.baseUrl, cacheDir: path.join(REPO, "cache") });
   // On by default; `--no-judge` grows with the surface key alone.
-  const runJudge = args.noJudge ? null : createRunJudge({
-    makeClient: () => createClient({ baseUrl: args.baseUrl, cacheDir: path.join(REPO, "cache") }),
-  });
+  const runJudge = args.noJudge ? null : createRunJudge({ makeClient: () => refClient });
   const { config, promptText, inputGraph } = await buildConfig({
     story, from, depth, width, maxNodes, client,
     promptVersion: args.prompt || DEFAULT_PROMPT_VERSION,
@@ -189,7 +189,7 @@ async function grow(args) {
     graph: inputGraph,
     client,
     promptTemplate: promptText,
-    format: formatForPrompt(config.prompt.template),
+    format: formatForPrompt(config.prompt.template, { formalClient: refClient }),
     from,
     depth,
     width,
@@ -253,8 +253,9 @@ async function replay(args) {
     // template swap as a replay failure.
     promptVersion: manifest.prompt.template,
   });
+  const refClient = createClient({ baseUrl: args.baseUrl, cacheDir: path.join(REPO, "cache") });
   const runJudge = manifest.judge ? createRunJudge({
-    makeClient: () => createClient({ baseUrl: args.baseUrl, cacheDir: path.join(REPO, "cache") }),
+    makeClient: () => refClient,
     threshold: manifest.judge.threshold,
   }) : null;
 
@@ -277,7 +278,7 @@ async function replay(args) {
     graph: inputGraph,
     client,
     promptTemplate: promptText,
-    format: formatForPrompt(manifest.prompt.template),
+    format: formatForPrompt(manifest.prompt.template, { formalClient: refClient }),
     from: manifest.traversal.from,
     depth: manifest.traversal.depth,
     width: manifest.traversal.width,

@@ -896,8 +896,16 @@
   // runs the grower or the continuation probe Node-side and records the run
   // exactly as the CLI would.
 
-  // The one prompt template (prompts/branch.v4.txt).
-  const PROMPT_VERSION = "branch.v4";
+  // Growth prompt versions (prompts/branch.v*.txt). Grow and the preview use
+  // the one picked; the continuations A/B draws from all of them.
+  const PROMPT_VERSIONS = ["branch.v4", "branch.v5"];
+  const pickedPrompt = () => el.growPrompt.value;
+
+  // "told next 3/9 · told later 1/9": how often draws reproduce the told
+  // story — its next event, or one further on (surface match on the action).
+  const toldShare = (toldNext, toldLater, total) => (total
+    ? `told next ${toldNext}/${total}${toldLater ? ` · told later ${toldLater}/${total}` : ""}`
+    : "");
 
   async function bridge(pathname, body) {
     const response = await fetch(`${GROW_SERVER_URL}${pathname}`, body === undefined ? {} : {
@@ -997,12 +1005,13 @@
           width: +el.growWidth.value || 1,
           maxNodes: +el.growMaxNodes.value || 1,
           seed: +el.growSeed.value || 1,
-          prompt: PROMPT_VERSION
+          prompt: pickedPrompt()
         })).json();
         showGrown(data.graph, data.runId, from);
         logTrace(`grow ${data.runId}`, data.trace);
         el.growReport.innerHTML = `<div>${escapeHtml(data.runId)} · +${data.stats.created} nodes, ${data.stats.mergedDuplicates} merged, ${data.stats.mergesRefused || 0} merges refused by the judge, ${data.stats.rejectedNullTransitions || 0} null, ${data.stats.rejectedCycles} cyclic</div>`
-          + metricsTable(data.score, data.baseline, source === "baseline" ? "baseline" : PROMPT_VERSION);
+          + `<div>${escapeHtml(toldShare(data.stats.toldNext, data.stats.toldLater, data.stats.draws))}</div>`
+          + metricsTable(data.score, data.baseline, source === "baseline" ? "baseline" : pickedPrompt());
         loadRuns();
       } catch (error) {
         bridgeError(error, "Grow");
@@ -1065,8 +1074,16 @@
         ...constraintParts(expansion),
         {
           name: "completions",
-          text: expansion.draws.map((d) => `seed ${d.seed}${d.truncated ? " (truncated)" : ""}\n${d.content}`).join("\n\n")
+          text: expansion.draws.map((d) => [
+            `seed ${d.seed}${d.truncated ? " (truncated)" : ""}${d.told ? ` · = told ${d.told.kind}: ${nodeLabel(d.told.id)}` : ""}`,
+            d.content.trimEnd(),
+            ...(d.expr ? [`→ ${d.expr}`] : [])
+          ].join("\n")).join("\n\n")
         },
+        ...expansion.draws.filter((d) => d.formalPrompt).slice(0, 1).map((d) => ({
+          name: "formalization prompt (first draw; the others differ only in the last line)",
+          text: d.formalPrompt
+        })),
         ...(expansion.judgements || []).flatMap((j) => [
           {
             name: `merge judgement: "${j.label}" into ${nodeLabel(j.survivor)} — P(same) ${fmt(j.pYes)}, ${j.same ? "merged" : "refused"}`,
@@ -1096,7 +1113,7 @@
     const from = state.selectedId;
     if (!from) return toast("Select a node", true);
     try {
-      const data = await (await bridge("/prompt", { graph: state.graph, from, prompt: PROMPT_VERSION })).json();
+      const data = await (await bridge("/prompt", { graph: state.graph, from, prompt: pickedPrompt() })).json();
       logPrompts([{ title: `preview · ${data.promptVersion} · ${nodeLabel(from)}`, parts: constraintParts(data) }]);
       el.promptPanel.open = true;
     } catch (error) {
@@ -1122,7 +1139,7 @@
   // in grade.js's seeded shuffle with the version hidden, and records y/n
   // answers as a grade.js graded file. Versions are revealed once saved.
   // One version today; the arm machinery stays for the next A/B.
-  const PROBE_ARMS = [PROMPT_VERSION];
+  const PROBE_ARMS = PROMPT_VERSIONS;
 
   const GRADE_KEYS = ["consistent", "advances"];
 
@@ -1156,7 +1173,7 @@
           parts: constraintParts(p)
         })));
         el.probeReport.textContent = Object.entries(done.stats)
-          .map(([arm, c]) => `${arm}: ${c.samples} kept / ${c.attempts} drawn${c.saturated ? " (saturated)" : ""}`).join(" · ");
+          .map(([arm, c]) => `${arm}: ${c.samples} kept / ${c.attempts} drawn${c.saturated ? " (saturated)" : ""}, ${toldShare(c.toldNext, c.toldLater, c.usable)}`).join(" · ");
         el.probeShowBtn.disabled = false;
         openProbe();
       } catch (error) {

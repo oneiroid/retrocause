@@ -1,0 +1,4 @@
+{{title}}
+
+{{pairs}}
+{{event}} =>

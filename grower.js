@@ -20,6 +20,8 @@
 
 "use strict";
 
+const fs = require("fs");
+const path = require("path");
 const Engine = require("./story_builder_engine.js");
 const Growth = require("./growth.js");
 const Ids = require("./ids.js");
@@ -88,23 +90,141 @@ function parseNextStep(content) {
   return [{ label: line.event, expr: line.action, state: line.state }];
 }
 
-// Prompt version → how its requests are constrained (`constrain(graph,
-// source)` → { schema } or { grammar }), how a completion becomes candidates,
-// and how many completions one expansion draws. v4 is the only version; the
-// indirection stays because the eval baseline is a second format.
-const PROMPT_FORMATS = {
-  "branch.v4": {
-    constrain: (graph, source) => ({ grammar: nextStepGrammar(graph, source) }),
-    parse: parseNextStep,
-    draws: (width) => width,
-  },
+// ── branch.v5: the path as plain prose ─────────────────────────────────────
+//
+// v4 still asked a base model to continue a JSON file, with a foreign example
+// story in front. v5 shows only the story itself, as a reader would see it:
+// the title, one sentence naming the characters, then one paragraph per path
+// node — its label as the event sentence, its `state` after it. The model
+// writes the next paragraph.
+//
+// The grammar holds that paragraph to the same scaffold, so it parses back
+// mechanically: an event sentence with no sentence-ending punctuation inside
+// it, ". ", the state, one newline. The first sentence is the label, the rest
+// the state.
+//
+// Prose has no `expr`, and the merge machinery keys on it. So a second,
+// greedy completion FORMALIZES the event sentence (prompts/formal.v1.txt):
+// this story's own told nodes as `label => expr` lines, then the new sentence
+// and `=>`, under a `verb(arg, …)` grammar. The examples are the story's own
+// vocabulary, which is what lets a drawn "The villagers come running again"
+// land on the told `arrive(villagers, flock)` and be judged as a merge.
+
+// The state is capped at MAX_STATE_SENTENCES, after which the grammar forces
+// the paragraph break. Uncapped, the model never ended a paragraph: at
+// temperature 1.0 it wrote sentence after sentence until n_predict, drifting
+// into loops ("The boy is not credible. The boy is not believable. …") —
+// 39 of 40 draws truncated at cw_cry1 (2026-10-04). Seed states run one to
+// three sentences, so three is the told story's own ceiling.
+const MAX_STATE_SENTENCES = 3;
+const PROSE_GRAMMAR = [
+  String.raw`root ::= event ". " state "\n"`,
+  String.raw`event ::= [A-Z] [^.!?\n]*`,
+  `state ::= ${"sent (\" \" ".repeat(MAX_STATE_SENTENCES - 1)}sent${")?".repeat(MAX_STATE_SENTENCES - 1)}`,
+  String.raw`sent ::= [A-Z"] [^.!?\n]* [.!?] ["]?`,
+].join("\n");
+
+const FORMAL_GRAMMAR = [
+  `root ::= " " word "(" word (", " word)* ")"`,
+  `word ::= [a-z] [a-z0-9_]*`,
+].join("\n");
+const FORMAL_TEMPLATE = "formal.v1";
+
+const sentence = (text) => {
+  const s = String(text || "").trim();
+  return s && !/[.!?]$/.test(s) ? `${s}.` : s;
 };
+
+// A node as a paragraph: event sentence, then what is true afterwards.
+function paragraphOf(node) {
+  return [sentence(node.label || node.expr), String(node.state || "").trim()].filter(Boolean).join(" ");
+}
+
+function charactersSentence(entities) {
+  if (!entities.length) return "";
+  const list = entities.length === 1
+    ? entities[0]
+    : `${entities.slice(0, -1).join(", ")} and ${entities.at(-1)}`;
+  return `The characters are ${list}.`;
+}
+
+// Event sentence → `verb(args)` in this story's vocabulary. `client` should be
+// the reference (greedy) profile: one formalization per sentence, cached.
+function createFormalizer({ client, template }) {
+  return async function formalize(graph, label) {
+    const ranks = Engine.topoRanks(graph);
+    const pairs = graph.nodes
+      .filter((n) => n.createdBy !== "grown" && n.label && n.expr)
+      .sort((a, b) => (ranks[a.id] - ranks[b.id]) || String(a.id).localeCompare(String(b.id)))
+      .map((n) => `${n.label} => ${n.expr}`);
+    const prompt = String(template)
+      .replaceAll("{{title}}", graph.title || "")
+      .replaceAll("{{pairs}}", pairs.join("\n"))
+      .replaceAll("{{event}}", String(label).trim());
+    const { content } = await client.complete(prompt, null, { grammar: FORMAL_GRAMMAR });
+    return { expr: content.trim(), prompt };
+  };
+}
+
+function parseParagraph(content) {
+  const text = String(content).replace(/\n+$/, "");
+  const cut = text.indexOf(". ");
+  return { label: text.slice(0, cut), state: text.slice(cut + 2).trim() };
+}
+
+// Prompt version → how its requests are constrained (`constrain(graph,
+// source)` → { schema } or { grammar }), how a completion becomes candidates
+// (`parse(content, { graph })`, possibly async), and how many completions one
+// expansion draws. A format that needs a second model call (v5's
+// formalization) gets its client here, so callers build formats per run.
+function formatForPrompt(version, { formalClient = null } = {}) {
+  if (version === "branch.v4") {
+    return {
+      constrain: (graph, source) => ({ grammar: nextStepGrammar(graph, source) }),
+      parse: parseNextStep,
+      draws: (width) => width,
+    };
+  }
+  if (version === "branch.v5") {
+    if (!formalClient) throw new Error("branch.v5 needs a formalClient to turn event sentences into exprs");
+    const formalize = createFormalizer({
+      client: formalClient,
+      template: fs.readFileSync(path.join(__dirname, "prompts", `${FORMAL_TEMPLATE}.txt`), "utf8"),
+    });
+    return {
+      constrain: () => ({ grammar: PROSE_GRAMMAR }),
+      parse: async (content, { graph }) => {
+        const { label, state } = parseParagraph(content);
+        const { expr, prompt } = await formalize(graph, label);
+        return [{ label, state, expr, formalPrompt: prompt }];
+      },
+      draws: (width) => width,
+    };
+  }
+  throw new Error(`no format registered for prompt ${version}`);
+}
+const PROMPT_VERSIONS = ["branch.v4", "branch.v5"];
 const DEFAULT_PROMPT_VERSION = "branch.v4";
 
-function formatForPrompt(version) {
-  const format = PROMPT_FORMATS[version];
-  if (!format) throw new Error(`no format registered for prompt ${version}`);
-  return format;
+// ── told-story match ────────────────────────────────────────────────────────
+//
+// Does a draw at `sourceId` reproduce the told story? "next" when its action
+// is a told child's, "later" when it is a told descendant further on (the
+// model jumped ahead), null otherwise. Surface form only (normalized expr) —
+// a raw signal to look at, not a judgement; paraphrases of the told event
+// under a different verb count as new.
+function toldMatch(graph, sourceId, expr) {
+  const key = Ids.normalizedContent(expr);
+  if (!key) return null;
+  const told = (n) => n.createdBy !== "grown";
+  const children = new Set(graph.edges.filter((e) => e.from === sourceId).map((e) => e.to));
+  const ranks = Engine.topoRanks(graph);
+  const hits = graph.nodes
+    .filter((n) => told(n) && n.id !== sourceId && Ids.normalizedContent(n.expr) === key && Engine.reachable(graph, sourceId, n.id))
+    .sort((a, b) => (ranks[a.id] - ranks[b.id]) || String(a.id).localeCompare(String(b.id)));
+  const next = hits.find((n) => children.has(n.id));
+  if (next) return { kind: "next", id: next.id };
+  return hits.length ? { kind: "later", id: hits[0].id } : null;
 }
 
 // Per-draw seeds are derived, not drawn: (client seed, source, index) must
@@ -120,6 +240,7 @@ function drawSeed(clientSeed, sourceId, index) {
 // non-deterministic may enter it.
 function renderPrompt(template, context = {}) {
   return String(template)
+    .replaceAll("{{story}}", context.story || "")
     .replaceAll("{{file}}", context.file || "")
     .replaceAll("{{header}}", context.header || "")
     .replaceAll("{{steps}}", context.steps || "");
@@ -182,6 +303,8 @@ function promptContext(graph, node) {
     file: storyFileName(title),
     header: jsonLine({ title, ...(entities.length ? { characters: entities } : {}) }),
     steps: pathNodes.map((n, i) => stepLine(i + 1, n)).join("\n"),
+    // branch.v5's prose: title, characters, one paragraph per path node.
+    story: [title, charactersSentence(entities), ...pathNodes.map(paragraphOf)].filter(Boolean).join("\n\n"),
   };
 }
 
@@ -212,7 +335,7 @@ async function growGraph({
   client,
   promptTemplate,
   // How requests are constrained and completions read — formatForPrompt(v).
-  format = PROMPT_FORMATS[DEFAULT_PROMPT_VERSION],
+  format = formatForPrompt(DEFAULT_PROMPT_VERSION),
   from,
   depth,
   width,
@@ -239,6 +362,11 @@ async function growGraph({
     expansions: 0,
     // Merges the predicate proposed and the judge refused.
     mergesRefused: 0,
+    // Draws that reproduce the told story (toldMatch): its next event, or
+    // one further on. Counted over parsed draws, before the width cap.
+    toldNext: 0,
+    toldLater: 0,
+    draws: 0,
   };
   const clientSeed = client.sampling && client.sampling.seed;
   // Every request as sent and every completion as received, per expansion —
@@ -264,11 +392,24 @@ async function growGraph({
         const seed = draws > 1 ? drawSeed(clientSeed, sourceId, index) : clientSeed;
         try {
           const { content } = await client.complete(prompt, schema, {
-            bypassCache, grammar,
+            bypassCache, grammar, sourceExpr: source.expr,
             ...(draws > 1 ? { seed } : {}),
           });
-          expansion.draws.push({ seed, content });
-          proposed.push(...format.parse(content));
+          const parsed = await format.parse(content, { graph, source });
+          const record = { seed, content };
+          for (const candidate of parsed) {
+            const told = toldMatch(graph, sourceId, candidate.expr);
+            stats.draws += 1;
+            if (told && told.kind === "next") stats.toldNext += 1;
+            if (told && told.kind === "later") stats.toldLater += 1;
+            if (told) record.told = told;
+            if (candidate.formalPrompt) {
+              record.expr = candidate.expr;
+              record.formalPrompt = candidate.formalPrompt;
+            }
+          }
+          expansion.draws.push(record);
+          proposed.push(...parsed.map(({ formalPrompt, ...candidate }) => candidate));
           answered = true;
         } catch (error) {
           // Truncation is a counted hard failure for this draw, not a retry
@@ -354,5 +495,6 @@ async function growGraph({
 
 module.exports = {
   growGraph, renderPrompt, promptContext, ancestorPath, formatForPrompt, drawSeed,
-  nextStepGrammar, stepLine, storyFileName, DEFAULT_PROMPT_VERSION,
+  nextStepGrammar, stepLine, storyFileName, DEFAULT_PROMPT_VERSION, PROMPT_VERSIONS,
+  toldMatch, parseParagraph, paragraphOf, createFormalizer, PROSE_GRAMMAR, FORMAL_GRAMMAR,
 };

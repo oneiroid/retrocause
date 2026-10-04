@@ -8,7 +8,7 @@
 //   --story <key>          seed story (red | criedWolf | trojanHorse)
 //   --nodes <id,id,...>    nodes to expand; default: three mid-story nodes
 //   --k <n>                distinct samples wanted per arm per node (10)
-//   --arms <a,b>           prompt versions to compare (branch.v4)
+//   --arms <a,b>           prompt versions to compare (branch.v4,branch.v5)
 //   --seed <n>             run seed; every per-sample seed derives from it
 //   --temp <f>             sampler temperature (default 1.0)
 //   --fast                 EXPLORATION ONLY: cache_prompt:true, so the server
@@ -49,7 +49,7 @@ const PROBE_SAMPLING = SAMPLED_SAMPLING;
 const MAX_REFILL_ROUNDS = 3;
 const DEFAULT_K = 10;
 const DEFAULT_RUN_SEED = 7;
-const DEFAULT_ARMS = ["branch.v4"];
+const DEFAULT_ARMS = ["branch.v4", "branch.v5"];
 
 const templatePathOf = (name) => path.join(R, "prompts", `${name}.txt`);
 
@@ -94,11 +94,11 @@ function sampleSeed(runSeed, arm, nodeId, index) {
 
 // One draw. Returns a record that is ALWAYS written: a truncation and a good
 // sample are both outcomes of the measurement.
-async function drawJson({ client, prompt, constraint, parse, seed, arm }) {
+async function drawJson({ client, prompt, constraint, parse, seed, arm, graph, source }) {
   const record = { arm, seed };
   try {
     const { content, stopType, cached, cacheKey } = await client.complete(
-      prompt, constraint.schema, { seed, grammar: constraint.grammar },
+      prompt, constraint.schema, { seed, grammar: constraint.grammar, sourceExpr: source.expr },
     );
     Object.assign(record, { raw: content, stopType, cached, cacheKey });
   } catch (error) {
@@ -109,7 +109,7 @@ async function drawJson({ client, prompt, constraint, parse, seed, arm }) {
   }
 
   let branches;
-  try { branches = parse(record.raw); } catch (error) { record.error = `unparseable JSON: ${error.message}`; return record; }
+  try { branches = await parse(record.raw, { graph, source }); } catch (error) { record.error = `unparseable: ${error.message}`; return record; }
   if (!Array.isArray(branches)) branches = [];
   if (branches.length === 0) { record.error = "no branches"; return record; }
 
@@ -118,6 +118,10 @@ async function drawJson({ client, prompt, constraint, parse, seed, arm }) {
   if (rest.length) record.extraBranches = rest;
   record.expr = String(first.expr || "");
   record.display = `${record.expr} — ${String(first.state || "")}`;
+  // Does it reproduce the told story here (Grower.toldMatch)? Kept off the
+  // grading display: a grader must not be shown the told future.
+  const told = Grower.toldMatch(graph, source.id, record.expr);
+  if (told) record.told = told;
   return record;
 }
 
@@ -147,6 +151,11 @@ async function drawDistinct(draw, k, onAttempt = null) {
     refused: attempts.filter((a) => a.error && !a.truncated).length,
     truncated: attempts.filter((a) => a.truncated).length,
     duplicates: attempts.filter((a) => a.duplicateOf).length,
+    // Over every usable draw, duplicates included: how often the model
+    // reproduces the told story at this node.
+    usable: attempts.filter((a) => !a.error).length,
+    toldNext: attempts.filter((a) => !a.error && a.told && a.told.kind === "next").length,
+    toldLater: attempts.filter((a) => !a.error && a.told && a.told.kind === "later").length,
     saturated: samples.length < k,
     allAttempts: attempts,
   };
@@ -171,6 +180,8 @@ function readTemplates(arms) {
 // Returns the node's entry in the probe file's `results`.
 async function probeNode({
   graph, nodeId, client, arms = DEFAULT_ARMS, templates = readTemplates(arms),
+  // Reference (greedy) client for branch.v5's formalization step.
+  formalClient = null,
   k = DEFAULT_K, runSeed = DEFAULT_RUN_SEED, onAttempt = null,
 }) {
   const node = graph.nodes.find((n) => n.id === nodeId);
@@ -180,11 +191,12 @@ async function probeNode({
 
   for (const arm of arms) {
     const prompt = Grower.renderPrompt(templates[arm], context);
-    const format = Grower.formatForPrompt(arm);
+    const format = Grower.formatForPrompt(arm, { formalClient });
     const constraint = format.constrain(graph, node);
     const result = await drawDistinct(
       (index) => drawJson({
         client, prompt, constraint, parse: format.parse, arm, seed: sampleSeed(runSeed, arm, nodeId, index),
+        graph, source: node,
       }),
       k,
       onAttempt,
@@ -235,17 +247,18 @@ async function main() {
     process.stderr.write("--fast: cache_prompt=true — this run is NOT bit-replayable. Re-run without --fast to record.\n");
   }
   const client = createProbeClient({ baseUrl: args.baseUrl, temp: args.temp, fast: args.fast });
+  const formalClient = createClient({ baseUrl: args.baseUrl, cacheDir: path.join(R, "cache") });
   const templates = readTemplates(args.arms);
   const props = await client.props();
   const results = [];
 
   for (const nodeId of args.nodes) {
-    const entry = await probeNode({ graph, nodeId, client, arms: args.arms, templates, k: args.k, runSeed: args.seed });
+    const entry = await probeNode({ graph, nodeId, client, formalClient, arms: args.arms, templates, k: args.k, runSeed: args.seed });
     results.push(entry);
     const line = args.arms
       .map((arm) => {
         const a = entry.arms[arm];
-        return `${arm} ${a.samples.length}/${args.k} (refused ${a.refused}, trunc ${a.truncated}, dup ${a.duplicates})`;
+        return `${arm} ${a.samples.length}/${args.k} (refused ${a.refused}, trunc ${a.truncated}, dup ${a.duplicates}, told next ${a.toldNext}/${a.usable})`;
       })
       .join("  |  ");
     process.stderr.write(`${nodeId}: ${line}\n`);

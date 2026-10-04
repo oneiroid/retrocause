@@ -192,11 +192,11 @@ function createBaselineClient({ inputGraph, seed, proposals = PROPOSALS_PER_EXPA
   const typing = Probe.induceTyping(inputGraph, roles);
   const rand = Probe.mulberry32(seed);
 
-  // The source expr is read back off the rendered prompt: the last step's
-  // `"action"`.
-  async function complete(prompt) {
-    const actions = [...String(prompt).matchAll(/"action": "([^"]*)"/g)];
-    const expr = actions.length ? actions[actions.length - 1][1] : "";
+  // The grower hands every request its source's expr (`sourceExpr`): the
+  // recombiner needs the formal action, which a prose prompt (branch.v5) no
+  // longer contains.
+  async function complete(prompt, schema, { sourceExpr = "" } = {}) {
+    const expr = sourceExpr;
     const cands = Probe.candidatesFor(expr, lex, allowed, typing);
     // The probe's own draw: seeded Fisher–Yates, then take the head. The
     // grower re-sorts by its own key before the width cap (§5.5.3), so the
@@ -236,7 +236,7 @@ async function evalRun({
   // replay, a fresh RNG stream for the baseline.
   const makeSource = source === "baseline"
     ? () => ({ client: createBaselineClient({ inputGraph, seed }), format: BASELINE_FORMAT })
-    : () => ({ client: createClient({ baseUrl, cacheDir, sampling: { ...SAMPLED_SAMPLING, seed } }), format: formatForPrompt(prompt) });
+    : () => ({ client: createClient({ baseUrl, cacheDir, sampling: { ...SAMPLED_SAMPLING, seed } }), format: formatForPrompt(prompt, { formalClient: createClient({ baseUrl, cacheDir }) }) });
   // `from` defaults to the root, which is what every recorded sweep used. It
   // is settable because the probe measured mid-story nodes and the grower
   // measured the root, and that difference is itself a live hypothesis about

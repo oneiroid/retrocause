@@ -40,7 +40,7 @@ const REPO = path.join(__dirname, "..");
 const Ids = require(path.join(REPO, "ids.js"));
 const Engine = require(path.join(REPO, "story_builder_engine.js"));
 const { createClient, SAMPLED_SAMPLING } = require(path.join(REPO, "llm_client.js"));
-const { growGraph, formatForPrompt, renderPrompt, promptContext } = require(path.join(REPO, "grower.js"));
+const { growGraph, formatForPrompt, renderPrompt, promptContext, PROMPT_VERSIONS } = require(path.join(REPO, "grower.js"));
 const { scoreGrowth, createBaselineClient, BASELINE_FORMAT } = require(path.join(REPO, "tools", "eval.js"));
 const Probe = require(path.join(REPO, "experiments", "continue_probe.js"));
 const Grade = require(path.join(REPO, "experiments", "grade.js"));
@@ -62,7 +62,7 @@ const MAX_UI_K = 20;
 
 const SOURCES = ["model", "baseline"];
 // Prompt versions the page may pick, for growing and as probe arms.
-const PROMPTS = ["branch.v4"];
+const PROMPTS = PROMPT_VERSIONS;
 const RUN_ID_PATTERN = /^run_[0-9a-f]+$/;
 const PROBE_FILE_PATTERN = /^cont_ui_[0-9a-f]+\.json$/;
 const GRADED_SUFFIX = ".graded.json";
@@ -173,7 +173,8 @@ function createHandler({
     // (same_judge.js). The baseline stays model-free, so it has none.
     return {
       client: clientFactory({ ...SAMPLED_SAMPLING, seed }),
-      format: formatForPrompt(promptVersion),
+      // The reference client formalizes v5's event sentences.
+      format: formatForPrompt(promptVersion, { formalClient: clientFactory({}) }),
       source: null,
       runJudge: createRunJudge({ makeClient: () => clientFactory({}) }),
     };
@@ -253,7 +254,7 @@ function createHandler({
     const counts = Object.fromEntries(arms.map((arm) => [arm, { attempts: 0, samples: 0 }]));
     try {
       const entry = await Probe.probeNode({
-        graph: inputGraph, nodeId: from, client, k, arms, runSeed,
+        graph: inputGraph, nodeId: from, client, k, arms, runSeed, formalClient: clientFactory({}),
         onAttempt: (record) => {
           const c = counts[record.arm];
           c.attempts += 1;
@@ -298,6 +299,7 @@ function createHandler({
         stats: Object.fromEntries(arms.map((a) => [a, {
           attempts: arm(a).attempts, samples: arm(a).samples.length, duplicates: arm(a).duplicates,
           refused: arm(a).refused, truncated: arm(a).truncated, saturated: arm(a).saturated,
+          usable: arm(a).usable, toldNext: arm(a).toldNext, toldLater: arm(a).toldLater,
         }])),
         answers,
         // What each arm sent. Shown apart from the pool, so it does not tie
@@ -393,7 +395,7 @@ function createHandler({
     return send(res, 200, {
       promptVersion,
       prompt: renderPrompt(template, promptContext(inputGraph, source)),
-      ...formatForPrompt(promptVersion).constrain(inputGraph, source),
+      ...formatForPrompt(promptVersion, { formalClient: clientFactory({}) }).constrain(inputGraph, source),
     });
   }
 

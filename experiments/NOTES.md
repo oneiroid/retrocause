@@ -1987,3 +1987,65 @@ by threshold alone.
 
 Kev (the "Binary judge" section above) is dropped — human decision,
 2026-10-04. The judge path is the served model's own logprobs.
+
+## Told-next share, and branch.v5 — the story as prose (2026-10-04)
+
+**Told-next share.** Every draw is now tagged by `Grower.toldMatch`: its
+action equals a told child of the source ("next"), a told descendant further
+on ("later"), or neither. Surface form only — counted in grow stats
+(`toldNext`/`toldLater`/`draws`), in probe arm stats over all usable draws
+(duplicates included), shown in the Lab's grow and continuation reports and
+per draw in the Prompts panel. Not yet a named metric: first look below
+shows it undercounts — "Red meets the wolf" came back `meet(red, wolf)` and
+`meet(wolf, red, path)`, neither equal to the told `meet(wolf, red)`.
+
+**branch.v5.** The prompt is the story, nothing else: title, "The
+characters are …", one paragraph per path node (label as the event
+sentence, then `state`). No foreign example story, no JSON. A grammar holds
+the new paragraph to the scaffold — capitalized event sentence, ". ", the
+state, newline — so the first sentence is the label and the rest the state.
+`expr` comes from a second, greedy completion (`prompts/formal.v1.txt`): the
+story's own told nodes as `label => expr` lines, then the new event and
+`=>`, under a `verb(args)` grammar.
+
+- **Uncapped, the model never ends a paragraph**: 39 of 40 draws at `cw_cry1`
+  ran to n_predict, drifting into loops ("The boy is not credible. The boy
+  is not believable. …"). The state is now capped at three sentences (the
+  seeds' own ceiling), after which the grammar forces the newline: 0
+  truncations since.
+- **The formalizer works as intended**: "The villagers come" →
+  `arrive(villagers, flock)`, "The wolf appears" → `arrive(wolf, flock)` —
+  the told vocabulary, which is what lets merges and the judge see them. It
+  also flattens real differences: "cries wolf for real" and "cries wolf
+  again" are both `cry(boy, wolf)`. Telling those apart is the judge's job.
+
+Probe, K=10 per arm, 4B CUDA, seed 7, the nine default nodes (told next / usable draws):
+
+| node | v4 | v5 |
+|---|---|---|
+| cw_cry1 | 0/20 | 4/21 |
+| cw_laugh | 13/29 | 27/40 |
+| cw_doubt | 4/40 | 20/40 |
+| red_woods, red_tell, red_flowers | 0/11, 0/10, 2/12 | 0/10, 0/10, 0/10 |
+| th_gift, th_lie, th_seer | 0/10, 0/11, 0/17 | 0/12, 0/18, 0/16 |
+
+criedWolf: v5 follows the told story far more often (the formalizer maps
+paraphrases onto told actions, and the fable is one the model knows) and
+saturates sooner (fewer distinct actions). Red/Trojan: ~0 in both arms —
+partly real (the model skips Cassandra at `th_lie` and brings the horse in),
+partly the surface undercount above. Read by eye, v5 is more story-like
+and also shakier at `red_woods`: it jumps ahead ("Grandmother invites her
+to sit"), restates the opening ("Mother sends Red to grandmother"), and once
+emitted a non-event ("Red's grandmother" → `grandmother(red)`). Not graded.
+
+**v5 grow with the judge** (criedWolf from `cw_cry2`, d2/w3, seed 7,
+`runs/run_8132d874bb01a8c6`): 3/3 draws told-next (2 merged into `cw_run2`,
+1 refused at 0.38 → duplicate). From the duplicate, three "third cry, still
+no wolf" draws: all correctly refused against `cw_cry3` (the true cry,
+0.27–0.35), and also refused against each other (0.35–0.44) — three
+paraphrase duplicates. 4 created, 2 merged, 7 refused. The judge's
+paraphrase cost (noted above) dominates v5 runs, because v5's draws are
+more alike.
+
+Open: grade v4 vs v5 (the Lab A/B now runs exactly that, blind); the
+told-next count wants a judge-backed version before it is named.
