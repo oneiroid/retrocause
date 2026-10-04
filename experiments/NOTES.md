@@ -2049,3 +2049,36 @@ more alike.
 
 Open: grade v4 vs v5 (the Lab A/B now runs exactly that, blind); the
 told-next count wants a judge-backed version before it is named.
+
+## 2026-10-04 — v4 vs v5 graded: v4 stays the default
+
+Claude as reference rater, blind (grade.js shuffle, arm hidden), the three
+probe files above, `consistent`/`advances` only. Labels:
+`experiments/out/labels_v4v5_*.claude.json`; graded files beside the probes.
+
+| story | v4 usable | v5 usable |
+|---|---|---|
+| criedWolf | 23/26 | 16/22 |
+| red | 22/30 | 14/30 |
+| trojanHorse | 30/30 | 18/30 |
+| **all** | **75/86 (87%)** | **48/82 (59%)** |
+
+`advances` is near-equal (82/86 vs 72/82); the gap is `consistent`. Almost
+every v5 failure is in the STATE paragraph, not the event sentence: the
+horse "stands for twelve years … not in front of the gates but the
+treasury", "still hollow and empty", Red "leaves the path … and is still at
+home", Red "still afraid" one line after "she is not afraid". v5's event
+sentences mostly read fine.
+
+Caveats, not engineered around:
+- **The blind is partial.** v5 samples average 156–265 chars against v4's
+  84–101; length gives the arm away. The rater could tell.
+- **Length confound.** More text, more chances to contradict. Only 14 v5
+  samples are short (≤150 chars), 9 usable — too few to separate "prose
+  prompt" from "three-sentence state".
+- n≈85 per arm, one rater, one seed.
+
+Decision: v4 stays the CLI default and becomes the Lab default. v5's one
+advantage (told-next share on criedWolf) is not what the grower is for.
+If v5 is revisited, the obvious variant is the state capped at one
+sentence — that is the part that fails.
