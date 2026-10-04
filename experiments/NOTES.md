@@ -2082,3 +2082,47 @@ Decision: v4 stays the CLI default and becomes the Lab default. v5's one
 advantage (told-next share on criedWolf) is not what the grower is for.
 If v5 is revisited, the obvious variant is the state capped at one
 sentence — that is the part that fails.
+
+## 2026-10-04 — seeds v3
+
+Every number above was measured on v2 seeds; v3 changes what the model
+reads at every node, so none of them carries over (the probe nodes keep
+their ids, the paths to them do not keep their text).
+
+What changed, and why:
+- **States are positive facts.** v2 states said what had NOT happened
+  ("has not agreed or refused", "He has not threatened her", "The boy does
+  not know this"), and the graded v4/v5 samples copy it — runs of "She has
+  not moved to …", "has not knocked or spoken to anyone". Strategy-as-state
+  went too ("Nobody is between the wolf and the house", "Nobody in the house
+  can warn Red", "Nothing about the horse has changed"). A negation stays
+  where it is the fact ("There is no wolf").
+- **Bundles split:** the villagers' walk home (inside `cw_laugh` and
+  `cw_doubt`, stated only in effects) → `cw_home1`/`cw_home2`;
+  `th_night` → `th_feast` + `th_night`; `th_open` → `th_out` + `th_open`;
+  `red_rescue` → `red_rescue` + `red_kill`.
+- **Skipped causes added:** `red_tempt` (the wolf points out the flowers —
+  nothing caused `red_leave` before), `red_knock` (the wolf poses as Red at
+  the door), `red_sleep` + `red_woodcutter` (the snoring that brings the
+  rescuer), `th_capture` (Sinon arrives as a prisoner), `th_return` (the
+  fleet comes back; v2 folded to `greeks.fleet=away` while Troy fell).
+- **Told story corrected at Red's climax:** `red_recognition` →
+  `red_question`. In Grimm and Perrault Red questions the big ears/eyes/
+  hands and is eaten; recognising the wolf is a branch.
+- **Trojan order kept simplified** (human decision): Cassandra after Sinon,
+  no Laocoön. The model knows Virgil's order; expect it to keep skipping
+  Cassandra at `th_lie`.
+- **Effects:** roots initialise `grandmother.location`, `wolf.alive`,
+  `flock.alive`, `boy.crying_wolf`, `greeks.fleet`, `trojans.awake`;
+  `cw_dismiss` was a null transition in the fact layer (re-asserted
+  `villagers.location=village`) and now settles `alarm.heeded=no` — each
+  cry sets it `pending`, each arrival `yes`; `wolf.disguised=no` is gone
+  from recognition (seeing through a disguise does not remove it); the
+  ending no longer leaves `trojans.believe_horse_safe=yes` or
+  `boy.crying_wolf=yes` standing.
+- `th_seer`'s action is now `warn(cassandra, trojans)` (it was
+  `recognize(…)`, the reading, not the act); `th_enter` is
+  `bring(trojans, horse, troy)` (the Trojans act; the horse does not).
+
+Not changed: branch.v4's Tortoise example still has one "has not woken";
+editing it is a new prompt version.
