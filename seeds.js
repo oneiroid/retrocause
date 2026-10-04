@@ -71,8 +71,9 @@
 // "has not threatened her") — copied as runs of "She has not moved to …" —
 // and strategy in place of world ("Nobody is between the wolf and the
 // house"). v3 states say what IS true after the event, positively, in the
-// story's own terms; a negation stays only where it is the fact itself
-// ("There is no wolf").
+// story's own terms, with no negations at all — v3.1 removed the last ones
+// that were facts in themselves: "There is no wolf" became "The alarm is a
+// lie", "Nobody comes" became "The villagers stay in the village".
 //
 // v3 also re-cuts the remaining bundles (the villagers' walk home was folded
 // into `cw_laugh`/`cw_doubt`; the Trojans' feast and sleep, the men leaving
@@ -256,7 +257,7 @@
         "root", ["duty", "trust"],
         "boy.location=hillside, boy.crying_wolf=no, flock.guarded=yes, flock.alive=yes, villagers.trust_boy=full, villagers.location=village"),
       node("cw_cry1", "The boy cries wolf for fun", "cry(boy, wolf)",
-        "The boy is shouting that a wolf is at the sheep. There is no wolf.",
+        "The boy is shouting that a wolf is at the sheep. The alarm is a lie.",
         "The alarm channel is spent on a joke; trust takes its first debit.",
         "story", ["deception"],
         "boy.crying_wolf=yes, alarm.heeded=pending"),
@@ -276,7 +277,7 @@
         "story", ["recurrence"],
         "villagers.location=village"),
       node("cw_cry2", "The boy cries wolf again", "cry(boy, wolf)",
-        "The boy is shouting about a wolf a second time. There is still no wolf.",
+        "The boy is shouting about a wolf a second time. The alarm is a lie again.",
         "The same act in a changed world: this time belief is thinner.",
         "story", ["deception", "recurrence"],
         "boy.crying_wolf=yes, alarm.heeded=pending"),
@@ -286,7 +287,7 @@
         "story", ["false-alarm", "recurrence"],
         "villagers.location=flock, alarm.heeded=yes, boy.crying_wolf=no"),
       node("cw_doubt", "The villagers stop believing him", "distrust(villagers, boy)",
-        "The villagers have decided the boy's cries mean nothing.",
+        "The villagers have decided to treat every cry from the boy as a lie.",
         "The alarm is disconnected at the receiving end, silently, while the sender assumes it still works.",
         "story", ["erosion"],
         "villagers.trust_boy=none"),
@@ -305,13 +306,13 @@
         "The same words, now accurate, and the accuracy makes no difference — content was never what was being read.",
         "story", ["recurrence", "inversion"],
         "boy.crying_wolf=yes, alarm.heeded=pending"),
-      node("cw_dismiss", "Nobody comes", "ignore(villagers, boy)",
+      node("cw_dismiss", "The villagers stay in the village", "ignore(villagers, boy)",
         "The villagers hear the cry and stay at their work in the village.",
         "The villagers correctly recognize the boy — as a liar — and are wrong about the wolf.",
         "story", ["recognition", "inversion"],
         "alarm.heeded=no"),
       node("cw_loss", "The wolf kills the sheep", "devour(wolf, flock)",
-        "The sheep are dead. The boy is unhurt and alone on the hillside.",
+        "The sheep are dead. The boy is safe and alone on the hillside.",
         "The cost of the spent alarm channel is paid all at once.",
         "story", ["loss"],
         "flock.alive=no, flock.guarded=no, boy.crying_wolf=no"),
@@ -360,7 +361,7 @@
         "story", ["gift", "trap"],
         "trojans.know_horse=yes"),
       node("th_capture", "Shepherds bring in a captured Greek", "capture(trojans, sinon)",
-        "A Greek named Sinon stands bound among the Trojans, alone and unarmed.",
+        "A Greek named Sinon stands bound among the Trojans as their prisoner.",
         "The planted defector arrives as a prisoner, so that nothing he says looks offered.",
         "story", ["deception"],
         "sinon.captive=yes"),
@@ -385,7 +386,7 @@
         "story", ["threshold", "inversion"],
         "horse.location=inside_troy"),
       node("th_feast", "The city celebrates", "celebrate(trojans)",
-        "Troy is feasting, with garlands on the temples. The horse stands unguarded in the city.",
+        "Troy is feasting, with garlands on the temples. The guards have joined the feast and the horse stands alone in the square.",
         "The defence is stood down by the same belief that carried the horse in.",
         "story", ["complacency"],
         "troy.guarded=no"),

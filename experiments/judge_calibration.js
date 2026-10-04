@@ -3,6 +3,8 @@
 //
 //   node experiments/judge_calibration.js [--depth 2] [--width 3] [--seed 7]
 //   node experiments/judge_calibration.js --labels <file>   # score labelled cases
+//   node experiments/judge_calibration.js --rescore same.v3 [--labels <file>]
+//       # re-ask the labelled cases under another judge prompt (model needed)
 //
 // Grows from mid-story nodes of every seed story with the judge in RECORD
 // mode: each merge the surface key proposes is put to the judge, the verdict
@@ -24,7 +26,7 @@ const R = path.join(__dirname, "..");
 const Engine = require(path.join(R, "story_builder_engine.js"));
 const { createClient, SAMPLED_SAMPLING } = require(path.join(R, "llm_client.js"));
 const { growGraph, formatForPrompt, ancestorPath } = require(path.join(R, "grower.js"));
-const { createJudge, telling } = require(path.join(R, "same_judge.js"));
+const { createJudge, telling, renderTellings, pYesOf } = require(path.join(R, "same_judge.js"));
 const { seeds } = require(path.join(R, "seeds.js"));
 const { DEFAULT_NODES } = require(path.join(R, "experiments", "continue_probe.js"));
 
@@ -40,6 +42,7 @@ function parseArgs(argv) {
     const flag = argv[i];
     const value = argv[i + 1];
     if (flag === "--labels") { args.labels = value; i += 1; }
+    else if (flag === "--rescore") { args.rescore = value; i += 1; }
     else if (flag === "--depth") { args.depth = +value; i += 1; }
     else if (flag === "--width") { args.width = +value; i += 1; }
     else if (flag === "--seed") { args.seed = +value; i += 1; }
@@ -91,6 +94,40 @@ async function collect(args) {
   process.stderr.write(`\n${cases.length} proposed merges → ${OUT}\n`);
 }
 
+// Both orders of every labelled case, re-asked under `promptName`; the stored
+// routes are used as they are, so the cases stay the same cases.
+async function rescore(file, promptName) {
+  const data = JSON.parse(fs.readFileSync(file, "utf8"));
+  const client = createClient({ cacheDir: path.join(R, "cache") });
+  const template = read(promptName);
+  for (const c of data.cases) {
+    const title = seeds[c.story].title;
+    const survivor = { route: c.survivorRoute, state: c.survivorState };
+    const candidate = { route: c.candidateRoute, state: c.candidateState };
+    const orders = [];
+    for (const [a, b] of [[survivor, candidate], [candidate, survivor]]) {
+      const prompt = renderTellings(template, { title, first: a.route, firstState: a.state, second: b.route, secondState: b.state });
+      orders.push(pYesOf(await client.nextTokenLogprobs(prompt)));
+    }
+    const answered = orders.filter((p) => p !== null);
+    c.pYes = answered.length ? answered.reduce((s, p) => s + p, 0) / answered.length : null;
+    c.pYesByOrder = orders;
+  }
+  const out = file.replace(/\.json$/, `.${promptName}.json`);
+  fs.writeFileSync(out, JSON.stringify({ ...data, manifest: { ...data.manifest, judgePrompt: promptName, rescoredAt: new Date().toISOString() } }, null, 2));
+  process.stderr.write(`→ ${out}\n`);
+  report(out);
+}
+
+// Probability that a random true merge scores above a random false one.
+function auc(cases) {
+  const pos = cases.filter((c) => c.same).map((c) => c.pYes);
+  const neg = cases.filter((c) => !c.same).map((c) => c.pYes);
+  let wins = 0;
+  for (const p of pos) for (const n of neg) wins += p > n ? 1 : p === n ? 0.5 : 0;
+  return wins / (pos.length * neg.length);
+}
+
 function report(file) {
   const { cases } = JSON.parse(fs.readFileSync(file, "utf8"));
   const labelled = cases.filter((c) => typeof c.same === "boolean" && c.pYes !== null);
@@ -105,14 +142,16 @@ function report(file) {
       labelled.filter((c) => !c.same && accept(c)).length,
       labelled.filter((c) => !c.same && !accept(c)).length,
     ];
-    console.log(`  ${t.toFixed(1)}       ${row.map((n) => String(n).padEnd(12)).join(" ")}`);
+    console.log(`  ${t.toFixed(2)}      ${row.map((n) => String(n).padEnd(12)).join(" ")}`);
   }
   // The surface key alone accepts every case.
   console.log(`surface key alone: ${labelled.filter((c) => !c.same).length} false merges of ${labelled.length}`);
+  console.log(`AUC ${auc(labelled).toFixed(2)}`);
 }
 
 if (require.main === module) {
   const args = parseArgs(process.argv.slice(2));
-  (args.labels ? Promise.resolve(report(args.labels)) : collect(args))
+  (args.rescore ? rescore(args.labels || OUT, args.rescore)
+    : args.labels ? Promise.resolve(report(args.labels)) : collect(args))
     .catch((error) => { console.error(error.stack); process.exit(1); });
 }

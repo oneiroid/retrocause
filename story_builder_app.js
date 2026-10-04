@@ -898,7 +898,7 @@
 
   // Growth prompt versions (prompts/branch.v*.txt). Grow and the preview use
   // the one picked; the continuations A/B draws from all of them.
-  const PROMPT_VERSIONS = ["branch.v4", "branch.v5"];
+  const PROMPT_VERSIONS = ["branch.v4", "branch.v5", "branch.v6"];
   const pickedPrompt = () => el.growPrompt.value;
 
   // "told next 3/9 · told later 1/9": how often draws reproduce the told

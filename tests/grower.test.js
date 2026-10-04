@@ -77,6 +77,18 @@ test("v4 prompt: ends on the source's step line, shows no told future, asks for 
   assert.ok(!/alternative|instead|list/i.test(rendered));
 });
 
+test("v6 prompt: v4's file without the example story; at the root, one line and no example", () => {
+  const v6 = fs.readFileSync(path.join(__dirname, "..", "prompts", "branch.v6.txt"), "utf8");
+  const graph = Engine.normalizeGraph(seeds.red);
+  const mid = renderPrompt(v6, promptContext(graph, graph.nodes.find((n) => n.id === "red_tell")));
+  assert.ok(mid.startsWith("==> stories/little_red_riding_hood.jsonl <==\n"));
+  assert.ok(!/Tortoise|hare/.test(mid));
+  assert.strictEqual(mid.trimEnd().split("\n").length, 2 + ancestorPath(graph, "red_tell").length);
+  const root = renderPrompt(v6, promptContext(graph, graph.nodes.find((n) => n.id === "red_start")));
+  assert.strictEqual(root.trimEnd().split("\n").length, 3); // file line, header, the root's own step
+  assert.deepStrictEqual(formatForPrompt("branch.v6").constrain(graph, graph.nodes[0]), formatForPrompt("branch.v4").constrain(graph, graph.nodes[0]));
+});
+
 test("v4 grammar: the step number is the next one; action is verb(args)", () => {
   const graph = Engine.normalizeGraph(seeds.red);
   const source = graph.nodes.find((n) => n.id === "red_tell");

@@ -178,7 +178,10 @@ function parseParagraph(content) {
 // expansion draws. A format that needs a second model call (v5's
 // formalization) gets its client here, so callers build formats per run.
 function formatForPrompt(version, { formalClient = null } = {}) {
-  if (version === "branch.v4") {
+  // v6 is v4 without the foreign example story: the same file format, so the
+  // same grammar and parser. The selected node's own past lines are the only
+  // examples; at the root there is one line and no example at all.
+  if (version === "branch.v4" || version === "branch.v6") {
     return {
       constrain: (graph, source) => ({ grammar: nextStepGrammar(graph, source) }),
       parse: parseNextStep,
@@ -203,8 +206,8 @@ function formatForPrompt(version, { formalClient = null } = {}) {
   }
   throw new Error(`no format registered for prompt ${version}`);
 }
-const PROMPT_VERSIONS = ["branch.v4", "branch.v5"];
-const DEFAULT_PROMPT_VERSION = "branch.v4";
+const PROMPT_VERSIONS = ["branch.v4", "branch.v5", "branch.v6"];
+const DEFAULT_PROMPT_VERSION = "branch.v6";
 
 // ── told-story match ────────────────────────────────────────────────────────
 //

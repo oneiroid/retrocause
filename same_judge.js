@@ -49,12 +49,23 @@ function telling(nodes) {
 }
 
 function renderJudgePrompt(template, { title, first, second }) {
+  return renderTellings(template, {
+    title,
+    first: telling(first), firstState: (first.at(-1) || {}).state,
+    second: telling(second), secondState: (second.at(-1) || {}).state,
+  });
+}
+
+// The same document from routes already told as prose — what
+// experiments/judge_calibration.js stores, so a new judge prompt can be
+// re-scored against the labelled cases without regrowing them.
+function renderTellings(template, { title, first, firstState, second, secondState }) {
   return String(template)
     .replaceAll("{{title}}", title || "")
-    .replaceAll("{{first}}", telling(first))
-    .replaceAll("{{first_state}}", (first.at(-1) || {}).state || "")
-    .replaceAll("{{second}}", telling(second))
-    .replaceAll("{{second_state}}", (second.at(-1) || {}).state || "");
+    .replaceAll("{{first}}", first)
+    .replaceAll("{{first_state}}", firstState || "")
+    .replaceAll("{{second}}", second)
+    .replaceAll("{{second_state}}", secondState || "");
 }
 
 // P(yes | yes or no), summing casing/spacing variants of each answer.
@@ -100,4 +111,4 @@ function createJudge({ client, template, threshold = SAME_THRESHOLD }) {
 // The judge's template, by version.
 const JUDGE_PROMPT = "same.v2";
 
-module.exports = { createJudge, renderJudgePrompt, telling, pYesOf, SAME_THRESHOLD, JUDGE_PROMPT };
+module.exports = { createJudge, renderJudgePrompt, renderTellings, telling, pYesOf, SAME_THRESHOLD, JUDGE_PROMPT };

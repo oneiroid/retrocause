@@ -1,0 +1,2423 @@
+{
+  "manifest": {
+    "probe": "continue_probe v2 (prompt-version A/B)",
+    "story": "trojanHorse",
+    "k": 10,
+    "runSeed": 7,
+    "arms": [
+      "branch.v4",
+      "branch.v6"
+    ],
+    "fast": false,
+    "sampling": {
+      "temperature": 1,
+      "top_k": 0,
+      "seed": 7,
+      "samplers": [
+        "top_k",
+        "min_p",
+        "temperature"
+      ],
+      "repeat_penalty": 1,
+      "dry_multiplier": 0,
+      "n_predict": 512,
+      "cache_prompt": false,
+      "min_p": 0.05
+    },
+    "model": {
+      "props": {
+        "default_generation_settings": {
+          "params": {
+            "seed": 4294967295,
+            "temperature": 0.800000011920929,
+            "dynatemp_range": 0,
+            "dynatemp_exponent": 1,
+            "top_k": 40,
+            "top_p": 0.949999988079071,
+            "min_p": 0.05000000074505806,
+            "top_n_sigma": -1,
+            "xtc_probability": 0,
+            "xtc_threshold": 0.10000000149011612,
+            "typical_p": 1,
+            "repeat_last_n": 64,
+            "repeat_penalty": 1,
+            "presence_penalty": 0,
+            "frequency_penalty": 0,
+            "dry_multiplier": 0,
+            "dry_base": 1.75,
+            "dry_allowed_length": 2,
+            "dry_penalty_last_n": -1,
+            "mirostat": 0,
+            "mirostat_tau": 5,
+            "mirostat_eta": 0.10000000149011612,
+            "adaptive_target": -1,
+            "adaptive_decay": 0.8999999761581421,
+            "max_tokens": -1,
+            "n_predict": -1,
+            "n_keep": 0,
+            "n_discard": 0,
+            "ignore_eos": false,
+            "stream": false,
+            "n_probs": 0,
+            "min_keep": 0,
+            "chat_format": "Content-only",
+            "reasoning_format": "none",
+            "reasoning_in_content": false,
+            "generation_prompt": "",
+            "samplers": [
+              "penalties",
+              "dry",
+              "top_n_sigma",
+              "top_k",
+              "typ_p",
+              "top_p",
+              "min_p",
+              "xtc",
+              "temperature"
+            ],
+            "speculative.types": "none",
+            "timings_per_token": false,
+            "post_sampling_probs": false,
+            "backend_sampling": false,
+            "lora": []
+          },
+          "n_ctx": 4096
+        },
+        "total_slots": 1,
+        "model_alias": "/media/oneiroid/sub/workspace/llmfinetune/models/qwen3-4b-base-Q5_K_M.gguf",
+        "model_ftype": "Q5_K - Medium",
+        "model_path": "/media/oneiroid/sub/workspace/llmfinetune/models/qwen3-4b-base-Q5_K_M.gguf",
+        "modalities": {
+          "vision": false,
+          "video": false,
+          "audio": false
+        },
+        "media_marker": "<__media_owX4drARFpn3gfxLgV1lryJ4QmN6z8z1__>",
+        "endpoint_slots": true,
+        "endpoint_props": false,
+        "endpoint_metrics": false,
+        "ui": true,
+        "ui_settings": {},
+        "chat_template": "{%- if tools %}\n    {{- '<|im_start|>system\\n' }}\n    {%- if messages[0].role == 'system' %}\n        {{- messages[0].content + '\\n\\n' }}\n    {%- endif %}\n    {{- \"# Tools\\n\\nYou may call one or more functions to assist with the user query.\\n\\nYou are provided with function signatures within <tools></tools> XML tags:\\n<tools>\" }}\n    {%- for tool in tools %}\n        {{- \"\\n\" }}\n        {{- tool | tojson }}\n    {%- endfor %}\n    {{- \"\\n</tools>\\n\\nFor each function call, return a json object with function name and arguments within <tool_call></tool_call> XML tags:\\n<tool_call>\\n{\\\"name\\\": <function-name>, \\\"arguments\\\": <args-json-object>}\\n</tool_call><|im_end|>\\n\" }}\n{%- else %}\n    {%- if messages[0].role == 'system' %}\n        {{- '<|im_start|>system\\n' + messages[0].content + '<|im_end|>\\n' }}\n    {%- endif %}\n{%- endif %}\n{%- set ns = namespace(multi_step_tool=true, last_query_index=messages|length - 1) %}\n{%- for message in messages[::-1] %}\n    {%- set index = (messages|length - 1) - loop.index0 %}\n    {%- if ns.multi_step_tool and message.role == \"user\" and not(message.content.startswith('<tool_response>') and message.content.endswith('</tool_response>')) %}\n        {%- set ns.multi_step_tool = false %}\n        {%- set ns.last_query_index = index %}\n    {%- endif %}\n{%- endfor %}\n{%- for message in messages %}\n    {%- if (message.role == \"user\") or (message.role == \"system\" and not loop.first) %}\n        {{- '<|im_start|>' + message.role + '\\n' + message.content + '<|im_end|>' + '\\n' }}\n    {%- elif message.role == \"assistant\" %}\n        {%- set content = message.content %}\n        {%- set reasoning_content = '' %}\n        {%- if message.reasoning_content is defined and message.reasoning_content is not none %}\n            {%- set reasoning_content = message.reasoning_content %}\n        {%- else %}\n            {%- if '</think>' in message.content %}\n                {%- set content = message.content.split('</think>')[-1].lstrip('\\n') %}\n                {%- set reasoning_content = message.content.split('</think>')[0].rstrip('\\n').split('<think>')[-1].lstrip('\\n') %}\n            {%- endif %}\n        {%- endif %}\n        {%- if loop.index0 > ns.last_query_index %}\n            {%- if loop.last or (not loop.last and reasoning_content) %}\n                {{- '<|im_start|>' + message.role + '\\n<think>\\n' + reasoning_content.strip('\\n') + '\\n</think>\\n\\n' + content.lstrip('\\n') }}\n            {%- else %}\n                {{- '<|im_start|>' + message.role + '\\n' + content }}\n            {%- endif %}\n        {%- else %}\n            {{- '<|im_start|>' + message.role + '\\n' + content }}\n        {%- endif %}\n        {%- if message.tool_calls %}\n            {%- for tool_call in message.tool_calls %}\n                {%- if (loop.first and content) or (not loop.first) %}\n                    {{- '\\n' }}\n                {%- endif %}\n                {%- if tool_call.function %}\n                    {%- set tool_call = tool_call.function %}\n                {%- endif %}\n                {{- '<tool_call>\\n{\"name\": \"' }}\n                {{- tool_call.name }}\n                {{- '\", \"arguments\": ' }}\n                {%- if tool_call.arguments is string %}\n                    {{- tool_call.arguments }}\n                {%- else %}\n                    {{- tool_call.arguments | tojson }}\n                {%- endif %}\n                {{- '}\\n</tool_call>' }}\n            {%- endfor %}\n        {%- endif %}\n        {{- '<|im_end|>\\n' }}\n    {%- elif message.role == \"tool\" %}\n        {%- if loop.first or (messages[loop.index0 - 1].role != \"tool\") %}\n            {{- '<|im_start|>user' }}\n        {%- endif %}\n        {{- '\\n<tool_response>\\n' }}\n        {{- message.content }}\n        {{- '\\n</tool_response>' }}\n        {%- if loop.last or (messages[loop.index0 + 1].role != \"tool\") %}\n            {{- '<|im_end|>\\n' }}\n        {%- endif %}\n    {%- endif %}\n{%- endfor %}\n{%- if add_generation_prompt %}\n    {{- '<|im_start|>assistant\\n' }}\n    {%- if enable_thinking is defined and enable_thinking is false %}\n        {{- '<think>\\n\\n</think>\\n\\n' }}\n    {%- endif %}\n{%- endif %}",
+        "chat_template_caps": {
+          "supports_object_arguments": true,
+          "supports_parallel_tool_calls": true,
+          "supports_preserve_reasoning": false,
+          "supports_string_content": true,
+          "supports_system_role": true,
+          "supports_tool_calls": true,
+          "supports_tools": true,
+          "supports_typed_content": false
+        },
+        "bos_token": "<|endoftext|>",
+        "eos_token": "<|im_end|>",
+        "build_info": "b1-f5b9bd3",
+        "is_sleeping": false,
+        "cors_proxy_enabled": false
+      },
+      "sha256": "699936b83664f71a4c1d129a1e10b02c1909e8edfdd32962cea75259f4f92093"
+    },
+    "templates": {
+      "branch.v4": {
+        "sha256": "82e216fac7655f30688bb3b5cd1039398ae67739487a2090a1f681df6d24969b"
+      },
+      "branch.v6": {
+        "sha256": "cfb16c87e537dfe1d42a17d39abb566e9319b6343ed407497ac952717a83ffd0"
+      }
+    },
+    "generatedAt": "2026-10-04T12:25:31.095Z"
+  },
+  "results": [
+    {
+      "nodeId": "th_gift",
+      "path": [
+        "th_build",
+        "th_hide",
+        "th_sail",
+        "th_gift"
+      ],
+      "history": [
+        "build(greeks, horse) — A huge hollow wooden horse stands on the plain outside Troy.",
+        "hide(greeks, horse) — Armed Greeks are sealed inside the horse. From outside it looks like a wooden statue.",
+        "depart(greeks, troy) — The Greek ships are gone from the shore, hidden behind a nearby island. To the Trojans the siege looks over.",
+        "find(trojans, horse) — The Trojans have come out of the city and stand around the horse, arguing about what to do with it."
+      ],
+      "arms": {
+        "branch.v4": {
+          "prompt": "==> stories/the_tortoise_and_the_hare.jsonl <==\n{\"title\": \"The Tortoise and the Hare\", \"characters\": [\"the hare\", \"the tortoise\", \"the fox\"]}\n{\"step\": 1, \"event\": \"The hare boasts of his speed\", \"action\": \"boast(hare, speed)\", \"state\": \"The hare has told everyone on the road that nothing can outrun him.\"}\n{\"step\": 2, \"event\": \"The tortoise challenges him to a race\", \"action\": \"challenge(tortoise, hare)\", \"state\": \"A race between the hare and the tortoise is agreed, over a course the tortoise named.\"}\n{\"step\": 3, \"event\": \"The fox starts the race\", \"action\": \"start(fox, race)\", \"state\": \"Both runners are on the road and the race has begun.\"}\n{\"step\": 4, \"event\": \"The hare takes the lead\", \"action\": \"outpace(hare, tortoise)\", \"state\": \"The hare is far ahead. The tortoise is still near the start.\"}\n{\"step\": 5, \"event\": \"The hare lies down by the road\", \"action\": \"nap(hare, roadside)\", \"state\": \"The hare is asleep by the road. The tortoise is still walking.\"}\n{\"step\": 6, \"event\": \"The tortoise passes the sleeping hare\", \"action\": \"pass(tortoise, hare)\", \"state\": \"The tortoise is ahead on the road. The hare has not woken.\"}\n{\"step\": 7, \"event\": \"The tortoise wins the race\", \"action\": \"win(tortoise, race)\", \"state\": \"The tortoise has crossed the finish line first. The race is over.\"}\n\n==> stories/the_trojan_horse.jsonl <==\n{\"title\": \"The Trojan Horse\", \"characters\": [\"the Greeks\", \"the Trojans\", \"Sinon\", \"Cassandra\"]}\n{\"step\": 1, \"event\": \"The Greeks build a wooden horse\", \"action\": \"build(greeks, horse)\", \"state\": \"A huge hollow wooden horse stands on the plain outside Troy.\"}\n{\"step\": 2, \"event\": \"Armed men climb inside it\", \"action\": \"hide(greeks, horse)\", \"state\": \"Armed Greeks are sealed inside the horse. From outside it looks like a wooden statue.\"}\n{\"step\": 3, \"event\": \"The fleet sails out of sight\", \"action\": \"depart(greeks, troy)\", \"state\": \"The Greek ships are gone from the shore, hidden behind a nearby island. To the Trojans the siege looks over.\"}\n{\"step\": 4, \"event\": \"The Trojans find the horse\", \"action\": \"find(trojans, horse)\", \"state\": \"The Trojans have come out of the city and stand around the horse, arguing about what to do with it.\"}\n",
+          "promptSha256": "2bf402414999d84280d6daa8a67dc14741f59e6704daf4207d1ff698cb210a23",
+          "grammar": "root ::= \"{\\\"step\\\": 5, \\\"event\\\": \\\"\" text \"\\\", \\\"action\\\": \\\"\" action \"\\\", \\\"state\\\": \\\"\" text \"\\\"}\"\ntext ::= [^\"\\\\\\x7F\\x00-\\x1F]+\naction ::= word \"(\" word (\", \" word)* \")\"\nword ::= [a-z] [a-z0-9_]*",
+          "samples": [
+            {
+              "arm": "branch.v4",
+              "seed": 878621201,
+              "raw": "{\"step\": 5, \"event\": \"They decide to bring it inside\", \"action\": \"accept(horse, troy)\", \"state\": \"The horse is pulled into the city. All the Trojans think it is just an offering for the gods.\"}",
+              "stopType": "eos",
+              "cached": true,
+              "cacheKey": "de8a86ee236b3c08",
+              "branch": {
+                "label": "They decide to bring it inside",
+                "expr": "accept(horse, troy)",
+                "state": "The horse is pulled into the city. All the Trojans think it is just an offering for the gods."
+              },
+              "expr": "accept(horse, troy)",
+              "display": "accept(horse, troy) — The horse is pulled into the city. All the Trojans think it is just an offering for the gods."
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 861843582,
+              "raw": "{\"step\": 5, \"event\": \"The Trojans carry the horse home\", \"action\": \"bring(trojans, horse)\", \"state\": \"The horse is carried home through Troy. Sinon is still with them, arguing for it.\"}",
+              "stopType": "eos",
+              "cached": true,
+              "cacheKey": "d5aed916d429fab4",
+              "branch": {
+                "label": "The Trojans carry the horse home",
+                "expr": "bring(trojans, horse)",
+                "state": "The horse is carried home through Troy. Sinon is still with them, arguing for it."
+              },
+              "expr": "bring(trojans, horse)",
+              "display": "bring(trojans, horse) — The horse is carried home through Troy. Sinon is still with them, arguing for it."
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 845065963,
+              "raw": "{\"step\": 5, \"event\": \"A man named Sinon says the Greeks are asleep\", \"action\": \"explain(sinon, horse, greeks, asleep)\", \"state\": \"Sinon is pleading with the Trojans about the horse. He says that if it is attacked it will be a bad omen for Troy.\"}",
+              "stopType": "eos",
+              "cached": true,
+              "cacheKey": "7cf9c669f711369f",
+              "branch": {
+                "label": "A man named Sinon says the Greeks are asleep",
+                "expr": "explain(sinon, horse, greeks, asleep)",
+                "state": "Sinon is pleading with the Trojans about the horse. He says that if it is attacked it will be a bad omen for Troy."
+              },
+              "expr": "explain(sinon, horse, greeks, asleep)",
+              "display": "explain(sinon, horse, greeks, asleep) — Sinon is pleading with the Trojans about the horse. He says that if it is attacked it will be a bad omen for Troy."
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 828288344,
+              "raw": "{\"step\": 5, \"event\": \"They decide to bring the horse to the city\", \"action\": \"bring(trojans, horse, city)\", \"state\": \"The horse is pushed into the city, up a flight of stairs. The Trojans think it is a gift.\"}",
+              "stopType": "eos",
+              "cached": true,
+              "cacheKey": "54211ff447c546ba",
+              "branch": {
+                "label": "They decide to bring the horse to the city",
+                "expr": "bring(trojans, horse, city)",
+                "state": "The horse is pushed into the city, up a flight of stairs. The Trojans think it is a gift."
+              },
+              "expr": "bring(trojans, horse, city)",
+              "display": "bring(trojans, horse, city) — The horse is pushed into the city, up a flight of stairs. The Trojans think it is a gift."
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 945731677,
+              "raw": "{\"step\": 5, \"event\": \"Sinon persuades them to bring it home\", \"action\": \"persuade(sinoxen, trojans, bring)\", \"state\": \"Sinon is one of the Greeks hiding in the horse. He talks them into bringing the horse into the city.\"}",
+              "stopType": "eos",
+              "cached": true,
+              "cacheKey": "79e3df5ad2730230",
+              "branch": {
+                "label": "Sinon persuades them to bring it home",
+                "expr": "persuade(sinoxen, trojans, bring)",
+                "state": "Sinon is one of the Greeks hiding in the horse. He talks them into bringing the horse into the city."
+              },
+              "expr": "persuade(sinoxen, trojans, bring)",
+              "display": "persuade(sinoxen, trojans, bring) — Sinon is one of the Greeks hiding in the horse. He talks them into bringing the horse into the city."
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 928954058,
+              "raw": "{\"step\": 5, \"event\": \"Sinon speaks about the horse\", \"action\": \"speak(sinox, trojans)\", \"state\": \"The Greeks' spy Sinon tells the Trojans a story about how the horse was meant to help Troy, not harm it.\"}",
+              "stopType": "eos",
+              "cached": true,
+              "cacheKey": "27898f5711ebe705",
+              "branch": {
+                "label": "Sinon speaks about the horse",
+                "expr": "speak(sinox, trojans)",
+                "state": "The Greeks' spy Sinon tells the Trojans a story about how the horse was meant to help Troy, not harm it."
+              },
+              "expr": "speak(sinox, trojans)",
+              "display": "speak(sinox, trojans) — The Greeks' spy Sinon tells the Trojans a story about how the horse was meant to help Troy, not harm it."
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 912176439,
+              "raw": "{\"step\": 5, \"event\": \"Sinon is sent to the horse\", \"action\": \"send(sinon, horse)\", \"state\": \"The Trojans send Sinon, one of their enemies, to speak to the Greeks inside.\"}",
+              "stopType": "eos",
+              "cached": true,
+              "cacheKey": "02217e0b796ac7cd",
+              "branch": {
+                "label": "Sinon is sent to the horse",
+                "expr": "send(sinon, horse)",
+                "state": "The Trojans send Sinon, one of their enemies, to speak to the Greeks inside."
+              },
+              "expr": "send(sinon, horse)",
+              "display": "send(sinon, horse) — The Trojans send Sinon, one of their enemies, to speak to the Greeks inside."
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 895398820,
+              "raw": "{\"step\": 5, \"event\": \"Priam commands the horse be taken into the city\", \"action\": \"command(priam, horse)\", \"state\": \"The Trojans carry the horse into the city gates. Priam, the King, is there.\"}",
+              "stopType": "eos",
+              "cached": true,
+              "cacheKey": "8deea6ada130d70f",
+              "branch": {
+                "label": "Priam commands the horse be taken into the city",
+                "expr": "command(priam, horse)",
+                "state": "The Trojans carry the horse into the city gates. Priam, the King, is there."
+              },
+              "expr": "command(priam, horse)",
+              "display": "command(priam, horse) — The Trojans carry the horse into the city gates. Priam, the King, is there."
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 744400249,
+              "raw": "{\"step\": 5, \"event\": \"Trojan Priam takes the horse\", \"action\": \"steal(trojans, horse)\", \"state\": \"The horse is taken into the city and into a storeroom in the palace.\"}",
+              "stopType": "eos",
+              "cached": true,
+              "cacheKey": "6fd3891db8c1da97",
+              "branch": {
+                "label": "Trojan Priam takes the horse",
+                "expr": "steal(trojans, horse)",
+                "state": "The horse is taken into the city and into a storeroom in the palace."
+              },
+              "expr": "steal(trojans, horse)",
+              "display": "steal(trojans, horse) — The horse is taken into the city and into a storeroom in the palace."
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 727622630,
+              "raw": "{\"step\": 5, \"event\": \"Sinon pretends to be Greek\", \"action\": \"pretend(sinon, greek)\", \"state\": \"Sinon speaks for the Greeks to the Trojans. He says the Greeks have gone home for a celebration.\"}",
+              "stopType": "eos",
+              "cached": true,
+              "cacheKey": "8813fbc8b9938eda",
+              "branch": {
+                "label": "Sinon pretends to be Greek",
+                "expr": "pretend(sinon, greek)",
+                "state": "Sinon speaks for the Greeks to the Trojans. He says the Greeks have gone home for a celebration."
+              },
+              "expr": "pretend(sinon, greek)",
+              "display": "pretend(sinon, greek) — Sinon speaks for the Greeks to the Trojans. He says the Greeks have gone home for a celebration."
+            }
+          ],
+          "attempts": 10,
+          "refused": 0,
+          "truncated": 0,
+          "duplicates": 0,
+          "usable": 10,
+          "toldNext": 0,
+          "toldLater": 0,
+          "saturated": false,
+          "allAttempts": [
+            {
+              "arm": "branch.v4",
+              "seed": 878621201,
+              "raw": "{\"step\": 5, \"event\": \"They decide to bring it inside\", \"action\": \"accept(horse, troy)\", \"state\": \"The horse is pulled into the city. All the Trojans think it is just an offering for the gods.\"}",
+              "stopType": "eos",
+              "cached": true,
+              "cacheKey": "de8a86ee236b3c08",
+              "branch": {
+                "label": "They decide to bring it inside",
+                "expr": "accept(horse, troy)",
+                "state": "The horse is pulled into the city. All the Trojans think it is just an offering for the gods."
+              },
+              "expr": "accept(horse, troy)",
+              "display": "accept(horse, troy) — The horse is pulled into the city. All the Trojans think it is just an offering for the gods."
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 861843582,
+              "raw": "{\"step\": 5, \"event\": \"The Trojans carry the horse home\", \"action\": \"bring(trojans, horse)\", \"state\": \"The horse is carried home through Troy. Sinon is still with them, arguing for it.\"}",
+              "stopType": "eos",
+              "cached": true,
+              "cacheKey": "d5aed916d429fab4",
+              "branch": {
+                "label": "The Trojans carry the horse home",
+                "expr": "bring(trojans, horse)",
+                "state": "The horse is carried home through Troy. Sinon is still with them, arguing for it."
+              },
+              "expr": "bring(trojans, horse)",
+              "display": "bring(trojans, horse) — The horse is carried home through Troy. Sinon is still with them, arguing for it."
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 845065963,
+              "raw": "{\"step\": 5, \"event\": \"A man named Sinon says the Greeks are asleep\", \"action\": \"explain(sinon, horse, greeks, asleep)\", \"state\": \"Sinon is pleading with the Trojans about the horse. He says that if it is attacked it will be a bad omen for Troy.\"}",
+              "stopType": "eos",
+              "cached": true,
+              "cacheKey": "7cf9c669f711369f",
+              "branch": {
+                "label": "A man named Sinon says the Greeks are asleep",
+                "expr": "explain(sinon, horse, greeks, asleep)",
+                "state": "Sinon is pleading with the Trojans about the horse. He says that if it is attacked it will be a bad omen for Troy."
+              },
+              "expr": "explain(sinon, horse, greeks, asleep)",
+              "display": "explain(sinon, horse, greeks, asleep) — Sinon is pleading with the Trojans about the horse. He says that if it is attacked it will be a bad omen for Troy."
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 828288344,
+              "raw": "{\"step\": 5, \"event\": \"They decide to bring the horse to the city\", \"action\": \"bring(trojans, horse, city)\", \"state\": \"The horse is pushed into the city, up a flight of stairs. The Trojans think it is a gift.\"}",
+              "stopType": "eos",
+              "cached": true,
+              "cacheKey": "54211ff447c546ba",
+              "branch": {
+                "label": "They decide to bring the horse to the city",
+                "expr": "bring(trojans, horse, city)",
+                "state": "The horse is pushed into the city, up a flight of stairs. The Trojans think it is a gift."
+              },
+              "expr": "bring(trojans, horse, city)",
+              "display": "bring(trojans, horse, city) — The horse is pushed into the city, up a flight of stairs. The Trojans think it is a gift."
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 945731677,
+              "raw": "{\"step\": 5, \"event\": \"Sinon persuades them to bring it home\", \"action\": \"persuade(sinoxen, trojans, bring)\", \"state\": \"Sinon is one of the Greeks hiding in the horse. He talks them into bringing the horse into the city.\"}",
+              "stopType": "eos",
+              "cached": true,
+              "cacheKey": "79e3df5ad2730230",
+              "branch": {
+                "label": "Sinon persuades them to bring it home",
+                "expr": "persuade(sinoxen, trojans, bring)",
+                "state": "Sinon is one of the Greeks hiding in the horse. He talks them into bringing the horse into the city."
+              },
+              "expr": "persuade(sinoxen, trojans, bring)",
+              "display": "persuade(sinoxen, trojans, bring) — Sinon is one of the Greeks hiding in the horse. He talks them into bringing the horse into the city."
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 928954058,
+              "raw": "{\"step\": 5, \"event\": \"Sinon speaks about the horse\", \"action\": \"speak(sinox, trojans)\", \"state\": \"The Greeks' spy Sinon tells the Trojans a story about how the horse was meant to help Troy, not harm it.\"}",
+              "stopType": "eos",
+              "cached": true,
+              "cacheKey": "27898f5711ebe705",
+              "branch": {
+                "label": "Sinon speaks about the horse",
+                "expr": "speak(sinox, trojans)",
+                "state": "The Greeks' spy Sinon tells the Trojans a story about how the horse was meant to help Troy, not harm it."
+              },
+              "expr": "speak(sinox, trojans)",
+              "display": "speak(sinox, trojans) — The Greeks' spy Sinon tells the Trojans a story about how the horse was meant to help Troy, not harm it."
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 912176439,
+              "raw": "{\"step\": 5, \"event\": \"Sinon is sent to the horse\", \"action\": \"send(sinon, horse)\", \"state\": \"The Trojans send Sinon, one of their enemies, to speak to the Greeks inside.\"}",
+              "stopType": "eos",
+              "cached": true,
+              "cacheKey": "02217e0b796ac7cd",
+              "branch": {
+                "label": "Sinon is sent to the horse",
+                "expr": "send(sinon, horse)",
+                "state": "The Trojans send Sinon, one of their enemies, to speak to the Greeks inside."
+              },
+              "expr": "send(sinon, horse)",
+              "display": "send(sinon, horse) — The Trojans send Sinon, one of their enemies, to speak to the Greeks inside."
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 895398820,
+              "raw": "{\"step\": 5, \"event\": \"Priam commands the horse be taken into the city\", \"action\": \"command(priam, horse)\", \"state\": \"The Trojans carry the horse into the city gates. Priam, the King, is there.\"}",
+              "stopType": "eos",
+              "cached": true,
+              "cacheKey": "8deea6ada130d70f",
+              "branch": {
+                "label": "Priam commands the horse be taken into the city",
+                "expr": "command(priam, horse)",
+                "state": "The Trojans carry the horse into the city gates. Priam, the King, is there."
+              },
+              "expr": "command(priam, horse)",
+              "display": "command(priam, horse) — The Trojans carry the horse into the city gates. Priam, the King, is there."
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 744400249,
+              "raw": "{\"step\": 5, \"event\": \"Trojan Priam takes the horse\", \"action\": \"steal(trojans, horse)\", \"state\": \"The horse is taken into the city and into a storeroom in the palace.\"}",
+              "stopType": "eos",
+              "cached": true,
+              "cacheKey": "6fd3891db8c1da97",
+              "branch": {
+                "label": "Trojan Priam takes the horse",
+                "expr": "steal(trojans, horse)",
+                "state": "The horse is taken into the city and into a storeroom in the palace."
+              },
+              "expr": "steal(trojans, horse)",
+              "display": "steal(trojans, horse) — The horse is taken into the city and into a storeroom in the palace."
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 727622630,
+              "raw": "{\"step\": 5, \"event\": \"Sinon pretends to be Greek\", \"action\": \"pretend(sinon, greek)\", \"state\": \"Sinon speaks for the Greeks to the Trojans. He says the Greeks have gone home for a celebration.\"}",
+              "stopType": "eos",
+              "cached": true,
+              "cacheKey": "8813fbc8b9938eda",
+              "branch": {
+                "label": "Sinon pretends to be Greek",
+                "expr": "pretend(sinon, greek)",
+                "state": "Sinon speaks for the Greeks to the Trojans. He says the Greeks have gone home for a celebration."
+              },
+              "expr": "pretend(sinon, greek)",
+              "display": "pretend(sinon, greek) — Sinon speaks for the Greeks to the Trojans. He says the Greeks have gone home for a celebration."
+            }
+          ]
+        },
+        "branch.v6": {
+          "prompt": "==> stories/the_trojan_horse.jsonl <==\n{\"title\": \"The Trojan Horse\", \"characters\": [\"the Greeks\", \"the Trojans\", \"Sinon\", \"Cassandra\"]}\n{\"step\": 1, \"event\": \"The Greeks build a wooden horse\", \"action\": \"build(greeks, horse)\", \"state\": \"A huge hollow wooden horse stands on the plain outside Troy.\"}\n{\"step\": 2, \"event\": \"Armed men climb inside it\", \"action\": \"hide(greeks, horse)\", \"state\": \"Armed Greeks are sealed inside the horse. From outside it looks like a wooden statue.\"}\n{\"step\": 3, \"event\": \"The fleet sails out of sight\", \"action\": \"depart(greeks, troy)\", \"state\": \"The Greek ships are gone from the shore, hidden behind a nearby island. To the Trojans the siege looks over.\"}\n{\"step\": 4, \"event\": \"The Trojans find the horse\", \"action\": \"find(trojans, horse)\", \"state\": \"The Trojans have come out of the city and stand around the horse, arguing about what to do with it.\"}\n",
+          "promptSha256": "12f9e469213090750905aa9abd1d089f988529f1d85ba2f22199b778e5c7acce",
+          "grammar": "root ::= \"{\\\"step\\\": 5, \\\"event\\\": \\\"\" text \"\\\", \\\"action\\\": \\\"\" action \"\\\", \\\"state\\\": \\\"\" text \"\\\"}\"\ntext ::= [^\"\\\\\\x7F\\x00-\\x1F]+\naction ::= word \"(\" word (\", \" word)* \")\"\nword ::= [a-z] [a-z0-9_]*",
+          "samples": [
+            {
+              "arm": "branch.v6",
+              "seed": 14528287,
+              "raw": "{\"step\": 5, \"event\": \"Sinon lies about its origins\", \"action\": \"lie(sinon, origins, horse)\", \"state\": \"Sinon, one of the Greeks in the horse, tells a story about how the horse came to be. The Trojans are captivated.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "dd63edaf40fd8aad",
+              "branch": {
+                "label": "Sinon lies about its origins",
+                "expr": "lie(sinon, origins, horse)",
+                "state": "Sinon, one of the Greeks in the horse, tells a story about how the horse came to be. The Trojans are captivated."
+              },
+              "expr": "lie(sinon, origins, horse)",
+              "display": "lie(sinon, origins, horse) — Sinon, one of the Greeks in the horse, tells a story about how the horse came to be. The Trojans are captivated."
+            },
+            {
+              "arm": "branch.v6",
+              "seed": 4292717964,
+              "raw": "{\"step\": 5, \"event\": \"A soldier suggests dragging it\", \"action\": \"suggest(trojans, drag, horse)\", \"state\": \"Trojans begin to push the horse towards the city.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "f0d60f5d7add01fb",
+              "branch": {
+                "label": "A soldier suggests dragging it",
+                "expr": "suggest(trojans, drag, horse)",
+                "state": "Trojans begin to push the horse towards the city."
+              },
+              "expr": "suggest(trojans, drag, horse)",
+              "display": "suggest(trojans, drag, horse) — Trojans begin to push the horse towards the city."
+            },
+            {
+              "arm": "branch.v6",
+              "seed": 48083525,
+              "raw": "{\"step\": 5, \"event\": \"Priam tells the Trojans to put it in the city\", \"action\": \"tell(priam, trojans, put, horse, in, city)\", \"state\": \"The Trojans take the horse into the city, putting it in front of the city gates.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "224c80dfe557c529",
+              "branch": {
+                "label": "Priam tells the Trojans to put it in the city",
+                "expr": "tell(priam, trojans, put, horse, in, city)",
+                "state": "The Trojans take the horse into the city, putting it in front of the city gates."
+              },
+              "expr": "tell(priam, trojans, put, horse, in, city)",
+              "display": "tell(priam, trojans, put, horse, in, city) — The Trojans take the horse into the city, putting it in front of the city gates."
+            },
+            {
+              "arm": "branch.v6",
+              "seed": 31305906,
+              "raw": "{\"step\": 5, \"event\": \"Priam offers a gold statue in exchange\", \"action\": \"trade(priam, trojans, gold_statue)\", \"state\": \"Priam, the king of Troy, offers the Trojans gold statues as a token of goodwill. But they do not want any of them.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "923c05197f6ac287",
+              "branch": {
+                "label": "Priam offers a gold statue in exchange",
+                "expr": "trade(priam, trojans, gold_statue)",
+                "state": "Priam, the king of Troy, offers the Trojans gold statues as a token of goodwill. But they do not want any of them."
+              },
+              "expr": "trade(priam, trojans, gold_statue)",
+              "display": "trade(priam, trojans, gold_statue) — Priam, the king of Troy, offers the Trojans gold statues as a token of goodwill. But they do not want any of them."
+            },
+            {
+              "arm": "branch.v6",
+              "seed": 4242385107,
+              "raw": "{\"step\": 5, \"event\": \"Priam suggests they sacrifice the horse\", \"action\": \"sacrifice(priam, horse)\", \"state\": \"Priam, king of Troy, tells the Trojans they should sacrifice the horse, as they have been doing with all the gifts from the Greeks.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "83c3403e18aca0a0",
+              "branch": {
+                "label": "Priam suggests they sacrifice the horse",
+                "expr": "sacrifice(priam, horse)",
+                "state": "Priam, king of Troy, tells the Trojans they should sacrifice the horse, as they have been doing with all the gifts from the Greeks."
+              },
+              "expr": "sacrifice(priam, horse)",
+              "display": "sacrifice(priam, horse) — Priam, king of Troy, tells the Trojans they should sacrifice the horse, as they have been doing with all the gifts from the Greeks."
+            },
+            {
+              "arm": "branch.v6",
+              "seed": 4225607488,
+              "raw": "{\"step\": 5, \"event\": \"A soothsayer warns the Trojans not to trust the horse\", \"action\": \"warn(trojans, horse)\", \"state\": \"The soothsayer warns that the horse is a trick, but they ignore her advice.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "9ff6b85c96b9313e",
+              "branch": {
+                "label": "A soothsayer warns the Trojans not to trust the horse",
+                "expr": "warn(trojans, horse)",
+                "state": "The soothsayer warns that the horse is a trick, but they ignore her advice."
+              },
+              "expr": "warn(trojans, horse)",
+              "display": "warn(trojans, horse) — The soothsayer warns that the horse is a trick, but they ignore her advice."
+            },
+            {
+              "arm": "branch.v6",
+              "seed": 4275940345,
+              "raw": "{\"step\": 5, \"event\": \"A Trojan named Sinon offers to take it\", \"action\": \"offer(trojans, horse, sinon)\", \"state\": \"A Greek named Sinon approaches the horse with a persuasive speech, telling the Trojans to take it.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "c83f67738a5cae29",
+              "branch": {
+                "label": "A Trojan named Sinon offers to take it",
+                "expr": "offer(trojans, horse, sinon)",
+                "state": "A Greek named Sinon approaches the horse with a persuasive speech, telling the Trojans to take it."
+              },
+              "expr": "offer(trojans, horse, sinon)",
+              "display": "offer(trojans, horse, sinon) — A Greek named Sinon approaches the horse with a persuasive speech, telling the Trojans to take it."
+            },
+            {
+              "arm": "branch.v6",
+              "seed": 4259162726,
+              "raw": "{\"step\": 5, \"event\": \"They bring it inside the city\", \"action\": \"enter(trojans, horse)\", \"state\": \"The Trojans are dragging the horse into the city. They think the Greeks have been defeated.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "2789fc0e7006f5f8",
+              "branch": {
+                "label": "They bring it inside the city",
+                "expr": "enter(trojans, horse)",
+                "state": "The Trojans are dragging the horse into the city. They think the Greeks have been defeated."
+              },
+              "expr": "enter(trojans, horse)",
+              "display": "enter(trojans, horse) — The Trojans are dragging the horse into the city. They think the Greeks have been defeated."
+            },
+            {
+              "arm": "branch.v6",
+              "seed": 148749239,
+              "raw": "{\"step\": 5, \"event\": \"Cassandra advises them not to take it\", \"action\": \"advice(cassandra, trojans, donot)\", \"state\": \"Cassandra, the Trojan seer, warns the Trojans to keep the horse outside the city.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "886f04456e607117",
+              "branch": {
+                "label": "Cassandra advises them not to take it",
+                "expr": "advice(cassandra, trojans, donot)",
+                "state": "Cassandra, the Trojan seer, warns the Trojans to keep the horse outside the city."
+              },
+              "expr": "advice(cassandra, trojans, donot)",
+              "display": "advice(cassandra, trojans, donot) — Cassandra, the Trojan seer, warns the Trojans to keep the horse outside the city."
+            },
+            {
+              "arm": "branch.v6",
+              "seed": 131971620,
+              "raw": "{\"step\": 5, \"event\": \"The Trojans find Sinon\", \"action\": \"find(trojans, sinon)\", \"state\": \"The Trojans see a Greek soldier Sinon, who says he is the Greek ambassador.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "13bb32e8661accee",
+              "branch": {
+                "label": "The Trojans find Sinon",
+                "expr": "find(trojans, sinon)",
+                "state": "The Trojans see a Greek soldier Sinon, who says he is the Greek ambassador."
+              },
+              "expr": "find(trojans, sinon)",
+              "display": "find(trojans, sinon) — The Trojans see a Greek soldier Sinon, who says he is the Greek ambassador."
+            }
+          ],
+          "attempts": 10,
+          "refused": 0,
+          "truncated": 0,
+          "duplicates": 0,
+          "usable": 10,
+          "toldNext": 0,
+          "toldLater": 0,
+          "saturated": false,
+          "allAttempts": [
+            {
+              "arm": "branch.v6",
+              "seed": 14528287,
+              "raw": "{\"step\": 5, \"event\": \"Sinon lies about its origins\", \"action\": \"lie(sinon, origins, horse)\", \"state\": \"Sinon, one of the Greeks in the horse, tells a story about how the horse came to be. The Trojans are captivated.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "dd63edaf40fd8aad",
+              "branch": {
+                "label": "Sinon lies about its origins",
+                "expr": "lie(sinon, origins, horse)",
+                "state": "Sinon, one of the Greeks in the horse, tells a story about how the horse came to be. The Trojans are captivated."
+              },
+              "expr": "lie(sinon, origins, horse)",
+              "display": "lie(sinon, origins, horse) — Sinon, one of the Greeks in the horse, tells a story about how the horse came to be. The Trojans are captivated."
+            },
+            {
+              "arm": "branch.v6",
+              "seed": 4292717964,
+              "raw": "{\"step\": 5, \"event\": \"A soldier suggests dragging it\", \"action\": \"suggest(trojans, drag, horse)\", \"state\": \"Trojans begin to push the horse towards the city.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "f0d60f5d7add01fb",
+              "branch": {
+                "label": "A soldier suggests dragging it",
+                "expr": "suggest(trojans, drag, horse)",
+                "state": "Trojans begin to push the horse towards the city."
+              },
+              "expr": "suggest(trojans, drag, horse)",
+              "display": "suggest(trojans, drag, horse) — Trojans begin to push the horse towards the city."
+            },
+            {
+              "arm": "branch.v6",
+              "seed": 48083525,
+              "raw": "{\"step\": 5, \"event\": \"Priam tells the Trojans to put it in the city\", \"action\": \"tell(priam, trojans, put, horse, in, city)\", \"state\": \"The Trojans take the horse into the city, putting it in front of the city gates.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "224c80dfe557c529",
+              "branch": {
+                "label": "Priam tells the Trojans to put it in the city",
+                "expr": "tell(priam, trojans, put, horse, in, city)",
+                "state": "The Trojans take the horse into the city, putting it in front of the city gates."
+              },
+              "expr": "tell(priam, trojans, put, horse, in, city)",
+              "display": "tell(priam, trojans, put, horse, in, city) — The Trojans take the horse into the city, putting it in front of the city gates."
+            },
+            {
+              "arm": "branch.v6",
+              "seed": 31305906,
+              "raw": "{\"step\": 5, \"event\": \"Priam offers a gold statue in exchange\", \"action\": \"trade(priam, trojans, gold_statue)\", \"state\": \"Priam, the king of Troy, offers the Trojans gold statues as a token of goodwill. But they do not want any of them.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "923c05197f6ac287",
+              "branch": {
+                "label": "Priam offers a gold statue in exchange",
+                "expr": "trade(priam, trojans, gold_statue)",
+                "state": "Priam, the king of Troy, offers the Trojans gold statues as a token of goodwill. But they do not want any of them."
+              },
+              "expr": "trade(priam, trojans, gold_statue)",
+              "display": "trade(priam, trojans, gold_statue) — Priam, the king of Troy, offers the Trojans gold statues as a token of goodwill. But they do not want any of them."
+            },
+            {
+              "arm": "branch.v6",
+              "seed": 4242385107,
+              "raw": "{\"step\": 5, \"event\": \"Priam suggests they sacrifice the horse\", \"action\": \"sacrifice(priam, horse)\", \"state\": \"Priam, king of Troy, tells the Trojans they should sacrifice the horse, as they have been doing with all the gifts from the Greeks.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "83c3403e18aca0a0",
+              "branch": {
+                "label": "Priam suggests they sacrifice the horse",
+                "expr": "sacrifice(priam, horse)",
+                "state": "Priam, king of Troy, tells the Trojans they should sacrifice the horse, as they have been doing with all the gifts from the Greeks."
+              },
+              "expr": "sacrifice(priam, horse)",
+              "display": "sacrifice(priam, horse) — Priam, king of Troy, tells the Trojans they should sacrifice the horse, as they have been doing with all the gifts from the Greeks."
+            },
+            {
+              "arm": "branch.v6",
+              "seed": 4225607488,
+              "raw": "{\"step\": 5, \"event\": \"A soothsayer warns the Trojans not to trust the horse\", \"action\": \"warn(trojans, horse)\", \"state\": \"The soothsayer warns that the horse is a trick, but they ignore her advice.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "9ff6b85c96b9313e",
+              "branch": {
+                "label": "A soothsayer warns the Trojans not to trust the horse",
+                "expr": "warn(trojans, horse)",
+                "state": "The soothsayer warns that the horse is a trick, but they ignore her advice."
+              },
+              "expr": "warn(trojans, horse)",
+              "display": "warn(trojans, horse) — The soothsayer warns that the horse is a trick, but they ignore her advice."
+            },
+            {
+              "arm": "branch.v6",
+              "seed": 4275940345,
+              "raw": "{\"step\": 5, \"event\": \"A Trojan named Sinon offers to take it\", \"action\": \"offer(trojans, horse, sinon)\", \"state\": \"A Greek named Sinon approaches the horse with a persuasive speech, telling the Trojans to take it.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "c83f67738a5cae29",
+              "branch": {
+                "label": "A Trojan named Sinon offers to take it",
+                "expr": "offer(trojans, horse, sinon)",
+                "state": "A Greek named Sinon approaches the horse with a persuasive speech, telling the Trojans to take it."
+              },
+              "expr": "offer(trojans, horse, sinon)",
+              "display": "offer(trojans, horse, sinon) — A Greek named Sinon approaches the horse with a persuasive speech, telling the Trojans to take it."
+            },
+            {
+              "arm": "branch.v6",
+              "seed": 4259162726,
+              "raw": "{\"step\": 5, \"event\": \"They bring it inside the city\", \"action\": \"enter(trojans, horse)\", \"state\": \"The Trojans are dragging the horse into the city. They think the Greeks have been defeated.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "2789fc0e7006f5f8",
+              "branch": {
+                "label": "They bring it inside the city",
+                "expr": "enter(trojans, horse)",
+                "state": "The Trojans are dragging the horse into the city. They think the Greeks have been defeated."
+              },
+              "expr": "enter(trojans, horse)",
+              "display": "enter(trojans, horse) — The Trojans are dragging the horse into the city. They think the Greeks have been defeated."
+            },
+            {
+              "arm": "branch.v6",
+              "seed": 148749239,
+              "raw": "{\"step\": 5, \"event\": \"Cassandra advises them not to take it\", \"action\": \"advice(cassandra, trojans, donot)\", \"state\": \"Cassandra, the Trojan seer, warns the Trojans to keep the horse outside the city.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "886f04456e607117",
+              "branch": {
+                "label": "Cassandra advises them not to take it",
+                "expr": "advice(cassandra, trojans, donot)",
+                "state": "Cassandra, the Trojan seer, warns the Trojans to keep the horse outside the city."
+              },
+              "expr": "advice(cassandra, trojans, donot)",
+              "display": "advice(cassandra, trojans, donot) — Cassandra, the Trojan seer, warns the Trojans to keep the horse outside the city."
+            },
+            {
+              "arm": "branch.v6",
+              "seed": 131971620,
+              "raw": "{\"step\": 5, \"event\": \"The Trojans find Sinon\", \"action\": \"find(trojans, sinon)\", \"state\": \"The Trojans see a Greek soldier Sinon, who says he is the Greek ambassador.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "13bb32e8661accee",
+              "branch": {
+                "label": "The Trojans find Sinon",
+                "expr": "find(trojans, sinon)",
+                "state": "The Trojans see a Greek soldier Sinon, who says he is the Greek ambassador."
+              },
+              "expr": "find(trojans, sinon)",
+              "display": "find(trojans, sinon) — The Trojans see a Greek soldier Sinon, who says he is the Greek ambassador."
+            }
+          ]
+        }
+      }
+    },
+    {
+      "nodeId": "th_lie",
+      "path": [
+        "th_build",
+        "th_hide",
+        "th_sail",
+        "th_gift",
+        "th_capture",
+        "th_lie"
+      ],
+      "history": [
+        "build(greeks, horse) — A huge hollow wooden horse stands on the plain outside Troy.",
+        "hide(greeks, horse) — Armed Greeks are sealed inside the horse. From outside it looks like a wooden statue.",
+        "depart(greeks, troy) — The Greek ships are gone from the shore, hidden behind a nearby island. To the Trojans the siege looks over.",
+        "find(trojans, horse) — The Trojans have come out of the city and stand around the horse, arguing about what to do with it.",
+        "capture(trojans, sinon) — A Greek named Sinon stands bound among the Trojans as their prisoner.",
+        "deceive(sinon, trojans) — The Trojans believe the horse is an offering to Athena, and that bringing it into the city will protect Troy."
+      ],
+      "arms": {
+        "branch.v4": {
+          "prompt": "==> stories/the_tortoise_and_the_hare.jsonl <==\n{\"title\": \"The Tortoise and the Hare\", \"characters\": [\"the hare\", \"the tortoise\", \"the fox\"]}\n{\"step\": 1, \"event\": \"The hare boasts of his speed\", \"action\": \"boast(hare, speed)\", \"state\": \"The hare has told everyone on the road that nothing can outrun him.\"}\n{\"step\": 2, \"event\": \"The tortoise challenges him to a race\", \"action\": \"challenge(tortoise, hare)\", \"state\": \"A race between the hare and the tortoise is agreed, over a course the tortoise named.\"}\n{\"step\": 3, \"event\": \"The fox starts the race\", \"action\": \"start(fox, race)\", \"state\": \"Both runners are on the road and the race has begun.\"}\n{\"step\": 4, \"event\": \"The hare takes the lead\", \"action\": \"outpace(hare, tortoise)\", \"state\": \"The hare is far ahead. The tortoise is still near the start.\"}\n{\"step\": 5, \"event\": \"The hare lies down by the road\", \"action\": \"nap(hare, roadside)\", \"state\": \"The hare is asleep by the road. The tortoise is still walking.\"}\n{\"step\": 6, \"event\": \"The tortoise passes the sleeping hare\", \"action\": \"pass(tortoise, hare)\", \"state\": \"The tortoise is ahead on the road. The hare has not woken.\"}\n{\"step\": 7, \"event\": \"The tortoise wins the race\", \"action\": \"win(tortoise, race)\", \"state\": \"The tortoise has crossed the finish line first. The race is over.\"}\n\n==> stories/the_trojan_horse.jsonl <==\n{\"title\": \"The Trojan Horse\", \"characters\": [\"the Greeks\", \"the Trojans\", \"Sinon\", \"Cassandra\"]}\n{\"step\": 1, \"event\": \"The Greeks build a wooden horse\", \"action\": \"build(greeks, horse)\", \"state\": \"A huge hollow wooden horse stands on the plain outside Troy.\"}\n{\"step\": 2, \"event\": \"Armed men climb inside it\", \"action\": \"hide(greeks, horse)\", \"state\": \"Armed Greeks are sealed inside the horse. From outside it looks like a wooden statue.\"}\n{\"step\": 3, \"event\": \"The fleet sails out of sight\", \"action\": \"depart(greeks, troy)\", \"state\": \"The Greek ships are gone from the shore, hidden behind a nearby island. To the Trojans the siege looks over.\"}\n{\"step\": 4, \"event\": \"The Trojans find the horse\", \"action\": \"find(trojans, horse)\", \"state\": \"The Trojans have come out of the city and stand around the horse, arguing about what to do with it.\"}\n{\"step\": 5, \"event\": \"Shepherds bring in a captured Greek\", \"action\": \"capture(trojans, sinon)\", \"state\": \"A Greek named Sinon stands bound among the Trojans as their prisoner.\"}\n{\"step\": 6, \"event\": \"Sinon sells the lie\", \"action\": \"deceive(sinon, trojans)\", \"state\": \"The Trojans believe the horse is an offering to Athena, and that bringing it into the city will protect Troy.\"}\n",
+          "promptSha256": "f8af85fe81510f995a5bffdbe29b62b13496c01937d4e85d8e4280216d5eac21",
+          "grammar": "root ::= \"{\\\"step\\\": 7, \\\"event\\\": \\\"\" text \"\\\", \\\"action\\\": \\\"\" action \"\\\", \\\"state\\\": \\\"\" text \"\\\"}\"\ntext ::= [^\"\\\\\\x7F\\x00-\\x1F]+\naction ::= word \"(\" word (\", \" word)* \")\"\nword ::= [a-z] [a-z0-9_]*",
+          "samples": [
+            {
+              "arm": "branch.v4",
+              "seed": 1101377287,
+              "raw": "{\"step\": 7, \"event\": \"The Trojans drag the horse into the city\", \"action\": \"drag(trojans, horse)\", \"state\": \"A team of strong Trojans have dragged the horse into the city, and it stands by the city gates.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "5a2b834a90b326ac",
+              "branch": {
+                "label": "The Trojans drag the horse into the city",
+                "expr": "drag(trojans, horse)",
+                "state": "A team of strong Trojans have dragged the horse into the city, and it stands by the city gates."
+              },
+              "expr": "drag(trojans, horse)",
+              "display": "drag(trojans, horse) — A team of strong Trojans have dragged the horse into the city, and it stands by the city gates."
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 1084599668,
+              "raw": "{\"step\": 7, \"event\": \"The horse is brought to the city\", \"action\": \"move(horse, troy)\", \"state\": \"The horse is placed at the entrance to the city. The Trojans are watching as a priest offers it to Athena.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "91806eef01199ebd",
+              "branch": {
+                "label": "The horse is brought to the city",
+                "expr": "move(horse, troy)",
+                "state": "The horse is placed at the entrance to the city. The Trojans are watching as a priest offers it to Athena."
+              },
+              "expr": "move(horse, troy)",
+              "display": "move(horse, troy) — The horse is placed at the entrance to the city. The Trojans are watching as a priest offers it to Athena."
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 1134932525,
+              "raw": "{\"step\": 7, \"event\": \"The Trojans bring the horse into the city\", \"action\": \"entrance(trojans, horse)\", \"state\": \"The horse stands in the city gates. The Trojans have brought in what they think is a gift.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "867ec34ce0e2d0e2",
+              "branch": {
+                "label": "The Trojans bring the horse into the city",
+                "expr": "entrance(trojans, horse)",
+                "state": "The horse stands in the city gates. The Trojans have brought in what they think is a gift."
+              },
+              "expr": "entrance(trojans, horse)",
+              "display": "entrance(trojans, horse) — The horse stands in the city gates. The Trojans have brought in what they think is a gift."
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 1118154906,
+              "raw": "{\"step\": 7, \"event\": \"The Trojans bring the horse in\", \"action\": \"enter(trojans, horse)\", \"state\": \"The wooden horse is brought into the city gates and left behind, as a statue of Athena.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "469ad6fd26684d2f",
+              "branch": {
+                "label": "The Trojans bring the horse in",
+                "expr": "enter(trojans, horse)",
+                "state": "The wooden horse is brought into the city gates and left behind, as a statue of Athena."
+              },
+              "expr": "enter(trojans, horse)",
+              "display": "enter(trojans, horse) — The wooden horse is brought into the city gates and left behind, as a statue of Athena."
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 1034266811,
+              "raw": "{\"step\": 7, \"event\": \"The Trojans bring the horse in\", \"action\": \"carry(trojans, horse)\", \"state\": \"The horse is brought into the city, and Sinon is bound up to the back of it.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "477cfd17a69c2d75",
+              "branch": {
+                "label": "The Trojans bring the horse in",
+                "expr": "carry(trojans, horse)",
+                "state": "The horse is brought into the city, and Sinon is bound up to the back of it."
+              },
+              "expr": "carry(trojans, horse)",
+              "display": "carry(trojans, horse) — The horse is brought into the city, and Sinon is bound up to the back of it."
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 1017489192,
+              "raw": "{\"step\": 7, \"event\": \"The Trojans bring in the horse\", \"action\": \"accept(trojans, horse)\", \"state\": \"The Trojans drag the horse inside the city, where it stands in the courtyard of their palace.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "48de85011450ae8f",
+              "branch": {
+                "label": "The Trojans bring in the horse",
+                "expr": "accept(trojans, horse)",
+                "state": "The Trojans drag the horse inside the city, where it stands in the courtyard of their palace."
+              },
+              "expr": "accept(trojans, horse)",
+              "display": "accept(trojans, horse) — The Trojans drag the horse inside the city, where it stands in the courtyard of their palace."
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 967156335,
+              "raw": "{\"step\": 7, \"event\": \"The Trojans drag the horse into the city\", \"action\": \"drag(trojans, horse, city)\", \"state\": \"The horse is dragged into the city. Sinon is still bound among the Trojans.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "15eb6ebe0c92e89c",
+              "branch": {
+                "label": "The Trojans drag the horse into the city",
+                "expr": "drag(trojans, horse, city)",
+                "state": "The horse is dragged into the city. Sinon is still bound among the Trojans."
+              },
+              "expr": "drag(trojans, horse, city)",
+              "display": "drag(trojans, horse, city) — The horse is dragged into the city. Sinon is still bound among the Trojans."
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 950378716,
+              "raw": "{\"step\": 7, \"event\": \"The Trojans carry it inside the walls\", \"action\": \"carry(trojans, horse, city)\", \"state\": \"The horse is brought inside the city gates, and placed near the temple of Athena.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "7a9d7ee1c21b7f03",
+              "branch": {
+                "label": "The Trojans carry it inside the walls",
+                "expr": "carry(trojans, horse, city)",
+                "state": "The horse is brought inside the city gates, and placed near the temple of Athena."
+              },
+              "expr": "carry(trojans, horse, city)",
+              "display": "carry(trojans, horse, city) — The horse is brought inside the city gates, and placed near the temple of Athena."
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 147833356,
+              "raw": "{\"step\": 7, \"event\": \"The Trojans drag the horse into the city\", \"action\": \"move(trojans, horse, city)\", \"state\": \"The Trojans drag the horse into the city, but they do not know about the hidden Greeks inside.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "96851f41dc92fc3f",
+              "branch": {
+                "label": "The Trojans drag the horse into the city",
+                "expr": "move(trojans, horse, city)",
+                "state": "The Trojans drag the horse into the city, but they do not know about the hidden Greeks inside."
+              },
+              "expr": "move(trojans, horse, city)",
+              "display": "move(trojans, horse, city) — The Trojans drag the horse into the city, but they do not know about the hidden Greeks inside."
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 198166213,
+              "raw": "{\"step\": 7, \"event\": \"The horse is brought into Troy\", \"action\": \"enter(horse, troy)\", \"state\": \"The horse is brought into the gates of Troy, where it stands in the center of the city.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "742baa02c2697aac",
+              "branch": {
+                "label": "The horse is brought into Troy",
+                "expr": "enter(horse, troy)",
+                "state": "The horse is brought into the gates of Troy, where it stands in the center of the city."
+              },
+              "expr": "enter(horse, troy)",
+              "display": "enter(horse, troy) — The horse is brought into the gates of Troy, where it stands in the center of the city."
+            }
+          ],
+          "attempts": 14,
+          "refused": 0,
+          "truncated": 0,
+          "duplicates": 4,
+          "usable": 14,
+          "toldNext": 0,
+          "toldLater": 0,
+          "saturated": false,
+          "allAttempts": [
+            {
+              "arm": "branch.v4",
+              "seed": 1101377287,
+              "raw": "{\"step\": 7, \"event\": \"The Trojans drag the horse into the city\", \"action\": \"drag(trojans, horse)\", \"state\": \"A team of strong Trojans have dragged the horse into the city, and it stands by the city gates.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "5a2b834a90b326ac",
+              "branch": {
+                "label": "The Trojans drag the horse into the city",
+                "expr": "drag(trojans, horse)",
+                "state": "A team of strong Trojans have dragged the horse into the city, and it stands by the city gates."
+              },
+              "expr": "drag(trojans, horse)",
+              "display": "drag(trojans, horse) — A team of strong Trojans have dragged the horse into the city, and it stands by the city gates."
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 1084599668,
+              "raw": "{\"step\": 7, \"event\": \"The horse is brought to the city\", \"action\": \"move(horse, troy)\", \"state\": \"The horse is placed at the entrance to the city. The Trojans are watching as a priest offers it to Athena.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "91806eef01199ebd",
+              "branch": {
+                "label": "The horse is brought to the city",
+                "expr": "move(horse, troy)",
+                "state": "The horse is placed at the entrance to the city. The Trojans are watching as a priest offers it to Athena."
+              },
+              "expr": "move(horse, troy)",
+              "display": "move(horse, troy) — The horse is placed at the entrance to the city. The Trojans are watching as a priest offers it to Athena."
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 1134932525,
+              "raw": "{\"step\": 7, \"event\": \"The Trojans bring the horse into the city\", \"action\": \"entrance(trojans, horse)\", \"state\": \"The horse stands in the city gates. The Trojans have brought in what they think is a gift.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "867ec34ce0e2d0e2",
+              "branch": {
+                "label": "The Trojans bring the horse into the city",
+                "expr": "entrance(trojans, horse)",
+                "state": "The horse stands in the city gates. The Trojans have brought in what they think is a gift."
+              },
+              "expr": "entrance(trojans, horse)",
+              "display": "entrance(trojans, horse) — The horse stands in the city gates. The Trojans have brought in what they think is a gift."
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 1118154906,
+              "raw": "{\"step\": 7, \"event\": \"The Trojans bring the horse in\", \"action\": \"enter(trojans, horse)\", \"state\": \"The wooden horse is brought into the city gates and left behind, as a statue of Athena.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "469ad6fd26684d2f",
+              "branch": {
+                "label": "The Trojans bring the horse in",
+                "expr": "enter(trojans, horse)",
+                "state": "The wooden horse is brought into the city gates and left behind, as a statue of Athena."
+              },
+              "expr": "enter(trojans, horse)",
+              "display": "enter(trojans, horse) — The wooden horse is brought into the city gates and left behind, as a statue of Athena."
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 1034266811,
+              "raw": "{\"step\": 7, \"event\": \"The Trojans bring the horse in\", \"action\": \"carry(trojans, horse)\", \"state\": \"The horse is brought into the city, and Sinon is bound up to the back of it.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "477cfd17a69c2d75",
+              "branch": {
+                "label": "The Trojans bring the horse in",
+                "expr": "carry(trojans, horse)",
+                "state": "The horse is brought into the city, and Sinon is bound up to the back of it."
+              },
+              "expr": "carry(trojans, horse)",
+              "display": "carry(trojans, horse) — The horse is brought into the city, and Sinon is bound up to the back of it."
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 1017489192,
+              "raw": "{\"step\": 7, \"event\": \"The Trojans bring in the horse\", \"action\": \"accept(trojans, horse)\", \"state\": \"The Trojans drag the horse inside the city, where it stands in the courtyard of their palace.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "48de85011450ae8f",
+              "branch": {
+                "label": "The Trojans bring in the horse",
+                "expr": "accept(trojans, horse)",
+                "state": "The Trojans drag the horse inside the city, where it stands in the courtyard of their palace."
+              },
+              "expr": "accept(trojans, horse)",
+              "display": "accept(trojans, horse) — The Trojans drag the horse inside the city, where it stands in the courtyard of their palace."
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 1067822049,
+              "raw": "{\"step\": 7, \"event\": \"The horse is brought into Troy\", \"action\": \"enter(trojans, horse)\", \"state\": \"The Trojans carry the horse up the hill and into the city gates. Sinon is released from his bonds.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "ba115914f2c3ab2a",
+              "branch": {
+                "label": "The horse is brought into Troy",
+                "expr": "enter(trojans, horse)",
+                "state": "The Trojans carry the horse up the hill and into the city gates. Sinon is released from his bonds."
+              },
+              "expr": "enter(trojans, horse)",
+              "display": "enter(trojans, horse) — The Trojans carry the horse up the hill and into the city gates. Sinon is released from his bonds.",
+              "duplicateOf": "enter(trojans, horse)"
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 1051044430,
+              "raw": "{\"step\": 7, \"event\": \"The horse is brought into the city\", \"action\": \"enter(trojans, horse)\", \"state\": \"The horse is pushed into the city of Troy, and left outside the gates, in a field by the city wall.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "e52f1f3d62e1924f",
+              "branch": {
+                "label": "The horse is brought into the city",
+                "expr": "enter(trojans, horse)",
+                "state": "The horse is pushed into the city of Troy, and left outside the gates, in a field by the city wall."
+              },
+              "expr": "enter(trojans, horse)",
+              "display": "enter(trojans, horse) — The horse is pushed into the city of Troy, and left outside the gates, in a field by the city wall.",
+              "duplicateOf": "enter(trojans, horse)"
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 967156335,
+              "raw": "{\"step\": 7, \"event\": \"The Trojans drag the horse into the city\", \"action\": \"drag(trojans, horse, city)\", \"state\": \"The horse is dragged into the city. Sinon is still bound among the Trojans.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "15eb6ebe0c92e89c",
+              "branch": {
+                "label": "The Trojans drag the horse into the city",
+                "expr": "drag(trojans, horse, city)",
+                "state": "The horse is dragged into the city. Sinon is still bound among the Trojans."
+              },
+              "expr": "drag(trojans, horse, city)",
+              "display": "drag(trojans, horse, city) — The horse is dragged into the city. Sinon is still bound among the Trojans."
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 950378716,
+              "raw": "{\"step\": 7, \"event\": \"The Trojans carry it inside the walls\", \"action\": \"carry(trojans, horse, city)\", \"state\": \"The horse is brought inside the city gates, and placed near the temple of Athena.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "7a9d7ee1c21b7f03",
+              "branch": {
+                "label": "The Trojans carry it inside the walls",
+                "expr": "carry(trojans, horse, city)",
+                "state": "The horse is brought inside the city gates, and placed near the temple of Athena."
+              },
+              "expr": "carry(trojans, horse, city)",
+              "display": "carry(trojans, horse, city) — The horse is brought inside the city gates, and placed near the temple of Athena."
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 147833356,
+              "raw": "{\"step\": 7, \"event\": \"The Trojans drag the horse into the city\", \"action\": \"move(trojans, horse, city)\", \"state\": \"The Trojans drag the horse into the city, but they do not know about the hidden Greeks inside.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "96851f41dc92fc3f",
+              "branch": {
+                "label": "The Trojans drag the horse into the city",
+                "expr": "move(trojans, horse, city)",
+                "state": "The Trojans drag the horse into the city, but they do not know about the hidden Greeks inside."
+              },
+              "expr": "move(trojans, horse, city)",
+              "display": "move(trojans, horse, city) — The Trojans drag the horse into the city, but they do not know about the hidden Greeks inside."
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 164610975,
+              "raw": "{\"step\": 7, \"event\": \"The horse is dragged into the city\", \"action\": \"enter(trojans, horse)\", \"state\": \"The horse is brought into the city and left in the middle of the square, as the Trojans prepare to feast.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "1dd9c6d0b8dbc016",
+              "branch": {
+                "label": "The horse is dragged into the city",
+                "expr": "enter(trojans, horse)",
+                "state": "The horse is brought into the city and left in the middle of the square, as the Trojans prepare to feast."
+              },
+              "expr": "enter(trojans, horse)",
+              "display": "enter(trojans, horse) — The horse is brought into the city and left in the middle of the square, as the Trojans prepare to feast.",
+              "duplicateOf": "enter(trojans, horse)"
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 181388594,
+              "raw": "{\"step\": 7, \"event\": \"The horse is brought into the city\", \"action\": \"enter(trojans, horse)\", \"state\": \"The horse is taken into the city of Troy. The Trojans are still fooled by Sinon's lies.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "6aa8bfb23cc145a0",
+              "branch": {
+                "label": "The horse is brought into the city",
+                "expr": "enter(trojans, horse)",
+                "state": "The horse is taken into the city of Troy. The Trojans are still fooled by Sinon's lies."
+              },
+              "expr": "enter(trojans, horse)",
+              "display": "enter(trojans, horse) — The horse is taken into the city of Troy. The Trojans are still fooled by Sinon's lies.",
+              "duplicateOf": "enter(trojans, horse)"
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 198166213,
+              "raw": "{\"step\": 7, \"event\": \"The horse is brought into Troy\", \"action\": \"enter(horse, troy)\", \"state\": \"The horse is brought into the gates of Troy, where it stands in the center of the city.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "742baa02c2697aac",
+              "branch": {
+                "label": "The horse is brought into Troy",
+                "expr": "enter(horse, troy)",
+                "state": "The horse is brought into the gates of Troy, where it stands in the center of the city."
+              },
+              "expr": "enter(horse, troy)",
+              "display": "enter(horse, troy) — The horse is brought into the gates of Troy, where it stands in the center of the city."
+            }
+          ]
+        },
+        "branch.v6": {
+          "prompt": "==> stories/the_trojan_horse.jsonl <==\n{\"title\": \"The Trojan Horse\", \"characters\": [\"the Greeks\", \"the Trojans\", \"Sinon\", \"Cassandra\"]}\n{\"step\": 1, \"event\": \"The Greeks build a wooden horse\", \"action\": \"build(greeks, horse)\", \"state\": \"A huge hollow wooden horse stands on the plain outside Troy.\"}\n{\"step\": 2, \"event\": \"Armed men climb inside it\", \"action\": \"hide(greeks, horse)\", \"state\": \"Armed Greeks are sealed inside the horse. From outside it looks like a wooden statue.\"}\n{\"step\": 3, \"event\": \"The fleet sails out of sight\", \"action\": \"depart(greeks, troy)\", \"state\": \"The Greek ships are gone from the shore, hidden behind a nearby island. To the Trojans the siege looks over.\"}\n{\"step\": 4, \"event\": \"The Trojans find the horse\", \"action\": \"find(trojans, horse)\", \"state\": \"The Trojans have come out of the city and stand around the horse, arguing about what to do with it.\"}\n{\"step\": 5, \"event\": \"Shepherds bring in a captured Greek\", \"action\": \"capture(trojans, sinon)\", \"state\": \"A Greek named Sinon stands bound among the Trojans as their prisoner.\"}\n{\"step\": 6, \"event\": \"Sinon sells the lie\", \"action\": \"deceive(sinon, trojans)\", \"state\": \"The Trojans believe the horse is an offering to Athena, and that bringing it into the city will protect Troy.\"}\n",
+          "promptSha256": "c3e15bf7ebc8b8e86dcd14b6f8c376b55376fef42a484c6613010d004e549122",
+          "grammar": "root ::= \"{\\\"step\\\": 7, \\\"event\\\": \\\"\" text \"\\\", \\\"action\\\": \\\"\" action \"\\\", \\\"state\\\": \\\"\" text \"\\\"}\"\ntext ::= [^\"\\\\\\x7F\\x00-\\x1F]+\naction ::= word \"(\" word (\", \" word)* \")\"\nword ::= [a-z] [a-z0-9_]*",
+          "samples": [
+            {
+              "arm": "branch.v6",
+              "seed": 3897596033,
+              "raw": "{\"step\": 7, \"event\": \"The horse is brought into the city\", \"action\": \"enter(trojans, horse)\", \"state\": \"The horse, with the Greeks inside it, is brought into the city gates of Troy.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "ee2d1715f447c41b",
+              "branch": {
+                "label": "The horse is brought into the city",
+                "expr": "enter(trojans, horse)",
+                "state": "The horse, with the Greeks inside it, is brought into the city gates of Troy."
+              },
+              "expr": "enter(trojans, horse)",
+              "display": "enter(trojans, horse) — The horse, with the Greeks inside it, is brought into the city gates of Troy."
+            },
+            {
+              "arm": "branch.v6",
+              "seed": 3864040795,
+              "raw": "{\"step\": 7, \"event\": \"The Trojans drag the horse into the city\", \"action\": \"drag(trojans, horse)\", \"state\": \"The horse is dragged into the city gates, a Trojan guard watching it and wondering.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "3f568e76f96cd044",
+              "branch": {
+                "label": "The Trojans drag the horse into the city",
+                "expr": "drag(trojans, horse)",
+                "state": "The horse is dragged into the city gates, a Trojan guard watching it and wondering."
+              },
+              "expr": "drag(trojans, horse)",
+              "display": "drag(trojans, horse) — The horse is dragged into the city gates, a Trojan guard watching it and wondering."
+            },
+            {
+              "arm": "branch.v6",
+              "seed": 3847263176,
+              "raw": "{\"step\": 7, \"event\": \"Sinon and the Trojans bring the horse into the city\", \"action\": \"bring(trojans, horse, troy)\", \"state\": \"The horse is dragged into the city, and the Trojans scatter around it.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "fdec9d9f47458885",
+              "branch": {
+                "label": "Sinon and the Trojans bring the horse into the city",
+                "expr": "bring(trojans, horse, troy)",
+                "state": "The horse is dragged into the city, and the Trojans scatter around it."
+              },
+              "expr": "bring(trojans, horse, troy)",
+              "display": "bring(trojans, horse, troy) — The horse is dragged into the city, and the Trojans scatter around it.",
+              "told": {
+                "kind": "later",
+                "id": "th_enter"
+              }
+            },
+            {
+              "arm": "branch.v6",
+              "seed": 3964706509,
+              "raw": "{\"step\": 7, \"event\": \"The Trojans bring the horse in\", \"action\": \"bring(in, trojans, horse)\", \"state\": \"The horse is brought inside Troy, where it stands guard near the city walls.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "ccfcb137ef9ec539",
+              "branch": {
+                "label": "The Trojans bring the horse in",
+                "expr": "bring(in, trojans, horse)",
+                "state": "The horse is brought inside Troy, where it stands guard near the city walls."
+              },
+              "expr": "bring(in, trojans, horse)",
+              "display": "bring(in, trojans, horse) — The horse is brought inside Troy, where it stands guard near the city walls."
+            },
+            {
+              "arm": "branch.v6",
+              "seed": 3947928890,
+              "raw": "{\"step\": 7, \"event\": \"The Trojans bring in the horse\", \"action\": \"enter(trojans, horse, city)\", \"state\": \"The Trojan horse is brought into the city gates, guarded by a single Trojan soldier.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "55c347ebd058be11",
+              "branch": {
+                "label": "The Trojans bring in the horse",
+                "expr": "enter(trojans, horse, city)",
+                "state": "The Trojan horse is brought into the city gates, guarded by a single Trojan soldier."
+              },
+              "expr": "enter(trojans, horse, city)",
+              "display": "enter(trojans, horse, city) — The Trojan horse is brought into the city gates, guarded by a single Trojan soldier."
+            },
+            {
+              "arm": "branch.v6",
+              "seed": 3914373652,
+              "raw": "{\"step\": 7, \"event\": \"The Trojans take the horse inside\", \"action\": \"bring(trojans, horse)\", \"state\": \"The Trojans bring the horse into their city, and Sinon is left to guard it.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "0c6af4bd3dfe52e7",
+              "branch": {
+                "label": "The Trojans take the horse inside",
+                "expr": "bring(trojans, horse)",
+                "state": "The Trojans bring the horse into their city, and Sinon is left to guard it."
+              },
+              "expr": "bring(trojans, horse)",
+              "display": "bring(trojans, horse) — The Trojans bring the horse into their city, and Sinon is left to guard it."
+            },
+            {
+              "arm": "branch.v6",
+              "seed": 31293306,
+              "raw": "{\"step\": 7, \"event\": \"The horse is dragged into the city\", \"action\": \"move(trojans, horse, city)\", \"state\": \"The Trojans lead the horse inside the gates of the city, ignoring the warnings of Cassandra.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "4ffa53652c54f31b",
+              "branch": {
+                "label": "The horse is dragged into the city",
+                "expr": "move(trojans, horse, city)",
+                "state": "The Trojans lead the horse inside the gates of the city, ignoring the warnings of Cassandra."
+              },
+              "expr": "move(trojans, horse, city)",
+              "display": "move(trojans, horse, city) — The Trojans lead the horse inside the gates of the city, ignoring the warnings of Cassandra."
+            },
+            {
+              "arm": "branch.v6",
+              "seed": 4275927745,
+              "raw": "{\"step\": 7, \"event\": \"They agree to bring it in\", \"action\": \"agree(trojans, horse)\", \"state\": \"The Trojans carry the horse into the city, thinking it is a harmless gift.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "48a231c0e63090a6",
+              "branch": {
+                "label": "They agree to bring it in",
+                "expr": "agree(trojans, horse)",
+                "state": "The Trojans carry the horse into the city, thinking it is a harmless gift."
+              },
+              "expr": "agree(trojans, horse)",
+              "display": "agree(trojans, horse) — The Trojans carry the horse into the city, thinking it is a harmless gift."
+            },
+            {
+              "arm": "branch.v6",
+              "seed": 4225594888,
+              "raw": "{\"step\": 7, \"event\": \"The horse is brought inside\", \"action\": \"move(horse, troy)\", \"state\": \"The Trojans drag the horse into the city.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "0a6e36a58f978b17",
+              "branch": {
+                "label": "The horse is brought inside",
+                "expr": "move(horse, troy)",
+                "state": "The Trojans drag the horse into the city."
+              },
+              "expr": "move(horse, troy)",
+              "display": "move(horse, troy) — The Trojans drag the horse into the city."
+            },
+            {
+              "arm": "branch.v6",
+              "seed": 4192039650,
+              "raw": "{\"step\": 7, \"event\": \"The Trojans bring the horse to the city\", \"action\": \"transport(trojans, horse, troy)\", \"state\": \"The horse is brought into the city gates and set up on a hillside in front of the temple of Athena.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "047b0253b0daf619",
+              "branch": {
+                "label": "The Trojans bring the horse to the city",
+                "expr": "transport(trojans, horse, troy)",
+                "state": "The horse is brought into the city gates and set up on a hillside in front of the temple of Athena."
+              },
+              "expr": "transport(trojans, horse, troy)",
+              "display": "transport(trojans, horse, troy) — The horse is brought into the city gates and set up on a hillside in front of the temple of Athena."
+            }
+          ],
+          "attempts": 19,
+          "refused": 0,
+          "truncated": 0,
+          "duplicates": 9,
+          "usable": 19,
+          "toldNext": 0,
+          "toldLater": 1,
+          "saturated": false,
+          "allAttempts": [
+            {
+              "arm": "branch.v6",
+              "seed": 3897596033,
+              "raw": "{\"step\": 7, \"event\": \"The horse is brought into the city\", \"action\": \"enter(trojans, horse)\", \"state\": \"The horse, with the Greeks inside it, is brought into the city gates of Troy.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "ee2d1715f447c41b",
+              "branch": {
+                "label": "The horse is brought into the city",
+                "expr": "enter(trojans, horse)",
+                "state": "The horse, with the Greeks inside it, is brought into the city gates of Troy."
+              },
+              "expr": "enter(trojans, horse)",
+              "display": "enter(trojans, horse) — The horse, with the Greeks inside it, is brought into the city gates of Troy."
+            },
+            {
+              "arm": "branch.v6",
+              "seed": 3880818414,
+              "raw": "{\"step\": 7, \"event\": \"The Trojans take the horse\", \"action\": \"enter(trojans, horse)\", \"state\": \"The Trojan soldiers walk the horse into the city, into the temple of Athena.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "a55bb7f953bfd937",
+              "branch": {
+                "label": "The Trojans take the horse",
+                "expr": "enter(trojans, horse)",
+                "state": "The Trojan soldiers walk the horse into the city, into the temple of Athena."
+              },
+              "expr": "enter(trojans, horse)",
+              "display": "enter(trojans, horse) — The Trojan soldiers walk the horse into the city, into the temple of Athena.",
+              "duplicateOf": "enter(trojans, horse)"
+            },
+            {
+              "arm": "branch.v6",
+              "seed": 3864040795,
+              "raw": "{\"step\": 7, \"event\": \"The Trojans drag the horse into the city\", \"action\": \"drag(trojans, horse)\", \"state\": \"The horse is dragged into the city gates, a Trojan guard watching it and wondering.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "3f568e76f96cd044",
+              "branch": {
+                "label": "The Trojans drag the horse into the city",
+                "expr": "drag(trojans, horse)",
+                "state": "The horse is dragged into the city gates, a Trojan guard watching it and wondering."
+              },
+              "expr": "drag(trojans, horse)",
+              "display": "drag(trojans, horse) — The horse is dragged into the city gates, a Trojan guard watching it and wondering."
+            },
+            {
+              "arm": "branch.v6",
+              "seed": 3847263176,
+              "raw": "{\"step\": 7, \"event\": \"Sinon and the Trojans bring the horse into the city\", \"action\": \"bring(trojans, horse, troy)\", \"state\": \"The horse is dragged into the city, and the Trojans scatter around it.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "fdec9d9f47458885",
+              "branch": {
+                "label": "Sinon and the Trojans bring the horse into the city",
+                "expr": "bring(trojans, horse, troy)",
+                "state": "The horse is dragged into the city, and the Trojans scatter around it."
+              },
+              "expr": "bring(trojans, horse, troy)",
+              "display": "bring(trojans, horse, troy) — The horse is dragged into the city, and the Trojans scatter around it.",
+              "told": {
+                "kind": "later",
+                "id": "th_enter"
+              }
+            },
+            {
+              "arm": "branch.v6",
+              "seed": 3964706509,
+              "raw": "{\"step\": 7, \"event\": \"The Trojans bring the horse in\", \"action\": \"bring(in, trojans, horse)\", \"state\": \"The horse is brought inside Troy, where it stands guard near the city walls.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "ccfcb137ef9ec539",
+              "branch": {
+                "label": "The Trojans bring the horse in",
+                "expr": "bring(in, trojans, horse)",
+                "state": "The horse is brought inside Troy, where it stands guard near the city walls."
+              },
+              "expr": "bring(in, trojans, horse)",
+              "display": "bring(in, trojans, horse) — The horse is brought inside Troy, where it stands guard near the city walls."
+            },
+            {
+              "arm": "branch.v6",
+              "seed": 3947928890,
+              "raw": "{\"step\": 7, \"event\": \"The Trojans bring in the horse\", \"action\": \"enter(trojans, horse, city)\", \"state\": \"The Trojan horse is brought into the city gates, guarded by a single Trojan soldier.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "55c347ebd058be11",
+              "branch": {
+                "label": "The Trojans bring in the horse",
+                "expr": "enter(trojans, horse, city)",
+                "state": "The Trojan horse is brought into the city gates, guarded by a single Trojan soldier."
+              },
+              "expr": "enter(trojans, horse, city)",
+              "display": "enter(trojans, horse, city) — The Trojan horse is brought into the city gates, guarded by a single Trojan soldier."
+            },
+            {
+              "arm": "branch.v6",
+              "seed": 3931151271,
+              "raw": "{\"step\": 7, \"event\": \"They bring the horse into the city\", \"action\": \"enter(trojans, horse)\", \"state\": \"The Trojans push the horse into the city, setting it up in the middle of the market square.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "51fccc6d979a71c7",
+              "branch": {
+                "label": "They bring the horse into the city",
+                "expr": "enter(trojans, horse)",
+                "state": "The Trojans push the horse into the city, setting it up in the middle of the market square."
+              },
+              "expr": "enter(trojans, horse)",
+              "display": "enter(trojans, horse) — The Trojans push the horse into the city, setting it up in the middle of the market square.",
+              "duplicateOf": "enter(trojans, horse)"
+            },
+            {
+              "arm": "branch.v6",
+              "seed": 3914373652,
+              "raw": "{\"step\": 7, \"event\": \"The Trojans take the horse inside\", \"action\": \"bring(trojans, horse)\", \"state\": \"The Trojans bring the horse into their city, and Sinon is left to guard it.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "0c6af4bd3dfe52e7",
+              "branch": {
+                "label": "The Trojans take the horse inside",
+                "expr": "bring(trojans, horse)",
+                "state": "The Trojans bring the horse into their city, and Sinon is left to guard it."
+              },
+              "expr": "bring(trojans, horse)",
+              "display": "bring(trojans, horse) — The Trojans bring the horse into their city, and Sinon is left to guard it."
+            },
+            {
+              "arm": "branch.v6",
+              "seed": 3763375081,
+              "raw": "{\"step\": 7, \"event\": \"The horse is taken inside Troy\", \"action\": \"enter(trojans, horse)\", \"state\": \"The Trojans drag the horse into the city, unaware that Greeks are hiding inside.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "3750e961b21ff343",
+              "branch": {
+                "label": "The horse is taken inside Troy",
+                "expr": "enter(trojans, horse)",
+                "state": "The Trojans drag the horse into the city, unaware that Greeks are hiding inside."
+              },
+              "expr": "enter(trojans, horse)",
+              "display": "enter(trojans, horse) — The Trojans drag the horse into the city, unaware that Greeks are hiding inside.",
+              "duplicateOf": "enter(trojans, horse)"
+            },
+            {
+              "arm": "branch.v6",
+              "seed": 3746597462,
+              "raw": "{\"step\": 7, \"event\": \"Trojans bring the horse inside\", \"action\": \"enter(trojans, horse)\", \"state\": \"The Trojans lift the horse on to their shoulders and lead it into the city.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "07ab4ca5518b19ef",
+              "branch": {
+                "label": "Trojans bring the horse inside",
+                "expr": "enter(trojans, horse)",
+                "state": "The Trojans lift the horse on to their shoulders and lead it into the city."
+              },
+              "expr": "enter(trojans, horse)",
+              "display": "enter(trojans, horse) — The Trojans lift the horse on to their shoulders and lead it into the city.",
+              "duplicateOf": "enter(trojans, horse)"
+            },
+            {
+              "arm": "branch.v6",
+              "seed": 31293306,
+              "raw": "{\"step\": 7, \"event\": \"The horse is dragged into the city\", \"action\": \"move(trojans, horse, city)\", \"state\": \"The Trojans lead the horse inside the gates of the city, ignoring the warnings of Cassandra.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "4ffa53652c54f31b",
+              "branch": {
+                "label": "The horse is dragged into the city",
+                "expr": "move(trojans, horse, city)",
+                "state": "The Trojans lead the horse inside the gates of the city, ignoring the warnings of Cassandra."
+              },
+              "expr": "move(trojans, horse, city)",
+              "display": "move(trojans, horse, city) — The Trojans lead the horse inside the gates of the city, ignoring the warnings of Cassandra."
+            },
+            {
+              "arm": "branch.v6",
+              "seed": 48070925,
+              "raw": "{\"step\": 7, \"event\": \"They bring the horse into the city\", \"action\": \"enter(trojans, horse)\", \"state\": \"The horse is pushed into the city of Troy, and is placed at the entrance of the wall.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "89959c63e1d7cca5",
+              "branch": {
+                "label": "They bring the horse into the city",
+                "expr": "enter(trojans, horse)",
+                "state": "The horse is pushed into the city of Troy, and is placed at the entrance of the wall."
+              },
+              "expr": "enter(trojans, horse)",
+              "display": "enter(trojans, horse) — The horse is pushed into the city of Troy, and is placed at the entrance of the wall.",
+              "duplicateOf": "enter(trojans, horse)"
+            },
+            {
+              "arm": "branch.v6",
+              "seed": 4292705364,
+              "raw": "{\"step\": 7, \"event\": \"The Trojans drag the horse inside the city\", \"action\": \"bring(trojans, horse)\", \"state\": \"The Trojans have dragged the horse inside the gates of their city.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "ad90d93cd523810a",
+              "branch": {
+                "label": "The Trojans drag the horse inside the city",
+                "expr": "bring(trojans, horse)",
+                "state": "The Trojans have dragged the horse inside the gates of their city."
+              },
+              "expr": "bring(trojans, horse)",
+              "display": "bring(trojans, horse) — The Trojans have dragged the horse inside the gates of their city.",
+              "duplicateOf": "bring(trojans, horse)"
+            },
+            {
+              "arm": "branch.v6",
+              "seed": 14515687,
+              "raw": "{\"step\": 7, \"event\": \"Trojans bring in the horse\", \"action\": \"enter(trojans, horse)\", \"state\": \"The horse is brought into the city and placed in the square, where it is guarded.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "c9ac5575318d7f27",
+              "branch": {
+                "label": "Trojans bring in the horse",
+                "expr": "enter(trojans, horse)",
+                "state": "The horse is brought into the city and placed in the square, where it is guarded."
+              },
+              "expr": "enter(trojans, horse)",
+              "display": "enter(trojans, horse) — The horse is brought into the city and placed in the square, where it is guarded.",
+              "duplicateOf": "enter(trojans, horse)"
+            },
+            {
+              "arm": "branch.v6",
+              "seed": 4259150126,
+              "raw": "{\"step\": 7, \"event\": \"The Trojans bring the horse inside\", \"action\": \"enter(trojans, horse)\", \"state\": \"The horse is brought inside the city walls. Sinon is left in front of it.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "4733d8752df45193",
+              "branch": {
+                "label": "The Trojans bring the horse inside",
+                "expr": "enter(trojans, horse)",
+                "state": "The horse is brought inside the city walls. Sinon is left in front of it."
+              },
+              "expr": "enter(trojans, horse)",
+              "display": "enter(trojans, horse) — The horse is brought inside the city walls. Sinon is left in front of it.",
+              "duplicateOf": "enter(trojans, horse)"
+            },
+            {
+              "arm": "branch.v6",
+              "seed": 4275927745,
+              "raw": "{\"step\": 7, \"event\": \"They agree to bring it in\", \"action\": \"agree(trojans, horse)\", \"state\": \"The Trojans carry the horse into the city, thinking it is a harmless gift.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "48a231c0e63090a6",
+              "branch": {
+                "label": "They agree to bring it in",
+                "expr": "agree(trojans, horse)",
+                "state": "The Trojans carry the horse into the city, thinking it is a harmless gift."
+              },
+              "expr": "agree(trojans, horse)",
+              "display": "agree(trojans, horse) — The Trojans carry the horse into the city, thinking it is a harmless gift."
+            },
+            {
+              "arm": "branch.v6",
+              "seed": 4225594888,
+              "raw": "{\"step\": 7, \"event\": \"The horse is brought inside\", \"action\": \"move(horse, troy)\", \"state\": \"The Trojans drag the horse into the city.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "0a6e36a58f978b17",
+              "branch": {
+                "label": "The horse is brought inside",
+                "expr": "move(horse, troy)",
+                "state": "The Trojans drag the horse into the city."
+              },
+              "expr": "move(horse, troy)",
+              "display": "move(horse, troy) — The Trojans drag the horse into the city."
+            },
+            {
+              "arm": "branch.v6",
+              "seed": 4242372507,
+              "raw": "{\"step\": 7, \"event\": \"They bring it into the city\", \"action\": \"enter(trojans, horse)\", \"state\": \"The Trojan soldiers bring the horse inside the gates of the city.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "0838a3e680e05198",
+              "branch": {
+                "label": "They bring it into the city",
+                "expr": "enter(trojans, horse)",
+                "state": "The Trojan soldiers bring the horse inside the gates of the city."
+              },
+              "expr": "enter(trojans, horse)",
+              "display": "enter(trojans, horse) — The Trojan soldiers bring the horse inside the gates of the city.",
+              "duplicateOf": "enter(trojans, horse)"
+            },
+            {
+              "arm": "branch.v6",
+              "seed": 4192039650,
+              "raw": "{\"step\": 7, \"event\": \"The Trojans bring the horse to the city\", \"action\": \"transport(trojans, horse, troy)\", \"state\": \"The horse is brought into the city gates and set up on a hillside in front of the temple of Athena.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "047b0253b0daf619",
+              "branch": {
+                "label": "The Trojans bring the horse to the city",
+                "expr": "transport(trojans, horse, troy)",
+                "state": "The horse is brought into the city gates and set up on a hillside in front of the temple of Athena."
+              },
+              "expr": "transport(trojans, horse, troy)",
+              "display": "transport(trojans, horse, troy) — The horse is brought into the city gates and set up on a hillside in front of the temple of Athena."
+            }
+          ]
+        }
+      }
+    },
+    {
+      "nodeId": "th_seer",
+      "path": [
+        "th_build",
+        "th_hide",
+        "th_sail",
+        "th_gift",
+        "th_capture",
+        "th_lie",
+        "th_seer"
+      ],
+      "history": [
+        "build(greeks, horse) — A huge hollow wooden horse stands on the plain outside Troy.",
+        "hide(greeks, horse) — Armed Greeks are sealed inside the horse. From outside it looks like a wooden statue.",
+        "depart(greeks, troy) — The Greek ships are gone from the shore, hidden behind a nearby island. To the Trojans the siege looks over.",
+        "find(trojans, horse) — The Trojans have come out of the city and stand around the horse, arguing about what to do with it.",
+        "capture(trojans, sinon) — A Greek named Sinon stands bound among the Trojans as their prisoner.",
+        "deceive(sinon, trojans) — The Trojans believe the horse is an offering to Athena, and that bringing it into the city will protect Troy.",
+        "warn(cassandra, trojans) — Cassandra has told the city, out loud, that the horse holds armed men."
+      ],
+      "arms": {
+        "branch.v4": {
+          "prompt": "==> stories/the_tortoise_and_the_hare.jsonl <==\n{\"title\": \"The Tortoise and the Hare\", \"characters\": [\"the hare\", \"the tortoise\", \"the fox\"]}\n{\"step\": 1, \"event\": \"The hare boasts of his speed\", \"action\": \"boast(hare, speed)\", \"state\": \"The hare has told everyone on the road that nothing can outrun him.\"}\n{\"step\": 2, \"event\": \"The tortoise challenges him to a race\", \"action\": \"challenge(tortoise, hare)\", \"state\": \"A race between the hare and the tortoise is agreed, over a course the tortoise named.\"}\n{\"step\": 3, \"event\": \"The fox starts the race\", \"action\": \"start(fox, race)\", \"state\": \"Both runners are on the road and the race has begun.\"}\n{\"step\": 4, \"event\": \"The hare takes the lead\", \"action\": \"outpace(hare, tortoise)\", \"state\": \"The hare is far ahead. The tortoise is still near the start.\"}\n{\"step\": 5, \"event\": \"The hare lies down by the road\", \"action\": \"nap(hare, roadside)\", \"state\": \"The hare is asleep by the road. The tortoise is still walking.\"}\n{\"step\": 6, \"event\": \"The tortoise passes the sleeping hare\", \"action\": \"pass(tortoise, hare)\", \"state\": \"The tortoise is ahead on the road. The hare has not woken.\"}\n{\"step\": 7, \"event\": \"The tortoise wins the race\", \"action\": \"win(tortoise, race)\", \"state\": \"The tortoise has crossed the finish line first. The race is over.\"}\n\n==> stories/the_trojan_horse.jsonl <==\n{\"title\": \"The Trojan Horse\", \"characters\": [\"the Greeks\", \"the Trojans\", \"Sinon\", \"Cassandra\"]}\n{\"step\": 1, \"event\": \"The Greeks build a wooden horse\", \"action\": \"build(greeks, horse)\", \"state\": \"A huge hollow wooden horse stands on the plain outside Troy.\"}\n{\"step\": 2, \"event\": \"Armed men climb inside it\", \"action\": \"hide(greeks, horse)\", \"state\": \"Armed Greeks are sealed inside the horse. From outside it looks like a wooden statue.\"}\n{\"step\": 3, \"event\": \"The fleet sails out of sight\", \"action\": \"depart(greeks, troy)\", \"state\": \"The Greek ships are gone from the shore, hidden behind a nearby island. To the Trojans the siege looks over.\"}\n{\"step\": 4, \"event\": \"The Trojans find the horse\", \"action\": \"find(trojans, horse)\", \"state\": \"The Trojans have come out of the city and stand around the horse, arguing about what to do with it.\"}\n{\"step\": 5, \"event\": \"Shepherds bring in a captured Greek\", \"action\": \"capture(trojans, sinon)\", \"state\": \"A Greek named Sinon stands bound among the Trojans as their prisoner.\"}\n{\"step\": 6, \"event\": \"Sinon sells the lie\", \"action\": \"deceive(sinon, trojans)\", \"state\": \"The Trojans believe the horse is an offering to Athena, and that bringing it into the city will protect Troy.\"}\n{\"step\": 7, \"event\": \"Cassandra names it a trap\", \"action\": \"warn(cassandra, trojans)\", \"state\": \"Cassandra has told the city, out loud, that the horse holds armed men.\"}\n",
+          "promptSha256": "d441b1245419b6083c7b7ad1726006a5e32559254232841d547671b83d3364b8",
+          "grammar": "root ::= \"{\\\"step\\\": 8, \\\"event\\\": \\\"\" text \"\\\", \\\"action\\\": \\\"\" action \"\\\", \\\"state\\\": \\\"\" text \"\\\"}\"\ntext ::= [^\"\\\\\\x7F\\x00-\\x1F]+\naction ::= word \"(\" word (\", \" word)* \")\"\nword ::= [a-z] [a-z0-9_]*",
+          "samples": [
+            {
+              "arm": "branch.v4",
+              "seed": 1127505712,
+              "raw": "{\"step\": 8, \"event\": \"The horse is brought into the city\", \"action\": \"bring(trojans, horse)\", \"state\": \"The Trojans take the horse into the city, where it stands guard before their gates.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "ac51890583e86043",
+              "branch": {
+                "label": "The horse is brought into the city",
+                "expr": "bring(trojans, horse)",
+                "state": "The Trojans take the horse into the city, where it stands guard before their gates."
+              },
+              "expr": "bring(trojans, horse)",
+              "display": "bring(trojans, horse) — The Trojans take the horse into the city, where it stands guard before their gates."
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 1144283331,
+              "raw": "{\"step\": 8, \"event\": \"The Trojans bring the horse inside\", \"action\": \"accept(trojans, horse)\", \"state\": \"The horse is brought into the city. The Trojans have unknowingly welcomed in the Greeks.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "5f1c78d49e2d270a",
+              "branch": {
+                "label": "The Trojans bring the horse inside",
+                "expr": "accept(trojans, horse)",
+                "state": "The horse is brought into the city. The Trojans have unknowingly welcomed in the Greeks."
+              },
+              "expr": "accept(trojans, horse)",
+              "display": "accept(trojans, horse) — The horse is brought into the city. The Trojans have unknowingly welcomed in the Greeks."
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 1161060950,
+              "raw": "{\"step\": 8, \"event\": \"The horse is brought inside the city\", \"action\": \"enter(trojans, horse, city)\", \"state\": \"The horse is brought into the city. The armed Greeks inside the horse watch the Trojans celebrate.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "987609f53e891f9b",
+              "branch": {
+                "label": "The horse is brought inside the city",
+                "expr": "enter(trojans, horse, city)",
+                "state": "The horse is brought into the city. The armed Greeks inside the horse watch the Trojans celebrate."
+              },
+              "expr": "enter(trojans, horse, city)",
+              "display": "enter(trojans, horse, city) — The horse is brought into the city. The armed Greeks inside the horse watch the Trojans celebrate."
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 1177838569,
+              "raw": "{\"step\": 8, \"event\": \"The Trojans bring in the horse\", \"action\": \"enter(trojans, horse, troy)\", \"state\": \"The Trojans carry the wooden horse into the city, down its great staircase. The horse is in the city.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "eb752ee59ce5876b",
+              "branch": {
+                "label": "The Trojans bring in the horse",
+                "expr": "enter(trojans, horse, troy)",
+                "state": "The Trojans carry the wooden horse into the city, down its great staircase. The horse is in the city."
+              },
+              "expr": "enter(trojans, horse, troy)",
+              "display": "enter(trojans, horse, troy) — The Trojans carry the wooden horse into the city, down its great staircase. The horse is in the city."
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 1194616188,
+              "raw": "{\"step\": 8, \"event\": \"The Trojans bring the horse into the city\", \"action\": \"entrance(trojans, horse)\", \"state\": \"The Trojans have brought the horse into the city gates. It stands in the inner court of the city walls.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "3ee7b071a736901f",
+              "branch": {
+                "label": "The Trojans bring the horse into the city",
+                "expr": "entrance(trojans, horse)",
+                "state": "The Trojans have brought the horse into the city gates. It stands in the inner court of the city walls."
+              },
+              "expr": "entrance(trojans, horse)",
+              "display": "entrance(trojans, horse) — The Trojans have brought the horse into the city gates. It stands in the inner court of the city walls."
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 1211393807,
+              "raw": "{\"step\": 8, \"event\": \"The Trojans bring in the horse\", \"action\": \"enter(trojans, horse)\", \"state\": \"The Trojans have carried the horse up to their city walls.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "d517b22da82f7a9b",
+              "branch": {
+                "label": "The Trojans bring in the horse",
+                "expr": "enter(trojans, horse)",
+                "state": "The Trojans have carried the horse up to their city walls."
+              },
+              "expr": "enter(trojans, horse)",
+              "display": "enter(trojans, horse) — The Trojans have carried the horse up to their city walls."
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 1244949045,
+              "raw": "{\"step\": 8, \"event\": \"The Trojans ignore the warning\", \"action\": \"ignore(trojans, cassandra)\", \"state\": \"Cassandra has been locked up and the horse is brought into the city. The Trojans walk through it as if it's a statue.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "1ffadc6a7671790c",
+              "branch": {
+                "label": "The Trojans ignore the warning",
+                "expr": "ignore(trojans, cassandra)",
+                "state": "Cassandra has been locked up and the horse is brought into the city. The Trojans walk through it as if it's a statue."
+              },
+              "expr": "ignore(trojans, cassandra)",
+              "display": "ignore(trojans, cassandra) — Cassandra has been locked up and the horse is brought into the city. The Trojans walk through it as if it's a statue.",
+              "told": {
+                "kind": "next",
+                "id": "th_ignore"
+              }
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 1261726664,
+              "raw": "{\"step\": 8, \"event\": \"The Trojans bring in the horse\", \"action\": \"drag(trojans, horse)\", \"state\": \"The horse is pushed into the city. The Greeks, hidden inside, watch from the shadows.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "2ad9d17bcda655c5",
+              "branch": {
+                "label": "The Trojans bring in the horse",
+                "expr": "drag(trojans, horse)",
+                "state": "The horse is pushed into the city. The Greeks, hidden inside, watch from the shadows."
+              },
+              "expr": "drag(trojans, horse)",
+              "display": "drag(trojans, horse) — The horse is pushed into the city. The Greeks, hidden inside, watch from the shadows."
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 1349819638,
+              "raw": "{\"step\": 8, \"event\": \"The Trojans bring in the horse\", \"action\": \"bringin(horse, city)\", \"state\": \"The Trojans have brought the horse into the city gates. Sinon is left to guard it.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "a10e3e6ae0aae694",
+              "branch": {
+                "label": "The Trojans bring in the horse",
+                "expr": "bringin(horse, city)",
+                "state": "The Trojans have brought the horse into the city gates. Sinon is left to guard it."
+              },
+              "expr": "bringin(horse, city)",
+              "display": "bringin(horse, city) — The Trojans have brought the horse into the city gates. Sinon is left to guard it."
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 1333042019,
+              "raw": "{\"step\": 8, \"event\": \"The horse is taken into Troy\", \"action\": \"enter(horse, troy)\", \"state\": \"The horse is dragged into the city and set at the wooden gates.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "9edfcd68627d9296",
+              "branch": {
+                "label": "The horse is taken into Troy",
+                "expr": "enter(horse, troy)",
+                "state": "The horse is dragged into the city and set at the wooden gates."
+              },
+              "expr": "enter(horse, troy)",
+              "display": "enter(horse, troy) — The horse is dragged into the city and set at the wooden gates."
+            }
+          ],
+          "attempts": 13,
+          "refused": 0,
+          "truncated": 0,
+          "duplicates": 3,
+          "usable": 13,
+          "toldNext": 1,
+          "toldLater": 0,
+          "saturated": false,
+          "allAttempts": [
+            {
+              "arm": "branch.v4",
+              "seed": 1127505712,
+              "raw": "{\"step\": 8, \"event\": \"The horse is brought into the city\", \"action\": \"bring(trojans, horse)\", \"state\": \"The Trojans take the horse into the city, where it stands guard before their gates.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "ac51890583e86043",
+              "branch": {
+                "label": "The horse is brought into the city",
+                "expr": "bring(trojans, horse)",
+                "state": "The Trojans take the horse into the city, where it stands guard before their gates."
+              },
+              "expr": "bring(trojans, horse)",
+              "display": "bring(trojans, horse) — The Trojans take the horse into the city, where it stands guard before their gates."
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 1144283331,
+              "raw": "{\"step\": 8, \"event\": \"The Trojans bring the horse inside\", \"action\": \"accept(trojans, horse)\", \"state\": \"The horse is brought into the city. The Trojans have unknowingly welcomed in the Greeks.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "5f1c78d49e2d270a",
+              "branch": {
+                "label": "The Trojans bring the horse inside",
+                "expr": "accept(trojans, horse)",
+                "state": "The horse is brought into the city. The Trojans have unknowingly welcomed in the Greeks."
+              },
+              "expr": "accept(trojans, horse)",
+              "display": "accept(trojans, horse) — The horse is brought into the city. The Trojans have unknowingly welcomed in the Greeks."
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 1161060950,
+              "raw": "{\"step\": 8, \"event\": \"The horse is brought inside the city\", \"action\": \"enter(trojans, horse, city)\", \"state\": \"The horse is brought into the city. The armed Greeks inside the horse watch the Trojans celebrate.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "987609f53e891f9b",
+              "branch": {
+                "label": "The horse is brought inside the city",
+                "expr": "enter(trojans, horse, city)",
+                "state": "The horse is brought into the city. The armed Greeks inside the horse watch the Trojans celebrate."
+              },
+              "expr": "enter(trojans, horse, city)",
+              "display": "enter(trojans, horse, city) — The horse is brought into the city. The armed Greeks inside the horse watch the Trojans celebrate."
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 1177838569,
+              "raw": "{\"step\": 8, \"event\": \"The Trojans bring in the horse\", \"action\": \"enter(trojans, horse, troy)\", \"state\": \"The Trojans carry the wooden horse into the city, down its great staircase. The horse is in the city.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "eb752ee59ce5876b",
+              "branch": {
+                "label": "The Trojans bring in the horse",
+                "expr": "enter(trojans, horse, troy)",
+                "state": "The Trojans carry the wooden horse into the city, down its great staircase. The horse is in the city."
+              },
+              "expr": "enter(trojans, horse, troy)",
+              "display": "enter(trojans, horse, troy) — The Trojans carry the wooden horse into the city, down its great staircase. The horse is in the city."
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 1194616188,
+              "raw": "{\"step\": 8, \"event\": \"The Trojans bring the horse into the city\", \"action\": \"entrance(trojans, horse)\", \"state\": \"The Trojans have brought the horse into the city gates. It stands in the inner court of the city walls.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "3ee7b071a736901f",
+              "branch": {
+                "label": "The Trojans bring the horse into the city",
+                "expr": "entrance(trojans, horse)",
+                "state": "The Trojans have brought the horse into the city gates. It stands in the inner court of the city walls."
+              },
+              "expr": "entrance(trojans, horse)",
+              "display": "entrance(trojans, horse) — The Trojans have brought the horse into the city gates. It stands in the inner court of the city walls."
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 1211393807,
+              "raw": "{\"step\": 8, \"event\": \"The Trojans bring in the horse\", \"action\": \"enter(trojans, horse)\", \"state\": \"The Trojans have carried the horse up to their city walls.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "d517b22da82f7a9b",
+              "branch": {
+                "label": "The Trojans bring in the horse",
+                "expr": "enter(trojans, horse)",
+                "state": "The Trojans have carried the horse up to their city walls."
+              },
+              "expr": "enter(trojans, horse)",
+              "display": "enter(trojans, horse) — The Trojans have carried the horse up to their city walls."
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 1228171426,
+              "raw": "{\"step\": 8, \"event\": \"The horse is brought inside the city\", \"action\": \"enter(trojans, horse)\", \"state\": \"The horse is pushed into the city gates, and stands in a square just outside the walls.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "d360fcbec998d4e0",
+              "branch": {
+                "label": "The horse is brought inside the city",
+                "expr": "enter(trojans, horse)",
+                "state": "The horse is pushed into the city gates, and stands in a square just outside the walls."
+              },
+              "expr": "enter(trojans, horse)",
+              "display": "enter(trojans, horse) — The horse is pushed into the city gates, and stands in a square just outside the walls.",
+              "duplicateOf": "enter(trojans, horse)"
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 1244949045,
+              "raw": "{\"step\": 8, \"event\": \"The Trojans ignore the warning\", \"action\": \"ignore(trojans, cassandra)\", \"state\": \"Cassandra has been locked up and the horse is brought into the city. The Trojans walk through it as if it's a statue.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "1ffadc6a7671790c",
+              "branch": {
+                "label": "The Trojans ignore the warning",
+                "expr": "ignore(trojans, cassandra)",
+                "state": "Cassandra has been locked up and the horse is brought into the city. The Trojans walk through it as if it's a statue."
+              },
+              "expr": "ignore(trojans, cassandra)",
+              "display": "ignore(trojans, cassandra) — Cassandra has been locked up and the horse is brought into the city. The Trojans walk through it as if it's a statue.",
+              "told": {
+                "kind": "next",
+                "id": "th_ignore"
+              }
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 1261726664,
+              "raw": "{\"step\": 8, \"event\": \"The Trojans bring in the horse\", \"action\": \"drag(trojans, horse)\", \"state\": \"The horse is pushed into the city. The Greeks, hidden inside, watch from the shadows.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "2ad9d17bcda655c5",
+              "branch": {
+                "label": "The Trojans bring in the horse",
+                "expr": "drag(trojans, horse)",
+                "state": "The horse is pushed into the city. The Greeks, hidden inside, watch from the shadows."
+              },
+              "expr": "drag(trojans, horse)",
+              "display": "drag(trojans, horse) — The horse is pushed into the city. The Greeks, hidden inside, watch from the shadows."
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 1278504283,
+              "raw": "{\"step\": 8, \"event\": \"The Trojans carry the horse in\", \"action\": \"enter(trojans, horse)\", \"state\": \"The horse is brought into the city, its wooden walls filled with Greek warriors.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "e8c882e06941aa76",
+              "branch": {
+                "label": "The Trojans carry the horse in",
+                "expr": "enter(trojans, horse)",
+                "state": "The horse is brought into the city, its wooden walls filled with Greek warriors."
+              },
+              "expr": "enter(trojans, horse)",
+              "display": "enter(trojans, horse) — The horse is brought into the city, its wooden walls filled with Greek warriors.",
+              "duplicateOf": "enter(trojans, horse)"
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 1366597257,
+              "raw": "{\"step\": 8, \"event\": \"The Trojans bring in the horse\", \"action\": \"bring(trojans, horse)\", \"state\": \"The horse is pulled into the city gates. The Trojans believe that it holds a gift from Athena.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "da0745313ca8353f",
+              "branch": {
+                "label": "The Trojans bring in the horse",
+                "expr": "bring(trojans, horse)",
+                "state": "The horse is pulled into the city gates. The Trojans believe that it holds a gift from Athena."
+              },
+              "expr": "bring(trojans, horse)",
+              "display": "bring(trojans, horse) — The horse is pulled into the city gates. The Trojans believe that it holds a gift from Athena.",
+              "duplicateOf": "bring(trojans, horse)"
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 1349819638,
+              "raw": "{\"step\": 8, \"event\": \"The Trojans bring in the horse\", \"action\": \"bringin(horse, city)\", \"state\": \"The Trojans have brought the horse into the city gates. Sinon is left to guard it.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "a10e3e6ae0aae694",
+              "branch": {
+                "label": "The Trojans bring in the horse",
+                "expr": "bringin(horse, city)",
+                "state": "The Trojans have brought the horse into the city gates. Sinon is left to guard it."
+              },
+              "expr": "bringin(horse, city)",
+              "display": "bringin(horse, city) — The Trojans have brought the horse into the city gates. Sinon is left to guard it."
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 1333042019,
+              "raw": "{\"step\": 8, \"event\": \"The horse is taken into Troy\", \"action\": \"enter(horse, troy)\", \"state\": \"The horse is dragged into the city and set at the wooden gates.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "9edfcd68627d9296",
+              "branch": {
+                "label": "The horse is taken into Troy",
+                "expr": "enter(horse, troy)",
+                "state": "The horse is dragged into the city and set at the wooden gates."
+              },
+              "expr": "enter(horse, troy)",
+              "display": "enter(horse, troy) — The horse is dragged into the city and set at the wooden gates."
+            }
+          ]
+        },
+        "branch.v6": {
+          "prompt": "==> stories/the_trojan_horse.jsonl <==\n{\"title\": \"The Trojan Horse\", \"characters\": [\"the Greeks\", \"the Trojans\", \"Sinon\", \"Cassandra\"]}\n{\"step\": 1, \"event\": \"The Greeks build a wooden horse\", \"action\": \"build(greeks, horse)\", \"state\": \"A huge hollow wooden horse stands on the plain outside Troy.\"}\n{\"step\": 2, \"event\": \"Armed men climb inside it\", \"action\": \"hide(greeks, horse)\", \"state\": \"Armed Greeks are sealed inside the horse. From outside it looks like a wooden statue.\"}\n{\"step\": 3, \"event\": \"The fleet sails out of sight\", \"action\": \"depart(greeks, troy)\", \"state\": \"The Greek ships are gone from the shore, hidden behind a nearby island. To the Trojans the siege looks over.\"}\n{\"step\": 4, \"event\": \"The Trojans find the horse\", \"action\": \"find(trojans, horse)\", \"state\": \"The Trojans have come out of the city and stand around the horse, arguing about what to do with it.\"}\n{\"step\": 5, \"event\": \"Shepherds bring in a captured Greek\", \"action\": \"capture(trojans, sinon)\", \"state\": \"A Greek named Sinon stands bound among the Trojans as their prisoner.\"}\n{\"step\": 6, \"event\": \"Sinon sells the lie\", \"action\": \"deceive(sinon, trojans)\", \"state\": \"The Trojans believe the horse is an offering to Athena, and that bringing it into the city will protect Troy.\"}\n{\"step\": 7, \"event\": \"Cassandra names it a trap\", \"action\": \"warn(cassandra, trojans)\", \"state\": \"Cassandra has told the city, out loud, that the horse holds armed men.\"}\n",
+          "promptSha256": "6d2203437fdbdb1a6a3e7360c7f28e99f71034103683d892712ff6851ef0397e",
+          "grammar": "root ::= \"{\\\"step\\\": 8, \\\"event\\\": \\\"\" text \"\\\", \\\"action\\\": \\\"\" action \"\\\", \\\"state\\\": \\\"\" text \"\\\"}\"\ntext ::= [^\"\\\\\\x7F\\x00-\\x1F]+\naction ::= word \"(\" word (\", \" word)* \")\"\nword ::= [a-z] [a-z0-9_]*",
+          "samples": [
+            {
+              "arm": "branch.v6",
+              "seed": 2036993798,
+              "raw": "{\"step\": 8, \"event\": \"The horse is led into the city\", \"action\": \"enter(trojans, horse)\", \"state\": \"The horse is taken into the city, a symbol of the Trojans' victory over the Greeks.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "a694d1119bd0e9ff",
+              "branch": {
+                "label": "The horse is led into the city",
+                "expr": "enter(trojans, horse)",
+                "state": "The horse is taken into the city, a symbol of the Trojans' victory over the Greeks."
+              },
+              "expr": "enter(trojans, horse)",
+              "display": "enter(trojans, horse) — The horse is taken into the city, a symbol of the Trojans' victory over the Greeks."
+            },
+            {
+              "arm": "branch.v6",
+              "seed": 2053771417,
+              "raw": "{\"step\": 8, \"event\": \"The horse is brought into the city\", \"action\": \"enter(horse, city)\", \"state\": \"The horse is brought into the city of Troy and put in the square by the city gate.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "f1a3832e7871a6c4",
+              "branch": {
+                "label": "The horse is brought into the city",
+                "expr": "enter(horse, city)",
+                "state": "The horse is brought into the city of Troy and put in the square by the city gate."
+              },
+              "expr": "enter(horse, city)",
+              "display": "enter(horse, city) — The horse is brought into the city of Troy and put in the square by the city gate."
+            },
+            {
+              "arm": "branch.v6",
+              "seed": 2003438560,
+              "raw": "{\"step\": 8, \"event\": \"Sinon is executed\", \"action\": \"execute(trojans, sinon)\", \"state\": \"Sinon is killed for his betrayal of the Trojans.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "2dd67dc814d2c4f2",
+              "branch": {
+                "label": "Sinon is executed",
+                "expr": "execute(trojans, sinon)",
+                "state": "Sinon is killed for his betrayal of the Trojans."
+              },
+              "expr": "execute(trojans, sinon)",
+              "display": "execute(trojans, sinon) — Sinon is killed for his betrayal of the Trojans."
+            },
+            {
+              "arm": "branch.v6",
+              "seed": 2120881893,
+              "raw": "{\"step\": 8, \"event\": \"The Trojans bring the horse into the city\", \"action\": \"entrust(trojans, horse)\", \"state\": \"The Trojans bring the horse into the city, pulling it up to the temple of Athena.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "9005b921ed1df307",
+              "branch": {
+                "label": "The Trojans bring the horse into the city",
+                "expr": "entrust(trojans, horse)",
+                "state": "The Trojans bring the horse into the city, pulling it up to the temple of Athena."
+              },
+              "expr": "entrust(trojans, horse)",
+              "display": "entrust(trojans, horse) — The Trojans bring the horse into the city, pulling it up to the temple of Athena."
+            },
+            {
+              "arm": "branch.v6",
+              "seed": 2087326655,
+              "raw": "{\"step\": 8, \"event\": \"The Trojans bring it inside\", \"action\": \"bring(trojans, horse)\", \"state\": \"The Trojans drag the horse inside the city, while Sinon watches and mutters to himself.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "de5808678b915469",
+              "branch": {
+                "label": "The Trojans bring it inside",
+                "expr": "bring(trojans, horse)",
+                "state": "The Trojans drag the horse inside the city, while Sinon watches and mutters to himself."
+              },
+              "expr": "bring(trojans, horse)",
+              "display": "bring(trojans, horse) — The Trojans drag the horse inside the city, while Sinon watches and mutters to himself."
+            },
+            {
+              "arm": "branch.v6",
+              "seed": 2171214750,
+              "raw": "{\"step\": 8, \"event\": \"The Trojans ignore Cassandra's warnings\", \"action\": \"ignore(cassandra, trojans)\", \"state\": \"The Trojans ignore Cassandra, and lead the horse into the city.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "22965a37c13031d9",
+              "branch": {
+                "label": "The Trojans ignore Cassandra's warnings",
+                "expr": "ignore(cassandra, trojans)",
+                "state": "The Trojans ignore Cassandra, and lead the horse into the city."
+              },
+              "expr": "ignore(cassandra, trojans)",
+              "display": "ignore(cassandra, trojans) — The Trojans ignore Cassandra, and lead the horse into the city."
+            },
+            {
+              "arm": "branch.v6",
+              "seed": 2187992369,
+              "raw": "{\"step\": 8, \"event\": \"The Trojans bring the horse inside\", \"action\": \"bring(trojans, horse, into, city)\", \"state\": \"The horse is dragged into the city of Troy.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "3c4424f7f04d4e05",
+              "branch": {
+                "label": "The Trojans bring the horse inside",
+                "expr": "bring(trojans, horse, into, city)",
+                "state": "The horse is dragged into the city of Troy."
+              },
+              "expr": "bring(trojans, horse, into, city)",
+              "display": "bring(trojans, horse, into, city) — The horse is dragged into the city of Troy."
+            },
+            {
+              "arm": "branch.v6",
+              "seed": 1576548875,
+              "raw": "{\"step\": 8, \"event\": \"The Trojans bring in the horse\", \"action\": \"bring(in, trojans, horse)\", \"state\": \"A wooden statue, with armed Greeks hidden inside it, is pulled into the city of Troy.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "9794ab2568ca107b",
+              "branch": {
+                "label": "The Trojans bring in the horse",
+                "expr": "bring(in, trojans, horse)",
+                "state": "A wooden statue, with armed Greeks hidden inside it, is pulled into the city of Troy."
+              },
+              "expr": "bring(in, trojans, horse)",
+              "display": "bring(in, trojans, horse) — A wooden statue, with armed Greeks hidden inside it, is pulled into the city of Troy."
+            },
+            {
+              "arm": "branch.v6",
+              "seed": 1559771256,
+              "raw": "{\"step\": 8, \"event\": \"The Trojans bring the horse to the city\", \"action\": \"enter(trojans, horse, city)\", \"state\": \"The Trojans drag the horse up the hill and into the city.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "3efffa35bceccfd7",
+              "branch": {
+                "label": "The Trojans bring the horse to the city",
+                "expr": "enter(trojans, horse, city)",
+                "state": "The Trojans drag the horse up the hill and into the city."
+              },
+              "expr": "enter(trojans, horse, city)",
+              "display": "enter(trojans, horse, city) — The Trojans drag the horse up the hill and into the city."
+            },
+            {
+              "arm": "branch.v6",
+              "seed": 1610104113,
+              "raw": "{\"step\": 8, \"event\": \"The Trojans ignore her\", \"action\": \"ignore(trojans, cassandra)\", \"state\": \"The Trojans laugh at Cassandra, and they drag her into the city.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "2496b937848dfb99",
+              "branch": {
+                "label": "The Trojans ignore her",
+                "expr": "ignore(trojans, cassandra)",
+                "state": "The Trojans laugh at Cassandra, and they drag her into the city."
+              },
+              "expr": "ignore(trojans, cassandra)",
+              "display": "ignore(trojans, cassandra) — The Trojans laugh at Cassandra, and they drag her into the city.",
+              "told": {
+                "kind": "next",
+                "id": "th_ignore"
+              }
+            }
+          ],
+          "attempts": 13,
+          "refused": 0,
+          "truncated": 0,
+          "duplicates": 3,
+          "usable": 13,
+          "toldNext": 1,
+          "toldLater": 0,
+          "saturated": false,
+          "allAttempts": [
+            {
+              "arm": "branch.v6",
+              "seed": 2036993798,
+              "raw": "{\"step\": 8, \"event\": \"The horse is led into the city\", \"action\": \"enter(trojans, horse)\", \"state\": \"The horse is taken into the city, a symbol of the Trojans' victory over the Greeks.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "a694d1119bd0e9ff",
+              "branch": {
+                "label": "The horse is led into the city",
+                "expr": "enter(trojans, horse)",
+                "state": "The horse is taken into the city, a symbol of the Trojans' victory over the Greeks."
+              },
+              "expr": "enter(trojans, horse)",
+              "display": "enter(trojans, horse) — The horse is taken into the city, a symbol of the Trojans' victory over the Greeks."
+            },
+            {
+              "arm": "branch.v6",
+              "seed": 2053771417,
+              "raw": "{\"step\": 8, \"event\": \"The horse is brought into the city\", \"action\": \"enter(horse, city)\", \"state\": \"The horse is brought into the city of Troy and put in the square by the city gate.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "f1a3832e7871a6c4",
+              "branch": {
+                "label": "The horse is brought into the city",
+                "expr": "enter(horse, city)",
+                "state": "The horse is brought into the city of Troy and put in the square by the city gate."
+              },
+              "expr": "enter(horse, city)",
+              "display": "enter(horse, city) — The horse is brought into the city of Troy and put in the square by the city gate."
+            },
+            {
+              "arm": "branch.v6",
+              "seed": 2003438560,
+              "raw": "{\"step\": 8, \"event\": \"Sinon is executed\", \"action\": \"execute(trojans, sinon)\", \"state\": \"Sinon is killed for his betrayal of the Trojans.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "2dd67dc814d2c4f2",
+              "branch": {
+                "label": "Sinon is executed",
+                "expr": "execute(trojans, sinon)",
+                "state": "Sinon is killed for his betrayal of the Trojans."
+              },
+              "expr": "execute(trojans, sinon)",
+              "display": "execute(trojans, sinon) — Sinon is killed for his betrayal of the Trojans."
+            },
+            {
+              "arm": "branch.v6",
+              "seed": 2020216179,
+              "raw": "{\"step\": 8, \"event\": \"The horse is brought to the city\", \"action\": \"enter(trojans, horse)\", \"state\": \"A team of men drag the horse into the city gates, which have been left open.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "bb05132bfcacd771",
+              "branch": {
+                "label": "The horse is brought to the city",
+                "expr": "enter(trojans, horse)",
+                "state": "A team of men drag the horse into the city gates, which have been left open."
+              },
+              "expr": "enter(trojans, horse)",
+              "display": "enter(trojans, horse) — A team of men drag the horse into the city gates, which have been left open.",
+              "duplicateOf": "enter(trojans, horse)"
+            },
+            {
+              "arm": "branch.v6",
+              "seed": 2104104274,
+              "raw": "{\"step\": 8, \"event\": \"The Trojans bring the horse to the city\", \"action\": \"enter(trojans, horse)\", \"state\": \"The Trojans drag the horse inside the city walls. A celebration starts as they carry it to the temple of Athena.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "780d0a6e0739dd0c",
+              "branch": {
+                "label": "The Trojans bring the horse to the city",
+                "expr": "enter(trojans, horse)",
+                "state": "The Trojans drag the horse inside the city walls. A celebration starts as they carry it to the temple of Athena."
+              },
+              "expr": "enter(trojans, horse)",
+              "display": "enter(trojans, horse) — The Trojans drag the horse inside the city walls. A celebration starts as they carry it to the temple of Athena.",
+              "duplicateOf": "enter(trojans, horse)"
+            },
+            {
+              "arm": "branch.v6",
+              "seed": 2120881893,
+              "raw": "{\"step\": 8, \"event\": \"The Trojans bring the horse into the city\", \"action\": \"entrust(trojans, horse)\", \"state\": \"The Trojans bring the horse into the city, pulling it up to the temple of Athena.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "9005b921ed1df307",
+              "branch": {
+                "label": "The Trojans bring the horse into the city",
+                "expr": "entrust(trojans, horse)",
+                "state": "The Trojans bring the horse into the city, pulling it up to the temple of Athena."
+              },
+              "expr": "entrust(trojans, horse)",
+              "display": "entrust(trojans, horse) — The Trojans bring the horse into the city, pulling it up to the temple of Athena."
+            },
+            {
+              "arm": "branch.v6",
+              "seed": 2070549036,
+              "raw": "{\"step\": 8, \"event\": \"The Trojans bring the horse inside\", \"action\": \"enter(trojans, horse)\", \"state\": \"The horse is led into the city with a parade. From the windows the Greeks can watch it being brought into the city.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "d14fe9eb6ded636d",
+              "branch": {
+                "label": "The Trojans bring the horse inside",
+                "expr": "enter(trojans, horse)",
+                "state": "The horse is led into the city with a parade. From the windows the Greeks can watch it being brought into the city."
+              },
+              "expr": "enter(trojans, horse)",
+              "display": "enter(trojans, horse) — The horse is led into the city with a parade. From the windows the Greeks can watch it being brought into the city.",
+              "duplicateOf": "enter(trojans, horse)"
+            },
+            {
+              "arm": "branch.v6",
+              "seed": 2087326655,
+              "raw": "{\"step\": 8, \"event\": \"The Trojans bring it inside\", \"action\": \"bring(trojans, horse)\", \"state\": \"The Trojans drag the horse inside the city, while Sinon watches and mutters to himself.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "de5808678b915469",
+              "branch": {
+                "label": "The Trojans bring it inside",
+                "expr": "bring(trojans, horse)",
+                "state": "The Trojans drag the horse inside the city, while Sinon watches and mutters to himself."
+              },
+              "expr": "bring(trojans, horse)",
+              "display": "bring(trojans, horse) — The Trojans drag the horse inside the city, while Sinon watches and mutters to himself."
+            },
+            {
+              "arm": "branch.v6",
+              "seed": 2171214750,
+              "raw": "{\"step\": 8, \"event\": \"The Trojans ignore Cassandra's warnings\", \"action\": \"ignore(cassandra, trojans)\", \"state\": \"The Trojans ignore Cassandra, and lead the horse into the city.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "22965a37c13031d9",
+              "branch": {
+                "label": "The Trojans ignore Cassandra's warnings",
+                "expr": "ignore(cassandra, trojans)",
+                "state": "The Trojans ignore Cassandra, and lead the horse into the city."
+              },
+              "expr": "ignore(cassandra, trojans)",
+              "display": "ignore(cassandra, trojans) — The Trojans ignore Cassandra, and lead the horse into the city."
+            },
+            {
+              "arm": "branch.v6",
+              "seed": 2187992369,
+              "raw": "{\"step\": 8, \"event\": \"The Trojans bring the horse inside\", \"action\": \"bring(trojans, horse, into, city)\", \"state\": \"The horse is dragged into the city of Troy.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "3c4424f7f04d4e05",
+              "branch": {
+                "label": "The Trojans bring the horse inside",
+                "expr": "bring(trojans, horse, into, city)",
+                "state": "The horse is dragged into the city of Troy."
+              },
+              "expr": "bring(trojans, horse, into, city)",
+              "display": "bring(trojans, horse, into, city) — The horse is dragged into the city of Troy."
+            },
+            {
+              "arm": "branch.v6",
+              "seed": 1576548875,
+              "raw": "{\"step\": 8, \"event\": \"The Trojans bring in the horse\", \"action\": \"bring(in, trojans, horse)\", \"state\": \"A wooden statue, with armed Greeks hidden inside it, is pulled into the city of Troy.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "9794ab2568ca107b",
+              "branch": {
+                "label": "The Trojans bring in the horse",
+                "expr": "bring(in, trojans, horse)",
+                "state": "A wooden statue, with armed Greeks hidden inside it, is pulled into the city of Troy."
+              },
+              "expr": "bring(in, trojans, horse)",
+              "display": "bring(in, trojans, horse) — A wooden statue, with armed Greeks hidden inside it, is pulled into the city of Troy."
+            },
+            {
+              "arm": "branch.v6",
+              "seed": 1559771256,
+              "raw": "{\"step\": 8, \"event\": \"The Trojans bring the horse to the city\", \"action\": \"enter(trojans, horse, city)\", \"state\": \"The Trojans drag the horse up the hill and into the city.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "3efffa35bceccfd7",
+              "branch": {
+                "label": "The Trojans bring the horse to the city",
+                "expr": "enter(trojans, horse, city)",
+                "state": "The Trojans drag the horse up the hill and into the city."
+              },
+              "expr": "enter(trojans, horse, city)",
+              "display": "enter(trojans, horse, city) — The Trojans drag the horse up the hill and into the city."
+            },
+            {
+              "arm": "branch.v6",
+              "seed": 1610104113,
+              "raw": "{\"step\": 8, \"event\": \"The Trojans ignore her\", \"action\": \"ignore(trojans, cassandra)\", \"state\": \"The Trojans laugh at Cassandra, and they drag her into the city.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "2496b937848dfb99",
+              "branch": {
+                "label": "The Trojans ignore her",
+                "expr": "ignore(trojans, cassandra)",
+                "state": "The Trojans laugh at Cassandra, and they drag her into the city."
+              },
+              "expr": "ignore(trojans, cassandra)",
+              "display": "ignore(trojans, cassandra) — The Trojans laugh at Cassandra, and they drag her into the city.",
+              "told": {
+                "kind": "next",
+                "id": "th_ignore"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ]
+}

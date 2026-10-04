@@ -108,7 +108,8 @@
             <option value="baseline">baseline (no model)</option>
           </select></label>
           <label>Prompt<select id="growPrompt">
-            <option value="branch.v4">branch.v4 (JSON lines)</option>
+            <option value="branch.v6">branch.v6 (JSON lines)</option>
+            <option value="branch.v4">branch.v4 (JSON lines + example story)</option>
             <option value="branch.v5">branch.v5 (prose)</option>
           </select></label>
         </div>
@@ -121,7 +122,7 @@
         <button id="autoGrowBtn" type="button" class="primary">Grow</button>
         <div id="growReport" class="report"></div>
 
-        <h3 class="lab-head">Continuations: branch.v4 vs branch.v5, blind</h3>
+        <h3 class="lab-head">Continuations: every prompt version, blind</h3>
         <div class="field-row">
           <label>K<input id="probeK" type="number" value="5" min="1" max="20"></label>
           <label>Seed<input id="probeSeed" type="number" value="7" min="1"></label>

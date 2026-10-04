@@ -1,0 +1,524 @@
+{
+  "manifest": {
+    "probe": "continue_probe v2 (prompt-version A/B)",
+    "story": "trojanHorse",
+    "k": 10,
+    "runSeed": 7,
+    "arms": [
+      "branch.v4"
+    ],
+    "fast": false,
+    "sampling": {
+      "temperature": 1,
+      "top_k": 0,
+      "seed": 7,
+      "samplers": [
+        "top_k",
+        "min_p",
+        "temperature"
+      ],
+      "repeat_penalty": 1,
+      "dry_multiplier": 0,
+      "n_predict": 512,
+      "cache_prompt": false,
+      "min_p": 0.05
+    },
+    "model": {
+      "props": {
+        "default_generation_settings": {
+          "params": {
+            "seed": 4294967295,
+            "temperature": 0.800000011920929,
+            "dynatemp_range": 0,
+            "dynatemp_exponent": 1,
+            "top_k": 40,
+            "top_p": 0.949999988079071,
+            "min_p": 0.05000000074505806,
+            "top_n_sigma": -1,
+            "xtc_probability": 0,
+            "xtc_threshold": 0.10000000149011612,
+            "typical_p": 1,
+            "repeat_last_n": 64,
+            "repeat_penalty": 1,
+            "presence_penalty": 0,
+            "frequency_penalty": 0,
+            "dry_multiplier": 0,
+            "dry_base": 1.75,
+            "dry_allowed_length": 2,
+            "dry_penalty_last_n": -1,
+            "mirostat": 0,
+            "mirostat_tau": 5,
+            "mirostat_eta": 0.10000000149011612,
+            "adaptive_target": -1,
+            "adaptive_decay": 0.8999999761581421,
+            "max_tokens": -1,
+            "n_predict": -1,
+            "n_keep": 0,
+            "n_discard": 0,
+            "ignore_eos": false,
+            "stream": false,
+            "n_probs": 0,
+            "min_keep": 0,
+            "chat_format": "Content-only",
+            "reasoning_format": "none",
+            "reasoning_in_content": false,
+            "generation_prompt": "",
+            "samplers": [
+              "penalties",
+              "dry",
+              "top_n_sigma",
+              "top_k",
+              "typ_p",
+              "top_p",
+              "min_p",
+              "xtc",
+              "temperature"
+            ],
+            "speculative.types": "none",
+            "timings_per_token": false,
+            "post_sampling_probs": false,
+            "backend_sampling": false,
+            "lora": []
+          },
+          "n_ctx": 4096
+        },
+        "total_slots": 1,
+        "model_alias": "/media/oneiroid/sub/workspace/llmfinetune/models/qwen3-4b-base-Q5_K_M.gguf",
+        "model_ftype": "Q5_K - Medium",
+        "model_path": "/media/oneiroid/sub/workspace/llmfinetune/models/qwen3-4b-base-Q5_K_M.gguf",
+        "modalities": {
+          "vision": false,
+          "video": false,
+          "audio": false
+        },
+        "media_marker": "<__media_R6xD8p6s4jqB1ZVHaI6pVwkdqcXsX0R6__>",
+        "endpoint_slots": true,
+        "endpoint_props": false,
+        "endpoint_metrics": false,
+        "ui": true,
+        "ui_settings": {},
+        "chat_template": "{%- if tools %}\n    {{- '<|im_start|>system\\n' }}\n    {%- if messages[0].role == 'system' %}\n        {{- messages[0].content + '\\n\\n' }}\n    {%- endif %}\n    {{- \"# Tools\\n\\nYou may call one or more functions to assist with the user query.\\n\\nYou are provided with function signatures within <tools></tools> XML tags:\\n<tools>\" }}\n    {%- for tool in tools %}\n        {{- \"\\n\" }}\n        {{- tool | tojson }}\n    {%- endfor %}\n    {{- \"\\n</tools>\\n\\nFor each function call, return a json object with function name and arguments within <tool_call></tool_call> XML tags:\\n<tool_call>\\n{\\\"name\\\": <function-name>, \\\"arguments\\\": <args-json-object>}\\n</tool_call><|im_end|>\\n\" }}\n{%- else %}\n    {%- if messages[0].role == 'system' %}\n        {{- '<|im_start|>system\\n' + messages[0].content + '<|im_end|>\\n' }}\n    {%- endif %}\n{%- endif %}\n{%- set ns = namespace(multi_step_tool=true, last_query_index=messages|length - 1) %}\n{%- for message in messages[::-1] %}\n    {%- set index = (messages|length - 1) - loop.index0 %}\n    {%- if ns.multi_step_tool and message.role == \"user\" and not(message.content.startswith('<tool_response>') and message.content.endswith('</tool_response>')) %}\n        {%- set ns.multi_step_tool = false %}\n        {%- set ns.last_query_index = index %}\n    {%- endif %}\n{%- endfor %}\n{%- for message in messages %}\n    {%- if (message.role == \"user\") or (message.role == \"system\" and not loop.first) %}\n        {{- '<|im_start|>' + message.role + '\\n' + message.content + '<|im_end|>' + '\\n' }}\n    {%- elif message.role == \"assistant\" %}\n        {%- set content = message.content %}\n        {%- set reasoning_content = '' %}\n        {%- if message.reasoning_content is defined and message.reasoning_content is not none %}\n            {%- set reasoning_content = message.reasoning_content %}\n        {%- else %}\n            {%- if '</think>' in message.content %}\n                {%- set content = message.content.split('</think>')[-1].lstrip('\\n') %}\n                {%- set reasoning_content = message.content.split('</think>')[0].rstrip('\\n').split('<think>')[-1].lstrip('\\n') %}\n            {%- endif %}\n        {%- endif %}\n        {%- if loop.index0 > ns.last_query_index %}\n            {%- if loop.last or (not loop.last and reasoning_content) %}\n                {{- '<|im_start|>' + message.role + '\\n<think>\\n' + reasoning_content.strip('\\n') + '\\n</think>\\n\\n' + content.lstrip('\\n') }}\n            {%- else %}\n                {{- '<|im_start|>' + message.role + '\\n' + content }}\n            {%- endif %}\n        {%- else %}\n            {{- '<|im_start|>' + message.role + '\\n' + content }}\n        {%- endif %}\n        {%- if message.tool_calls %}\n            {%- for tool_call in message.tool_calls %}\n                {%- if (loop.first and content) or (not loop.first) %}\n                    {{- '\\n' }}\n                {%- endif %}\n                {%- if tool_call.function %}\n                    {%- set tool_call = tool_call.function %}\n                {%- endif %}\n                {{- '<tool_call>\\n{\"name\": \"' }}\n                {{- tool_call.name }}\n                {{- '\", \"arguments\": ' }}\n                {%- if tool_call.arguments is string %}\n                    {{- tool_call.arguments }}\n                {%- else %}\n                    {{- tool_call.arguments | tojson }}\n                {%- endif %}\n                {{- '}\\n</tool_call>' }}\n            {%- endfor %}\n        {%- endif %}\n        {{- '<|im_end|>\\n' }}\n    {%- elif message.role == \"tool\" %}\n        {%- if loop.first or (messages[loop.index0 - 1].role != \"tool\") %}\n            {{- '<|im_start|>user' }}\n        {%- endif %}\n        {{- '\\n<tool_response>\\n' }}\n        {{- message.content }}\n        {{- '\\n</tool_response>' }}\n        {%- if loop.last or (messages[loop.index0 + 1].role != \"tool\") %}\n            {{- '<|im_end|>\\n' }}\n        {%- endif %}\n    {%- endif %}\n{%- endfor %}\n{%- if add_generation_prompt %}\n    {{- '<|im_start|>assistant\\n' }}\n    {%- if enable_thinking is defined and enable_thinking is false %}\n        {{- '<think>\\n\\n</think>\\n\\n' }}\n    {%- endif %}\n{%- endif %}",
+        "chat_template_caps": {
+          "supports_object_arguments": true,
+          "supports_parallel_tool_calls": true,
+          "supports_preserve_reasoning": false,
+          "supports_string_content": true,
+          "supports_system_role": true,
+          "supports_tool_calls": true,
+          "supports_tools": true,
+          "supports_typed_content": false
+        },
+        "bos_token": "<|endoftext|>",
+        "eos_token": "<|im_end|>",
+        "build_info": "b1-f5b9bd3",
+        "is_sleeping": false,
+        "cors_proxy_enabled": false
+      },
+      "sha256": "699936b83664f71a4c1d129a1e10b02c1909e8edfdd32962cea75259f4f92093"
+    },
+    "templates": {
+      "branch.v4": {
+        "sha256": "82e216fac7655f30688bb3b5cd1039398ae67739487a2090a1f681df6d24969b"
+      }
+    },
+    "generatedAt": "2026-10-04T10:01:14.435Z",
+    "gradedAt": "2026-10-04T10:02:00.970Z",
+    "rater": "claude",
+    "gradeSchema": 2,
+    "questions": [
+      {
+        "key": "possible",
+        "ask": false,
+        "prompt": "could this happen next in this story?"
+      },
+      {
+        "key": "consistent",
+        "ask": true,
+        "prompt": "is it consistent with what the history already established?"
+      },
+      {
+        "key": "advances",
+        "ask": true,
+        "prompt": "does the WORLD change - is anything true after it that was not true before?"
+      },
+      {
+        "key": "toldStory",
+        "ask": false,
+        "prompt": "is this the story's VERY NEXT event (not something it does later)?"
+      }
+    ]
+  },
+  "grades": [
+    {
+      "nodeId": "th_gift",
+      "position": 1,
+      "arm": "branch.v4",
+      "index": 2,
+      "display": "explain(sinon, horse, greeks, asleep) — Sinon is pleading with the Trojans about the horse. He says that if it is attacked it will be a bad omen for Troy.",
+      "expr": "explain(sinon, horse, greeks, asleep)",
+      "seed": 845065963,
+      "labelKey": "branch.v4:th_gift#2",
+      "consistent": true,
+      "advances": true
+    },
+    {
+      "nodeId": "th_gift",
+      "position": 2,
+      "arm": "branch.v4",
+      "index": 1,
+      "display": "bring(trojans, horse) — The horse is carried home through Troy. Sinon is still with them, arguing for it.",
+      "expr": "bring(trojans, horse)",
+      "seed": 861843582,
+      "labelKey": "branch.v4:th_gift#1",
+      "consistent": false,
+      "advances": true
+    },
+    {
+      "nodeId": "th_gift",
+      "position": 3,
+      "arm": "branch.v4",
+      "index": 0,
+      "display": "accept(horse, troy) — The horse is pulled into the city. All the Trojans think it is just an offering for the gods.",
+      "expr": "accept(horse, troy)",
+      "seed": 878621201,
+      "labelKey": "branch.v4:th_gift#0",
+      "consistent": true,
+      "advances": true
+    },
+    {
+      "nodeId": "th_gift",
+      "position": 4,
+      "arm": "branch.v4",
+      "index": 7,
+      "display": "command(priam, horse) — The Trojans carry the horse into the city gates. Priam, the King, is there.",
+      "expr": "command(priam, horse)",
+      "seed": 895398820,
+      "labelKey": "branch.v4:th_gift#7",
+      "consistent": true,
+      "advances": true
+    },
+    {
+      "nodeId": "th_gift",
+      "position": 5,
+      "arm": "branch.v4",
+      "index": 4,
+      "display": "persuade(sinoxen, trojans, bring) — Sinon is one of the Greeks hiding in the horse. He talks them into bringing the horse into the city.",
+      "expr": "persuade(sinoxen, trojans, bring)",
+      "seed": 945731677,
+      "labelKey": "branch.v4:th_gift#4",
+      "consistent": false,
+      "advances": true
+    },
+    {
+      "nodeId": "th_gift",
+      "position": 6,
+      "arm": "branch.v4",
+      "index": 9,
+      "display": "pretend(sinon, greek) — Sinon speaks for the Greeks to the Trojans. He says the Greeks have gone home for a celebration.",
+      "expr": "pretend(sinon, greek)",
+      "seed": 727622630,
+      "labelKey": "branch.v4:th_gift#9",
+      "consistent": true,
+      "advances": true
+    },
+    {
+      "nodeId": "th_gift",
+      "position": 7,
+      "arm": "branch.v4",
+      "index": 3,
+      "display": "bring(trojans, horse, city) — The horse is pushed into the city, up a flight of stairs. The Trojans think it is a gift.",
+      "expr": "bring(trojans, horse, city)",
+      "seed": 828288344,
+      "labelKey": "branch.v4:th_gift#3",
+      "consistent": true,
+      "advances": true
+    },
+    {
+      "nodeId": "th_gift",
+      "position": 8,
+      "arm": "branch.v4",
+      "index": 5,
+      "display": "speak(sinox, trojans) — The Greeks' spy Sinon tells the Trojans a story about how the horse was meant to help Troy, not harm it.",
+      "expr": "speak(sinox, trojans)",
+      "seed": 928954058,
+      "labelKey": "branch.v4:th_gift#5",
+      "consistent": true,
+      "advances": true
+    },
+    {
+      "nodeId": "th_gift",
+      "position": 9,
+      "arm": "branch.v4",
+      "index": 8,
+      "display": "steal(trojans, horse) — The horse is taken into the city and into a storeroom in the palace.",
+      "expr": "steal(trojans, horse)",
+      "seed": 744400249,
+      "labelKey": "branch.v4:th_gift#8",
+      "consistent": true,
+      "advances": true
+    },
+    {
+      "nodeId": "th_gift",
+      "position": 10,
+      "arm": "branch.v4",
+      "index": 6,
+      "display": "send(sinon, horse) — The Trojans send Sinon, one of their enemies, to speak to the Greeks inside.",
+      "expr": "send(sinon, horse)",
+      "seed": 912176439,
+      "labelKey": "branch.v4:th_gift#6",
+      "consistent": false,
+      "advances": true
+    },
+    {
+      "nodeId": "th_lie",
+      "position": 1,
+      "arm": "branch.v4",
+      "index": 9,
+      "display": "lead(trojans, horse) — The Trojans take the horse into the city, and parade it through the streets.",
+      "expr": "lead(trojans, horse)",
+      "seed": 97500499,
+      "labelKey": "branch.v4:th_lie#9",
+      "consistent": true,
+      "advances": true
+    },
+    {
+      "nodeId": "th_lie",
+      "position": 2,
+      "arm": "branch.v4",
+      "index": 1,
+      "display": "entrance(trojans, horse) — The horse stands in the city gates. The Trojans have brought it inside the city.",
+      "expr": "entrance(trojans, horse)",
+      "seed": 1134932525,
+      "labelKey": "branch.v4:th_lie#1",
+      "consistent": true,
+      "advances": true
+    },
+    {
+      "nodeId": "th_lie",
+      "position": 3,
+      "arm": "branch.v4",
+      "index": 8,
+      "display": "drag(horse, troy) — The Trojans carry the horse into the city, leaving Sinon to guard it alone.",
+      "expr": "drag(horse, troy)",
+      "seed": 80722880,
+      "labelKey": "branch.v4:th_lie#8",
+      "consistent": true,
+      "advances": true
+    },
+    {
+      "nodeId": "th_lie",
+      "position": 4,
+      "arm": "branch.v4",
+      "index": 2,
+      "display": "carry(trojans, horse) — The horse is brought into the city, and Sinon is led away to the city walls.",
+      "expr": "carry(trojans, horse)",
+      "seed": 1034266811,
+      "labelKey": "branch.v4:th_lie#2",
+      "consistent": true,
+      "advances": true
+    },
+    {
+      "nodeId": "th_lie",
+      "position": 5,
+      "arm": "branch.v4",
+      "index": 6,
+      "display": "move(trojans, horse, city) — The Trojans drag the horse into the city, into the middle of the marketplace.",
+      "expr": "move(trojans, horse, city)",
+      "seed": 147833356,
+      "labelKey": "branch.v4:th_lie#6",
+      "consistent": true,
+      "advances": true
+    },
+    {
+      "nodeId": "th_lie",
+      "position": 6,
+      "arm": "branch.v4",
+      "index": 4,
+      "display": "drag(trojans, horse) — The wooden horse is pulled into Troy, and the Trojans celebrate with a feast.",
+      "expr": "drag(trojans, horse)",
+      "seed": 967156335,
+      "labelKey": "branch.v4:th_lie#4",
+      "consistent": true,
+      "advances": true
+    },
+    {
+      "nodeId": "th_lie",
+      "position": 7,
+      "arm": "branch.v4",
+      "index": 5,
+      "display": "carry(trojans, horse, city) — The horse is dragged up the hill to the gates and inside the walls. It stands in front of the temple of Athena.",
+      "expr": "carry(trojans, horse, city)",
+      "seed": 950378716,
+      "labelKey": "branch.v4:th_lie#5",
+      "consistent": true,
+      "advances": true
+    },
+    {
+      "nodeId": "th_lie",
+      "position": 8,
+      "arm": "branch.v4",
+      "index": 3,
+      "display": "accept(trojans, horse) — The Trojans drag the horse inside the city, its wooden exterior still standing tall.",
+      "expr": "accept(trojans, horse)",
+      "seed": 1017489192,
+      "labelKey": "branch.v4:th_lie#3",
+      "consistent": true,
+      "advances": true
+    },
+    {
+      "nodeId": "th_lie",
+      "position": 9,
+      "arm": "branch.v4",
+      "index": 0,
+      "display": "enter(trojans, horse) — A group of Trojans carries the horse inside the city walls, and it is placed at the city gate.",
+      "expr": "enter(trojans, horse)",
+      "seed": 1101377287,
+      "labelKey": "branch.v4:th_lie#0",
+      "consistent": true,
+      "advances": true
+    },
+    {
+      "nodeId": "th_lie",
+      "position": 10,
+      "arm": "branch.v4",
+      "index": 7,
+      "display": "enter(horse, troy) — The horse is brought into the gates of Troy, where it stands in the center of the town.",
+      "expr": "enter(horse, troy)",
+      "seed": 198166213,
+      "labelKey": "branch.v4:th_lie#7",
+      "consistent": true,
+      "advances": true
+    },
+    {
+      "nodeId": "th_seer",
+      "position": 1,
+      "arm": "branch.v4",
+      "index": 9,
+      "display": "move(trojans, horse) — The horse is pulled into the city. The Trojans watch as it is lowered into a large pile of wood.",
+      "expr": "move(trojans, horse)",
+      "seed": 1416930114,
+      "labelKey": "branch.v4:th_seer#9",
+      "consistent": true,
+      "advances": true
+    },
+    {
+      "nodeId": "th_seer",
+      "position": 2,
+      "arm": "branch.v4",
+      "index": 0,
+      "display": "bring(trojans, horse) — The Trojans take the horse into the city, under the watchful eye of Cassandra.",
+      "expr": "bring(trojans, horse)",
+      "seed": 1127505712,
+      "labelKey": "branch.v4:th_seer#0",
+      "consistent": true,
+      "advances": true
+    },
+    {
+      "nodeId": "th_seer",
+      "position": 3,
+      "arm": "branch.v4",
+      "index": 7,
+      "display": "bringin(horse, city) — The horse is brought into the city gates. Sinon is led to stand at the entrance to the wooden statue.",
+      "expr": "bringin(horse, city)",
+      "seed": 1349819638,
+      "labelKey": "branch.v4:th_seer#7",
+      "consistent": true,
+      "advances": true
+    },
+    {
+      "nodeId": "th_seer",
+      "position": 4,
+      "arm": "branch.v4",
+      "index": 5,
+      "display": "drag(trojans, horse) — The horse is pushed into the city, under guard, by a mob of Trojans.",
+      "expr": "drag(trojans, horse)",
+      "seed": 1261726664,
+      "labelKey": "branch.v4:th_seer#5",
+      "consistent": true,
+      "advances": true
+    },
+    {
+      "nodeId": "th_seer",
+      "position": 5,
+      "arm": "branch.v4",
+      "index": 3,
+      "display": "accept(sinon, trojans) — The horse is brought into Troy, with all the soldiers who had been hiding in it.",
+      "expr": "accept(sinon, trojans)",
+      "seed": 1194616188,
+      "labelKey": "branch.v4:th_seer#3",
+      "consistent": true,
+      "advances": true
+    },
+    {
+      "nodeId": "th_seer",
+      "position": 6,
+      "arm": "branch.v4",
+      "index": 1,
+      "display": "carry(trojans, horse) — The horse has been brought into the city. Inside are hidden the Greeks.",
+      "expr": "carry(trojans, horse)",
+      "seed": 1144283331,
+      "labelKey": "branch.v4:th_seer#1",
+      "consistent": true,
+      "advances": true
+    },
+    {
+      "nodeId": "th_seer",
+      "position": 7,
+      "arm": "branch.v4",
+      "index": 6,
+      "display": "disregard(cassandra, trojans) — Cassandra's warning is ignored, and the horse is brought into Troy.",
+      "expr": "disregard(cassandra, trojans)",
+      "seed": 1278504283,
+      "labelKey": "branch.v4:th_seer#6",
+      "consistent": true,
+      "advances": true
+    },
+    {
+      "nodeId": "th_seer",
+      "position": 8,
+      "arm": "branch.v4",
+      "index": 8,
+      "display": "enter(horse, troy) — The horse is dragged into the city and set at the wooden gates.",
+      "expr": "enter(horse, troy)",
+      "seed": 1333042019,
+      "labelKey": "branch.v4:th_seer#8",
+      "consistent": true,
+      "advances": true
+    },
+    {
+      "nodeId": "th_seer",
+      "position": 9,
+      "arm": "branch.v4",
+      "index": 4,
+      "display": "ignore(trojans, cassandra) — Cassandra has been ignored. The horse is brought into the city, and the Greek fleet returns.",
+      "expr": "ignore(trojans, cassandra)",
+      "seed": 1244949045,
+      "labelKey": "branch.v4:th_seer#4",
+      "consistent": true,
+      "advances": true
+    },
+    {
+      "nodeId": "th_seer",
+      "position": 10,
+      "arm": "branch.v4",
+      "index": 2,
+      "display": "enter(trojans, horse) — The horse is led into the city. The armed Greeks inside it watch the Trojans celebrate.",
+      "expr": "enter(trojans, horse)",
+      "seed": 1161060950,
+      "labelKey": "branch.v4:th_seer#2",
+      "consistent": true,
+      "advances": true
+    }
+  ],
+  "summary": {
+    "branch.v4": {
+      "n": 30,
+      "possible": null,
+      "consistent": 27,
+      "advances": 30,
+      "usable": 27,
+      "repeats": null,
+      "possibleAndNew": null
+    }
+  }
+}

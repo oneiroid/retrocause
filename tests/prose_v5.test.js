@@ -21,7 +21,7 @@ test("v5 prompt: the story itself as prose — no example story, no JSON, no rea
   const source = graph.nodes.find((n) => n.id === "cw_cry2");
   const prompt = renderPrompt(TEMPLATE, promptContext(graph, source));
   assert.ok(prompt.startsWith("The Boy Who Cried Wolf\n\nThe characters are the boy, the villagers and the wolf.\n\n"));
-  assert.ok(prompt.endsWith("The boy cries wolf again. The boy is shouting about a wolf a second time. There is still no wolf.\n\n"));
+  assert.ok(prompt.endsWith("The boy cries wolf again. The boy is shouting about a wolf a second time. The alarm is a lie again.\n\n"));
   assert.ok(!/Tortoise|\{|"action"/.test(prompt));
   assert.ok(!prompt.includes(source.reading));
   assert.ok(!prompt.includes("They come a second time"), "the told future must not be visible");

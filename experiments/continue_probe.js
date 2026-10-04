@@ -49,7 +49,7 @@ const PROBE_SAMPLING = SAMPLED_SAMPLING;
 const MAX_REFILL_ROUNDS = 3;
 const DEFAULT_K = 10;
 const DEFAULT_RUN_SEED = 7;
-const DEFAULT_ARMS = ["branch.v4", "branch.v5"];
+const DEFAULT_ARMS = ["branch.v6", "branch.v5"];
 
 const templatePathOf = (name) => path.join(R, "prompts", `${name}.txt`);
 

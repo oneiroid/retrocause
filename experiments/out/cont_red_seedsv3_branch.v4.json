@@ -1,0 +1,1338 @@
+{
+  "manifest": {
+    "probe": "continue_probe v2 (prompt-version A/B)",
+    "story": "red",
+    "k": 10,
+    "runSeed": 7,
+    "arms": [
+      "branch.v4"
+    ],
+    "fast": false,
+    "sampling": {
+      "temperature": 1,
+      "top_k": 0,
+      "seed": 7,
+      "samplers": [
+        "top_k",
+        "min_p",
+        "temperature"
+      ],
+      "repeat_penalty": 1,
+      "dry_multiplier": 0,
+      "n_predict": 512,
+      "cache_prompt": false,
+      "min_p": 0.05
+    },
+    "model": {
+      "props": {
+        "default_generation_settings": {
+          "params": {
+            "seed": 4294967295,
+            "temperature": 0.800000011920929,
+            "dynatemp_range": 0,
+            "dynatemp_exponent": 1,
+            "top_k": 40,
+            "top_p": 0.949999988079071,
+            "min_p": 0.05000000074505806,
+            "top_n_sigma": -1,
+            "xtc_probability": 0,
+            "xtc_threshold": 0.10000000149011612,
+            "typical_p": 1,
+            "repeat_last_n": 64,
+            "repeat_penalty": 1,
+            "presence_penalty": 0,
+            "frequency_penalty": 0,
+            "dry_multiplier": 0,
+            "dry_base": 1.75,
+            "dry_allowed_length": 2,
+            "dry_penalty_last_n": -1,
+            "mirostat": 0,
+            "mirostat_tau": 5,
+            "mirostat_eta": 0.10000000149011612,
+            "adaptive_target": -1,
+            "adaptive_decay": 0.8999999761581421,
+            "max_tokens": -1,
+            "n_predict": -1,
+            "n_keep": 0,
+            "n_discard": 0,
+            "ignore_eos": false,
+            "stream": false,
+            "n_probs": 0,
+            "min_keep": 0,
+            "chat_format": "Content-only",
+            "reasoning_format": "none",
+            "reasoning_in_content": false,
+            "generation_prompt": "",
+            "samplers": [
+              "penalties",
+              "dry",
+              "top_n_sigma",
+              "top_k",
+              "typ_p",
+              "top_p",
+              "min_p",
+              "xtc",
+              "temperature"
+            ],
+            "speculative.types": "none",
+            "timings_per_token": false,
+            "post_sampling_probs": false,
+            "backend_sampling": false,
+            "lora": []
+          },
+          "n_ctx": 4096
+        },
+        "total_slots": 1,
+        "model_alias": "/media/oneiroid/sub/workspace/llmfinetune/models/qwen3-4b-base-Q5_K_M.gguf",
+        "model_ftype": "Q5_K - Medium",
+        "model_path": "/media/oneiroid/sub/workspace/llmfinetune/models/qwen3-4b-base-Q5_K_M.gguf",
+        "modalities": {
+          "vision": false,
+          "video": false,
+          "audio": false
+        },
+        "media_marker": "<__media_R6xD8p6s4jqB1ZVHaI6pVwkdqcXsX0R6__>",
+        "endpoint_slots": true,
+        "endpoint_props": false,
+        "endpoint_metrics": false,
+        "ui": true,
+        "ui_settings": {},
+        "chat_template": "{%- if tools %}\n    {{- '<|im_start|>system\\n' }}\n    {%- if messages[0].role == 'system' %}\n        {{- messages[0].content + '\\n\\n' }}\n    {%- endif %}\n    {{- \"# Tools\\n\\nYou may call one or more functions to assist with the user query.\\n\\nYou are provided with function signatures within <tools></tools> XML tags:\\n<tools>\" }}\n    {%- for tool in tools %}\n        {{- \"\\n\" }}\n        {{- tool | tojson }}\n    {%- endfor %}\n    {{- \"\\n</tools>\\n\\nFor each function call, return a json object with function name and arguments within <tool_call></tool_call> XML tags:\\n<tool_call>\\n{\\\"name\\\": <function-name>, \\\"arguments\\\": <args-json-object>}\\n</tool_call><|im_end|>\\n\" }}\n{%- else %}\n    {%- if messages[0].role == 'system' %}\n        {{- '<|im_start|>system\\n' + messages[0].content + '<|im_end|>\\n' }}\n    {%- endif %}\n{%- endif %}\n{%- set ns = namespace(multi_step_tool=true, last_query_index=messages|length - 1) %}\n{%- for message in messages[::-1] %}\n    {%- set index = (messages|length - 1) - loop.index0 %}\n    {%- if ns.multi_step_tool and message.role == \"user\" and not(message.content.startswith('<tool_response>') and message.content.endswith('</tool_response>')) %}\n        {%- set ns.multi_step_tool = false %}\n        {%- set ns.last_query_index = index %}\n    {%- endif %}\n{%- endfor %}\n{%- for message in messages %}\n    {%- if (message.role == \"user\") or (message.role == \"system\" and not loop.first) %}\n        {{- '<|im_start|>' + message.role + '\\n' + message.content + '<|im_end|>' + '\\n' }}\n    {%- elif message.role == \"assistant\" %}\n        {%- set content = message.content %}\n        {%- set reasoning_content = '' %}\n        {%- if message.reasoning_content is defined and message.reasoning_content is not none %}\n            {%- set reasoning_content = message.reasoning_content %}\n        {%- else %}\n            {%- if '</think>' in message.content %}\n                {%- set content = message.content.split('</think>')[-1].lstrip('\\n') %}\n                {%- set reasoning_content = message.content.split('</think>')[0].rstrip('\\n').split('<think>')[-1].lstrip('\\n') %}\n            {%- endif %}\n        {%- endif %}\n        {%- if loop.index0 > ns.last_query_index %}\n            {%- if loop.last or (not loop.last and reasoning_content) %}\n                {{- '<|im_start|>' + message.role + '\\n<think>\\n' + reasoning_content.strip('\\n') + '\\n</think>\\n\\n' + content.lstrip('\\n') }}\n            {%- else %}\n                {{- '<|im_start|>' + message.role + '\\n' + content }}\n            {%- endif %}\n        {%- else %}\n            {{- '<|im_start|>' + message.role + '\\n' + content }}\n        {%- endif %}\n        {%- if message.tool_calls %}\n            {%- for tool_call in message.tool_calls %}\n                {%- if (loop.first and content) or (not loop.first) %}\n                    {{- '\\n' }}\n                {%- endif %}\n                {%- if tool_call.function %}\n                    {%- set tool_call = tool_call.function %}\n                {%- endif %}\n                {{- '<tool_call>\\n{\"name\": \"' }}\n                {{- tool_call.name }}\n                {{- '\", \"arguments\": ' }}\n                {%- if tool_call.arguments is string %}\n                    {{- tool_call.arguments }}\n                {%- else %}\n                    {{- tool_call.arguments | tojson }}\n                {%- endif %}\n                {{- '}\\n</tool_call>' }}\n            {%- endfor %}\n        {%- endif %}\n        {{- '<|im_end|>\\n' }}\n    {%- elif message.role == \"tool\" %}\n        {%- if loop.first or (messages[loop.index0 - 1].role != \"tool\") %}\n            {{- '<|im_start|>user' }}\n        {%- endif %}\n        {{- '\\n<tool_response>\\n' }}\n        {{- message.content }}\n        {{- '\\n</tool_response>' }}\n        {%- if loop.last or (messages[loop.index0 + 1].role != \"tool\") %}\n            {{- '<|im_end|>\\n' }}\n        {%- endif %}\n    {%- endif %}\n{%- endfor %}\n{%- if add_generation_prompt %}\n    {{- '<|im_start|>assistant\\n' }}\n    {%- if enable_thinking is defined and enable_thinking is false %}\n        {{- '<think>\\n\\n</think>\\n\\n' }}\n    {%- endif %}\n{%- endif %}",
+        "chat_template_caps": {
+          "supports_object_arguments": true,
+          "supports_parallel_tool_calls": true,
+          "supports_preserve_reasoning": false,
+          "supports_string_content": true,
+          "supports_system_role": true,
+          "supports_tool_calls": true,
+          "supports_tools": true,
+          "supports_typed_content": false
+        },
+        "bos_token": "<|endoftext|>",
+        "eos_token": "<|im_end|>",
+        "build_info": "b1-f5b9bd3",
+        "is_sleeping": false,
+        "cors_proxy_enabled": false
+      },
+      "sha256": "699936b83664f71a4c1d129a1e10b02c1909e8edfdd32962cea75259f4f92093"
+    },
+    "templates": {
+      "branch.v4": {
+        "sha256": "82e216fac7655f30688bb3b5cd1039398ae67739487a2090a1f681df6d24969b"
+      }
+    },
+    "generatedAt": "2026-10-04T09:59:31.029Z"
+  },
+  "results": [
+    {
+      "nodeId": "red_woods",
+      "path": [
+        "red_start",
+        "red_warn",
+        "red_woods"
+      ],
+      "history": [
+        "send(mother, red, basket) — Red has a basket of cake and wine for her grandmother, who lives alone on the other side of the woods.",
+        "warn(mother, red, path) — Red knows she must keep to the path through the woods.",
+        "enter(red, woods) — Red is on the path in the woods, alone, carrying the basket."
+      ],
+      "arms": {
+        "branch.v4": {
+          "prompt": "==> stories/the_tortoise_and_the_hare.jsonl <==\n{\"title\": \"The Tortoise and the Hare\", \"characters\": [\"the hare\", \"the tortoise\", \"the fox\"]}\n{\"step\": 1, \"event\": \"The hare boasts of his speed\", \"action\": \"boast(hare, speed)\", \"state\": \"The hare has told everyone on the road that nothing can outrun him.\"}\n{\"step\": 2, \"event\": \"The tortoise challenges him to a race\", \"action\": \"challenge(tortoise, hare)\", \"state\": \"A race between the hare and the tortoise is agreed, over a course the tortoise named.\"}\n{\"step\": 3, \"event\": \"The fox starts the race\", \"action\": \"start(fox, race)\", \"state\": \"Both runners are on the road and the race has begun.\"}\n{\"step\": 4, \"event\": \"The hare takes the lead\", \"action\": \"outpace(hare, tortoise)\", \"state\": \"The hare is far ahead. The tortoise is still near the start.\"}\n{\"step\": 5, \"event\": \"The hare lies down by the road\", \"action\": \"nap(hare, roadside)\", \"state\": \"The hare is asleep by the road. The tortoise is still walking.\"}\n{\"step\": 6, \"event\": \"The tortoise passes the sleeping hare\", \"action\": \"pass(tortoise, hare)\", \"state\": \"The tortoise is ahead on the road. The hare has not woken.\"}\n{\"step\": 7, \"event\": \"The tortoise wins the race\", \"action\": \"win(tortoise, race)\", \"state\": \"The tortoise has crossed the finish line first. The race is over.\"}\n\n==> stories/little_red_riding_hood.jsonl <==\n{\"title\": \"Little Red Riding Hood\", \"characters\": [\"Red\", \"Red's mother\", \"Red's grandmother\", \"the wolf\", \"the woodcutter\"]}\n{\"step\": 1, \"event\": \"Mother sends Red to her grandmother with a basket\", \"action\": \"send(mother, red, basket)\", \"state\": \"Red has a basket of cake and wine for her grandmother, who lives alone on the other side of the woods.\"}\n{\"step\": 2, \"event\": \"Mother warns her to keep to the path\", \"action\": \"warn(mother, red, path)\", \"state\": \"Red knows she must keep to the path through the woods.\"}\n{\"step\": 3, \"event\": \"Red enters the woods\", \"action\": \"enter(red, woods)\", \"state\": \"Red is on the path in the woods, alone, carrying the basket.\"}\n",
+          "promptSha256": "f47796d4573f23d5c7e7de0ef09b63b2153fbcd08ad2fc682cc0ab6adcbe98a7",
+          "grammar": "root ::= \"{\\\"step\\\": 4, \\\"event\\\": \\\"\" text \"\\\", \\\"action\\\": \\\"\" action \"\\\", \\\"state\\\": \\\"\" text \"\\\"}\"\ntext ::= [^\"\\\\\\x7F\\x00-\\x1F]+\naction ::= word \"(\" word (\", \" word)* \")\"\nword ::= [a-z] [a-z0-9_]*",
+          "samples": [
+            {
+              "arm": "branch.v4",
+              "seed": 654414116,
+              "raw": "{\"step\": 4, \"event\": \"The wolf disguises himself as her grandmother\", \"action\": \"disguise(wolf, grandmother)\", \"state\": \"The wolf has changed to resemble Red's grandmother.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "e6dcd60bdf2ab709",
+              "branch": {
+                "label": "The wolf disguises himself as her grandmother",
+                "expr": "disguise(wolf, grandmother)",
+                "state": "The wolf has changed to resemble Red's grandmother."
+              },
+              "expr": "disguise(wolf, grandmother)",
+              "display": "disguise(wolf, grandmother) — The wolf has changed to resemble Red's grandmother."
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 671191735,
+              "raw": "{\"step\": 4, \"event\": \"Red meets the wolf\", \"action\": \"meet(red, wolf)\", \"state\": \"Red is not supposed to meet anyone on the road.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "0c5a2693f155b9f9",
+              "branch": {
+                "label": "Red meets the wolf",
+                "expr": "meet(red, wolf)",
+                "state": "Red is not supposed to meet anyone on the road."
+              },
+              "expr": "meet(red, wolf)",
+              "display": "meet(red, wolf) — Red is not supposed to meet anyone on the road."
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 704746973,
+              "raw": "{\"step\": 4, \"event\": \"Red is attacked by a wolf\", \"action\": \"attack(wolf, red)\", \"state\": \"A wolf jumps on Red while she is resting from the climb up the steep road.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "dbeee472eb326e34",
+              "branch": {
+                "label": "Red is attacked by a wolf",
+                "expr": "attack(wolf, red)",
+                "state": "A wolf jumps on Red while she is resting from the climb up the steep road."
+              },
+              "expr": "attack(wolf, red)",
+              "display": "attack(wolf, red) — A wolf jumps on Red while she is resting from the climb up the steep road."
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 604081259,
+              "raw": "{\"step\": 4, \"event\": \"Red's grandmother has not arrived at her house\", \"action\": \"not(arrived, grandmother)\", \"state\": \"Red reaches her grandmother's house, but finds no one there.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "97ddea2cb328b132",
+              "branch": {
+                "label": "Red's grandmother has not arrived at her house",
+                "expr": "not(arrived, grandmother)",
+                "state": "Red reaches her grandmother's house, but finds no one there."
+              },
+              "expr": "not(arrived, grandmother)",
+              "display": "not(arrived, grandmother) — Red reaches her grandmother's house, but finds no one there."
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 620858878,
+              "raw": "{\"step\": 4, \"event\": \"Red approaches her grandmother's house\", \"action\": \"approach(red, house)\", \"state\": \"Red has reached her grandmother's house, and is about to knock.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "e14b999352c4ed5d",
+              "branch": {
+                "label": "Red approaches her grandmother's house",
+                "expr": "approach(red, house)",
+                "state": "Red has reached her grandmother's house, and is about to knock."
+              },
+              "expr": "approach(red, house)",
+              "display": "approach(red, house) — Red has reached her grandmother's house, and is about to knock."
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 637636497,
+              "raw": "{\"step\": 4, \"event\": \"Wolf meets Red on the path\", \"action\": \"meet(wolf, red, path)\", \"state\": \"Wolf says he wants to go home to eat some cake.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "e31903ead8e85d5c",
+              "branch": {
+                "label": "Wolf meets Red on the path",
+                "expr": "meet(wolf, red, path)",
+                "state": "Wolf says he wants to go home to eat some cake."
+              },
+              "expr": "meet(wolf, red, path)",
+              "display": "meet(wolf, red, path) — Wolf says he wants to go home to eat some cake."
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 520193164,
+              "raw": "{\"step\": 4, \"event\": \"Red sees the wolf and stops\", \"action\": \"stop(red, wolf)\", \"state\": \"Red sees the wolf by the road. She is frightened, but continues.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "160126767e6e4828",
+              "branch": {
+                "label": "Red sees the wolf and stops",
+                "expr": "stop(red, wolf)",
+                "state": "Red sees the wolf by the road. She is frightened, but continues."
+              },
+              "expr": "stop(red, wolf)",
+              "display": "stop(red, wolf) — Red sees the wolf by the road. She is frightened, but continues."
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 536970783,
+              "raw": "{\"step\": 4, \"event\": \"Red encounters the wolf\", \"action\": \"encounter(red, wolf)\", \"state\": \"Red sees the wolf on the road.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "0a5d4d4d17497227",
+              "branch": {
+                "label": "Red encounters the wolf",
+                "expr": "encounter(red, wolf)",
+                "state": "Red sees the wolf on the road."
+              },
+              "expr": "encounter(red, wolf)",
+              "display": "encounter(red, wolf) — Red sees the wolf on the road."
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 2172234373,
+              "raw": "{\"step\": 4, \"event\": \"Wolf pretends to be Red's grandmother\", \"action\": \"pretend(wolf, red, grandmother)\", \"state\": \"The wolf is behind Red and appears to be Red's grandmother.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "4cbbfe1751d0b1d1",
+              "branch": {
+                "label": "Wolf pretends to be Red's grandmother",
+                "expr": "pretend(wolf, red, grandmother)",
+                "state": "The wolf is behind Red and appears to be Red's grandmother."
+              },
+              "expr": "pretend(wolf, red, grandmother)",
+              "display": "pretend(wolf, red, grandmother) — The wolf is behind Red and appears to be Red's grandmother."
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 2138679135,
+              "raw": "{\"step\": 4, \"event\": \"The wolf meets Red on the path\", \"action\": \"meet(wolf, red)\", \"state\": \"Red is stopped by the wolf, who asks if she's from the village.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "e8319da408f659a2",
+              "branch": {
+                "label": "The wolf meets Red on the path",
+                "expr": "meet(wolf, red)",
+                "state": "Red is stopped by the wolf, who asks if she's from the village."
+              },
+              "expr": "meet(wolf, red)",
+              "display": "meet(wolf, red) — Red is stopped by the wolf, who asks if she's from the village.",
+              "told": {
+                "kind": "next",
+                "id": "red_meet"
+              }
+            }
+          ],
+          "attempts": 13,
+          "refused": 0,
+          "truncated": 0,
+          "duplicates": 3,
+          "usable": 13,
+          "toldNext": 1,
+          "toldLater": 0,
+          "saturated": false,
+          "allAttempts": [
+            {
+              "arm": "branch.v4",
+              "seed": 654414116,
+              "raw": "{\"step\": 4, \"event\": \"The wolf disguises himself as her grandmother\", \"action\": \"disguise(wolf, grandmother)\", \"state\": \"The wolf has changed to resemble Red's grandmother.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "e6dcd60bdf2ab709",
+              "branch": {
+                "label": "The wolf disguises himself as her grandmother",
+                "expr": "disguise(wolf, grandmother)",
+                "state": "The wolf has changed to resemble Red's grandmother."
+              },
+              "expr": "disguise(wolf, grandmother)",
+              "display": "disguise(wolf, grandmother) — The wolf has changed to resemble Red's grandmother."
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 671191735,
+              "raw": "{\"step\": 4, \"event\": \"Red meets the wolf\", \"action\": \"meet(red, wolf)\", \"state\": \"Red is not supposed to meet anyone on the road.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "0c5a2693f155b9f9",
+              "branch": {
+                "label": "Red meets the wolf",
+                "expr": "meet(red, wolf)",
+                "state": "Red is not supposed to meet anyone on the road."
+              },
+              "expr": "meet(red, wolf)",
+              "display": "meet(red, wolf) — Red is not supposed to meet anyone on the road."
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 687969354,
+              "raw": "{\"step\": 4, \"event\": \"Red meets the wolf\", \"action\": \"meet(red, wolf)\", \"state\": \"Red asks the wolf questions about her grandmother, and they talk for a long time.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "38d44ffadccb7588",
+              "branch": {
+                "label": "Red meets the wolf",
+                "expr": "meet(red, wolf)",
+                "state": "Red asks the wolf questions about her grandmother, and they talk for a long time."
+              },
+              "expr": "meet(red, wolf)",
+              "display": "meet(red, wolf) — Red asks the wolf questions about her grandmother, and they talk for a long time.",
+              "duplicateOf": "meet(red, wolf)"
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 704746973,
+              "raw": "{\"step\": 4, \"event\": \"Red is attacked by a wolf\", \"action\": \"attack(wolf, red)\", \"state\": \"A wolf jumps on Red while she is resting from the climb up the steep road.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "dbeee472eb326e34",
+              "branch": {
+                "label": "Red is attacked by a wolf",
+                "expr": "attack(wolf, red)",
+                "state": "A wolf jumps on Red while she is resting from the climb up the steep road."
+              },
+              "expr": "attack(wolf, red)",
+              "display": "attack(wolf, red) — A wolf jumps on Red while she is resting from the climb up the steep road."
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 587303640,
+              "raw": "{\"step\": 4, \"event\": \"Red meets the wolf on the way to her grandmother's\", \"action\": \"meet(red, wolf)\", \"state\": \"Red is on the path in the woods, alone, carrying the basket. The wolf is on the road.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "41adb603f05446e1",
+              "branch": {
+                "label": "Red meets the wolf on the way to her grandmother's",
+                "expr": "meet(red, wolf)",
+                "state": "Red is on the path in the woods, alone, carrying the basket. The wolf is on the road."
+              },
+              "expr": "meet(red, wolf)",
+              "display": "meet(red, wolf) — Red is on the path in the woods, alone, carrying the basket. The wolf is on the road.",
+              "duplicateOf": "meet(red, wolf)"
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 604081259,
+              "raw": "{\"step\": 4, \"event\": \"Red's grandmother has not arrived at her house\", \"action\": \"not(arrived, grandmother)\", \"state\": \"Red reaches her grandmother's house, but finds no one there.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "97ddea2cb328b132",
+              "branch": {
+                "label": "Red's grandmother has not arrived at her house",
+                "expr": "not(arrived, grandmother)",
+                "state": "Red reaches her grandmother's house, but finds no one there."
+              },
+              "expr": "not(arrived, grandmother)",
+              "display": "not(arrived, grandmother) — Red reaches her grandmother's house, but finds no one there."
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 620858878,
+              "raw": "{\"step\": 4, \"event\": \"Red approaches her grandmother's house\", \"action\": \"approach(red, house)\", \"state\": \"Red has reached her grandmother's house, and is about to knock.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "e14b999352c4ed5d",
+              "branch": {
+                "label": "Red approaches her grandmother's house",
+                "expr": "approach(red, house)",
+                "state": "Red has reached her grandmother's house, and is about to knock."
+              },
+              "expr": "approach(red, house)",
+              "display": "approach(red, house) — Red has reached her grandmother's house, and is about to knock."
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 637636497,
+              "raw": "{\"step\": 4, \"event\": \"Wolf meets Red on the path\", \"action\": \"meet(wolf, red, path)\", \"state\": \"Wolf says he wants to go home to eat some cake.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "e31903ead8e85d5c",
+              "branch": {
+                "label": "Wolf meets Red on the path",
+                "expr": "meet(wolf, red, path)",
+                "state": "Wolf says he wants to go home to eat some cake."
+              },
+              "expr": "meet(wolf, red, path)",
+              "display": "meet(wolf, red, path) — Wolf says he wants to go home to eat some cake."
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 520193164,
+              "raw": "{\"step\": 4, \"event\": \"Red sees the wolf and stops\", \"action\": \"stop(red, wolf)\", \"state\": \"Red sees the wolf by the road. She is frightened, but continues.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "160126767e6e4828",
+              "branch": {
+                "label": "Red sees the wolf and stops",
+                "expr": "stop(red, wolf)",
+                "state": "Red sees the wolf by the road. She is frightened, but continues."
+              },
+              "expr": "stop(red, wolf)",
+              "display": "stop(red, wolf) — Red sees the wolf by the road. She is frightened, but continues."
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 536970783,
+              "raw": "{\"step\": 4, \"event\": \"Red encounters the wolf\", \"action\": \"encounter(red, wolf)\", \"state\": \"Red sees the wolf on the road.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "0a5d4d4d17497227",
+              "branch": {
+                "label": "Red encounters the wolf",
+                "expr": "encounter(red, wolf)",
+                "state": "Red sees the wolf on the road."
+              },
+              "expr": "encounter(red, wolf)",
+              "display": "encounter(red, wolf) — Red sees the wolf on the road."
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 2172234373,
+              "raw": "{\"step\": 4, \"event\": \"Wolf pretends to be Red's grandmother\", \"action\": \"pretend(wolf, red, grandmother)\", \"state\": \"The wolf is behind Red and appears to be Red's grandmother.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "4cbbfe1751d0b1d1",
+              "branch": {
+                "label": "Wolf pretends to be Red's grandmother",
+                "expr": "pretend(wolf, red, grandmother)",
+                "state": "The wolf is behind Red and appears to be Red's grandmother."
+              },
+              "expr": "pretend(wolf, red, grandmother)",
+              "display": "pretend(wolf, red, grandmother) — The wolf is behind Red and appears to be Red's grandmother."
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 2155456754,
+              "raw": "{\"step\": 4, \"event\": \"Red encounters the wolf\", \"action\": \"encounter(red, wolf)\", \"state\": \"The wolf is blocking Red's path through the woods.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "733091bd269164c3",
+              "branch": {
+                "label": "Red encounters the wolf",
+                "expr": "encounter(red, wolf)",
+                "state": "The wolf is blocking Red's path through the woods."
+              },
+              "expr": "encounter(red, wolf)",
+              "display": "encounter(red, wolf) — The wolf is blocking Red's path through the woods.",
+              "duplicateOf": "encounter(red, wolf)"
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 2138679135,
+              "raw": "{\"step\": 4, \"event\": \"The wolf meets Red on the path\", \"action\": \"meet(wolf, red)\", \"state\": \"Red is stopped by the wolf, who asks if she's from the village.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "e8319da408f659a2",
+              "branch": {
+                "label": "The wolf meets Red on the path",
+                "expr": "meet(wolf, red)",
+                "state": "Red is stopped by the wolf, who asks if she's from the village."
+              },
+              "expr": "meet(wolf, red)",
+              "display": "meet(wolf, red) — Red is stopped by the wolf, who asks if she's from the village.",
+              "told": {
+                "kind": "next",
+                "id": "red_meet"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "nodeId": "red_tell",
+      "path": [
+        "red_start",
+        "red_warn",
+        "red_woods",
+        "red_meet",
+        "red_tell"
+      ],
+      "history": [
+        "send(mother, red, basket) — Red has a basket of cake and wine for her grandmother, who lives alone on the other side of the woods.",
+        "warn(mother, red, path) — Red knows she must keep to the path through the woods.",
+        "enter(red, woods) — Red is on the path in the woods, alone, carrying the basket.",
+        "meet(wolf, red) — The wolf and Red are face to face on the path. He speaks to her kindly and she talks to him freely.",
+        "tell(red, wolf, grandmother_house) — The wolf knows where the grandmother's house is and that Red is on her way there."
+      ],
+      "arms": {
+        "branch.v4": {
+          "prompt": "==> stories/the_tortoise_and_the_hare.jsonl <==\n{\"title\": \"The Tortoise and the Hare\", \"characters\": [\"the hare\", \"the tortoise\", \"the fox\"]}\n{\"step\": 1, \"event\": \"The hare boasts of his speed\", \"action\": \"boast(hare, speed)\", \"state\": \"The hare has told everyone on the road that nothing can outrun him.\"}\n{\"step\": 2, \"event\": \"The tortoise challenges him to a race\", \"action\": \"challenge(tortoise, hare)\", \"state\": \"A race between the hare and the tortoise is agreed, over a course the tortoise named.\"}\n{\"step\": 3, \"event\": \"The fox starts the race\", \"action\": \"start(fox, race)\", \"state\": \"Both runners are on the road and the race has begun.\"}\n{\"step\": 4, \"event\": \"The hare takes the lead\", \"action\": \"outpace(hare, tortoise)\", \"state\": \"The hare is far ahead. The tortoise is still near the start.\"}\n{\"step\": 5, \"event\": \"The hare lies down by the road\", \"action\": \"nap(hare, roadside)\", \"state\": \"The hare is asleep by the road. The tortoise is still walking.\"}\n{\"step\": 6, \"event\": \"The tortoise passes the sleeping hare\", \"action\": \"pass(tortoise, hare)\", \"state\": \"The tortoise is ahead on the road. The hare has not woken.\"}\n{\"step\": 7, \"event\": \"The tortoise wins the race\", \"action\": \"win(tortoise, race)\", \"state\": \"The tortoise has crossed the finish line first. The race is over.\"}\n\n==> stories/little_red_riding_hood.jsonl <==\n{\"title\": \"Little Red Riding Hood\", \"characters\": [\"Red\", \"Red's mother\", \"Red's grandmother\", \"the wolf\", \"the woodcutter\"]}\n{\"step\": 1, \"event\": \"Mother sends Red to her grandmother with a basket\", \"action\": \"send(mother, red, basket)\", \"state\": \"Red has a basket of cake and wine for her grandmother, who lives alone on the other side of the woods.\"}\n{\"step\": 2, \"event\": \"Mother warns her to keep to the path\", \"action\": \"warn(mother, red, path)\", \"state\": \"Red knows she must keep to the path through the woods.\"}\n{\"step\": 3, \"event\": \"Red enters the woods\", \"action\": \"enter(red, woods)\", \"state\": \"Red is on the path in the woods, alone, carrying the basket.\"}\n{\"step\": 4, \"event\": \"The wolf stops her on the path\", \"action\": \"meet(wolf, red)\", \"state\": \"The wolf and Red are face to face on the path. He speaks to her kindly and she talks to him freely.\"}\n{\"step\": 5, \"event\": \"Red tells the wolf where she is going\", \"action\": \"tell(red, wolf, grandmother_house)\", \"state\": \"The wolf knows where the grandmother's house is and that Red is on her way there.\"}\n",
+          "promptSha256": "5baac40bffb9ba7f64eaee8f03a260e50853da4ca16ea4261db7cb8d7fb51737",
+          "grammar": "root ::= \"{\\\"step\\\": 6, \\\"event\\\": \\\"\" text \"\\\", \\\"action\\\": \\\"\" action \"\\\", \\\"state\\\": \\\"\" text \"\\\"}\"\ntext ::= [^\"\\\\\\x7F\\x00-\\x1F]+\naction ::= word \"(\" word (\", \" word)* \")\"\nword ::= [a-z] [a-z0-9_]*",
+          "samples": [
+            {
+              "arm": "branch.v4",
+              "seed": 3368399937,
+              "raw": "{\"step\": 6, \"event\": \"The wolf meets the grandmother\", \"action\": \"meet(wolf, grandmother)\", \"state\": \"The wolf and the grandmother are face to face. The grandmother invites the wolf in for a chat.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "12b234df7a4f3d0d",
+              "branch": {
+                "label": "The wolf meets the grandmother",
+                "expr": "meet(wolf, grandmother)",
+                "state": "The wolf and the grandmother are face to face. The grandmother invites the wolf in for a chat."
+              },
+              "expr": "meet(wolf, grandmother)",
+              "display": "meet(wolf, grandmother) — The wolf and the grandmother are face to face. The grandmother invites the wolf in for a chat."
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 3351622318,
+              "raw": "{\"step\": 6, \"event\": \"Red continues on her way\", \"action\": \"continue(red, path)\", \"state\": \"Red continues on her way, along the path through the woods, towards the grandmother's house.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "1753c819ddfb02df",
+              "branch": {
+                "label": "Red continues on her way",
+                "expr": "continue(red, path)",
+                "state": "Red continues on her way, along the path through the woods, towards the grandmother's house."
+              },
+              "expr": "continue(red, path)",
+              "display": "continue(red, path) — Red continues on her way, along the path through the woods, towards the grandmother's house."
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 3334844699,
+              "raw": "{\"step\": 6, \"event\": \"The wolf pretends to be a baker\", \"action\": \"pretend(wolf, baker)\", \"state\": \"The wolf tells Red he is a baker who has just baked a cake. He asks Red to wait a moment for his cake to cool.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "33b553aac86fa168",
+              "branch": {
+                "label": "The wolf pretends to be a baker",
+                "expr": "pretend(wolf, baker)",
+                "state": "The wolf tells Red he is a baker who has just baked a cake. He asks Red to wait a moment for his cake to cool."
+              },
+              "expr": "pretend(wolf, baker)",
+              "display": "pretend(wolf, baker) — The wolf tells Red he is a baker who has just baked a cake. He asks Red to wait a moment for his cake to cool."
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 3318067080,
+              "raw": "{\"step\": 6, \"event\": \"Red continues on the path to her grandmother's\", \"action\": \"go(red, grandmother_house)\", \"state\": \"Red is on the path, heading for her grandmother's house.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "374e74b9d67f2027",
+              "branch": {
+                "label": "Red continues on the path to her grandmother's",
+                "expr": "go(red, grandmother_house)",
+                "state": "Red is on the path, heading for her grandmother's house."
+              },
+              "expr": "go(red, grandmother_house)",
+              "display": "go(red, grandmother_house) — Red is on the path, heading for her grandmother's house."
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 3435510413,
+              "raw": "{\"step\": 6, \"event\": \"The wolf disguises himself as her grandmother\", \"action\": \"disguise(wolf, grandmother)\", \"state\": \"The wolf has disguised himself to look like Red's grandmother.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "913f5eba16ca860c",
+              "branch": {
+                "label": "The wolf disguises himself as her grandmother",
+                "expr": "disguise(wolf, grandmother)",
+                "state": "The wolf has disguised himself to look like Red's grandmother."
+              },
+              "expr": "disguise(wolf, grandmother)",
+              "display": "disguise(wolf, grandmother) — The wolf has disguised himself to look like Red's grandmother."
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 3418732794,
+              "raw": "{\"step\": 6, \"event\": \"The wolf goes to the grandmother's house\", \"action\": \"go(wolf, grandmother_house)\", \"state\": \"The wolf is on her way to the grandmother's house.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "24f72b5562c9eebf",
+              "branch": {
+                "label": "The wolf goes to the grandmother's house",
+                "expr": "go(wolf, grandmother_house)",
+                "state": "The wolf is on her way to the grandmother's house."
+              },
+              "expr": "go(wolf, grandmother_house)",
+              "display": "go(wolf, grandmother_house) — The wolf is on her way to the grandmother's house."
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 3385177556,
+              "raw": "{\"step\": 6, \"event\": \"The wolf eats Red's grandmother\", \"action\": \"eat(wolf, grandmother)\", \"state\": \"The wolf has eaten Red's grandmother. Now he's hungry for Red.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "e3e204596e2bb8c3",
+              "branch": {
+                "label": "The wolf eats Red's grandmother",
+                "expr": "eat(wolf, grandmother)",
+                "state": "The wolf has eaten Red's grandmother. Now he's hungry for Red."
+              },
+              "expr": "eat(wolf, grandmother)",
+              "display": "eat(wolf, grandmother) — The wolf has eaten Red's grandmother. Now he's hungry for Red."
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 3234178985,
+              "raw": "{\"step\": 6, \"event\": \"The wolf leaves Red at the house\", \"action\": \"leave(wolf, red, grandmother_house)\", \"state\": \"The wolf takes Red to the grandmother's house, but does not tell her who he is.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "2788b785fae0d033",
+              "branch": {
+                "label": "The wolf leaves Red at the house",
+                "expr": "leave(wolf, red, grandmother_house)",
+                "state": "The wolf takes Red to the grandmother's house, but does not tell her who he is."
+              },
+              "expr": "leave(wolf, red, grandmother_house)",
+              "display": "leave(wolf, red, grandmother_house) — The wolf takes Red to the grandmother's house, but does not tell her who he is."
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 3217401366,
+              "raw": "{\"step\": 6, \"event\": \"The wolf devours Red\", \"action\": \"devour(wolf, red)\", \"state\": \"The wolf has swallowed Red whole. She is no longer visible.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "bb6e3bca6daad740",
+              "branch": {
+                "label": "The wolf devours Red",
+                "expr": "devour(wolf, red)",
+                "state": "The wolf has swallowed Red whole. She is no longer visible."
+              },
+              "expr": "devour(wolf, red)",
+              "display": "devour(wolf, red) — The wolf has swallowed Red whole. She is no longer visible."
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 439889594,
+              "raw": "{\"step\": 6, \"event\": \"Red enters the grandmother's house\", \"action\": \"enter(red, grandmother_house)\", \"state\": \"Red is alone in the grandmother's house, talking with the wolf.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "d11fcb6072415586",
+              "branch": {
+                "label": "Red enters the grandmother's house",
+                "expr": "enter(red, grandmother_house)",
+                "state": "Red is alone in the grandmother's house, talking with the wolf."
+              },
+              "expr": "enter(red, grandmother_house)",
+              "display": "enter(red, grandmother_house) — Red is alone in the grandmother's house, talking with the wolf."
+            }
+          ],
+          "attempts": 11,
+          "refused": 0,
+          "truncated": 0,
+          "duplicates": 1,
+          "usable": 11,
+          "toldNext": 0,
+          "toldLater": 0,
+          "saturated": false,
+          "allAttempts": [
+            {
+              "arm": "branch.v4",
+              "seed": 3368399937,
+              "raw": "{\"step\": 6, \"event\": \"The wolf meets the grandmother\", \"action\": \"meet(wolf, grandmother)\", \"state\": \"The wolf and the grandmother are face to face. The grandmother invites the wolf in for a chat.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "12b234df7a4f3d0d",
+              "branch": {
+                "label": "The wolf meets the grandmother",
+                "expr": "meet(wolf, grandmother)",
+                "state": "The wolf and the grandmother are face to face. The grandmother invites the wolf in for a chat."
+              },
+              "expr": "meet(wolf, grandmother)",
+              "display": "meet(wolf, grandmother) — The wolf and the grandmother are face to face. The grandmother invites the wolf in for a chat."
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 3351622318,
+              "raw": "{\"step\": 6, \"event\": \"Red continues on her way\", \"action\": \"continue(red, path)\", \"state\": \"Red continues on her way, along the path through the woods, towards the grandmother's house.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "1753c819ddfb02df",
+              "branch": {
+                "label": "Red continues on her way",
+                "expr": "continue(red, path)",
+                "state": "Red continues on her way, along the path through the woods, towards the grandmother's house."
+              },
+              "expr": "continue(red, path)",
+              "display": "continue(red, path) — Red continues on her way, along the path through the woods, towards the grandmother's house."
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 3334844699,
+              "raw": "{\"step\": 6, \"event\": \"The wolf pretends to be a baker\", \"action\": \"pretend(wolf, baker)\", \"state\": \"The wolf tells Red he is a baker who has just baked a cake. He asks Red to wait a moment for his cake to cool.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "33b553aac86fa168",
+              "branch": {
+                "label": "The wolf pretends to be a baker",
+                "expr": "pretend(wolf, baker)",
+                "state": "The wolf tells Red he is a baker who has just baked a cake. He asks Red to wait a moment for his cake to cool."
+              },
+              "expr": "pretend(wolf, baker)",
+              "display": "pretend(wolf, baker) — The wolf tells Red he is a baker who has just baked a cake. He asks Red to wait a moment for his cake to cool."
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 3318067080,
+              "raw": "{\"step\": 6, \"event\": \"Red continues on the path to her grandmother's\", \"action\": \"go(red, grandmother_house)\", \"state\": \"Red is on the path, heading for her grandmother's house.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "374e74b9d67f2027",
+              "branch": {
+                "label": "Red continues on the path to her grandmother's",
+                "expr": "go(red, grandmother_house)",
+                "state": "Red is on the path, heading for her grandmother's house."
+              },
+              "expr": "go(red, grandmother_house)",
+              "display": "go(red, grandmother_house) — Red is on the path, heading for her grandmother's house."
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 3435510413,
+              "raw": "{\"step\": 6, \"event\": \"The wolf disguises himself as her grandmother\", \"action\": \"disguise(wolf, grandmother)\", \"state\": \"The wolf has disguised himself to look like Red's grandmother.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "913f5eba16ca860c",
+              "branch": {
+                "label": "The wolf disguises himself as her grandmother",
+                "expr": "disguise(wolf, grandmother)",
+                "state": "The wolf has disguised himself to look like Red's grandmother."
+              },
+              "expr": "disguise(wolf, grandmother)",
+              "display": "disguise(wolf, grandmother) — The wolf has disguised himself to look like Red's grandmother."
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 3418732794,
+              "raw": "{\"step\": 6, \"event\": \"The wolf goes to the grandmother's house\", \"action\": \"go(wolf, grandmother_house)\", \"state\": \"The wolf is on her way to the grandmother's house.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "24f72b5562c9eebf",
+              "branch": {
+                "label": "The wolf goes to the grandmother's house",
+                "expr": "go(wolf, grandmother_house)",
+                "state": "The wolf is on her way to the grandmother's house."
+              },
+              "expr": "go(wolf, grandmother_house)",
+              "display": "go(wolf, grandmother_house) — The wolf is on her way to the grandmother's house."
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 3401955175,
+              "raw": "{\"step\": 6, \"event\": \"The wolf goes to grandmother's house\", \"action\": \"go(wolf, grandmother_house)\", \"state\": \"The wolf goes to the grandmother's house and knocks on the door.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "f6e04aaf22b47765",
+              "branch": {
+                "label": "The wolf goes to grandmother's house",
+                "expr": "go(wolf, grandmother_house)",
+                "state": "The wolf goes to the grandmother's house and knocks on the door."
+              },
+              "expr": "go(wolf, grandmother_house)",
+              "display": "go(wolf, grandmother_house) — The wolf goes to the grandmother's house and knocks on the door.",
+              "duplicateOf": "go(wolf, grandmother_house)"
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 3385177556,
+              "raw": "{\"step\": 6, \"event\": \"The wolf eats Red's grandmother\", \"action\": \"eat(wolf, grandmother)\", \"state\": \"The wolf has eaten Red's grandmother. Now he's hungry for Red.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "e3e204596e2bb8c3",
+              "branch": {
+                "label": "The wolf eats Red's grandmother",
+                "expr": "eat(wolf, grandmother)",
+                "state": "The wolf has eaten Red's grandmother. Now he's hungry for Red."
+              },
+              "expr": "eat(wolf, grandmother)",
+              "display": "eat(wolf, grandmother) — The wolf has eaten Red's grandmother. Now he's hungry for Red."
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 3234178985,
+              "raw": "{\"step\": 6, \"event\": \"The wolf leaves Red at the house\", \"action\": \"leave(wolf, red, grandmother_house)\", \"state\": \"The wolf takes Red to the grandmother's house, but does not tell her who he is.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "2788b785fae0d033",
+              "branch": {
+                "label": "The wolf leaves Red at the house",
+                "expr": "leave(wolf, red, grandmother_house)",
+                "state": "The wolf takes Red to the grandmother's house, but does not tell her who he is."
+              },
+              "expr": "leave(wolf, red, grandmother_house)",
+              "display": "leave(wolf, red, grandmother_house) — The wolf takes Red to the grandmother's house, but does not tell her who he is."
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 3217401366,
+              "raw": "{\"step\": 6, \"event\": \"The wolf devours Red\", \"action\": \"devour(wolf, red)\", \"state\": \"The wolf has swallowed Red whole. She is no longer visible.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "bb6e3bca6daad740",
+              "branch": {
+                "label": "The wolf devours Red",
+                "expr": "devour(wolf, red)",
+                "state": "The wolf has swallowed Red whole. She is no longer visible."
+              },
+              "expr": "devour(wolf, red)",
+              "display": "devour(wolf, red) — The wolf has swallowed Red whole. She is no longer visible."
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 439889594,
+              "raw": "{\"step\": 6, \"event\": \"Red enters the grandmother's house\", \"action\": \"enter(red, grandmother_house)\", \"state\": \"Red is alone in the grandmother's house, talking with the wolf.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "d11fcb6072415586",
+              "branch": {
+                "label": "Red enters the grandmother's house",
+                "expr": "enter(red, grandmother_house)",
+                "state": "Red is alone in the grandmother's house, talking with the wolf."
+              },
+              "expr": "enter(red, grandmother_house)",
+              "display": "enter(red, grandmother_house) — Red is alone in the grandmother's house, talking with the wolf."
+            }
+          ]
+        }
+      }
+    },
+    {
+      "nodeId": "red_flowers",
+      "path": [
+        "red_start",
+        "red_warn",
+        "red_woods",
+        "red_meet",
+        "red_tell",
+        "red_tempt",
+        "red_leave",
+        "red_flowers"
+      ],
+      "history": [
+        "send(mother, red, basket) — Red has a basket of cake and wine for her grandmother, who lives alone on the other side of the woods.",
+        "warn(mother, red, path) — Red knows she must keep to the path through the woods.",
+        "enter(red, woods) — Red is on the path in the woods, alone, carrying the basket.",
+        "meet(wolf, red) — The wolf and Red are face to face on the path. He speaks to her kindly and she talks to him freely.",
+        "tell(red, wolf, grandmother_house) — The wolf knows where the grandmother's house is and that Red is on her way there.",
+        "tempt(wolf, red, flowers) — Red is looking at the flowers growing among the trees beside the path.",
+        "leave(red, path) — Red is among the trees, off the path her mother told her to keep to.",
+        "gather(red, flowers) — Red is picking flowers, going deeper among the trees, and the afternoon is passing."
+      ],
+      "arms": {
+        "branch.v4": {
+          "prompt": "==> stories/the_tortoise_and_the_hare.jsonl <==\n{\"title\": \"The Tortoise and the Hare\", \"characters\": [\"the hare\", \"the tortoise\", \"the fox\"]}\n{\"step\": 1, \"event\": \"The hare boasts of his speed\", \"action\": \"boast(hare, speed)\", \"state\": \"The hare has told everyone on the road that nothing can outrun him.\"}\n{\"step\": 2, \"event\": \"The tortoise challenges him to a race\", \"action\": \"challenge(tortoise, hare)\", \"state\": \"A race between the hare and the tortoise is agreed, over a course the tortoise named.\"}\n{\"step\": 3, \"event\": \"The fox starts the race\", \"action\": \"start(fox, race)\", \"state\": \"Both runners are on the road and the race has begun.\"}\n{\"step\": 4, \"event\": \"The hare takes the lead\", \"action\": \"outpace(hare, tortoise)\", \"state\": \"The hare is far ahead. The tortoise is still near the start.\"}\n{\"step\": 5, \"event\": \"The hare lies down by the road\", \"action\": \"nap(hare, roadside)\", \"state\": \"The hare is asleep by the road. The tortoise is still walking.\"}\n{\"step\": 6, \"event\": \"The tortoise passes the sleeping hare\", \"action\": \"pass(tortoise, hare)\", \"state\": \"The tortoise is ahead on the road. The hare has not woken.\"}\n{\"step\": 7, \"event\": \"The tortoise wins the race\", \"action\": \"win(tortoise, race)\", \"state\": \"The tortoise has crossed the finish line first. The race is over.\"}\n\n==> stories/little_red_riding_hood.jsonl <==\n{\"title\": \"Little Red Riding Hood\", \"characters\": [\"Red\", \"Red's mother\", \"Red's grandmother\", \"the wolf\", \"the woodcutter\"]}\n{\"step\": 1, \"event\": \"Mother sends Red to her grandmother with a basket\", \"action\": \"send(mother, red, basket)\", \"state\": \"Red has a basket of cake and wine for her grandmother, who lives alone on the other side of the woods.\"}\n{\"step\": 2, \"event\": \"Mother warns her to keep to the path\", \"action\": \"warn(mother, red, path)\", \"state\": \"Red knows she must keep to the path through the woods.\"}\n{\"step\": 3, \"event\": \"Red enters the woods\", \"action\": \"enter(red, woods)\", \"state\": \"Red is on the path in the woods, alone, carrying the basket.\"}\n{\"step\": 4, \"event\": \"The wolf stops her on the path\", \"action\": \"meet(wolf, red)\", \"state\": \"The wolf and Red are face to face on the path. He speaks to her kindly and she talks to him freely.\"}\n{\"step\": 5, \"event\": \"Red tells the wolf where she is going\", \"action\": \"tell(red, wolf, grandmother_house)\", \"state\": \"The wolf knows where the grandmother's house is and that Red is on her way there.\"}\n{\"step\": 6, \"event\": \"The wolf points out the flowers\", \"action\": \"tempt(wolf, red, flowers)\", \"state\": \"Red is looking at the flowers growing among the trees beside the path.\"}\n{\"step\": 7, \"event\": \"Red steps off the path\", \"action\": \"leave(red, path)\", \"state\": \"Red is among the trees, off the path her mother told her to keep to.\"}\n{\"step\": 8, \"event\": \"Red stops to gather flowers\", \"action\": \"gather(red, flowers)\", \"state\": \"Red is picking flowers, going deeper among the trees, and the afternoon is passing.\"}\n",
+          "promptSha256": "13109a49092292e930c8ba383559633a2d665d2c44018aac43e2b0131f6a9d43",
+          "grammar": "root ::= \"{\\\"step\\\": 9, \\\"event\\\": \\\"\" text \"\\\", \\\"action\\\": \\\"\" action \"\\\", \\\"state\\\": \\\"\" text \"\\\"}\"\ntext ::= [^\"\\\\\\x7F\\x00-\\x1F]+\naction ::= word \"(\" word (\", \" word)* \")\"\nword ::= [a-z] [a-z0-9_]*",
+          "samples": [
+            {
+              "arm": "branch.v4",
+              "seed": 1354205826,
+              "raw": "{\"step\": 9, \"event\": \"The wolf arrives at grandmother's house\", \"action\": \"arrive(wolf, grandmother_house)\", \"state\": \"The wolf is standing before the grandmother's house and knocks at the door.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "ae0f701717f41499",
+              "branch": {
+                "label": "The wolf arrives at grandmother's house",
+                "expr": "arrive(wolf, grandmother_house)",
+                "state": "The wolf is standing before the grandmother's house and knocks at the door."
+              },
+              "expr": "arrive(wolf, grandmother_house)",
+              "display": "arrive(wolf, grandmother_house) — The wolf is standing before the grandmother's house and knocks at the door.",
+              "told": {
+                "kind": "next",
+                "id": "red_grandma"
+              }
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 1370983445,
+              "raw": "{\"step\": 9, \"event\": \"Red comes to the grandmother's house\", \"action\": \"reach(red, grandmother_house)\", \"state\": \"Red has reached the house. She knocks at the door.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "8e6a12ff0d9e578d",
+              "branch": {
+                "label": "Red comes to the grandmother's house",
+                "expr": "reach(red, grandmother_house)",
+                "state": "Red has reached the house. She knocks at the door."
+              },
+              "expr": "reach(red, grandmother_house)",
+              "display": "reach(red, grandmother_house) — Red has reached the house. She knocks at the door."
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 1320650588,
+              "raw": "{\"step\": 9, \"event\": \"The wolf arrives and eats Red's grandmother\", \"action\": \"eat(wolf, grandmother)\", \"state\": \"The grandmother has been cooked and eaten by the wolf. Red is now alone in the house.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "0a1571395ea6a42f",
+              "branch": {
+                "label": "The wolf arrives and eats Red's grandmother",
+                "expr": "eat(wolf, grandmother)",
+                "state": "The grandmother has been cooked and eaten by the wolf. Red is now alone in the house."
+              },
+              "expr": "eat(wolf, grandmother)",
+              "display": "eat(wolf, grandmother) — The grandmother has been cooked and eaten by the wolf. Red is now alone in the house."
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 1337428207,
+              "raw": "{\"step\": 9, \"event\": \"The wolf enters the grandmother's house\", \"action\": \"enter(wolf, grandmother_house)\", \"state\": \"The wolf is at the grandmother's house, waiting for Red to arrive.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "9b43c6368f3336c0",
+              "branch": {
+                "label": "The wolf enters the grandmother's house",
+                "expr": "enter(wolf, grandmother_house)",
+                "state": "The wolf is at the grandmother's house, waiting for Red to arrive."
+              },
+              "expr": "enter(wolf, grandmother_house)",
+              "display": "enter(wolf, grandmother_house) — The wolf is at the grandmother's house, waiting for Red to arrive."
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 1303872969,
+              "raw": "{\"step\": 9, \"event\": \"Red's grandmother greets her with a kiss\", \"action\": \"meet(grandmother, red, kiss)\", \"state\": \"Red is at her grandmother's house, being greeted as if she were home.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "8c11e4e13bf38adf",
+              "branch": {
+                "label": "Red's grandmother greets her with a kiss",
+                "expr": "meet(grandmother, red, kiss)",
+                "state": "Red is at her grandmother's house, being greeted as if she were home."
+              },
+              "expr": "meet(grandmother, red, kiss)",
+              "display": "meet(grandmother, red, kiss) — Red is at her grandmother's house, being greeted as if she were home."
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 1253540112,
+              "raw": "{\"step\": 9, \"event\": \"Red sees the house\", \"action\": \"see(red, house)\", \"state\": \"Red sees the house, but the wolf is in front of her, and she cannot enter it.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "375f7fe386c4db51",
+              "branch": {
+                "label": "Red sees the house",
+                "expr": "see(red, house)",
+                "state": "Red sees the house, but the wolf is in front of her, and she cannot enter it."
+              },
+              "expr": "see(red, house)",
+              "display": "see(red, house) — Red sees the house, but the wolf is in front of her, and she cannot enter it."
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 1270317731,
+              "raw": "{\"step\": 9, \"event\": \"The wolf eats Red\", \"action\": \"eat(wolf, red)\", \"state\": \"Red is not in the basket in the grandmother's house, but the wolf is.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "f6c1ec474c2af019",
+              "branch": {
+                "label": "The wolf eats Red",
+                "expr": "eat(wolf, red)",
+                "state": "Red is not in the basket in the grandmother's house, but the wolf is."
+              },
+              "expr": "eat(wolf, red)",
+              "display": "eat(wolf, red) — Red is not in the basket in the grandmother's house, but the wolf is."
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 3404833125,
+              "raw": "{\"step\": 9, \"event\": \"Red returns to the path\", \"action\": \"return(red, path)\", \"state\": \"Red is walking back on the path. The sun is beginning to set.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "ddd4823ed1b462e8",
+              "branch": {
+                "label": "Red returns to the path",
+                "expr": "return(red, path)",
+                "state": "Red is walking back on the path. The sun is beginning to set."
+              },
+              "expr": "return(red, path)",
+              "display": "return(red, path) — Red is walking back on the path. The sun is beginning to set."
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 3388055506,
+              "raw": "{\"step\": 9, \"event\": \"The wolf approaches the grandmother's house\", \"action\": \"approach(wolf, grandmother_house)\", \"state\": \"The wolf arrives at the grandmother's house, alone.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "e164d3cc11698d02",
+              "branch": {
+                "label": "The wolf approaches the grandmother's house",
+                "expr": "approach(wolf, grandmother_house)",
+                "state": "The wolf arrives at the grandmother's house, alone."
+              },
+              "expr": "approach(wolf, grandmother_house)",
+              "display": "approach(wolf, grandmother_house) — The wolf arrives at the grandmother's house, alone."
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 3287389792,
+              "raw": "{\"step\": 9, \"event\": \"The wolf takes Red's place\", \"action\": \"take(wolf, red, place)\", \"state\": \"Red sees the wolf waiting at her grandmother's house. He speaks to her warmly and she opens the door.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "65dbc7e5a214896f",
+              "branch": {
+                "label": "The wolf takes Red's place",
+                "expr": "take(wolf, red, place)",
+                "state": "Red sees the wolf waiting at her grandmother's house. He speaks to her warmly and she opens the door."
+              },
+              "expr": "take(wolf, red, place)",
+              "display": "take(wolf, red, place) — Red sees the wolf waiting at her grandmother's house. He speaks to her warmly and she opens the door."
+            }
+          ],
+          "attempts": 16,
+          "refused": 0,
+          "truncated": 0,
+          "duplicates": 6,
+          "usable": 16,
+          "toldNext": 7,
+          "toldLater": 0,
+          "saturated": false,
+          "allAttempts": [
+            {
+              "arm": "branch.v4",
+              "seed": 1354205826,
+              "raw": "{\"step\": 9, \"event\": \"The wolf arrives at grandmother's house\", \"action\": \"arrive(wolf, grandmother_house)\", \"state\": \"The wolf is standing before the grandmother's house and knocks at the door.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "ae0f701717f41499",
+              "branch": {
+                "label": "The wolf arrives at grandmother's house",
+                "expr": "arrive(wolf, grandmother_house)",
+                "state": "The wolf is standing before the grandmother's house and knocks at the door."
+              },
+              "expr": "arrive(wolf, grandmother_house)",
+              "display": "arrive(wolf, grandmother_house) — The wolf is standing before the grandmother's house and knocks at the door.",
+              "told": {
+                "kind": "next",
+                "id": "red_grandma"
+              }
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 1370983445,
+              "raw": "{\"step\": 9, \"event\": \"Red comes to the grandmother's house\", \"action\": \"reach(red, grandmother_house)\", \"state\": \"Red has reached the house. She knocks at the door.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "8e6a12ff0d9e578d",
+              "branch": {
+                "label": "Red comes to the grandmother's house",
+                "expr": "reach(red, grandmother_house)",
+                "state": "Red has reached the house. She knocks at the door."
+              },
+              "expr": "reach(red, grandmother_house)",
+              "display": "reach(red, grandmother_house) — Red has reached the house. She knocks at the door."
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 1320650588,
+              "raw": "{\"step\": 9, \"event\": \"The wolf arrives and eats Red's grandmother\", \"action\": \"eat(wolf, grandmother)\", \"state\": \"The grandmother has been cooked and eaten by the wolf. Red is now alone in the house.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "0a1571395ea6a42f",
+              "branch": {
+                "label": "The wolf arrives and eats Red's grandmother",
+                "expr": "eat(wolf, grandmother)",
+                "state": "The grandmother has been cooked and eaten by the wolf. Red is now alone in the house."
+              },
+              "expr": "eat(wolf, grandmother)",
+              "display": "eat(wolf, grandmother) — The grandmother has been cooked and eaten by the wolf. Red is now alone in the house."
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 1337428207,
+              "raw": "{\"step\": 9, \"event\": \"The wolf enters the grandmother's house\", \"action\": \"enter(wolf, grandmother_house)\", \"state\": \"The wolf is at the grandmother's house, waiting for Red to arrive.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "9b43c6368f3336c0",
+              "branch": {
+                "label": "The wolf enters the grandmother's house",
+                "expr": "enter(wolf, grandmother_house)",
+                "state": "The wolf is at the grandmother's house, waiting for Red to arrive."
+              },
+              "expr": "enter(wolf, grandmother_house)",
+              "display": "enter(wolf, grandmother_house) — The wolf is at the grandmother's house, waiting for Red to arrive."
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 1287095350,
+              "raw": "{\"step\": 9, \"event\": \"The wolf arrives at the grandmother's house\", \"action\": \"arrive(wolf, grandmother_house)\", \"state\": \"The wolf enters the house, opens the door to the cellar, and takes Red's place.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "e64160c142f53e07",
+              "branch": {
+                "label": "The wolf arrives at the grandmother's house",
+                "expr": "arrive(wolf, grandmother_house)",
+                "state": "The wolf enters the house, opens the door to the cellar, and takes Red's place."
+              },
+              "expr": "arrive(wolf, grandmother_house)",
+              "display": "arrive(wolf, grandmother_house) — The wolf enters the house, opens the door to the cellar, and takes Red's place.",
+              "told": {
+                "kind": "next",
+                "id": "red_grandma"
+              },
+              "duplicateOf": "arrive(wolf, grandmother_house)"
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 1303872969,
+              "raw": "{\"step\": 9, \"event\": \"Red's grandmother greets her with a kiss\", \"action\": \"meet(grandmother, red, kiss)\", \"state\": \"Red is at her grandmother's house, being greeted as if she were home.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "8c11e4e13bf38adf",
+              "branch": {
+                "label": "Red's grandmother greets her with a kiss",
+                "expr": "meet(grandmother, red, kiss)",
+                "state": "Red is at her grandmother's house, being greeted as if she were home."
+              },
+              "expr": "meet(grandmother, red, kiss)",
+              "display": "meet(grandmother, red, kiss) — Red is at her grandmother's house, being greeted as if she were home."
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 1253540112,
+              "raw": "{\"step\": 9, \"event\": \"Red sees the house\", \"action\": \"see(red, house)\", \"state\": \"Red sees the house, but the wolf is in front of her, and she cannot enter it.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "375f7fe386c4db51",
+              "branch": {
+                "label": "Red sees the house",
+                "expr": "see(red, house)",
+                "state": "Red sees the house, but the wolf is in front of her, and she cannot enter it."
+              },
+              "expr": "see(red, house)",
+              "display": "see(red, house) — Red sees the house, but the wolf is in front of her, and she cannot enter it."
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 1270317731,
+              "raw": "{\"step\": 9, \"event\": \"The wolf eats Red\", \"action\": \"eat(wolf, red)\", \"state\": \"Red is not in the basket in the grandmother's house, but the wolf is.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "f6c1ec474c2af019",
+              "branch": {
+                "label": "The wolf eats Red",
+                "expr": "eat(wolf, red)",
+                "state": "Red is not in the basket in the grandmother's house, but the wolf is."
+              },
+              "expr": "eat(wolf, red)",
+              "display": "eat(wolf, red) — Red is not in the basket in the grandmother's house, but the wolf is."
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 1488426778,
+              "raw": "{\"step\": 9, \"event\": \"The wolf arrives at the grandmother's house\", \"action\": \"arrive(wolf, grandmother_house)\", \"state\": \"The wolf has made it to the house where Red was sent. The grandmother is sitting on the doorstep.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "4804c4c2839d8a3c",
+              "branch": {
+                "label": "The wolf arrives at the grandmother's house",
+                "expr": "arrive(wolf, grandmother_house)",
+                "state": "The wolf has made it to the house where Red was sent. The grandmother is sitting on the doorstep."
+              },
+              "expr": "arrive(wolf, grandmother_house)",
+              "display": "arrive(wolf, grandmother_house) — The wolf has made it to the house where Red was sent. The grandmother is sitting on the doorstep.",
+              "told": {
+                "kind": "next",
+                "id": "red_grandma"
+              },
+              "duplicateOf": "arrive(wolf, grandmother_house)"
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 1505204397,
+              "raw": "{\"step\": 9, \"event\": \"The wolf arrives at grandmother's house\", \"action\": \"arrive(wolf, grandmother_house)\", \"state\": \"The wolf is at the grandmother's house, which is large and impressive.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "8520d92fd373c57d",
+              "branch": {
+                "label": "The wolf arrives at grandmother's house",
+                "expr": "arrive(wolf, grandmother_house)",
+                "state": "The wolf is at the grandmother's house, which is large and impressive."
+              },
+              "expr": "arrive(wolf, grandmother_house)",
+              "display": "arrive(wolf, grandmother_house) — The wolf is at the grandmother's house, which is large and impressive.",
+              "told": {
+                "kind": "next",
+                "id": "red_grandma"
+              },
+              "duplicateOf": "arrive(wolf, grandmother_house)"
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 3371277887,
+              "raw": "{\"step\": 9, \"event\": \"The wolf arrives at the grandmother's house\", \"action\": \"arrive(wolf, grandmother_house)\", \"state\": \"The wolf is in the grandmother's house and knocks on the door.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "b0bd0b921b756880",
+              "branch": {
+                "label": "The wolf arrives at the grandmother's house",
+                "expr": "arrive(wolf, grandmother_house)",
+                "state": "The wolf is in the grandmother's house and knocks on the door."
+              },
+              "expr": "arrive(wolf, grandmother_house)",
+              "display": "arrive(wolf, grandmother_house) — The wolf is in the grandmother's house and knocks on the door.",
+              "told": {
+                "kind": "next",
+                "id": "red_grandma"
+              },
+              "duplicateOf": "arrive(wolf, grandmother_house)"
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 3354500268,
+              "raw": "{\"step\": 9, \"event\": \"The wolf approaches Red's grandmother's house\", \"action\": \"arrive(wolf, grandmother_house)\", \"state\": \"The wolf is close to the grandmother's house.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "339c9aa32fd7e79d",
+              "branch": {
+                "label": "The wolf approaches Red's grandmother's house",
+                "expr": "arrive(wolf, grandmother_house)",
+                "state": "The wolf is close to the grandmother's house."
+              },
+              "expr": "arrive(wolf, grandmother_house)",
+              "display": "arrive(wolf, grandmother_house) — The wolf is close to the grandmother's house.",
+              "told": {
+                "kind": "next",
+                "id": "red_grandma"
+              },
+              "duplicateOf": "arrive(wolf, grandmother_house)"
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 3404833125,
+              "raw": "{\"step\": 9, \"event\": \"Red returns to the path\", \"action\": \"return(red, path)\", \"state\": \"Red is walking back on the path. The sun is beginning to set.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "ddd4823ed1b462e8",
+              "branch": {
+                "label": "Red returns to the path",
+                "expr": "return(red, path)",
+                "state": "Red is walking back on the path. The sun is beginning to set."
+              },
+              "expr": "return(red, path)",
+              "display": "return(red, path) — Red is walking back on the path. The sun is beginning to set."
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 3388055506,
+              "raw": "{\"step\": 9, \"event\": \"The wolf approaches the grandmother's house\", \"action\": \"approach(wolf, grandmother_house)\", \"state\": \"The wolf arrives at the grandmother's house, alone.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "e164d3cc11698d02",
+              "branch": {
+                "label": "The wolf approaches the grandmother's house",
+                "expr": "approach(wolf, grandmother_house)",
+                "state": "The wolf arrives at the grandmother's house, alone."
+              },
+              "expr": "approach(wolf, grandmother_house)",
+              "display": "approach(wolf, grandmother_house) — The wolf arrives at the grandmother's house, alone."
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 3304167411,
+              "raw": "{\"step\": 9, \"event\": \"The wolf arrives at the grandmother's house\", \"action\": \"arrive(wolf, grandmother_house)\", \"state\": \"The wolf is in the house, where he is waiting for his prey.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "266f27311ac54b43",
+              "branch": {
+                "label": "The wolf arrives at the grandmother's house",
+                "expr": "arrive(wolf, grandmother_house)",
+                "state": "The wolf is in the house, where he is waiting for his prey."
+              },
+              "expr": "arrive(wolf, grandmother_house)",
+              "display": "arrive(wolf, grandmother_house) — The wolf is in the house, where he is waiting for his prey.",
+              "told": {
+                "kind": "next",
+                "id": "red_grandma"
+              },
+              "duplicateOf": "arrive(wolf, grandmother_house)"
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 3287389792,
+              "raw": "{\"step\": 9, \"event\": \"The wolf takes Red's place\", \"action\": \"take(wolf, red, place)\", \"state\": \"Red sees the wolf waiting at her grandmother's house. He speaks to her warmly and she opens the door.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "65dbc7e5a214896f",
+              "branch": {
+                "label": "The wolf takes Red's place",
+                "expr": "take(wolf, red, place)",
+                "state": "Red sees the wolf waiting at her grandmother's house. He speaks to her warmly and she opens the door."
+              },
+              "expr": "take(wolf, red, place)",
+              "display": "take(wolf, red, place) — Red sees the wolf waiting at her grandmother's house. He speaks to her warmly and she opens the door."
+            }
+          ]
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,1866 @@
+{
+  "manifest": {
+    "probe": "continue_probe v2 (prompt-version A/B)",
+    "story": "criedWolf",
+    "k": 10,
+    "runSeed": 7,
+    "arms": [
+      "branch.v4"
+    ],
+    "fast": false,
+    "sampling": {
+      "temperature": 1,
+      "top_k": 0,
+      "seed": 7,
+      "samplers": [
+        "top_k",
+        "min_p",
+        "temperature"
+      ],
+      "repeat_penalty": 1,
+      "dry_multiplier": 0,
+      "n_predict": 512,
+      "cache_prompt": false,
+      "min_p": 0.05
+    },
+    "model": {
+      "props": {
+        "default_generation_settings": {
+          "params": {
+            "seed": 4294967295,
+            "temperature": 0.800000011920929,
+            "dynatemp_range": 0,
+            "dynatemp_exponent": 1,
+            "top_k": 40,
+            "top_p": 0.949999988079071,
+            "min_p": 0.05000000074505806,
+            "top_n_sigma": -1,
+            "xtc_probability": 0,
+            "xtc_threshold": 0.10000000149011612,
+            "typical_p": 1,
+            "repeat_last_n": 64,
+            "repeat_penalty": 1,
+            "presence_penalty": 0,
+            "frequency_penalty": 0,
+            "dry_multiplier": 0,
+            "dry_base": 1.75,
+            "dry_allowed_length": 2,
+            "dry_penalty_last_n": -1,
+            "mirostat": 0,
+            "mirostat_tau": 5,
+            "mirostat_eta": 0.10000000149011612,
+            "adaptive_target": -1,
+            "adaptive_decay": 0.8999999761581421,
+            "max_tokens": -1,
+            "n_predict": -1,
+            "n_keep": 0,
+            "n_discard": 0,
+            "ignore_eos": false,
+            "stream": false,
+            "n_probs": 0,
+            "min_keep": 0,
+            "chat_format": "Content-only",
+            "reasoning_format": "none",
+            "reasoning_in_content": false,
+            "generation_prompt": "",
+            "samplers": [
+              "penalties",
+              "dry",
+              "top_n_sigma",
+              "top_k",
+              "typ_p",
+              "top_p",
+              "min_p",
+              "xtc",
+              "temperature"
+            ],
+            "speculative.types": "none",
+            "timings_per_token": false,
+            "post_sampling_probs": false,
+            "backend_sampling": false,
+            "lora": []
+          },
+          "n_ctx": 4096
+        },
+        "total_slots": 1,
+        "model_alias": "/media/oneiroid/sub/workspace/llmfinetune/models/qwen3-4b-base-Q5_K_M.gguf",
+        "model_ftype": "Q5_K - Medium",
+        "model_path": "/media/oneiroid/sub/workspace/llmfinetune/models/qwen3-4b-base-Q5_K_M.gguf",
+        "modalities": {
+          "vision": false,
+          "video": false,
+          "audio": false
+        },
+        "media_marker": "<__media_R6xD8p6s4jqB1ZVHaI6pVwkdqcXsX0R6__>",
+        "endpoint_slots": true,
+        "endpoint_props": false,
+        "endpoint_metrics": false,
+        "ui": true,
+        "ui_settings": {},
+        "chat_template": "{%- if tools %}\n    {{- '<|im_start|>system\\n' }}\n    {%- if messages[0].role == 'system' %}\n        {{- messages[0].content + '\\n\\n' }}\n    {%- endif %}\n    {{- \"# Tools\\n\\nYou may call one or more functions to assist with the user query.\\n\\nYou are provided with function signatures within <tools></tools> XML tags:\\n<tools>\" }}\n    {%- for tool in tools %}\n        {{- \"\\n\" }}\n        {{- tool | tojson }}\n    {%- endfor %}\n    {{- \"\\n</tools>\\n\\nFor each function call, return a json object with function name and arguments within <tool_call></tool_call> XML tags:\\n<tool_call>\\n{\\\"name\\\": <function-name>, \\\"arguments\\\": <args-json-object>}\\n</tool_call><|im_end|>\\n\" }}\n{%- else %}\n    {%- if messages[0].role == 'system' %}\n        {{- '<|im_start|>system\\n' + messages[0].content + '<|im_end|>\\n' }}\n    {%- endif %}\n{%- endif %}\n{%- set ns = namespace(multi_step_tool=true, last_query_index=messages|length - 1) %}\n{%- for message in messages[::-1] %}\n    {%- set index = (messages|length - 1) - loop.index0 %}\n    {%- if ns.multi_step_tool and message.role == \"user\" and not(message.content.startswith('<tool_response>') and message.content.endswith('</tool_response>')) %}\n        {%- set ns.multi_step_tool = false %}\n        {%- set ns.last_query_index = index %}\n    {%- endif %}\n{%- endfor %}\n{%- for message in messages %}\n    {%- if (message.role == \"user\") or (message.role == \"system\" and not loop.first) %}\n        {{- '<|im_start|>' + message.role + '\\n' + message.content + '<|im_end|>' + '\\n' }}\n    {%- elif message.role == \"assistant\" %}\n        {%- set content = message.content %}\n        {%- set reasoning_content = '' %}\n        {%- if message.reasoning_content is defined and message.reasoning_content is not none %}\n            {%- set reasoning_content = message.reasoning_content %}\n        {%- else %}\n            {%- if '</think>' in message.content %}\n                {%- set content = message.content.split('</think>')[-1].lstrip('\\n') %}\n                {%- set reasoning_content = message.content.split('</think>')[0].rstrip('\\n').split('<think>')[-1].lstrip('\\n') %}\n            {%- endif %}\n        {%- endif %}\n        {%- if loop.index0 > ns.last_query_index %}\n            {%- if loop.last or (not loop.last and reasoning_content) %}\n                {{- '<|im_start|>' + message.role + '\\n<think>\\n' + reasoning_content.strip('\\n') + '\\n</think>\\n\\n' + content.lstrip('\\n') }}\n            {%- else %}\n                {{- '<|im_start|>' + message.role + '\\n' + content }}\n            {%- endif %}\n        {%- else %}\n            {{- '<|im_start|>' + message.role + '\\n' + content }}\n        {%- endif %}\n        {%- if message.tool_calls %}\n            {%- for tool_call in message.tool_calls %}\n                {%- if (loop.first and content) or (not loop.first) %}\n                    {{- '\\n' }}\n                {%- endif %}\n                {%- if tool_call.function %}\n                    {%- set tool_call = tool_call.function %}\n                {%- endif %}\n                {{- '<tool_call>\\n{\"name\": \"' }}\n                {{- tool_call.name }}\n                {{- '\", \"arguments\": ' }}\n                {%- if tool_call.arguments is string %}\n                    {{- tool_call.arguments }}\n                {%- else %}\n                    {{- tool_call.arguments | tojson }}\n                {%- endif %}\n                {{- '}\\n</tool_call>' }}\n            {%- endfor %}\n        {%- endif %}\n        {{- '<|im_end|>\\n' }}\n    {%- elif message.role == \"tool\" %}\n        {%- if loop.first or (messages[loop.index0 - 1].role != \"tool\") %}\n            {{- '<|im_start|>user' }}\n        {%- endif %}\n        {{- '\\n<tool_response>\\n' }}\n        {{- message.content }}\n        {{- '\\n</tool_response>' }}\n        {%- if loop.last or (messages[loop.index0 + 1].role != \"tool\") %}\n            {{- '<|im_end|>\\n' }}\n        {%- endif %}\n    {%- endif %}\n{%- endfor %}\n{%- if add_generation_prompt %}\n    {{- '<|im_start|>assistant\\n' }}\n    {%- if enable_thinking is defined and enable_thinking is false %}\n        {{- '<think>\\n\\n</think>\\n\\n' }}\n    {%- endif %}\n{%- endif %}",
+        "chat_template_caps": {
+          "supports_object_arguments": true,
+          "supports_parallel_tool_calls": true,
+          "supports_preserve_reasoning": false,
+          "supports_string_content": true,
+          "supports_system_role": true,
+          "supports_tool_calls": true,
+          "supports_tools": true,
+          "supports_typed_content": false
+        },
+        "bos_token": "<|endoftext|>",
+        "eos_token": "<|im_end|>",
+        "build_info": "b1-f5b9bd3",
+        "is_sleeping": false,
+        "cors_proxy_enabled": false
+      },
+      "sha256": "699936b83664f71a4c1d129a1e10b02c1909e8edfdd32962cea75259f4f92093"
+    },
+    "templates": {
+      "branch.v4": {
+        "sha256": "82e216fac7655f30688bb3b5cd1039398ae67739487a2090a1f681df6d24969b"
+      }
+    },
+    "generatedAt": "2026-10-04T09:58:05.051Z"
+  },
+  "results": [
+    {
+      "nodeId": "cw_cry1",
+      "path": [
+        "cw_watch",
+        "cw_cry1"
+      ],
+      "history": [
+        "send(villagers, boy, flock) — The boy is alone on the hillside with the sheep, within earshot of the village.",
+        "cry(boy, wolf) — The boy is shouting that a wolf is at the sheep. There is no wolf."
+      ],
+      "arms": {
+        "branch.v4": {
+          "prompt": "==> stories/the_tortoise_and_the_hare.jsonl <==\n{\"title\": \"The Tortoise and the Hare\", \"characters\": [\"the hare\", \"the tortoise\", \"the fox\"]}\n{\"step\": 1, \"event\": \"The hare boasts of his speed\", \"action\": \"boast(hare, speed)\", \"state\": \"The hare has told everyone on the road that nothing can outrun him.\"}\n{\"step\": 2, \"event\": \"The tortoise challenges him to a race\", \"action\": \"challenge(tortoise, hare)\", \"state\": \"A race between the hare and the tortoise is agreed, over a course the tortoise named.\"}\n{\"step\": 3, \"event\": \"The fox starts the race\", \"action\": \"start(fox, race)\", \"state\": \"Both runners are on the road and the race has begun.\"}\n{\"step\": 4, \"event\": \"The hare takes the lead\", \"action\": \"outpace(hare, tortoise)\", \"state\": \"The hare is far ahead. The tortoise is still near the start.\"}\n{\"step\": 5, \"event\": \"The hare lies down by the road\", \"action\": \"nap(hare, roadside)\", \"state\": \"The hare is asleep by the road. The tortoise is still walking.\"}\n{\"step\": 6, \"event\": \"The tortoise passes the sleeping hare\", \"action\": \"pass(tortoise, hare)\", \"state\": \"The tortoise is ahead on the road. The hare has not woken.\"}\n{\"step\": 7, \"event\": \"The tortoise wins the race\", \"action\": \"win(tortoise, race)\", \"state\": \"The tortoise has crossed the finish line first. The race is over.\"}\n\n==> stories/the_boy_who_cried_wolf.jsonl <==\n{\"title\": \"The Boy Who Cried Wolf\", \"characters\": [\"the boy\", \"the villagers\", \"the wolf\"]}\n{\"step\": 1, \"event\": \"The boy is set to watch the flock\", \"action\": \"send(villagers, boy, flock)\", \"state\": \"The boy is alone on the hillside with the sheep, within earshot of the village.\"}\n{\"step\": 2, \"event\": \"The boy cries wolf for fun\", \"action\": \"cry(boy, wolf)\", \"state\": \"The boy is shouting that a wolf is at the sheep. There is no wolf.\"}\n",
+          "promptSha256": "4369b9e0f25fea2769372f302a6fe657cbf64965bc4a8a31e9d0eee6a21c5364",
+          "grammar": "root ::= \"{\\\"step\\\": 3, \\\"event\\\": \\\"\" text \"\\\", \\\"action\\\": \\\"\" action \"\\\", \\\"state\\\": \\\"\" text \"\\\"}\"\ntext ::= [^\"\\\\\\x7F\\x00-\\x1F]+\naction ::= word \"(\" word (\", \" word)* \")\"\nword ::= [a-z] [a-z0-9_]*",
+          "samples": [
+            {
+              "arm": "branch.v4",
+              "seed": 1875570070,
+              "raw": "{\"step\": 3, \"event\": \"The villagers ignore him\", \"action\": \"ignore(villagers, boy)\", \"state\": \"The villagers are not alarmed and continue their activities.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "d2b866ac7e260b52",
+              "branch": {
+                "label": "The villagers ignore him",
+                "expr": "ignore(villagers, boy)",
+                "state": "The villagers are not alarmed and continue their activities."
+              },
+              "expr": "ignore(villagers, boy)",
+              "display": "ignore(villagers, boy) — The villagers are not alarmed and continue their activities.",
+              "told": {
+                "kind": "later",
+                "id": "cw_dismiss"
+              }
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 1892347689,
+              "raw": "{\"step\": 3, \"event\": \"The villagers arrive in their arms\", \"action\": \"arrive(villagers)\", \"state\": \"The villagers respond to the alarm, but the wolf is not present.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "f6b5ad31465002db",
+              "branch": {
+                "label": "The villagers arrive in their arms",
+                "expr": "arrive(villagers)",
+                "state": "The villagers respond to the alarm, but the wolf is not present."
+              },
+              "expr": "arrive(villagers)",
+              "display": "arrive(villagers) — The villagers respond to the alarm, but the wolf is not present."
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 1858792451,
+              "raw": "{\"step\": 3, \"event\": \"The villagers laugh at him\", \"action\": \"laugh(villagers)\", \"state\": \"The villagers laugh at the boy's prank.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "e72a7e36925e4810",
+              "branch": {
+                "label": "The villagers laugh at him",
+                "expr": "laugh(villagers)",
+                "state": "The villagers laugh at the boy's prank."
+              },
+              "expr": "laugh(villagers)",
+              "display": "laugh(villagers) — The villagers laugh at the boy's prank."
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 1942680546,
+              "raw": "{\"step\": 3, \"event\": \"The villagers believe him and come\", \"action\": \"believe(villagers, boy)\", \"state\": \"The villagers come to the sheep, believing the boy. The wolf does not appear.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "2b257a052c1db13b",
+              "branch": {
+                "label": "The villagers believe him and come",
+                "expr": "believe(villagers, boy)",
+                "state": "The villagers come to the sheep, believing the boy. The wolf does not appear."
+              },
+              "expr": "believe(villagers, boy)",
+              "display": "believe(villagers, boy) — The villagers come to the sheep, believing the boy. The wolf does not appear."
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 1959458165,
+              "raw": "{\"step\": 3, \"event\": \"The villagers come to his aid\", \"action\": \"help(villagers, boy, flock)\", \"state\": \"The boy is screaming about a wolf, and the villagers are coming up the hill.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "4bdbd6a3fca378d1",
+              "branch": {
+                "label": "The villagers come to his aid",
+                "expr": "help(villagers, boy, flock)",
+                "state": "The boy is screaming about a wolf, and the villagers are coming up the hill."
+              },
+              "expr": "help(villagers, boy, flock)",
+              "display": "help(villagers, boy, flock) — The boy is screaming about a wolf, and the villagers are coming up the hill."
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 1909125308,
+              "raw": "{\"step\": 3, \"event\": \"The villagers dismiss the boy\", \"action\": \"dismiss(villagers, boy)\", \"state\": \"The boy is ignored, and the villagers continue with their day.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "f3eee8a0cfef9092",
+              "branch": {
+                "label": "The villagers dismiss the boy",
+                "expr": "dismiss(villagers, boy)",
+                "state": "The boy is ignored, and the villagers continue with their day."
+              },
+              "expr": "dismiss(villagers, boy)",
+              "display": "dismiss(villagers, boy) — The boy is ignored, and the villagers continue with their day."
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 1925902927,
+              "raw": "{\"step\": 3, \"event\": \"The villagers laugh and send help\", \"action\": \"ignore(boy, wolf)\", \"state\": \"The villagers are laughing at the boy and saying they will not believe him.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "9ba2f6d27e85f9ec",
+              "branch": {
+                "label": "The villagers laugh and send help",
+                "expr": "ignore(boy, wolf)",
+                "state": "The villagers are laughing at the boy and saying they will not believe him."
+              },
+              "expr": "ignore(boy, wolf)",
+              "display": "ignore(boy, wolf) — The villagers are laughing at the boy and saying they will not believe him."
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 2009791022,
+              "raw": "{\"step\": 3, \"event\": \"The villagers run to the boy\", \"action\": \"run(villagers, boy)\", \"state\": \"The villagers are at the boy. There is no wolf.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "8cd2675e78651e68",
+              "branch": {
+                "label": "The villagers run to the boy",
+                "expr": "run(villagers, boy)",
+                "state": "The villagers are at the boy. There is no wolf."
+              },
+              "expr": "run(villagers, boy)",
+              "display": "run(villagers, boy) — The villagers are at the boy. There is no wolf."
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 2026568641,
+              "raw": "{\"step\": 3, \"event\": \"The villagers respond\", \"action\": \"respond(villagers, boy)\", \"state\": \"The boy's cries have caused the villagers to rush to the scene.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "8d02e28edbcd9ffc",
+              "branch": {
+                "label": "The villagers respond",
+                "expr": "respond(villagers, boy)",
+                "state": "The boy's cries have caused the villagers to rush to the scene."
+              },
+              "expr": "respond(villagers, boy)",
+              "display": "respond(villagers, boy) — The boy's cries have caused the villagers to rush to the scene."
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 2809553608,
+              "raw": "{\"step\": 3, \"event\": \"The villagers think it's a prank\", \"action\": \"prank(villagers, boy)\", \"state\": \"The villagers ignore the boy and continue their activities.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "a85ebc8034af6dbe",
+              "branch": {
+                "label": "The villagers think it's a prank",
+                "expr": "prank(villagers, boy)",
+                "state": "The villagers ignore the boy and continue their activities."
+              },
+              "expr": "prank(villagers, boy)",
+              "display": "prank(villagers, boy) — The villagers ignore the boy and continue their activities."
+            }
+          ],
+          "attempts": 12,
+          "refused": 0,
+          "truncated": 0,
+          "duplicates": 2,
+          "usable": 12,
+          "toldNext": 0,
+          "toldLater": 3,
+          "saturated": false,
+          "allAttempts": [
+            {
+              "arm": "branch.v4",
+              "seed": 1875570070,
+              "raw": "{\"step\": 3, \"event\": \"The villagers ignore him\", \"action\": \"ignore(villagers, boy)\", \"state\": \"The villagers are not alarmed and continue their activities.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "d2b866ac7e260b52",
+              "branch": {
+                "label": "The villagers ignore him",
+                "expr": "ignore(villagers, boy)",
+                "state": "The villagers are not alarmed and continue their activities."
+              },
+              "expr": "ignore(villagers, boy)",
+              "display": "ignore(villagers, boy) — The villagers are not alarmed and continue their activities.",
+              "told": {
+                "kind": "later",
+                "id": "cw_dismiss"
+              }
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 1892347689,
+              "raw": "{\"step\": 3, \"event\": \"The villagers arrive in their arms\", \"action\": \"arrive(villagers)\", \"state\": \"The villagers respond to the alarm, but the wolf is not present.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "f6b5ad31465002db",
+              "branch": {
+                "label": "The villagers arrive in their arms",
+                "expr": "arrive(villagers)",
+                "state": "The villagers respond to the alarm, but the wolf is not present."
+              },
+              "expr": "arrive(villagers)",
+              "display": "arrive(villagers) — The villagers respond to the alarm, but the wolf is not present."
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 1842014832,
+              "raw": "{\"step\": 3, \"event\": \"The villagers ignore the boy\", \"action\": \"ignore(villagers, boy)\", \"state\": \"The villagers are not worried. They tell the boy to keep quiet.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "25296b375915362d",
+              "branch": {
+                "label": "The villagers ignore the boy",
+                "expr": "ignore(villagers, boy)",
+                "state": "The villagers are not worried. They tell the boy to keep quiet."
+              },
+              "expr": "ignore(villagers, boy)",
+              "display": "ignore(villagers, boy) — The villagers are not worried. They tell the boy to keep quiet.",
+              "told": {
+                "kind": "later",
+                "id": "cw_dismiss"
+              },
+              "duplicateOf": "ignore(villagers, boy)"
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 1858792451,
+              "raw": "{\"step\": 3, \"event\": \"The villagers laugh at him\", \"action\": \"laugh(villagers)\", \"state\": \"The villagers laugh at the boy's prank.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "e72a7e36925e4810",
+              "branch": {
+                "label": "The villagers laugh at him",
+                "expr": "laugh(villagers)",
+                "state": "The villagers laugh at the boy's prank."
+              },
+              "expr": "laugh(villagers)",
+              "display": "laugh(villagers) — The villagers laugh at the boy's prank."
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 1942680546,
+              "raw": "{\"step\": 3, \"event\": \"The villagers believe him and come\", \"action\": \"believe(villagers, boy)\", \"state\": \"The villagers come to the sheep, believing the boy. The wolf does not appear.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "2b257a052c1db13b",
+              "branch": {
+                "label": "The villagers believe him and come",
+                "expr": "believe(villagers, boy)",
+                "state": "The villagers come to the sheep, believing the boy. The wolf does not appear."
+              },
+              "expr": "believe(villagers, boy)",
+              "display": "believe(villagers, boy) — The villagers come to the sheep, believing the boy. The wolf does not appear."
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 1959458165,
+              "raw": "{\"step\": 3, \"event\": \"The villagers come to his aid\", \"action\": \"help(villagers, boy, flock)\", \"state\": \"The boy is screaming about a wolf, and the villagers are coming up the hill.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "4bdbd6a3fca378d1",
+              "branch": {
+                "label": "The villagers come to his aid",
+                "expr": "help(villagers, boy, flock)",
+                "state": "The boy is screaming about a wolf, and the villagers are coming up the hill."
+              },
+              "expr": "help(villagers, boy, flock)",
+              "display": "help(villagers, boy, flock) — The boy is screaming about a wolf, and the villagers are coming up the hill."
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 1909125308,
+              "raw": "{\"step\": 3, \"event\": \"The villagers dismiss the boy\", \"action\": \"dismiss(villagers, boy)\", \"state\": \"The boy is ignored, and the villagers continue with their day.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "f3eee8a0cfef9092",
+              "branch": {
+                "label": "The villagers dismiss the boy",
+                "expr": "dismiss(villagers, boy)",
+                "state": "The boy is ignored, and the villagers continue with their day."
+              },
+              "expr": "dismiss(villagers, boy)",
+              "display": "dismiss(villagers, boy) — The boy is ignored, and the villagers continue with their day."
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 1925902927,
+              "raw": "{\"step\": 3, \"event\": \"The villagers laugh and send help\", \"action\": \"ignore(boy, wolf)\", \"state\": \"The villagers are laughing at the boy and saying they will not believe him.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "9ba2f6d27e85f9ec",
+              "branch": {
+                "label": "The villagers laugh and send help",
+                "expr": "ignore(boy, wolf)",
+                "state": "The villagers are laughing at the boy and saying they will not believe him."
+              },
+              "expr": "ignore(boy, wolf)",
+              "display": "ignore(boy, wolf) — The villagers are laughing at the boy and saying they will not believe him."
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 2009791022,
+              "raw": "{\"step\": 3, \"event\": \"The villagers run to the boy\", \"action\": \"run(villagers, boy)\", \"state\": \"The villagers are at the boy. There is no wolf.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "8cd2675e78651e68",
+              "branch": {
+                "label": "The villagers run to the boy",
+                "expr": "run(villagers, boy)",
+                "state": "The villagers are at the boy. There is no wolf."
+              },
+              "expr": "run(villagers, boy)",
+              "display": "run(villagers, boy) — The villagers are at the boy. There is no wolf."
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 2026568641,
+              "raw": "{\"step\": 3, \"event\": \"The villagers respond\", \"action\": \"respond(villagers, boy)\", \"state\": \"The boy's cries have caused the villagers to rush to the scene.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "8d02e28edbcd9ffc",
+              "branch": {
+                "label": "The villagers respond",
+                "expr": "respond(villagers, boy)",
+                "state": "The boy's cries have caused the villagers to rush to the scene."
+              },
+              "expr": "respond(villagers, boy)",
+              "display": "respond(villagers, boy) — The boy's cries have caused the villagers to rush to the scene."
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 2826331227,
+              "raw": "{\"step\": 3, \"event\": \"The villagers do not believe the boy\", \"action\": \"ignore(villagers, boy)\", \"state\": \"The villagers stay home, believing the boy is joking.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "df088cca82fbf3f4",
+              "branch": {
+                "label": "The villagers do not believe the boy",
+                "expr": "ignore(villagers, boy)",
+                "state": "The villagers stay home, believing the boy is joking."
+              },
+              "expr": "ignore(villagers, boy)",
+              "display": "ignore(villagers, boy) — The villagers stay home, believing the boy is joking.",
+              "told": {
+                "kind": "later",
+                "id": "cw_dismiss"
+              },
+              "duplicateOf": "ignore(villagers, boy)"
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 2809553608,
+              "raw": "{\"step\": 3, \"event\": \"The villagers think it's a prank\", \"action\": \"prank(villagers, boy)\", \"state\": \"The villagers ignore the boy and continue their activities.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "a85ebc8034af6dbe",
+              "branch": {
+                "label": "The villagers think it's a prank",
+                "expr": "prank(villagers, boy)",
+                "state": "The villagers ignore the boy and continue their activities."
+              },
+              "expr": "prank(villagers, boy)",
+              "display": "prank(villagers, boy) — The villagers ignore the boy and continue their activities."
+            }
+          ]
+        }
+      }
+    },
+    {
+      "nodeId": "cw_laugh",
+      "path": [
+        "cw_watch",
+        "cw_cry1",
+        "cw_run1",
+        "cw_laugh"
+      ],
+      "history": [
+        "send(villagers, boy, flock) — The boy is alone on the hillside with the sheep, within earshot of the village.",
+        "cry(boy, wolf) — The boy is shouting that a wolf is at the sheep. There is no wolf.",
+        "arrive(villagers, flock) — The villagers are at the flock, armed, and the sheep are grazing quietly.",
+        "mock(boy, villagers) — The villagers know the alarm was a joke and are angry with the boy."
+      ],
+      "arms": {
+        "branch.v4": {
+          "prompt": "==> stories/the_tortoise_and_the_hare.jsonl <==\n{\"title\": \"The Tortoise and the Hare\", \"characters\": [\"the hare\", \"the tortoise\", \"the fox\"]}\n{\"step\": 1, \"event\": \"The hare boasts of his speed\", \"action\": \"boast(hare, speed)\", \"state\": \"The hare has told everyone on the road that nothing can outrun him.\"}\n{\"step\": 2, \"event\": \"The tortoise challenges him to a race\", \"action\": \"challenge(tortoise, hare)\", \"state\": \"A race between the hare and the tortoise is agreed, over a course the tortoise named.\"}\n{\"step\": 3, \"event\": \"The fox starts the race\", \"action\": \"start(fox, race)\", \"state\": \"Both runners are on the road and the race has begun.\"}\n{\"step\": 4, \"event\": \"The hare takes the lead\", \"action\": \"outpace(hare, tortoise)\", \"state\": \"The hare is far ahead. The tortoise is still near the start.\"}\n{\"step\": 5, \"event\": \"The hare lies down by the road\", \"action\": \"nap(hare, roadside)\", \"state\": \"The hare is asleep by the road. The tortoise is still walking.\"}\n{\"step\": 6, \"event\": \"The tortoise passes the sleeping hare\", \"action\": \"pass(tortoise, hare)\", \"state\": \"The tortoise is ahead on the road. The hare has not woken.\"}\n{\"step\": 7, \"event\": \"The tortoise wins the race\", \"action\": \"win(tortoise, race)\", \"state\": \"The tortoise has crossed the finish line first. The race is over.\"}\n\n==> stories/the_boy_who_cried_wolf.jsonl <==\n{\"title\": \"The Boy Who Cried Wolf\", \"characters\": [\"the boy\", \"the villagers\", \"the wolf\"]}\n{\"step\": 1, \"event\": \"The boy is set to watch the flock\", \"action\": \"send(villagers, boy, flock)\", \"state\": \"The boy is alone on the hillside with the sheep, within earshot of the village.\"}\n{\"step\": 2, \"event\": \"The boy cries wolf for fun\", \"action\": \"cry(boy, wolf)\", \"state\": \"The boy is shouting that a wolf is at the sheep. There is no wolf.\"}\n{\"step\": 3, \"event\": \"The villagers come running\", \"action\": \"arrive(villagers, flock)\", \"state\": \"The villagers are at the flock, armed, and the sheep are grazing quietly.\"}\n{\"step\": 4, \"event\": \"The boy laughs at them\", \"action\": \"mock(boy, villagers)\", \"state\": \"The villagers know the alarm was a joke and are angry with the boy.\"}\n",
+          "promptSha256": "e6aff10c095d52bc6c6c45e39b6d060bda21477fb7c1aa16821dcfefbd5042ee",
+          "grammar": "root ::= \"{\\\"step\\\": 5, \\\"event\\\": \\\"\" text \"\\\", \\\"action\\\": \\\"\" action \"\\\", \\\"state\\\": \\\"\" text \"\\\"}\"\ntext ::= [^\"\\\\\\x7F\\x00-\\x1F]+\naction ::= word \"(\" word (\", \" word)* \")\"\nword ::= [a-z] [a-z0-9_]*",
+          "samples": [
+            {
+              "arm": "branch.v4",
+              "seed": 821438278,
+              "raw": "{\"step\": 5, \"event\": \"The villagers do not come when there is a real wolf\", \"action\": \"ignore(villagers, wolf)\", \"state\": \"The wolves are coming, but the villagers do not run.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "cec806ac790e0dce",
+              "branch": {
+                "label": "The villagers do not come when there is a real wolf",
+                "expr": "ignore(villagers, wolf)",
+                "state": "The wolves are coming, but the villagers do not run."
+              },
+              "expr": "ignore(villagers, wolf)",
+              "display": "ignore(villagers, wolf) — The wolves are coming, but the villagers do not run."
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 838215897,
+              "raw": "{\"step\": 5, \"event\": \"The wolf actually attacks the flock\", \"action\": \"attack(wolf, flock)\", \"state\": \"The sheep are being attacked by wolves. The boy is not around.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "08b8081a419aaa28",
+              "branch": {
+                "label": "The wolf actually attacks the flock",
+                "expr": "attack(wolf, flock)",
+                "state": "The sheep are being attacked by wolves. The boy is not around."
+              },
+              "expr": "attack(wolf, flock)",
+              "display": "attack(wolf, flock) — The sheep are being attacked by wolves. The boy is not around."
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 787883040,
+              "raw": "{\"step\": 5, \"event\": \"The boy cries wolf again\", \"action\": \"cry(boy, wolf)\", \"state\": \"The boy cries wolf again, and there really is a wolf at the sheep.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "094a1f8acf0ec770",
+              "branch": {
+                "label": "The boy cries wolf again",
+                "expr": "cry(boy, wolf)",
+                "state": "The boy cries wolf again, and there really is a wolf at the sheep."
+              },
+              "expr": "cry(boy, wolf)",
+              "display": "cry(boy, wolf) — The boy cries wolf again, and there really is a wolf at the sheep.",
+              "told": {
+                "kind": "later",
+                "id": "cw_cry2"
+              }
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 955659230,
+              "raw": "{\"step\": 5, \"event\": \"A real wolf approaches\", \"action\": \"approach(wolf, flock)\", \"state\": \"The wolf is at the flock, hungry.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "a0ce18cd0cbc7d53",
+              "branch": {
+                "label": "A real wolf approaches",
+                "expr": "approach(wolf, flock)",
+                "state": "The wolf is at the flock, hungry."
+              },
+              "expr": "approach(wolf, flock)",
+              "display": "approach(wolf, flock) — The wolf is at the flock, hungry."
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 972436849,
+              "raw": "{\"step\": 5, \"event\": \"The villagers go back home\", \"action\": \"leave(villagers, flock)\", \"state\": \"The villagers are angry and gone.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "4343c65b9d116f2d",
+              "branch": {
+                "label": "The villagers go back home",
+                "expr": "leave(villagers, flock)",
+                "state": "The villagers are angry and gone."
+              },
+              "expr": "leave(villagers, flock)",
+              "display": "leave(villagers, flock) — The villagers are angry and gone."
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 2390910264,
+              "raw": "{\"step\": 5, \"event\": \"The wolf arrives\", \"action\": \"attacked(wolf, flock)\", \"state\": \"The wolf is at the flock, attacking the sheep.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "821d010b08ba2e41",
+              "branch": {
+                "label": "The wolf arrives",
+                "expr": "attacked(wolf, flock)",
+                "state": "The wolf is at the flock, attacking the sheep."
+              },
+              "expr": "attacked(wolf, flock)",
+              "display": "attacked(wolf, flock) — The wolf is at the flock, attacking the sheep."
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 2441243121,
+              "raw": "{\"step\": 5, \"event\": \"A wolf appears\", \"action\": \"appear(wolf, flock)\", \"state\": \"There is a wolf at the sheep. The villagers and boy are not there.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "7baebb1dc7a44bbb",
+              "branch": {
+                "label": "A wolf appears",
+                "expr": "appear(wolf, flock)",
+                "state": "There is a wolf at the sheep. The villagers and boy are not there."
+              },
+              "expr": "appear(wolf, flock)",
+              "display": "appear(wolf, flock) — There is a wolf at the sheep. The villagers and boy are not there."
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 2508353597,
+              "raw": "{\"step\": 5, \"event\": \"The boy is no longer trusted\", \"action\": \"no_trust(villagers, boy)\", \"state\": \"The villagers no longer believe the boy when he cries wolf.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "40f4b0bedf3ad36c",
+              "branch": {
+                "label": "The boy is no longer trusted",
+                "expr": "no_trust(villagers, boy)",
+                "state": "The villagers no longer believe the boy when he cries wolf."
+              },
+              "expr": "no_trust(villagers, boy)",
+              "display": "no_trust(villagers, boy) — The villagers no longer believe the boy when he cries wolf."
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 2491575978,
+              "raw": "{\"step\": 5, \"event\": \"The wolf appears on the hill\", \"action\": \"appear(wolf, hill)\", \"state\": \"The wolf is at the hill, about to attack the sheep.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "3308e8c27e55f3c4",
+              "branch": {
+                "label": "The wolf appears on the hill",
+                "expr": "appear(wolf, hill)",
+                "state": "The wolf is at the hill, about to attack the sheep."
+              },
+              "expr": "appear(wolf, hill)",
+              "display": "appear(wolf, hill) — The wolf is at the hill, about to attack the sheep."
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 2273466931,
+              "raw": "{\"step\": 5, \"event\": \"The boy is told never to cry wolf\", \"action\": \"warn(boy, wolf)\", \"state\": \"The boy has learned from his mistake, and will not lie again.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "46e89696d2f93190",
+              "branch": {
+                "label": "The boy is told never to cry wolf",
+                "expr": "warn(boy, wolf)",
+                "state": "The boy has learned from his mistake, and will not lie again."
+              },
+              "expr": "warn(boy, wolf)",
+              "display": "warn(boy, wolf) — The boy has learned from his mistake, and will not lie again."
+            }
+          ],
+          "attempts": 19,
+          "refused": 0,
+          "truncated": 0,
+          "duplicates": 9,
+          "usable": 19,
+          "toldNext": 0,
+          "toldLater": 3,
+          "saturated": false,
+          "allAttempts": [
+            {
+              "arm": "branch.v4",
+              "seed": 821438278,
+              "raw": "{\"step\": 5, \"event\": \"The villagers do not come when there is a real wolf\", \"action\": \"ignore(villagers, wolf)\", \"state\": \"The wolves are coming, but the villagers do not run.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "cec806ac790e0dce",
+              "branch": {
+                "label": "The villagers do not come when there is a real wolf",
+                "expr": "ignore(villagers, wolf)",
+                "state": "The wolves are coming, but the villagers do not run."
+              },
+              "expr": "ignore(villagers, wolf)",
+              "display": "ignore(villagers, wolf) — The wolves are coming, but the villagers do not run."
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 838215897,
+              "raw": "{\"step\": 5, \"event\": \"The wolf actually attacks the flock\", \"action\": \"attack(wolf, flock)\", \"state\": \"The sheep are being attacked by wolves. The boy is not around.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "08b8081a419aaa28",
+              "branch": {
+                "label": "The wolf actually attacks the flock",
+                "expr": "attack(wolf, flock)",
+                "state": "The sheep are being attacked by wolves. The boy is not around."
+              },
+              "expr": "attack(wolf, flock)",
+              "display": "attack(wolf, flock) — The sheep are being attacked by wolves. The boy is not around."
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 787883040,
+              "raw": "{\"step\": 5, \"event\": \"The boy cries wolf again\", \"action\": \"cry(boy, wolf)\", \"state\": \"The boy cries wolf again, and there really is a wolf at the sheep.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "094a1f8acf0ec770",
+              "branch": {
+                "label": "The boy cries wolf again",
+                "expr": "cry(boy, wolf)",
+                "state": "The boy cries wolf again, and there really is a wolf at the sheep."
+              },
+              "expr": "cry(boy, wolf)",
+              "display": "cry(boy, wolf) — The boy cries wolf again, and there really is a wolf at the sheep.",
+              "told": {
+                "kind": "later",
+                "id": "cw_cry2"
+              }
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 804660659,
+              "raw": "{\"step\": 5, \"event\": \"The wolf attacks the flock\", \"action\": \"attack(wolf, flock)\", \"state\": \"The wolf is at the flock, while the boy and villagers watch helplessly.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "89cf7121d7441707",
+              "branch": {
+                "label": "The wolf attacks the flock",
+                "expr": "attack(wolf, flock)",
+                "state": "The wolf is at the flock, while the boy and villagers watch helplessly."
+              },
+              "expr": "attack(wolf, flock)",
+              "display": "attack(wolf, flock) — The wolf is at the flock, while the boy and villagers watch helplessly.",
+              "duplicateOf": "attack(wolf, flock)"
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 888548754,
+              "raw": "{\"step\": 5, \"event\": \"A real wolf attacks the flock\", \"action\": \"attack(wolf, flock)\", \"state\": \"The sheep are being eaten by a wolf. The boy is watching.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "ee3cc9280c8a05f6",
+              "branch": {
+                "label": "A real wolf attacks the flock",
+                "expr": "attack(wolf, flock)",
+                "state": "The sheep are being eaten by a wolf. The boy is watching."
+              },
+              "expr": "attack(wolf, flock)",
+              "display": "attack(wolf, flock) — The sheep are being eaten by a wolf. The boy is watching.",
+              "duplicateOf": "attack(wolf, flock)"
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 905326373,
+              "raw": "{\"step\": 5, \"event\": \"The boy cries wolf again\", \"action\": \"cry(boy, wolf)\", \"state\": \"The boy yells that a wolf is attacking the flock.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "ab2e02bdb3a5cdbf",
+              "branch": {
+                "label": "The boy cries wolf again",
+                "expr": "cry(boy, wolf)",
+                "state": "The boy yells that a wolf is attacking the flock."
+              },
+              "expr": "cry(boy, wolf)",
+              "display": "cry(boy, wolf) — The boy yells that a wolf is attacking the flock.",
+              "told": {
+                "kind": "later",
+                "id": "cw_cry2"
+              },
+              "duplicateOf": "cry(boy, wolf)"
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 854993516,
+              "raw": "{\"step\": 5, \"event\": \"The wolf arrives at the flock\", \"action\": \"attack(wolf, flock)\", \"state\": \"The wolf is at the flock, and the sheep are at risk.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "8a515df9d3c492b3",
+              "branch": {
+                "label": "The wolf arrives at the flock",
+                "expr": "attack(wolf, flock)",
+                "state": "The wolf is at the flock, and the sheep are at risk."
+              },
+              "expr": "attack(wolf, flock)",
+              "display": "attack(wolf, flock) — The wolf is at the flock, and the sheep are at risk.",
+              "duplicateOf": "attack(wolf, flock)"
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 871771135,
+              "raw": "{\"step\": 5, \"event\": \"The wolf really attacks the flock\", \"action\": \"attack(wolf, flock)\", \"state\": \"A wolf has come, and is attacking the sheep.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "dbf22391a511476b",
+              "branch": {
+                "label": "The wolf really attacks the flock",
+                "expr": "attack(wolf, flock)",
+                "state": "A wolf has come, and is attacking the sheep."
+              },
+              "expr": "attack(wolf, flock)",
+              "display": "attack(wolf, flock) — A wolf has come, and is attacking the sheep.",
+              "duplicateOf": "attack(wolf, flock)"
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 955659230,
+              "raw": "{\"step\": 5, \"event\": \"A real wolf approaches\", \"action\": \"approach(wolf, flock)\", \"state\": \"The wolf is at the flock, hungry.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "a0ce18cd0cbc7d53",
+              "branch": {
+                "label": "A real wolf approaches",
+                "expr": "approach(wolf, flock)",
+                "state": "The wolf is at the flock, hungry."
+              },
+              "expr": "approach(wolf, flock)",
+              "display": "approach(wolf, flock) — The wolf is at the flock, hungry."
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 972436849,
+              "raw": "{\"step\": 5, \"event\": \"The villagers go back home\", \"action\": \"leave(villagers, flock)\", \"state\": \"The villagers are angry and gone.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "4343c65b9d116f2d",
+              "branch": {
+                "label": "The villagers go back home",
+                "expr": "leave(villagers, flock)",
+                "state": "The villagers are angry and gone."
+              },
+              "expr": "leave(villagers, flock)",
+              "display": "leave(villagers, flock) — The villagers are angry and gone."
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 2407687883,
+              "raw": "{\"step\": 5, \"event\": \"A real wolf attacks the flock\", \"action\": \"attack(wolf, flock)\", \"state\": \"A wolf attacks the flock. The boy has been ignored by the villagers.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "a252e534588fb8ae",
+              "branch": {
+                "label": "A real wolf attacks the flock",
+                "expr": "attack(wolf, flock)",
+                "state": "A wolf attacks the flock. The boy has been ignored by the villagers."
+              },
+              "expr": "attack(wolf, flock)",
+              "display": "attack(wolf, flock) — A wolf attacks the flock. The boy has been ignored by the villagers.",
+              "duplicateOf": "attack(wolf, flock)"
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 2390910264,
+              "raw": "{\"step\": 5, \"event\": \"The wolf arrives\", \"action\": \"attacked(wolf, flock)\", \"state\": \"The wolf is at the flock, attacking the sheep.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "821d010b08ba2e41",
+              "branch": {
+                "label": "The wolf arrives",
+                "expr": "attacked(wolf, flock)",
+                "state": "The wolf is at the flock, attacking the sheep."
+              },
+              "expr": "attacked(wolf, flock)",
+              "display": "attacked(wolf, flock) — The wolf is at the flock, attacking the sheep."
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 2441243121,
+              "raw": "{\"step\": 5, \"event\": \"A wolf appears\", \"action\": \"appear(wolf, flock)\", \"state\": \"There is a wolf at the sheep. The villagers and boy are not there.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "7baebb1dc7a44bbb",
+              "branch": {
+                "label": "A wolf appears",
+                "expr": "appear(wolf, flock)",
+                "state": "There is a wolf at the sheep. The villagers and boy are not there."
+              },
+              "expr": "appear(wolf, flock)",
+              "display": "appear(wolf, flock) — There is a wolf at the sheep. The villagers and boy are not there."
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 2424465502,
+              "raw": "{\"step\": 5, \"event\": \"The wolf is at the flock\", \"action\": \"appear(wolf, flock)\", \"state\": \"The wolf is near the sheep and is attacking them.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "ce58b4c1ed33760f",
+              "branch": {
+                "label": "The wolf is at the flock",
+                "expr": "appear(wolf, flock)",
+                "state": "The wolf is near the sheep and is attacking them."
+              },
+              "expr": "appear(wolf, flock)",
+              "display": "appear(wolf, flock) — The wolf is near the sheep and is attacking them.",
+              "duplicateOf": "appear(wolf, flock)"
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 2474798359,
+              "raw": "{\"step\": 5, \"event\": \"The boy cries wolf again for fun\", \"action\": \"cry(boy, wolf)\", \"state\": \"The boy is shouting that a wolf is at the sheep. There is no wolf.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "c0ca38c1d35d3847",
+              "branch": {
+                "label": "The boy cries wolf again for fun",
+                "expr": "cry(boy, wolf)",
+                "state": "The boy is shouting that a wolf is at the sheep. There is no wolf."
+              },
+              "expr": "cry(boy, wolf)",
+              "display": "cry(boy, wolf) — The boy is shouting that a wolf is at the sheep. There is no wolf.",
+              "told": {
+                "kind": "later",
+                "id": "cw_cry2"
+              },
+              "duplicateOf": "cry(boy, wolf)"
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 2458020740,
+              "raw": "{\"step\": 5, \"event\": \"A real wolf appears\", \"action\": \"appear(wolf, flock)\", \"state\": \"A wolf is approaching the sheep and the boy is crying out again.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "c3b5301bed17700d",
+              "branch": {
+                "label": "A real wolf appears",
+                "expr": "appear(wolf, flock)",
+                "state": "A wolf is approaching the sheep and the boy is crying out again."
+              },
+              "expr": "appear(wolf, flock)",
+              "display": "appear(wolf, flock) — A wolf is approaching the sheep and the boy is crying out again.",
+              "duplicateOf": "appear(wolf, flock)"
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 2508353597,
+              "raw": "{\"step\": 5, \"event\": \"The boy is no longer trusted\", \"action\": \"no_trust(villagers, boy)\", \"state\": \"The villagers no longer believe the boy when he cries wolf.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "40f4b0bedf3ad36c",
+              "branch": {
+                "label": "The boy is no longer trusted",
+                "expr": "no_trust(villagers, boy)",
+                "state": "The villagers no longer believe the boy when he cries wolf."
+              },
+              "expr": "no_trust(villagers, boy)",
+              "display": "no_trust(villagers, boy) — The villagers no longer believe the boy when he cries wolf."
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 2491575978,
+              "raw": "{\"step\": 5, \"event\": \"The wolf appears on the hill\", \"action\": \"appear(wolf, hill)\", \"state\": \"The wolf is at the hill, about to attack the sheep.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "3308e8c27e55f3c4",
+              "branch": {
+                "label": "The wolf appears on the hill",
+                "expr": "appear(wolf, hill)",
+                "state": "The wolf is at the hill, about to attack the sheep."
+              },
+              "expr": "appear(wolf, hill)",
+              "display": "appear(wolf, hill) — The wolf is at the hill, about to attack the sheep."
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 2273466931,
+              "raw": "{\"step\": 5, \"event\": \"The boy is told never to cry wolf\", \"action\": \"warn(boy, wolf)\", \"state\": \"The boy has learned from his mistake, and will not lie again.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "46e89696d2f93190",
+              "branch": {
+                "label": "The boy is told never to cry wolf",
+                "expr": "warn(boy, wolf)",
+                "state": "The boy has learned from his mistake, and will not lie again."
+              },
+              "expr": "warn(boy, wolf)",
+              "display": "warn(boy, wolf) — The boy has learned from his mistake, and will not lie again."
+            }
+          ]
+        }
+      }
+    },
+    {
+      "nodeId": "cw_doubt",
+      "path": [
+        "cw_watch",
+        "cw_cry1",
+        "cw_run1",
+        "cw_laugh",
+        "cw_home1",
+        "cw_cry2",
+        "cw_run2",
+        "cw_doubt"
+      ],
+      "history": [
+        "send(villagers, boy, flock) — The boy is alone on the hillside with the sheep, within earshot of the village.",
+        "cry(boy, wolf) — The boy is shouting that a wolf is at the sheep. There is no wolf.",
+        "arrive(villagers, flock) — The villagers are at the flock, armed, and the sheep are grazing quietly.",
+        "mock(boy, villagers) — The villagers know the alarm was a joke and are angry with the boy.",
+        "return(villagers, village) — The villagers are back at their work in the village. The boy is alone with the sheep again.",
+        "cry(boy, wolf) — The boy is shouting about a wolf a second time. There is still no wolf.",
+        "arrive(villagers, flock) — The villagers are at the flock again, and again the sheep are grazing quietly.",
+        "distrust(villagers, boy) — The villagers have decided the boy's cries mean nothing."
+      ],
+      "arms": {
+        "branch.v4": {
+          "prompt": "==> stories/the_tortoise_and_the_hare.jsonl <==\n{\"title\": \"The Tortoise and the Hare\", \"characters\": [\"the hare\", \"the tortoise\", \"the fox\"]}\n{\"step\": 1, \"event\": \"The hare boasts of his speed\", \"action\": \"boast(hare, speed)\", \"state\": \"The hare has told everyone on the road that nothing can outrun him.\"}\n{\"step\": 2, \"event\": \"The tortoise challenges him to a race\", \"action\": \"challenge(tortoise, hare)\", \"state\": \"A race between the hare and the tortoise is agreed, over a course the tortoise named.\"}\n{\"step\": 3, \"event\": \"The fox starts the race\", \"action\": \"start(fox, race)\", \"state\": \"Both runners are on the road and the race has begun.\"}\n{\"step\": 4, \"event\": \"The hare takes the lead\", \"action\": \"outpace(hare, tortoise)\", \"state\": \"The hare is far ahead. The tortoise is still near the start.\"}\n{\"step\": 5, \"event\": \"The hare lies down by the road\", \"action\": \"nap(hare, roadside)\", \"state\": \"The hare is asleep by the road. The tortoise is still walking.\"}\n{\"step\": 6, \"event\": \"The tortoise passes the sleeping hare\", \"action\": \"pass(tortoise, hare)\", \"state\": \"The tortoise is ahead on the road. The hare has not woken.\"}\n{\"step\": 7, \"event\": \"The tortoise wins the race\", \"action\": \"win(tortoise, race)\", \"state\": \"The tortoise has crossed the finish line first. The race is over.\"}\n\n==> stories/the_boy_who_cried_wolf.jsonl <==\n{\"title\": \"The Boy Who Cried Wolf\", \"characters\": [\"the boy\", \"the villagers\", \"the wolf\"]}\n{\"step\": 1, \"event\": \"The boy is set to watch the flock\", \"action\": \"send(villagers, boy, flock)\", \"state\": \"The boy is alone on the hillside with the sheep, within earshot of the village.\"}\n{\"step\": 2, \"event\": \"The boy cries wolf for fun\", \"action\": \"cry(boy, wolf)\", \"state\": \"The boy is shouting that a wolf is at the sheep. There is no wolf.\"}\n{\"step\": 3, \"event\": \"The villagers come running\", \"action\": \"arrive(villagers, flock)\", \"state\": \"The villagers are at the flock, armed, and the sheep are grazing quietly.\"}\n{\"step\": 4, \"event\": \"The boy laughs at them\", \"action\": \"mock(boy, villagers)\", \"state\": \"The villagers know the alarm was a joke and are angry with the boy.\"}\n{\"step\": 5, \"event\": \"The villagers go back to the village\", \"action\": \"return(villagers, village)\", \"state\": \"The villagers are back at their work in the village. The boy is alone with the sheep again.\"}\n{\"step\": 6, \"event\": \"The boy cries wolf again\", \"action\": \"cry(boy, wolf)\", \"state\": \"The boy is shouting about a wolf a second time. There is still no wolf.\"}\n{\"step\": 7, \"event\": \"They come a second time\", \"action\": \"arrive(villagers, flock)\", \"state\": \"The villagers are at the flock again, and again the sheep are grazing quietly.\"}\n{\"step\": 8, \"event\": \"The villagers stop believing him\", \"action\": \"distrust(villagers, boy)\", \"state\": \"The villagers have decided the boy's cries mean nothing.\"}\n",
+          "promptSha256": "0fa01f273bec42dcb8f146b1b5558cb8a5dbbb66d1a3795745f6113de1cbf178",
+          "grammar": "root ::= \"{\\\"step\\\": 9, \\\"event\\\": \\\"\" text \"\\\", \\\"action\\\": \\\"\" action \"\\\", \\\"state\\\": \\\"\" text \"\\\"}\"\ntext ::= [^\"\\\\\\x7F\\x00-\\x1F]+\naction ::= word \"(\" word (\", \" word)* \")\"\nword ::= [a-z] [a-z0-9_]*",
+          "samples": [
+            {
+              "arm": "branch.v4",
+              "seed": 711991213,
+              "raw": "{\"step\": 9, \"event\": \"The boy cries wolf again\", \"action\": \"cry(boy, wolf)\", \"state\": \"The boy is shouting about a wolf a third time. There is still no wolf.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "b6e2313f76fdd371",
+              "branch": {
+                "label": "The boy cries wolf again",
+                "expr": "cry(boy, wolf)",
+                "state": "The boy is shouting about a wolf a third time. There is still no wolf."
+              },
+              "expr": "cry(boy, wolf)",
+              "display": "cry(boy, wolf) — The boy is shouting about a wolf a third time. There is still no wolf.",
+              "told": {
+                "kind": "later",
+                "id": "cw_cry3"
+              }
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 695213594,
+              "raw": "{\"step\": 9, \"event\": \"The wolf comes\", \"action\": \"attack(wolf, flock)\", \"state\": \"A wolf attacks the flock, and the sheep are in danger.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "cdfbed1da9a1f0d7",
+              "branch": {
+                "label": "The wolf comes",
+                "expr": "attack(wolf, flock)",
+                "state": "A wolf attacks the flock, and the sheep are in danger."
+              },
+              "expr": "attack(wolf, flock)",
+              "display": "attack(wolf, flock) — A wolf attacks the flock, and the sheep are in danger."
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 644880737,
+              "raw": "{\"step\": 9, \"event\": \"The wolf comes and eats the flock\", \"action\": \"eat(wolf, flock)\", \"state\": \"The wolf has killed the sheep. The boy is alone and the villagers don't help.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "af13e31c30775c32",
+              "branch": {
+                "label": "The wolf comes and eats the flock",
+                "expr": "eat(wolf, flock)",
+                "state": "The wolf has killed the sheep. The boy is alone and the villagers don't help."
+              },
+              "expr": "eat(wolf, flock)",
+              "display": "eat(wolf, flock) — The wolf has killed the sheep. The boy is alone and the villagers don't help."
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 611325499,
+              "raw": "{\"step\": 9, \"event\": \"The real wolf appears\", \"action\": \"appear(wolf, flock)\", \"state\": \"The wolf is at the flock and it is too late to warn them.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "1b5a48073aaa2149",
+              "branch": {
+                "label": "The real wolf appears",
+                "expr": "appear(wolf, flock)",
+                "state": "The wolf is at the flock and it is too late to warn them."
+              },
+              "expr": "appear(wolf, flock)",
+              "display": "appear(wolf, flock) — The wolf is at the flock and it is too late to warn them."
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 577770261,
+              "raw": "{\"step\": 9, \"event\": \"The boy cries wolf for real\", \"action\": \"cry(boy, wolf, real)\", \"state\": \"A wolf has actually come, the boy cries again.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "a4de71a9f32115af",
+              "branch": {
+                "label": "The boy cries wolf for real",
+                "expr": "cry(boy, wolf, real)",
+                "state": "A wolf has actually come, the boy cries again."
+              },
+              "expr": "cry(boy, wolf, real)",
+              "display": "cry(boy, wolf, real) — A wolf has actually come, the boy cries again."
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 1719631281,
+              "raw": "{\"step\": 9, \"event\": \"The wolf comes\", \"action\": \"arrive(wolf, flock)\", \"state\": \"A wolf is at the sheep. The boy has no idea.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "b3348e1e4b23b7c8",
+              "branch": {
+                "label": "The wolf comes",
+                "expr": "arrive(wolf, flock)",
+                "state": "A wolf is at the sheep. The boy has no idea."
+              },
+              "expr": "arrive(wolf, flock)",
+              "display": "arrive(wolf, flock) — A wolf is at the sheep. The boy has no idea.",
+              "told": {
+                "kind": "later",
+                "id": "cw_wolf"
+              }
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 1602040853,
+              "raw": "{\"step\": 9, \"event\": \"A real wolf approaches\", \"action\": \"threat(wolf, flock)\", \"state\": \"A wolf is coming towards the sheep and the boy.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "3d96e93e89dca95c",
+              "branch": {
+                "label": "A real wolf approaches",
+                "expr": "threat(wolf, flock)",
+                "state": "A wolf is coming towards the sheep and the boy."
+              },
+              "expr": "threat(wolf, flock)",
+              "display": "threat(wolf, flock) — A wolf is coming towards the sheep and the boy."
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 1736261805,
+              "raw": "{\"step\": 9, \"event\": \"The wolf finally appears\", \"action\": \"appear(wolf)\", \"state\": \"A real wolf is at the flock, and the sheep are barking.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "61f290f8b5c01b46",
+              "branch": {
+                "label": "The wolf finally appears",
+                "expr": "appear(wolf)",
+                "state": "A real wolf is at the flock, and the sheep are barking."
+              },
+              "expr": "appear(wolf)",
+              "display": "appear(wolf) — A real wolf is at the flock, and the sheep are barking."
+            }
+          ],
+          "attempts": 40,
+          "refused": 0,
+          "truncated": 0,
+          "duplicates": 32,
+          "usable": 40,
+          "toldNext": 0,
+          "toldLater": 16,
+          "saturated": true,
+          "allAttempts": [
+            {
+              "arm": "branch.v4",
+              "seed": 711991213,
+              "raw": "{\"step\": 9, \"event\": \"The boy cries wolf again\", \"action\": \"cry(boy, wolf)\", \"state\": \"The boy is shouting about a wolf a third time. There is still no wolf.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "b6e2313f76fdd371",
+              "branch": {
+                "label": "The boy cries wolf again",
+                "expr": "cry(boy, wolf)",
+                "state": "The boy is shouting about a wolf a third time. There is still no wolf."
+              },
+              "expr": "cry(boy, wolf)",
+              "display": "cry(boy, wolf) — The boy is shouting about a wolf a third time. There is still no wolf.",
+              "told": {
+                "kind": "later",
+                "id": "cw_cry3"
+              }
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 695213594,
+              "raw": "{\"step\": 9, \"event\": \"The wolf comes\", \"action\": \"attack(wolf, flock)\", \"state\": \"A wolf attacks the flock, and the sheep are in danger.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "cdfbed1da9a1f0d7",
+              "branch": {
+                "label": "The wolf comes",
+                "expr": "attack(wolf, flock)",
+                "state": "A wolf attacks the flock, and the sheep are in danger."
+              },
+              "expr": "attack(wolf, flock)",
+              "display": "attack(wolf, flock) — A wolf attacks the flock, and the sheep are in danger."
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 678435975,
+              "raw": "{\"step\": 9, \"event\": \"A wolf attacks the flock\", \"action\": \"attack(wolf, flock)\", \"state\": \"The wolf has arrived at the flock and is attacking it.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "6330086b4b66cd59",
+              "branch": {
+                "label": "A wolf attacks the flock",
+                "expr": "attack(wolf, flock)",
+                "state": "The wolf has arrived at the flock and is attacking it."
+              },
+              "expr": "attack(wolf, flock)",
+              "display": "attack(wolf, flock) — The wolf has arrived at the flock and is attacking it.",
+              "duplicateOf": "attack(wolf, flock)"
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 661658356,
+              "raw": "{\"step\": 9, \"event\": \"The boy cries wolf for real\", \"action\": \"cry(boy, wolf)\", \"state\": \"A real wolf is at the flock and the boy is crying for help. The villagers are ignoring him.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "3781c079c25ee543",
+              "branch": {
+                "label": "The boy cries wolf for real",
+                "expr": "cry(boy, wolf)",
+                "state": "A real wolf is at the flock and the boy is crying for help. The villagers are ignoring him."
+              },
+              "expr": "cry(boy, wolf)",
+              "display": "cry(boy, wolf) — A real wolf is at the flock and the boy is crying for help. The villagers are ignoring him.",
+              "told": {
+                "kind": "later",
+                "id": "cw_cry3"
+              },
+              "duplicateOf": "cry(boy, wolf)"
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 644880737,
+              "raw": "{\"step\": 9, \"event\": \"The wolf comes and eats the flock\", \"action\": \"eat(wolf, flock)\", \"state\": \"The wolf has killed the sheep. The boy is alone and the villagers don't help.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "af13e31c30775c32",
+              "branch": {
+                "label": "The wolf comes and eats the flock",
+                "expr": "eat(wolf, flock)",
+                "state": "The wolf has killed the sheep. The boy is alone and the villagers don't help."
+              },
+              "expr": "eat(wolf, flock)",
+              "display": "eat(wolf, flock) — The wolf has killed the sheep. The boy is alone and the villagers don't help."
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 628103118,
+              "raw": "{\"step\": 9, \"event\": \"The boy cries wolf again\", \"action\": \"cry(boy, wolf)\", \"state\": \"The boy is shouting about a wolf for the third time. There is still no wolf.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "fd4733b5b90b45ff",
+              "branch": {
+                "label": "The boy cries wolf again",
+                "expr": "cry(boy, wolf)",
+                "state": "The boy is shouting about a wolf for the third time. There is still no wolf."
+              },
+              "expr": "cry(boy, wolf)",
+              "display": "cry(boy, wolf) — The boy is shouting about a wolf for the third time. There is still no wolf.",
+              "told": {
+                "kind": "later",
+                "id": "cw_cry3"
+              },
+              "duplicateOf": "cry(boy, wolf)"
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 611325499,
+              "raw": "{\"step\": 9, \"event\": \"The real wolf appears\", \"action\": \"appear(wolf, flock)\", \"state\": \"The wolf is at the flock and it is too late to warn them.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "1b5a48073aaa2149",
+              "branch": {
+                "label": "The real wolf appears",
+                "expr": "appear(wolf, flock)",
+                "state": "The wolf is at the flock and it is too late to warn them."
+              },
+              "expr": "appear(wolf, flock)",
+              "display": "appear(wolf, flock) — The wolf is at the flock and it is too late to warn them."
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 594547880,
+              "raw": "{\"step\": 9, \"event\": \"The boy cries wolf again\", \"action\": \"cry(boy, wolf)\", \"state\": \"The boy is shouting about a wolf a third time. There is still no wolf.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "68c775c9e0ca5903",
+              "branch": {
+                "label": "The boy cries wolf again",
+                "expr": "cry(boy, wolf)",
+                "state": "The boy is shouting about a wolf a third time. There is still no wolf."
+              },
+              "expr": "cry(boy, wolf)",
+              "display": "cry(boy, wolf) — The boy is shouting about a wolf a third time. There is still no wolf.",
+              "told": {
+                "kind": "later",
+                "id": "cw_cry3"
+              },
+              "duplicateOf": "cry(boy, wolf)"
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 577770261,
+              "raw": "{\"step\": 9, \"event\": \"The boy cries wolf for real\", \"action\": \"cry(boy, wolf, real)\", \"state\": \"A wolf has actually come, the boy cries again.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "a4de71a9f32115af",
+              "branch": {
+                "label": "The boy cries wolf for real",
+                "expr": "cry(boy, wolf, real)",
+                "state": "A wolf has actually come, the boy cries again."
+              },
+              "expr": "cry(boy, wolf, real)",
+              "display": "cry(boy, wolf, real) — A wolf has actually come, the boy cries again."
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 560992642,
+              "raw": "{\"step\": 9, \"event\": \"A real wolf attacks the flock\", \"action\": \"attack(wolf, flock)\", \"state\": \"The wolf has attacked the flock.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "6deef6a4eac28f22",
+              "branch": {
+                "label": "A real wolf attacks the flock",
+                "expr": "attack(wolf, flock)",
+                "state": "The wolf has attacked the flock."
+              },
+              "expr": "attack(wolf, flock)",
+              "display": "attack(wolf, flock) — The wolf has attacked the flock.",
+              "duplicateOf": "attack(wolf, flock)"
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 1702853662,
+              "raw": "{\"step\": 9, \"event\": \"A wolf attacks the sheep\", \"action\": \"attack(wolf, flock)\", \"state\": \"A wolf is at the sheep. The boy is crying again.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "ecd0193bd200537d",
+              "branch": {
+                "label": "A wolf attacks the sheep",
+                "expr": "attack(wolf, flock)",
+                "state": "A wolf is at the sheep. The boy is crying again."
+              },
+              "expr": "attack(wolf, flock)",
+              "display": "attack(wolf, flock) — A wolf is at the sheep. The boy is crying again.",
+              "duplicateOf": "attack(wolf, flock)"
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 1719631281,
+              "raw": "{\"step\": 9, \"event\": \"The wolf comes\", \"action\": \"arrive(wolf, flock)\", \"state\": \"A wolf is at the sheep. The boy has no idea.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "b3348e1e4b23b7c8",
+              "branch": {
+                "label": "The wolf comes",
+                "expr": "arrive(wolf, flock)",
+                "state": "A wolf is at the sheep. The boy has no idea."
+              },
+              "expr": "arrive(wolf, flock)",
+              "display": "arrive(wolf, flock) — A wolf is at the sheep. The boy has no idea.",
+              "told": {
+                "kind": "later",
+                "id": "cw_wolf"
+              }
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 1669298424,
+              "raw": "{\"step\": 9, \"event\": \"The boy cries wolf for real\", \"action\": \"cry(boy, wolf)\", \"state\": \"A wolf has appeared at the flock, but the boy is too embarrassed to cry again.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "436f156e1dc8dd88",
+              "branch": {
+                "label": "The boy cries wolf for real",
+                "expr": "cry(boy, wolf)",
+                "state": "A wolf has appeared at the flock, but the boy is too embarrassed to cry again."
+              },
+              "expr": "cry(boy, wolf)",
+              "display": "cry(boy, wolf) — A wolf has appeared at the flock, but the boy is too embarrassed to cry again.",
+              "told": {
+                "kind": "later",
+                "id": "cw_cry3"
+              },
+              "duplicateOf": "cry(boy, wolf)"
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 1686076043,
+              "raw": "{\"step\": 9, \"event\": \"A real wolf arrives\", \"action\": \"arrive(wolf, flock)\", \"state\": \"A wolf appears at the flock and starts to eat sheep. There is no boy.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "7c84312c240c687a",
+              "branch": {
+                "label": "A real wolf arrives",
+                "expr": "arrive(wolf, flock)",
+                "state": "A wolf appears at the flock and starts to eat sheep. There is no boy."
+              },
+              "expr": "arrive(wolf, flock)",
+              "display": "arrive(wolf, flock) — A wolf appears at the flock and starts to eat sheep. There is no boy.",
+              "told": {
+                "kind": "later",
+                "id": "cw_wolf"
+              },
+              "duplicateOf": "arrive(wolf, flock)"
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 1769964138,
+              "raw": "{\"step\": 9, \"event\": \"The wolf arrives\", \"action\": \"attack(wolf, flock)\", \"state\": \"A wolf is at the flock and is attacking it.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "138407258487e33f",
+              "branch": {
+                "label": "The wolf arrives",
+                "expr": "attack(wolf, flock)",
+                "state": "A wolf is at the flock and is attacking it."
+              },
+              "expr": "attack(wolf, flock)",
+              "display": "attack(wolf, flock) — A wolf is at the flock and is attacking it.",
+              "duplicateOf": "attack(wolf, flock)"
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 1786741757,
+              "raw": "{\"step\": 9, \"event\": \"The wolf really does come\", \"action\": \"attack(wolf, flock)\", \"state\": \"A wolf is now at the flock. It will eat all the sheep unless the villagers come.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "a7e5a6fe8cb95bec",
+              "branch": {
+                "label": "The wolf really does come",
+                "expr": "attack(wolf, flock)",
+                "state": "A wolf is now at the flock. It will eat all the sheep unless the villagers come."
+              },
+              "expr": "attack(wolf, flock)",
+              "display": "attack(wolf, flock) — A wolf is now at the flock. It will eat all the sheep unless the villagers come.",
+              "duplicateOf": "attack(wolf, flock)"
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 1736408900,
+              "raw": "{\"step\": 9, \"event\": \"The boy cries wolf a third time\", \"action\": \"cry(boy, wolf)\", \"state\": \"The boy is shouting about a wolf again. This time, there is a wolf.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "858bc209f59a00a7",
+              "branch": {
+                "label": "The boy cries wolf a third time",
+                "expr": "cry(boy, wolf)",
+                "state": "The boy is shouting about a wolf again. This time, there is a wolf."
+              },
+              "expr": "cry(boy, wolf)",
+              "display": "cry(boy, wolf) — The boy is shouting about a wolf again. This time, there is a wolf.",
+              "told": {
+                "kind": "later",
+                "id": "cw_cry3"
+              },
+              "duplicateOf": "cry(boy, wolf)"
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 1753186519,
+              "raw": "{\"step\": 9, \"event\": \"The wolf finally attacks\", \"action\": \"attack(wolf, flock)\", \"state\": \"A wolf has come to attack the flock.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "fecb2c4d92a0a613",
+              "branch": {
+                "label": "The wolf finally attacks",
+                "expr": "attack(wolf, flock)",
+                "state": "A wolf has come to attack the flock."
+              },
+              "expr": "attack(wolf, flock)",
+              "display": "attack(wolf, flock) — A wolf has come to attack the flock.",
+              "duplicateOf": "attack(wolf, flock)"
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 1568632710,
+              "raw": "{\"step\": 9, \"event\": \"The boy cries wolf for real\", \"action\": \"cry(boy, wolf)\", \"state\": \"The boy is shouting that there really is a wolf, and a wolf is actually at the sheep.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "872a683656fecc9c",
+              "branch": {
+                "label": "The boy cries wolf for real",
+                "expr": "cry(boy, wolf)",
+                "state": "The boy is shouting that there really is a wolf, and a wolf is actually at the sheep."
+              },
+              "expr": "cry(boy, wolf)",
+              "display": "cry(boy, wolf) — The boy is shouting that there really is a wolf, and a wolf is actually at the sheep.",
+              "told": {
+                "kind": "later",
+                "id": "cw_cry3"
+              },
+              "duplicateOf": "cry(boy, wolf)"
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 1585410329,
+              "raw": "{\"step\": 9, \"event\": \"The real wolf attacks\", \"action\": \"attack(wolf, flock)\", \"state\": \"A wolf attacks the flock and the boy is left alone with the sheep.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "789991fdec68305f",
+              "branch": {
+                "label": "The real wolf attacks",
+                "expr": "attack(wolf, flock)",
+                "state": "A wolf attacks the flock and the boy is left alone with the sheep."
+              },
+              "expr": "attack(wolf, flock)",
+              "display": "attack(wolf, flock) — A wolf attacks the flock and the boy is left alone with the sheep.",
+              "duplicateOf": "attack(wolf, flock)"
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 1602040853,
+              "raw": "{\"step\": 9, \"event\": \"A real wolf approaches\", \"action\": \"threat(wolf, flock)\", \"state\": \"A wolf is coming towards the sheep and the boy.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "3d96e93e89dca95c",
+              "branch": {
+                "label": "A real wolf approaches",
+                "expr": "threat(wolf, flock)",
+                "state": "A wolf is coming towards the sheep and the boy."
+              },
+              "expr": "threat(wolf, flock)",
+              "display": "threat(wolf, flock) — A wolf is coming towards the sheep and the boy."
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 1585263234,
+              "raw": "{\"step\": 9, \"event\": \"The wolf arrives\", \"action\": \"arrive(wolf, flock)\", \"state\": \"The wolf is at the flock. There is no boy on the hillside.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "2ac183a07005b27e",
+              "branch": {
+                "label": "The wolf arrives",
+                "expr": "arrive(wolf, flock)",
+                "state": "The wolf is at the flock. There is no boy on the hillside."
+              },
+              "expr": "arrive(wolf, flock)",
+              "display": "arrive(wolf, flock) — The wolf is at the flock. There is no boy on the hillside.",
+              "told": {
+                "kind": "later",
+                "id": "cw_wolf"
+              },
+              "duplicateOf": "arrive(wolf, flock)"
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 1568485615,
+              "raw": "{\"step\": 9, \"event\": \"The boy cries wolf for real\", \"action\": \"cry(boy, wolf)\", \"state\": \"A wolf is at the flock. The boy is shouting about it again.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "fb29fe3abece228c",
+              "branch": {
+                "label": "The boy cries wolf for real",
+                "expr": "cry(boy, wolf)",
+                "state": "A wolf is at the flock. The boy is shouting about it again."
+              },
+              "expr": "cry(boy, wolf)",
+              "display": "cry(boy, wolf) — A wolf is at the flock. The boy is shouting about it again.",
+              "told": {
+                "kind": "later",
+                "id": "cw_cry3"
+              },
+              "duplicateOf": "cry(boy, wolf)"
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 1551707996,
+              "raw": "{\"step\": 9, \"event\": \"The boy cries wolf a third time\", \"action\": \"cry(boy, wolf)\", \"state\": \"The boy is shouting about a wolf a third time.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "4f75c6bb603c15d9",
+              "branch": {
+                "label": "The boy cries wolf a third time",
+                "expr": "cry(boy, wolf)",
+                "state": "The boy is shouting about a wolf a third time."
+              },
+              "expr": "cry(boy, wolf)",
+              "display": "cry(boy, wolf) — The boy is shouting about a wolf a third time.",
+              "told": {
+                "kind": "later",
+                "id": "cw_cry3"
+              },
+              "duplicateOf": "cry(boy, wolf)"
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 1534930377,
+              "raw": "{\"step\": 9, \"event\": \"A wolf actually attacks the flock\", \"action\": \"attack(wolf, flock)\", \"state\": \"The wolf is attacking the sheep, and the boy cries for help.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "d6850abd32406ad3",
+              "branch": {
+                "label": "A wolf actually attacks the flock",
+                "expr": "attack(wolf, flock)",
+                "state": "The wolf is attacking the sheep, and the boy cries for help."
+              },
+              "expr": "attack(wolf, flock)",
+              "display": "attack(wolf, flock) — The wolf is attacking the sheep, and the boy cries for help.",
+              "duplicateOf": "attack(wolf, flock)"
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 1518152758,
+              "raw": "{\"step\": 9, \"event\": \"The wolf arrives at the flock\", \"action\": \"attack(wolf, flock)\", \"state\": \"A real wolf attacks the flock. The villagers are not at the flock to help.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "d7ef6e5cc1e67466",
+              "branch": {
+                "label": "The wolf arrives at the flock",
+                "expr": "attack(wolf, flock)",
+                "state": "A real wolf attacks the flock. The villagers are not at the flock to help."
+              },
+              "expr": "attack(wolf, flock)",
+              "display": "attack(wolf, flock) — A real wolf attacks the flock. The villagers are not at the flock to help.",
+              "duplicateOf": "attack(wolf, flock)"
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 1501375139,
+              "raw": "{\"step\": 9, \"event\": \"The wolf actually attacks the flock\", \"action\": \"attack(wolf, flock)\", \"state\": \"The flock is in danger. The boy is screaming, but no one hears him.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "cb2a674a0f61c008",
+              "branch": {
+                "label": "The wolf actually attacks the flock",
+                "expr": "attack(wolf, flock)",
+                "state": "The flock is in danger. The boy is screaming, but no one hears him."
+              },
+              "expr": "attack(wolf, flock)",
+              "display": "attack(wolf, flock) — The flock is in danger. The boy is screaming, but no one hears him.",
+              "duplicateOf": "attack(wolf, flock)"
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 1484597520,
+              "raw": "{\"step\": 9, \"event\": \"The boy cries wolf a third time\", \"action\": \"cry(boy, wolf)\", \"state\": \"The boy is shouting about a wolf for a third time. There is still no wolf.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "919087c28b120da4",
+              "branch": {
+                "label": "The boy cries wolf a third time",
+                "expr": "cry(boy, wolf)",
+                "state": "The boy is shouting about a wolf for a third time. There is still no wolf."
+              },
+              "expr": "cry(boy, wolf)",
+              "display": "cry(boy, wolf) — The boy is shouting about a wolf for a third time. There is still no wolf.",
+              "told": {
+                "kind": "later",
+                "id": "cw_cry3"
+              },
+              "duplicateOf": "cry(boy, wolf)"
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 1736261805,
+              "raw": "{\"step\": 9, \"event\": \"The wolf finally appears\", \"action\": \"appear(wolf)\", \"state\": \"A real wolf is at the flock, and the sheep are barking.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "61f290f8b5c01b46",
+              "branch": {
+                "label": "The wolf finally appears",
+                "expr": "appear(wolf)",
+                "state": "A real wolf is at the flock, and the sheep are barking."
+              },
+              "expr": "appear(wolf)",
+              "display": "appear(wolf) — A real wolf is at the flock, and the sheep are barking."
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 1719484186,
+              "raw": "{\"step\": 9, \"event\": \"The real wolf attacks\", \"action\": \"attack(wolf, flock)\", \"state\": \"A wolf attacks the flock, and there is a real wolf.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "5bfa12bc596997fe",
+              "branch": {
+                "label": "The real wolf attacks",
+                "expr": "attack(wolf, flock)",
+                "state": "A wolf attacks the flock, and there is a real wolf."
+              },
+              "expr": "attack(wolf, flock)",
+              "display": "attack(wolf, flock) — A wolf attacks the flock, and there is a real wolf.",
+              "duplicateOf": "attack(wolf, flock)"
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 3648660108,
+              "raw": "{\"step\": 9, \"event\": \"The boy cries wolf a third time\", \"action\": \"cry(boy, wolf)\", \"state\": \"The boy is again shouting that a wolf is at the sheep.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "bbc5045d4a26cbaf",
+              "branch": {
+                "label": "The boy cries wolf a third time",
+                "expr": "cry(boy, wolf)",
+                "state": "The boy is again shouting that a wolf is at the sheep."
+              },
+              "expr": "cry(boy, wolf)",
+              "display": "cry(boy, wolf) — The boy is again shouting that a wolf is at the sheep.",
+              "told": {
+                "kind": "later",
+                "id": "cw_cry3"
+              },
+              "duplicateOf": "cry(boy, wolf)"
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 3665437727,
+              "raw": "{\"step\": 9, \"event\": \"The wolf attacks the flock\", \"action\": \"attack(wolf, flock)\", \"state\": \"A wolf arrives and begins attacking the sheep, which have been left undefended.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "d9d665e3a64141dd",
+              "branch": {
+                "label": "The wolf attacks the flock",
+                "expr": "attack(wolf, flock)",
+                "state": "A wolf arrives and begins attacking the sheep, which have been left undefended."
+              },
+              "expr": "attack(wolf, flock)",
+              "display": "attack(wolf, flock) — A wolf arrives and begins attacking the sheep, which have been left undefended.",
+              "duplicateOf": "attack(wolf, flock)"
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 3682215346,
+              "raw": "{\"step\": 9, \"event\": \"A real wolf comes and attacks the sheep\", \"action\": \"attack(wolf, flock)\", \"state\": \"The wolves have taken the sheep. They are all dead.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "313b26e7ce460819",
+              "branch": {
+                "label": "A real wolf comes and attacks the sheep",
+                "expr": "attack(wolf, flock)",
+                "state": "The wolves have taken the sheep. They are all dead."
+              },
+              "expr": "attack(wolf, flock)",
+              "display": "attack(wolf, flock) — The wolves have taken the sheep. They are all dead.",
+              "duplicateOf": "attack(wolf, flock)"
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 3698992965,
+              "raw": "{\"step\": 9, \"event\": \"A real wolf comes\", \"action\": \"attack(wolf, flock)\", \"state\": \"A wolf comes to the flock, and the sheep are at risk.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "3cbad2e9aef5f5b3",
+              "branch": {
+                "label": "A real wolf comes",
+                "expr": "attack(wolf, flock)",
+                "state": "A wolf comes to the flock, and the sheep are at risk."
+              },
+              "expr": "attack(wolf, flock)",
+              "display": "attack(wolf, flock) — A wolf comes to the flock, and the sheep are at risk.",
+              "duplicateOf": "attack(wolf, flock)"
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 3581549632,
+              "raw": "{\"step\": 9, \"event\": \"The wolf really comes to the flock\", \"action\": \"attack(wolf, flock)\", \"state\": \"The wolf has come to the flock. The sheep are alarmed.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "7f223187af84df91",
+              "branch": {
+                "label": "The wolf really comes to the flock",
+                "expr": "attack(wolf, flock)",
+                "state": "The wolf has come to the flock. The sheep are alarmed."
+              },
+              "expr": "attack(wolf, flock)",
+              "display": "attack(wolf, flock) — The wolf has come to the flock. The sheep are alarmed.",
+              "duplicateOf": "attack(wolf, flock)"
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 3598327251,
+              "raw": "{\"step\": 9, \"event\": \"The boy cries wolf for real\", \"action\": \"cry(boy, wolf)\", \"state\": \"A wolf is actually at the flock and the boy is shouting it.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "a9468c9c46f2f24a",
+              "branch": {
+                "label": "The boy cries wolf for real",
+                "expr": "cry(boy, wolf)",
+                "state": "A wolf is actually at the flock and the boy is shouting it."
+              },
+              "expr": "cry(boy, wolf)",
+              "display": "cry(boy, wolf) — A wolf is actually at the flock and the boy is shouting it.",
+              "told": {
+                "kind": "later",
+                "id": "cw_cry3"
+              },
+              "duplicateOf": "cry(boy, wolf)"
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 3615104870,
+              "raw": "{\"step\": 9, \"event\": \"The boy cries wolf again\", \"action\": \"cry(boy, wolf)\", \"state\": \"The boy is shouting that there is a wolf at the flock. There is no wolf.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "2c464d5a2f08b918",
+              "branch": {
+                "label": "The boy cries wolf again",
+                "expr": "cry(boy, wolf)",
+                "state": "The boy is shouting that there is a wolf at the flock. There is no wolf."
+              },
+              "expr": "cry(boy, wolf)",
+              "display": "cry(boy, wolf) — The boy is shouting that there is a wolf at the flock. There is no wolf.",
+              "told": {
+                "kind": "later",
+                "id": "cw_cry3"
+              },
+              "duplicateOf": "cry(boy, wolf)"
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 3631882489,
+              "raw": "{\"step\": 9, \"event\": \"The wolf finally attacks\", \"action\": \"attack(wolf, flock)\", \"state\": \"The wolf is attacking the flock. The boy is running to get help.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "abccedf338c1255d",
+              "branch": {
+                "label": "The wolf finally attacks",
+                "expr": "attack(wolf, flock)",
+                "state": "The wolf is attacking the flock. The boy is running to get help."
+              },
+              "expr": "attack(wolf, flock)",
+              "display": "attack(wolf, flock) — The wolf is attacking the flock. The boy is running to get help.",
+              "duplicateOf": "attack(wolf, flock)"
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 3782881060,
+              "raw": "{\"step\": 9, \"event\": \"A real wolf comes at the flock\", \"action\": \"attack(wolf, flock)\", \"state\": \"A wolf is at the flock, and the sheep are running.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "815e2174dc368e8e",
+              "branch": {
+                "label": "A real wolf comes at the flock",
+                "expr": "attack(wolf, flock)",
+                "state": "A wolf is at the flock, and the sheep are running."
+              },
+              "expr": "attack(wolf, flock)",
+              "display": "attack(wolf, flock) — A wolf is at the flock, and the sheep are running.",
+              "duplicateOf": "attack(wolf, flock)"
+            },
+            {
+              "arm": "branch.v4",
+              "seed": 3799658679,
+              "raw": "{\"step\": 9, \"event\": \"A wolf attacks the flock\", \"action\": \"attack(wolf, flock)\", \"state\": \"A wolf attacks the sheep in the middle of the night. The boy is awake.\"}",
+              "stopType": "eos",
+              "cached": false,
+              "cacheKey": "a68582e8da5aa8b6",
+              "branch": {
+                "label": "A wolf attacks the flock",
+                "expr": "attack(wolf, flock)",
+                "state": "A wolf attacks the sheep in the middle of the night. The boy is awake."
+              },
+              "expr": "attack(wolf, flock)",
+              "display": "attack(wolf, flock) — A wolf attacks the sheep in the middle of the night. The boy is awake.",
+              "duplicateOf": "attack(wolf, flock)"
+            }
+          ]
+        }
+      }
+    }
+  ]
+}

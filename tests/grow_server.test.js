@@ -115,7 +115,7 @@ test("POST /prompt previews what a grow would send, without a model call; GET /p
   const preview = await (await fetch(`${base}/prompt`, {
     method: "POST", body: JSON.stringify({ graph: seeds.red, from: "red_tell" }),
   })).json();
-  assert.strictEqual(preview.promptVersion, "branch.v4");
+  assert.strictEqual(preview.promptVersion, "branch.v6");
   assert.ok(preview.prompt.trimEnd().endsWith('"action": "tell(red, wolf, grandmother_house)", "state": "The wolf knows where the grandmother\'s house is and that Red is on her way there."}'));
   assert.match(preview.grammar, /"step\\": 6/);
   assert.strictEqual((await fetch(`${base}/prompt`, { method: "POST", body: JSON.stringify({ graph: seeds.red, from: "nope" }) })).status, 400);

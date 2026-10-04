@@ -1,0 +1,500 @@
+{
+  "manifest": {
+    "probe": "continue_probe v2 (prompt-version A/B)",
+    "story": "criedWolf",
+    "k": 10,
+    "runSeed": 7,
+    "arms": [
+      "branch.v4"
+    ],
+    "fast": false,
+    "sampling": {
+      "temperature": 1,
+      "top_k": 0,
+      "seed": 7,
+      "samplers": [
+        "top_k",
+        "min_p",
+        "temperature"
+      ],
+      "repeat_penalty": 1,
+      "dry_multiplier": 0,
+      "n_predict": 512,
+      "cache_prompt": false,
+      "min_p": 0.05
+    },
+    "model": {
+      "props": {
+        "default_generation_settings": {
+          "params": {
+            "seed": 4294967295,
+            "temperature": 0.800000011920929,
+            "dynatemp_range": 0,
+            "dynatemp_exponent": 1,
+            "top_k": 40,
+            "top_p": 0.949999988079071,
+            "min_p": 0.05000000074505806,
+            "top_n_sigma": -1,
+            "xtc_probability": 0,
+            "xtc_threshold": 0.10000000149011612,
+            "typical_p": 1,
+            "repeat_last_n": 64,
+            "repeat_penalty": 1,
+            "presence_penalty": 0,
+            "frequency_penalty": 0,
+            "dry_multiplier": 0,
+            "dry_base": 1.75,
+            "dry_allowed_length": 2,
+            "dry_penalty_last_n": -1,
+            "mirostat": 0,
+            "mirostat_tau": 5,
+            "mirostat_eta": 0.10000000149011612,
+            "adaptive_target": -1,
+            "adaptive_decay": 0.8999999761581421,
+            "max_tokens": -1,
+            "n_predict": -1,
+            "n_keep": 0,
+            "n_discard": 0,
+            "ignore_eos": false,
+            "stream": false,
+            "n_probs": 0,
+            "min_keep": 0,
+            "chat_format": "Content-only",
+            "reasoning_format": "none",
+            "reasoning_in_content": false,
+            "generation_prompt": "",
+            "samplers": [
+              "penalties",
+              "dry",
+              "top_n_sigma",
+              "top_k",
+              "typ_p",
+              "top_p",
+              "min_p",
+              "xtc",
+              "temperature"
+            ],
+            "speculative.types": "none",
+            "timings_per_token": false,
+            "post_sampling_probs": false,
+            "backend_sampling": false,
+            "lora": []
+          },
+          "n_ctx": 4096
+        },
+        "total_slots": 1,
+        "model_alias": "/media/oneiroid/sub/workspace/llmfinetune/models/qwen3-4b-base-Q5_K_M.gguf",
+        "model_ftype": "Q5_K - Medium",
+        "model_path": "/media/oneiroid/sub/workspace/llmfinetune/models/qwen3-4b-base-Q5_K_M.gguf",
+        "modalities": {
+          "vision": false,
+          "video": false,
+          "audio": false
+        },
+        "media_marker": "<__media_R6xD8p6s4jqB1ZVHaI6pVwkdqcXsX0R6__>",
+        "endpoint_slots": true,
+        "endpoint_props": false,
+        "endpoint_metrics": false,
+        "ui": true,
+        "ui_settings": {},
+        "chat_template": "{%- if tools %}\n    {{- '<|im_start|>system\\n' }}\n    {%- if messages[0].role == 'system' %}\n        {{- messages[0].content + '\\n\\n' }}\n    {%- endif %}\n    {{- \"# Tools\\n\\nYou may call one or more functions to assist with the user query.\\n\\nYou are provided with function signatures within <tools></tools> XML tags:\\n<tools>\" }}\n    {%- for tool in tools %}\n        {{- \"\\n\" }}\n        {{- tool | tojson }}\n    {%- endfor %}\n    {{- \"\\n</tools>\\n\\nFor each function call, return a json object with function name and arguments within <tool_call></tool_call> XML tags:\\n<tool_call>\\n{\\\"name\\\": <function-name>, \\\"arguments\\\": <args-json-object>}\\n</tool_call><|im_end|>\\n\" }}\n{%- else %}\n    {%- if messages[0].role == 'system' %}\n        {{- '<|im_start|>system\\n' + messages[0].content + '<|im_end|>\\n' }}\n    {%- endif %}\n{%- endif %}\n{%- set ns = namespace(multi_step_tool=true, last_query_index=messages|length - 1) %}\n{%- for message in messages[::-1] %}\n    {%- set index = (messages|length - 1) - loop.index0 %}\n    {%- if ns.multi_step_tool and message.role == \"user\" and not(message.content.startswith('<tool_response>') and message.content.endswith('</tool_response>')) %}\n        {%- set ns.multi_step_tool = false %}\n        {%- set ns.last_query_index = index %}\n    {%- endif %}\n{%- endfor %}\n{%- for message in messages %}\n    {%- if (message.role == \"user\") or (message.role == \"system\" and not loop.first) %}\n        {{- '<|im_start|>' + message.role + '\\n' + message.content + '<|im_end|>' + '\\n' }}\n    {%- elif message.role == \"assistant\" %}\n        {%- set content = message.content %}\n        {%- set reasoning_content = '' %}\n        {%- if message.reasoning_content is defined and message.reasoning_content is not none %}\n            {%- set reasoning_content = message.reasoning_content %}\n        {%- else %}\n            {%- if '</think>' in message.content %}\n                {%- set content = message.content.split('</think>')[-1].lstrip('\\n') %}\n                {%- set reasoning_content = message.content.split('</think>')[0].rstrip('\\n').split('<think>')[-1].lstrip('\\n') %}\n            {%- endif %}\n        {%- endif %}\n        {%- if loop.index0 > ns.last_query_index %}\n            {%- if loop.last or (not loop.last and reasoning_content) %}\n                {{- '<|im_start|>' + message.role + '\\n<think>\\n' + reasoning_content.strip('\\n') + '\\n</think>\\n\\n' + content.lstrip('\\n') }}\n            {%- else %}\n                {{- '<|im_start|>' + message.role + '\\n' + content }}\n            {%- endif %}\n        {%- else %}\n            {{- '<|im_start|>' + message.role + '\\n' + content }}\n        {%- endif %}\n        {%- if message.tool_calls %}\n            {%- for tool_call in message.tool_calls %}\n                {%- if (loop.first and content) or (not loop.first) %}\n                    {{- '\\n' }}\n                {%- endif %}\n                {%- if tool_call.function %}\n                    {%- set tool_call = tool_call.function %}\n                {%- endif %}\n                {{- '<tool_call>\\n{\"name\": \"' }}\n                {{- tool_call.name }}\n                {{- '\", \"arguments\": ' }}\n                {%- if tool_call.arguments is string %}\n                    {{- tool_call.arguments }}\n                {%- else %}\n                    {{- tool_call.arguments | tojson }}\n                {%- endif %}\n                {{- '}\\n</tool_call>' }}\n            {%- endfor %}\n        {%- endif %}\n        {{- '<|im_end|>\\n' }}\n    {%- elif message.role == \"tool\" %}\n        {%- if loop.first or (messages[loop.index0 - 1].role != \"tool\") %}\n            {{- '<|im_start|>user' }}\n        {%- endif %}\n        {{- '\\n<tool_response>\\n' }}\n        {{- message.content }}\n        {{- '\\n</tool_response>' }}\n        {%- if loop.last or (messages[loop.index0 + 1].role != \"tool\") %}\n            {{- '<|im_end|>\\n' }}\n        {%- endif %}\n    {%- endif %}\n{%- endfor %}\n{%- if add_generation_prompt %}\n    {{- '<|im_start|>assistant\\n' }}\n    {%- if enable_thinking is defined and enable_thinking is false %}\n        {{- '<think>\\n\\n</think>\\n\\n' }}\n    {%- endif %}\n{%- endif %}",
+        "chat_template_caps": {
+          "supports_object_arguments": true,
+          "supports_parallel_tool_calls": true,
+          "supports_preserve_reasoning": false,
+          "supports_string_content": true,
+          "supports_system_role": true,
+          "supports_tool_calls": true,
+          "supports_tools": true,
+          "supports_typed_content": false
+        },
+        "bos_token": "<|endoftext|>",
+        "eos_token": "<|im_end|>",
+        "build_info": "b1-f5b9bd3",
+        "is_sleeping": false,
+        "cors_proxy_enabled": false
+      },
+      "sha256": "699936b83664f71a4c1d129a1e10b02c1909e8edfdd32962cea75259f4f92093"
+    },
+    "templates": {
+      "branch.v4": {
+        "sha256": "82e216fac7655f30688bb3b5cd1039398ae67739487a2090a1f681df6d24969b"
+      }
+    },
+    "generatedAt": "2026-10-04T09:58:05.051Z",
+    "gradedAt": "2026-10-04T10:02:00.878Z",
+    "rater": "claude",
+    "gradeSchema": 2,
+    "questions": [
+      {
+        "key": "possible",
+        "ask": false,
+        "prompt": "could this happen next in this story?"
+      },
+      {
+        "key": "consistent",
+        "ask": true,
+        "prompt": "is it consistent with what the history already established?"
+      },
+      {
+        "key": "advances",
+        "ask": true,
+        "prompt": "does the WORLD change - is anything true after it that was not true before?"
+      },
+      {
+        "key": "toldStory",
+        "ask": false,
+        "prompt": "is this the story's VERY NEXT event (not something it does later)?"
+      }
+    ]
+  },
+  "grades": [
+    {
+      "nodeId": "cw_cry1",
+      "position": 1,
+      "arm": "branch.v4",
+      "index": 1,
+      "display": "arrive(villagers) — The villagers respond to the alarm, but the wolf is not present.",
+      "expr": "arrive(villagers)",
+      "seed": 1892347689,
+      "labelKey": "branch.v4:cw_cry1#1",
+      "consistent": true,
+      "advances": true
+    },
+    {
+      "nodeId": "cw_cry1",
+      "position": 2,
+      "arm": "branch.v4",
+      "index": 4,
+      "display": "help(villagers, boy, flock) — The boy is screaming about a wolf, and the villagers are coming up the hill.",
+      "expr": "help(villagers, boy, flock)",
+      "seed": 1959458165,
+      "labelKey": "branch.v4:cw_cry1#4",
+      "consistent": true,
+      "advances": true
+    },
+    {
+      "nodeId": "cw_cry1",
+      "position": 3,
+      "arm": "branch.v4",
+      "index": 3,
+      "display": "believe(villagers, boy) — The villagers come to the sheep, believing the boy. The wolf does not appear.",
+      "expr": "believe(villagers, boy)",
+      "seed": 1942680546,
+      "labelKey": "branch.v4:cw_cry1#3",
+      "consistent": true,
+      "advances": true
+    },
+    {
+      "nodeId": "cw_cry1",
+      "position": 4,
+      "arm": "branch.v4",
+      "index": 5,
+      "display": "dismiss(villagers, boy) — The boy is ignored, and the villagers continue with their day.",
+      "expr": "dismiss(villagers, boy)",
+      "seed": 1909125308,
+      "labelKey": "branch.v4:cw_cry1#5",
+      "consistent": true,
+      "advances": true
+    },
+    {
+      "nodeId": "cw_cry1",
+      "position": 5,
+      "arm": "branch.v4",
+      "index": 8,
+      "display": "respond(villagers, boy) — The boy's cries have caused the villagers to rush to the scene.",
+      "expr": "respond(villagers, boy)",
+      "seed": 2026568641,
+      "labelKey": "branch.v4:cw_cry1#8",
+      "consistent": true,
+      "advances": true
+    },
+    {
+      "nodeId": "cw_cry1",
+      "position": 6,
+      "arm": "branch.v4",
+      "index": 7,
+      "display": "run(villagers, boy) — The villagers are at the boy. There is no wolf.",
+      "expr": "run(villagers, boy)",
+      "seed": 2009791022,
+      "labelKey": "branch.v4:cw_cry1#7",
+      "consistent": true,
+      "advances": true
+    },
+    {
+      "nodeId": "cw_cry1",
+      "position": 7,
+      "arm": "branch.v4",
+      "index": 6,
+      "display": "ignore(boy, wolf) — The villagers are laughing at the boy and saying they will not believe him.",
+      "expr": "ignore(boy, wolf)",
+      "seed": 1925902927,
+      "labelKey": "branch.v4:cw_cry1#6",
+      "consistent": false,
+      "advances": true
+    },
+    {
+      "nodeId": "cw_cry1",
+      "position": 8,
+      "arm": "branch.v4",
+      "index": 0,
+      "display": "ignore(villagers, boy) — The villagers are not alarmed and continue their activities.",
+      "expr": "ignore(villagers, boy)",
+      "seed": 1875570070,
+      "labelKey": "branch.v4:cw_cry1#0",
+      "consistent": true,
+      "advances": true
+    },
+    {
+      "nodeId": "cw_cry1",
+      "position": 9,
+      "arm": "branch.v4",
+      "index": 2,
+      "display": "laugh(villagers) — The villagers laugh at the boy's prank.",
+      "expr": "laugh(villagers)",
+      "seed": 1858792451,
+      "labelKey": "branch.v4:cw_cry1#2",
+      "consistent": false,
+      "advances": true
+    },
+    {
+      "nodeId": "cw_cry1",
+      "position": 10,
+      "arm": "branch.v4",
+      "index": 9,
+      "display": "prank(villagers, boy) — The villagers ignore the boy and continue their activities.",
+      "expr": "prank(villagers, boy)",
+      "seed": 2809553608,
+      "labelKey": "branch.v4:cw_cry1#9",
+      "consistent": true,
+      "advances": true
+    },
+    {
+      "nodeId": "cw_laugh",
+      "position": 1,
+      "arm": "branch.v4",
+      "index": 9,
+      "display": "warn(boy, wolf) — The boy has learned from his mistake, and will not lie again.",
+      "expr": "warn(boy, wolf)",
+      "seed": 2273466931,
+      "labelKey": "branch.v4:cw_laugh#9",
+      "consistent": true,
+      "advances": true
+    },
+    {
+      "nodeId": "cw_laugh",
+      "position": 2,
+      "arm": "branch.v4",
+      "index": 8,
+      "display": "appear(wolf, hill) — The wolf is at the hill, about to attack the sheep.",
+      "expr": "appear(wolf, hill)",
+      "seed": 2491575978,
+      "labelKey": "branch.v4:cw_laugh#8",
+      "consistent": true,
+      "advances": true
+    },
+    {
+      "nodeId": "cw_laugh",
+      "position": 3,
+      "arm": "branch.v4",
+      "index": 7,
+      "display": "no_trust(villagers, boy) — The villagers no longer believe the boy when he cries wolf.",
+      "expr": "no_trust(villagers, boy)",
+      "seed": 2508353597,
+      "labelKey": "branch.v4:cw_laugh#7",
+      "consistent": true,
+      "advances": true
+    },
+    {
+      "nodeId": "cw_laugh",
+      "position": 4,
+      "arm": "branch.v4",
+      "index": 1,
+      "display": "attack(wolf, flock) — The sheep are being attacked by wolves. The boy is not around.",
+      "expr": "attack(wolf, flock)",
+      "seed": 838215897,
+      "labelKey": "branch.v4:cw_laugh#1",
+      "consistent": false,
+      "advances": true
+    },
+    {
+      "nodeId": "cw_laugh",
+      "position": 5,
+      "arm": "branch.v4",
+      "index": 0,
+      "display": "ignore(villagers, wolf) — The wolves are coming, but the villagers do not run.",
+      "expr": "ignore(villagers, wolf)",
+      "seed": 821438278,
+      "labelKey": "branch.v4:cw_laugh#0",
+      "consistent": true,
+      "advances": true
+    },
+    {
+      "nodeId": "cw_laugh",
+      "position": 6,
+      "arm": "branch.v4",
+      "index": 3,
+      "display": "approach(wolf, flock) — The wolf is at the flock, hungry.",
+      "expr": "approach(wolf, flock)",
+      "seed": 955659230,
+      "labelKey": "branch.v4:cw_laugh#3",
+      "consistent": true,
+      "advances": true
+    },
+    {
+      "nodeId": "cw_laugh",
+      "position": 7,
+      "arm": "branch.v4",
+      "index": 5,
+      "display": "attacked(wolf, flock) — The wolf is at the flock, attacking the sheep.",
+      "expr": "attacked(wolf, flock)",
+      "seed": 2390910264,
+      "labelKey": "branch.v4:cw_laugh#5",
+      "consistent": true,
+      "advances": true
+    },
+    {
+      "nodeId": "cw_laugh",
+      "position": 8,
+      "arm": "branch.v4",
+      "index": 2,
+      "display": "cry(boy, wolf) — The boy cries wolf again, and there really is a wolf at the sheep.",
+      "expr": "cry(boy, wolf)",
+      "seed": 787883040,
+      "labelKey": "branch.v4:cw_laugh#2",
+      "consistent": true,
+      "advances": true
+    },
+    {
+      "nodeId": "cw_laugh",
+      "position": 9,
+      "arm": "branch.v4",
+      "index": 6,
+      "display": "appear(wolf, flock) — There is a wolf at the sheep. The villagers and boy are not there.",
+      "expr": "appear(wolf, flock)",
+      "seed": 2441243121,
+      "labelKey": "branch.v4:cw_laugh#6",
+      "consistent": false,
+      "advances": true
+    },
+    {
+      "nodeId": "cw_laugh",
+      "position": 10,
+      "arm": "branch.v4",
+      "index": 4,
+      "display": "leave(villagers, flock) — The villagers are angry and gone.",
+      "expr": "leave(villagers, flock)",
+      "seed": 972436849,
+      "labelKey": "branch.v4:cw_laugh#4",
+      "consistent": true,
+      "advances": true
+    },
+    {
+      "nodeId": "cw_doubt",
+      "position": 1,
+      "arm": "branch.v4",
+      "index": 1,
+      "display": "attack(wolf, flock) — A wolf attacks the flock, and the sheep are in danger.",
+      "expr": "attack(wolf, flock)",
+      "seed": 695213594,
+      "labelKey": "branch.v4:cw_doubt#1",
+      "consistent": true,
+      "advances": true
+    },
+    {
+      "nodeId": "cw_doubt",
+      "position": 2,
+      "arm": "branch.v4",
+      "index": 4,
+      "display": "cry(boy, wolf, real) — A wolf has actually come, the boy cries again.",
+      "expr": "cry(boy, wolf, real)",
+      "seed": 577770261,
+      "labelKey": "branch.v4:cw_doubt#4",
+      "consistent": true,
+      "advances": true
+    },
+    {
+      "nodeId": "cw_doubt",
+      "position": 3,
+      "arm": "branch.v4",
+      "index": 0,
+      "display": "cry(boy, wolf) — The boy is shouting about a wolf a third time. There is still no wolf.",
+      "expr": "cry(boy, wolf)",
+      "seed": 711991213,
+      "labelKey": "branch.v4:cw_doubt#0",
+      "consistent": true,
+      "advances": true
+    },
+    {
+      "nodeId": "cw_doubt",
+      "position": 4,
+      "arm": "branch.v4",
+      "index": 2,
+      "display": "eat(wolf, flock) — The wolf has killed the sheep. The boy is alone and the villagers don't help.",
+      "expr": "eat(wolf, flock)",
+      "seed": 644880737,
+      "labelKey": "branch.v4:cw_doubt#2",
+      "consistent": true,
+      "advances": true
+    },
+    {
+      "nodeId": "cw_doubt",
+      "position": 5,
+      "arm": "branch.v4",
+      "index": 5,
+      "display": "arrive(wolf, flock) — A wolf is at the sheep. The boy has no idea.",
+      "expr": "arrive(wolf, flock)",
+      "seed": 1719631281,
+      "labelKey": "branch.v4:cw_doubt#5",
+      "consistent": true,
+      "advances": true
+    },
+    {
+      "nodeId": "cw_doubt",
+      "position": 6,
+      "arm": "branch.v4",
+      "index": 6,
+      "display": "threat(wolf, flock) — A wolf is coming towards the sheep and the boy.",
+      "expr": "threat(wolf, flock)",
+      "seed": 1602040853,
+      "labelKey": "branch.v4:cw_doubt#6",
+      "consistent": true,
+      "advances": true
+    },
+    {
+      "nodeId": "cw_doubt",
+      "position": 7,
+      "arm": "branch.v4",
+      "index": 7,
+      "display": "appear(wolf) — A real wolf is at the flock, and the sheep are barking.",
+      "expr": "appear(wolf)",
+      "seed": 1736261805,
+      "labelKey": "branch.v4:cw_doubt#7",
+      "consistent": true,
+      "advances": true
+    },
+    {
+      "nodeId": "cw_doubt",
+      "position": 8,
+      "arm": "branch.v4",
+      "index": 3,
+      "display": "appear(wolf, flock) — The wolf is at the flock and it is too late to warn them.",
+      "expr": "appear(wolf, flock)",
+      "seed": 611325499,
+      "labelKey": "branch.v4:cw_doubt#3",
+      "consistent": true,
+      "advances": true
+    }
+  ],
+  "summary": {
+    "branch.v4": {
+      "n": 28,
+      "possible": null,
+      "consistent": 24,
+      "advances": 28,
+      "usable": 24,
+      "repeats": null,
+      "possibleAndNew": null
+    }
+  }
+}

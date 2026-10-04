@@ -23,14 +23,14 @@ const REPO = path.join(__dirname, "..");
 const Engine = require(path.join(REPO, "story_builder_engine.js"));
 const Ids = require(path.join(REPO, "ids.js"));
 const { createClient, SAMPLED_SAMPLING } = require(path.join(REPO, "llm_client.js"));
-const { growGraph, formatForPrompt } = require(path.join(REPO, "grower.js"));
+const { growGraph, formatForPrompt, DEFAULT_PROMPT_VERSION } = require(path.join(REPO, "grower.js"));
 const { createJudge, SAME_THRESHOLD, JUDGE_PROMPT } = require(path.join(REPO, "same_judge.js"));
 const { seeds } = require(path.join(REPO, "seeds.js"));
 
-// branch.v4 is the only template. v1–v3 were deleted 2026-09-29 (instruction
-// prompts sent to a base model); runs recorded under them keep their
-// manifests as records but are no longer replayable.
-const DEFAULT_PROMPT_VERSION = "branch.v4";
+// branch.v6 (v4's file format, no foreign example story) is the default since
+// 2026-10-04; v4 and v5 stay selectable. v1–v3 were deleted 2026-09-29
+// (instruction prompts sent to a base model); runs recorded under them keep
+// their manifests as records but are no longer replayable.
 const promptPathOf = (version) => path.join(REPO, "prompts", `${version}.txt`);
 const PROFILE = "sampled";
 const DEFAULTS = { depth: 3, width: 2, maxNodes: 24, seed: 7, out: "runs" };

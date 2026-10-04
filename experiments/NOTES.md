@@ -2126,3 +2126,72 @@ What changed, and why:
 
 Not changed: branch.v4's Tortoise example still has one "has not woken";
 editing it is a new prompt version.
+
+**v4 probe on seeds v3** (4B CUDA, seed 7, K=10, the nine default nodes;
+Claude grading, single arm — not blind, the rater knew the seeds changed).
+Labels `experiments/out/labels_*_seedsv3_branch.v4.claude.json`.
+
+| story | v2 seeds | v3 seeds |
+|---|---|---|
+| criedWolf | 23/26 | 24/28 |
+| red | 22/30 | 23/30 |
+| trojanHorse | 30/30 | 27/30 |
+| **all usable** | **75/86 (87%)** | **74/88 (84%)** |
+
+No measurable change in quality. Samples containing a negation ("not",
+"no one", "nothing", …): 19/86 → 13/88 — a small drop, and v4 samples
+were never where the "has not …" runs lived; those were v5's long states.
+So the seed fix is correctness of the told story, not a v4 quality lever.
+The failures that remain are the model's: Sinon "still with them" or
+"hiding in the horse" before he exists (`th_gift`), the boy "not around"
+the flock he is guarding, the grandmother's house empty.
+
+Told-next stays undercounted by surface form: `leave(villagers, flock)`
+at `cw_laugh` is the told `return(villagers, village)`, and
+`approach(wolf, grandmother_house)` at `red_flowers` is `arrive(…)`.
+
+## 2026-10-04 — prompts without the foreign story; seeds v3.1
+
+What the model actually receives was dumped (`experiments/dump_llm_inputs.js`: the
+real grow wiring against a fake server that prints each `/completion` body).
+Two things stood out: the growth prompt opens with a whole Tortoise & Hare
+story, and the judge's examples carry "The hare has not woken".
+
+**Seeds v3.1:** the last negations go — "There is no wolf" → "The alarm is
+a lie" (and "… a lie again"), "cries mean nothing" → "treat every cry from
+the boy as a lie", label "Nobody comes" → "The villagers stay in the
+village", "unhurt" → "safe", "alone and unarmed" → "as their prisoner",
+"unguarded" → "the guards have joined the feast".
+
+**branch.v6 = branch.v4 minus the example story.** The selected node's own
+past lines are the examples; at the root there are none. Probe, 4B CUDA,
+seed 7, K=10, nine default nodes, both arms the same format, so the grading
+was blind for real (Claude). Labels `labels_*_seedsv31_branch.v4-branch.v6.claude.json`.
+
+| story | v4 usable | v6 usable |
+|---|---|---|
+| criedWolf | 24/28 | 21/25 |
+| red | 23/30 | 26/30 |
+| trojanHorse | 27/30 | 26/30 |
+| **all** | **74/88 (84%)** | **73/85 (86%)** |
+
+Draws containing a negation: v4 15/88, v6 9/85 (Red 6 → 1). A tie on
+quality; v6 is the default for being the simpler prompt (and shorter, so
+faster). Diversity is slightly lower without the example: 8 and 7 distinct
+of 40 draws at `cw_laugh`/`cw_doubt` (v4: 10 and 8).
+
+**Judge: same.v3 (the one negation fixed) loses nothing and gains nothing.**
+Re-asked on the 22 labelled merges (`judge_calibration.js --rescore`;
+same.v2 re-scored first and reproduced its stored numbers exactly):
+AUC 0.78 vs 0.79; at 0.45, 5 true kept / 2 false merges vs 6 / 1. Within
+noise at n=22, and the judge emits one token, so its examples' wording is
+not imitated anywhere. same.v2 stays; same.v3 was the one-line change
+"The hare has not woken." → "The hare is still asleep behind him." in
+example 4, and its scores are in `experiments/out/judge_cal.same.v3.json`.
+
+The judge's examples stay foreign. Same-story examples were considered: a
+"no" pair can be built mechanically (drop a node from a route), but a
+"yes" pair needs a paraphrase of the same situation, which only the model
+could write. A judge shown only identical "yes" pairs would learn "any
+difference is no" — its existing weakness (it already refuses paraphrase
+merges) made worse.

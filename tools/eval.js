@@ -52,7 +52,7 @@ const ROLES_PATH = path.join(REPO, "experiments", "roles.json");
 // at equal budgets is the whole point of changing the template, and the
 // baseline is unaffected either way — the recombiner reads only the last
 // step's `"action"`.
-const DEFAULTS = { depth: 2, width: 2, maxNodes: 8, seed: 7, prompt: "branch.v4" };
+const DEFAULTS = { depth: 2, width: 2, maxNodes: 8, seed: 7, prompt: "branch.v6" };
 // Candidates the baseline offers per expansion, before the grower's width
 // cap. The model offers `width` (one per draw), so at width ≤ 3 both sources
 // reach the cap with the same funnel.

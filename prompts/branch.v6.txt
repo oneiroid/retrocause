@@ -1,0 +1,3 @@
+==> stories/{{file}} <==
+{{header}}
+{{steps}}
