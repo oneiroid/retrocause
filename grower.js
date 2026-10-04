@@ -219,6 +219,9 @@ async function growGraph({
   maxNodes,
   runId = null,
   bypassCache = false,
+  // Optional same_judge.createJudge(...): confirms each merge before it
+  // happens. Without one, the surface key alone decides, as before.
+  judge = null,
 } = {}) {
   // normalizeGraph clones and resolves defaults, so ids downstream hash the
   // fields nodes actually end up with — and the grower never mutates its input.
@@ -234,6 +237,8 @@ async function growGraph({
     rejectedNullTransitions: 0,
     truncated: 0,
     expansions: 0,
+    // Merges the predicate proposed and the judge refused.
+    mergesRefused: 0,
   };
   const clientSeed = client.sampling && client.sampling.seed;
   // Every request as sent and every completion as received, per expansion —
@@ -292,11 +297,27 @@ async function growGraph({
           ...(runId ? { runId } : {}),
         };
 
+        // Confirm-before-merge. Every merge the predicate would make is put to
+        // the judge first; a refused survivor is excluded from the insert, so
+        // the judge can only ever REMOVE merges (same_judge.js).
+        const refuse = new Set();
+        if (judge) {
+          for (const survivorId of Growth.mergeCandidates(graph, { from: sourceId, node })) {
+            const verdict = await judge(graph, survivorId, sourceId, node);
+            expansion.judgements = expansion.judgements || [];
+            expansion.judgements.push({ label: node.label, expr: node.expr, survivor: survivorId, ...verdict });
+            if (verdict.same) break;
+            refuse.add(survivorId);
+            stats.mergesRefused += 1;
+          }
+        }
+
         const result = Growth.insertContinuation(graph, {
           from: sourceId,
           node,
           type: "choice",
           label: "",
+          refuse,
         });
         if (result.ok === false) {
           // Two distinct refusals, counted apart: a cycle is a structural

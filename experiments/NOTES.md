@@ -1940,3 +1940,50 @@ Two grower faults, one fixed:
    route's accumulated state, not the event alone). With v4 drawing genuine
    continuations, told-story expr collisions are now the common case, not
    the rare one, so this limit will show up in most runs.
+
+## Confirm-before-merge judge (2026-10-04)
+
+The surface key (normalized `expr`) is wrong as a merge rule now that v4
+draws real continuations. So: before any merge the key proposes, ask the
+model whether the two nodes are the **same situation**. The judge can only
+refuse merges, never add them — the safe direction, since a refused true
+merge costs a duplicate node and a false merge is unrecoverable.
+
+- **Prompt** `same.v2`: a few-shot document, no instructions (`same.v1` was
+  an instruction + JSON prompt to a base model — the same mistake v1–v3
+  made). Each item: title, two tellings (the ROUTE as prose, from labels,
+  plus the end `state`), `Same situation: yes|no`. Routes, because the
+  motivating failure is invisible in the nodes: `cw_dismiss`'s state does
+  not mention the wolf; only its route does.
+- **Verdict** P(yes)/(P(yes)+P(no)) from next-token logprobs (pre-sampling on
+  this build), both orders averaged (mean order gap 0.13, max 0.31).
+  Unanswered → refuse.
+
+**Calibration** (`experiments/judge_calibration.js`, 4B CUDA, sampled
+profile seed 7, depth 2 / width 3 from the probe's nine mid-story nodes,
+judge in record mode). 22 merges proposed; labelled by Claude (reference
+rater) from both routes — labels and reasons in
+`experiments/out/judge_cal.json`.
+
+- **Surface key alone: 11 of 22 proposed merges are false.** Half. The
+  cw_dismiss pattern recurs (cw_cry1 draws "villagers unresponsive" ×3), plus
+  "cries wolf for real" into the second, no-wolf cry, and "wolf attacks"
+  into the third cry.
+- Judge AUC 0.79. Thresholds: 0.4 → 2 false merges / 7 of 11 true kept;
+  **0.45 → 1 / 6**; 0.5 → 1 / 4. Set at 0.45. n=22 — a starting point.
+
+**Live rerun of the motivating grow** (criedWolf from `cw_cry2`, d2/w3, seed
+7, `runs/run_97ff6152ec9abb14`): `ignore(villagers, boy)` → `cw_dismiss`
+refused (0.33). Cost visible in the same run: one true merge
+(`arrive(villagers, flock)` → `cw_run2`) refused at 0.37 while its twin
+merged at 0.61; three near-identical `attack(wolf, flock)` draws split
+0.50 / 0.44 across the threshold. The judge is noisy by ~±0.1 around 0.45:
+it removes the gross false merges and leaves paraphrase duplicates. 7
+created, 2 merged, 4 refused.
+
+Open: duplicates from refused paraphrases are now the main noise in grown
+graphs; the judge's discrimination (AUC 0.79) is the ceiling on fixing that
+by threshold alone.
+
+Kev (the "Binary judge" section above) is dropped — human decision,
+2026-10-04. The judge path is the served model's own logprobs.

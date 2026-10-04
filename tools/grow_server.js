@@ -45,17 +45,13 @@ const { scoreGrowth, createBaselineClient, BASELINE_FORMAT } = require(path.join
 const Probe = require(path.join(REPO, "experiments", "continue_probe.js"));
 const Grade = require(path.join(REPO, "experiments", "grade.js"));
 const {
-  buildConfig, runIdOf, sha256, DEFAULT_PROMPT_VERSION, DEFAULTS, GRAPH_FILE, MANIFEST_FILE,
+  buildConfig, runIdOf, sha256, DEFAULT_PROMPT_VERSION, DEFAULTS, GRAPH_FILE, MANIFEST_FILE, createRunJudge, TRACE_FILE,
 } = require(path.join(REPO, "tools", "grow.js"));
 
 // One above llama-server's 8080 so both fit in one head. Overridable because
 // ports collide, not because the choice is configuration-worthy.
 const DEFAULT_PORT = 8081;
 const INPUT_GRAPH_FILE = "input_graph.json";
-// Every prompt a UI run sent and every completion it got back (grower
-// `trace`). Written beside the manifest; runs grown before it existed, and
-// CLI runs, have none.
-const TRACE_FILE = "trace.json";
 const PROMPT_DIR = path.join(REPO, "prompts");
 // A UI click should not fan out into a corpus run; the CLI has no such cap
 // because a terminal user asked for exactly what they typed.
@@ -173,7 +169,14 @@ function createHandler({
         client: createBaselineClient({ inputGraph, seed }), format: BASELINE_FORMAT, source: { name: "baseline" },
       };
     }
-    return { client: clientFactory({ ...SAMPLED_SAMPLING, seed }), format: formatForPrompt(promptVersion), source: null };
+    // Model runs confirm every merge with the same-situation judge
+    // (same_judge.js). The baseline stays model-free, so it has none.
+    return {
+      client: clientFactory({ ...SAMPLED_SAMPLING, seed }),
+      format: formatForPrompt(promptVersion),
+      source: null,
+      runJudge: createRunJudge({ makeClient: () => clientFactory({}) }),
+    };
   }
 
   async function grow(body, res) {
@@ -192,13 +195,16 @@ function createHandler({
     const picked = sourceFor({ source, inputGraph: Engine.normalizeGraph(graph), seed, promptVersion });
     const { config, promptText, inputGraph } = await buildConfig({
       graph, from, depth, width, maxNodes, client: picked.client, promptVersion, source: picked.source,
+      judge: picked.runJudge && picked.runJudge.config,
     });
     const runId = runIdOf(config);
     const budget = {
       graph: inputGraph, promptTemplate: promptText, from, depth, width, runId,
     };
 
-    const { graph: grown, stats, validation, trace } = await growGraph({ ...budget, maxNodes, client: picked.client, format: picked.format });
+    const { graph: grown, stats, validation, trace } = await growGraph({
+      ...budget, maxNodes, client: picked.client, format: picked.format, judge: picked.runJudge && picked.runJudge.judge,
+    });
     const score = scoreGrowth({ graph: grown, stats });
 
     // §6's comparison bar: the model-free recombiner grown to the same node

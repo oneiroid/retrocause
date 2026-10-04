@@ -1001,7 +1001,7 @@
         })).json();
         showGrown(data.graph, data.runId, from);
         logTrace(`grow ${data.runId}`, data.trace);
-        el.growReport.innerHTML = `<div>${escapeHtml(data.runId)} · +${data.stats.created} nodes, ${data.stats.mergedDuplicates} merged, ${data.stats.rejectedNullTransitions || 0} null, ${data.stats.rejectedCycles} cyclic</div>`
+        el.growReport.innerHTML = `<div>${escapeHtml(data.runId)} · +${data.stats.created} nodes, ${data.stats.mergedDuplicates} merged, ${data.stats.mergesRefused || 0} merges refused by the judge, ${data.stats.rejectedNullTransitions || 0} null, ${data.stats.rejectedCycles} cyclic</div>`
           + metricsTable(data.score, data.baseline, source === "baseline" ? "baseline" : PROMPT_VERSION);
         loadRuns();
       } catch (error) {
@@ -1066,7 +1066,13 @@
         {
           name: "completions",
           text: expansion.draws.map((d) => `seed ${d.seed}${d.truncated ? " (truncated)" : ""}\n${d.content}`).join("\n\n")
-        }
+        },
+        ...(expansion.judgements || []).flatMap((j) => [
+          {
+            name: `merge judgement: "${j.label}" into ${nodeLabel(j.survivor)} — P(same) ${fmt(j.pYes)}, ${j.same ? "merged" : "refused"}`,
+            text: j.orders.map((o, i) => `order ${i + 1}: P(yes) ${fmt(o.pYes)}\n${o.prompt}`).join("\n\n")
+          }
+        ])
       ]
     })));
   }

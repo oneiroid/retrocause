@@ -1,0 +1,34 @@
+The Tortoise and the Hare
+First telling: The hare boasts of his speed. The tortoise challenges him to a race. The fox starts the race. The hare takes the lead. The hare lies down by the road.
+Now: The hare is asleep by the road. The tortoise is still walking.
+Second telling: The hare boasts of his speed. The tortoise challenges him to a race. The fox starts the race. The hare takes the lead. The hare stops to nap in the shade.
+Now: The hare is sleeping at the roadside while the tortoise keeps walking.
+Same situation: yes
+
+The Tortoise and the Hare
+First telling: The hare boasts of his speed. The tortoise challenges him to a race. The fox starts the race. The hare takes the lead. The hare lies down by the road.
+Now: The hare is asleep by the road.
+Second telling: The hare boasts of his speed. The tortoise challenges him to a race. The fox starts the race. The hare takes the lead. The fox calls off the race. The hare lies down by the road.
+Now: The hare is asleep by the road.
+Same situation: no
+
+The Tortoise and the Hare
+First telling: The hare boasts of his speed. The tortoise challenges him to a race. The fox starts the race. The hare takes the lead. The hare lies down by the road.
+Now: The hare is asleep by the road. The tortoise is still walking.
+Second telling: The hare boasts of his speed. The tortoise challenges him to a race. The fox starts the race. The hare takes the lead. The tortoise lies down by the road.
+Now: The tortoise is asleep by the road. The hare is far ahead.
+Same situation: no
+
+The Tortoise and the Hare
+First telling: The hare boasts of his speed. The tortoise challenges him to a race. The fox starts the race. The hare takes the lead. The hare lies down by the road. The tortoise passes the sleeping hare.
+Now: The tortoise is ahead on the road. The hare has not woken.
+Second telling: The hare boasts of his speed. The tortoise challenges him to a race. The fox starts the race. The hare takes the lead. The hare lies down by the road. The tortoise walks past the hare while he sleeps.
+Now: The hare is still asleep and the tortoise is now in front.
+Same situation: yes
+
+{{title}}
+First telling: {{first}}
+Now: {{first_state}}
+Second telling: {{second}}
+Now: {{second_state}}
+Same situation:

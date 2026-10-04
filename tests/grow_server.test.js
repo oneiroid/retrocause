@@ -23,13 +23,22 @@ const FIXTURES = JSON.parse(
   fs.readFileSync(path.join(__dirname, "fixtures", "branch_responses.json"), "utf8"),
 );
 
+const JUDGE_SAYS_SAME = {
+  content: " yes", stop_type: "limit",
+  completion_probabilities: [{ top_logprobs: [{ token: " yes", logprob: Math.log(0.9) }, { token: " no", logprob: Math.log(0.1) }] }],
+};
+
 // Same stub transport as grower.test.js: keyed on the last `"action"`, one
 // fixture line per draw in draw order.
 function fixtureFetch() {
   const drawn = {};
   return async (url, options) => {
     if (url.endsWith("/props")) return { ok: true, json: async () => FIXTURES.props };
-    const prompt = JSON.parse(options.body).prompt;
+    const body = JSON.parse(options.body);
+    // The merge judge's one-token logprob request: always "same", so a judged
+    // run makes exactly the merges the fixture was designed around.
+    if (body.n_probs) return { ok: true, json: async () => JUDGE_SAYS_SAME };
+    const prompt = body.prompt;
     const expr = [...prompt.matchAll(/"action": "([^"]*)"/g)].at(-1)[1];
     const lines = FIXTURES.completions[expr];
     if (!lines) return { ok: false, status: 500 };
@@ -87,6 +96,9 @@ test("POST /grow grows the graph and persists a provenanced run", async () => {
   const manifest = JSON.parse(fs.readFileSync(path.join(runDir, "growth_manifest.json"), "utf8"));
   // A UI graph has no seed name — the manifest must say so, not guess one.
   assert.strictEqual(manifest.input.seed, null);
+  // Model runs confirm merges with the judge, and say which one.
+  assert.strictEqual(manifest.judge.prompt, "same.v2");
+  assert.ok(data.trace.some((e) => (e.judgements || []).length > 0));
 
   // The trace: one entry per expansion, the prompt as sent, its grammar,
   // `width` completions each. Persisted, and served back with the run.

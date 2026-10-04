@@ -1,0 +1,410 @@
+{
+  "manifest": {
+    "growPrompt": "branch.v4",
+    "judgePrompt": "same.v2",
+    "depth": 2,
+    "width": 3,
+    "seed": 7,
+    "maxNodes": 12,
+    "generatedAt": "2026-10-04T05:03:02.061Z",
+    "labelledBy": "claude (reference rater), 2026-10-04: same situation in the story world, read off both routes"
+  },
+  "cases": [
+    {
+      "story": "red",
+      "start": "red_woods",
+      "from": "n_6d4ff8e18213b6e7",
+      "survivor": "n_527e47df3dfa3ec9",
+      "survivorKind": "grown",
+      "candidateRoute": "Mother gives the basket. Mother warns her to keep to the path. Red enters the woods. Red comes to the fork in the path. Wolf disguises as grandmother.",
+      "candidateState": "The wolf has changed its appearance. It is disguised as Red's grandmother.",
+      "survivorRoute": "Mother gives the basket. Mother warns her to keep to the path. Red enters the woods. Red comes to the fork in the path. The wolf disguises himself as grandmother.",
+      "survivorState": "The wolf is in the woods, disguised, and is still not seen by Red.",
+      "pYes": 0.48900989552551866,
+      "pYesByOrder": [
+        0.38953532899169685,
+        0.5884844620593405
+      ],
+      "same": true,
+      "why": "same route, paraphrased disguise"
+    },
+    {
+      "story": "red",
+      "start": "red_woods",
+      "from": "n_ffdcadad8adf3cbf",
+      "survivor": "n_c4addb58b8293dc6",
+      "survivorKind": "grown",
+      "candidateRoute": "Mother gives the basket. Mother warns her to keep to the path. Red enters the woods. Red arrives at the house. Red knocks on the door.",
+      "candidateState": "Red knocks on the door. No one has answered. The door is open and the house is dark.",
+      "survivorRoute": "Mother gives the basket. Mother warns her to keep to the path. Red enters the woods. Red arrives at the house. Red knocks on the door.",
+      "survivorState": "Red has knocked on the door, still alone, and has not yet spoken to anyone.",
+      "pYes": 0.40007059137830264,
+      "pYesByOrder": [
+        0.24537476891716206,
+        0.5547664138394433
+      ],
+      "same": true,
+      "why": "same route, same knock; detail differs"
+    },
+    {
+      "story": "red",
+      "start": "red_tell",
+      "from": "n_bdb56ee32cd2f8f5",
+      "survivor": "red_arrive",
+      "survivorKind": "told",
+      "candidateRoute": "Mother gives the basket. Mother warns her to keep to the path. Red enters the woods. The wolf stops her on the path. Red says where she is going. Wolf hides in her grandmother's house. Red reaches the grandmother's house.",
+      "candidateState": "Red has arrived at the grandmother's house. She is still alone and has not met anyone there.",
+      "survivorRoute": "Mother gives the basket. Mother warns her to keep to the path. Red enters the woods. The wolf stops her on the path. Red says where she is going. Red steps off the path. Red stops to gather flowers. The wolf reaches the house first. The wolf swallows the grandmother. The wolf takes her place in the bed. Red reaches the house.",
+      "survivorState": "Red is inside the house, at the bedside, and believes she is with her grandmother.",
+      "pYes": 0.3282263765841378,
+      "pYesByOrder": [
+        0.3179876549346745,
+        0.3384650982336011
+      ],
+      "same": false,
+      "why": "routes differ: grandmother swallowed, Red strayed"
+    },
+    {
+      "story": "red",
+      "start": "red_tell",
+      "from": "n_cf1d57d29cae9738",
+      "survivor": "n_8b0d8306f7cba648",
+      "survivorKind": "grown",
+      "candidateRoute": "Mother gives the basket. Mother warns her to keep to the path. Red enters the woods. The wolf stops her on the path. Red says where she is going. The wolf invites Red to go with him. Red is convinced to go with the wolf.",
+      "candidateState": "The wolf and Red are traveling together through the woods.",
+      "survivorRoute": "Mother gives the basket. Mother warns her to keep to the path. Red enters the woods. The wolf stops her on the path. Red says where she is going. The wolf invites Red to go with him. Red agrees to go.",
+      "survivorState": "The wolf and Red are together, on the path. Red has not mentioned her basket.",
+      "pYes": 0.37720273545452554,
+      "pYesByOrder": [
+        0.4415696785382918,
+        0.3128357923707592
+      ],
+      "same": true,
+      "why": "same route, paraphrase"
+    },
+    {
+      "story": "red",
+      "start": "red_flowers",
+      "from": "red_flowers",
+      "survivor": "red_grandma",
+      "survivorKind": "told",
+      "candidateRoute": "Mother gives the basket. Mother warns her to keep to the path. Red enters the woods. The wolf stops her on the path. Red says where she is going. Red steps off the path. Red stops to gather flowers. The wolf arrives.",
+      "candidateState": "The wolf has reached the grandmother's house, but hasn't knocked on the door.",
+      "survivorRoute": "Mother gives the basket. Mother warns her to keep to the path. Red enters the woods. The wolf stops her on the path. Red says where she is going. Red steps off the path. Red stops to gather flowers. The wolf reaches the house first.",
+      "survivorState": "The wolf is at the grandmother's door. Red is still in the woods.",
+      "pYes": 0.26598708493790146,
+      "pYesByOrder": [
+        0.33022832463684365,
+        0.20174584523895922
+      ],
+      "same": true,
+      "why": "same route up to the wolf arriving first"
+    },
+    {
+      "story": "criedWolf",
+      "start": "cw_cry1",
+      "from": "cw_cry1",
+      "survivor": "cw_dismiss",
+      "survivorKind": "told",
+      "candidateRoute": "The boy is set to watch the flock. The boy cries wolf for fun. The villagers are unresponsive.",
+      "candidateState": "The villagers do not respond to the boy's alarm.",
+      "survivorRoute": "The boy is set to watch the flock. The boy cries wolf for fun. The villagers come running. The boy laughs at them. The boy cries wolf again. They come a second time. The villagers stop believing him. A real wolf comes. The boy cries wolf truthfully. Nobody comes.",
+      "survivorState": "The villagers hear the cry and stay where they are.",
+      "pYes": 0.3352311913642476,
+      "pYesByOrder": [
+        0.43389541374621715,
+        0.2365669689822781
+      ],
+      "same": false,
+      "why": "step 3, no wolf, trust intact vs step 11 wolf present"
+    },
+    {
+      "story": "criedWolf",
+      "start": "cw_cry1",
+      "from": "cw_cry1",
+      "survivor": "cw_dismiss",
+      "survivorKind": "told",
+      "candidateRoute": "The boy is set to watch the flock. The boy cries wolf for fun. The villagers dismiss him as a prankster.",
+      "candidateState": "The villagers are annoyed by the boy's lies.",
+      "survivorRoute": "The boy is set to watch the flock. The boy cries wolf for fun. Nobody comes.",
+      "survivorState": "The villagers hear the cry and stay where they are.",
+      "pYes": 0.3304737256123994,
+      "pYesByOrder": [
+        0.4332108085239908,
+        0.22773664270080804
+      ],
+      "same": false,
+      "why": "same as #5"
+    },
+    {
+      "story": "criedWolf",
+      "start": "cw_cry1",
+      "from": "cw_cry1",
+      "survivor": "cw_dismiss",
+      "survivorKind": "told",
+      "candidateRoute": "The boy is set to watch the flock. The boy cries wolf for fun. The villagers dismiss the warning.",
+      "candidateState": "The villagers are no longer concerned about the wolf. The boy laughs.",
+      "survivorRoute": "The boy is set to watch the flock. The boy cries wolf for fun. Nobody comes.",
+      "survivorState": "The villagers hear the cry and stay where they are.",
+      "pYes": 0.2562391126049331,
+      "pYesByOrder": [
+        0.32356108362886254,
+        0.18891714158100364
+      ],
+      "same": false,
+      "why": "same as #5"
+    },
+    {
+      "story": "criedWolf",
+      "start": "cw_laugh",
+      "from": "cw_laugh",
+      "survivor": "cw_cry2",
+      "survivorKind": "told",
+      "candidateRoute": "The boy is set to watch the flock. The boy cries wolf for fun. The villagers come running. The boy laughs at them. The boy cries wolf again.",
+      "candidateState": "The boy raises the alarm a second time. There is no wolf.",
+      "survivorRoute": "The boy is set to watch the flock. The boy cries wolf for fun. The villagers come running. The boy laughs at them. The boy cries wolf again.",
+      "survivorState": "The boy has raised the alarm a second time. There is still no wolf.",
+      "pYes": 0.7542848431958817,
+      "pYesByOrder": [
+        0.8924137906534488,
+        0.6161558957383145
+      ],
+      "same": true,
+      "why": "identical route and event"
+    },
+    {
+      "story": "criedWolf",
+      "start": "cw_laugh",
+      "from": "cw_laugh",
+      "survivor": "cw_cry2",
+      "survivorKind": "told",
+      "candidateRoute": "The boy is set to watch the flock. The boy cries wolf for fun. The villagers come running. The boy laughs at them. The boy cries wolf again in true.",
+      "candidateState": "The boy raises the alarm. The villagers run to the flock. A wolf is there.",
+      "survivorRoute": "The boy is set to watch the flock. The boy cries wolf for fun. The villagers come running. The boy laughs at them. The boy cries wolf again.",
+      "survivorState": "The boy has raised the alarm a second time. There is still no wolf.",
+      "pYes": 0.25060831102572256,
+      "pYesByOrder": [
+        0.1929854865098572,
+        0.30823113554158793
+      ],
+      "same": false,
+      "why": "candidate has a real wolf; second cry had none"
+    },
+    {
+      "story": "criedWolf",
+      "start": "cw_laugh",
+      "from": "cw_laugh",
+      "survivor": "cw_cry2",
+      "survivorKind": "told",
+      "candidateRoute": "The boy is set to watch the flock. The boy cries wolf for fun. The villagers come running. The boy laughs at them. The boy cries wolf for real.",
+      "candidateState": "The boy has raised the alarm. A wolf is present.",
+      "survivorRoute": "The boy is set to watch the flock. The boy cries wolf for fun. The villagers come running. The boy laughs at them. The boy cries wolf again.",
+      "survivorState": "The boy has raised the alarm a second time. There is still no wolf.",
+      "pYes": 0.21630114419323382,
+      "pYesByOrder": [
+        0.12612394113955003,
+        0.3064783472469176
+      ],
+      "same": false,
+      "why": "same as #9"
+    },
+    {
+      "story": "criedWolf",
+      "start": "cw_doubt",
+      "from": "cw_doubt",
+      "survivor": "cw_cry3",
+      "survivorKind": "told",
+      "candidateRoute": "The boy is set to watch the flock. The boy cries wolf for fun. The villagers come running. The boy laughs at them. The boy cries wolf again. They come a second time. The villagers stop believing him. The boy cries wolf for real.",
+      "candidateState": "The boy has raised the alarm for real. There is a wolf.",
+      "survivorRoute": "The boy is set to watch the flock. The boy cries wolf for fun. The villagers come running. The boy laughs at them. The boy cries wolf again. They come a second time. The villagers stop believing him. A real wolf comes. The boy cries wolf truthfully.",
+      "survivorState": "The boy has raised the alarm a third time, and this time it is true.",
+      "pYes": 0.48805326774791524,
+      "pYesByOrder": [
+        0.4217569118402957,
+        0.5543496236555348
+      ],
+      "same": true,
+      "why": "wolf present, trust gone, true cry \u2014 arrival implied by state"
+    },
+    {
+      "story": "criedWolf",
+      "start": "cw_doubt",
+      "from": "n_38b91e13256513fd",
+      "survivor": "cw_cry3",
+      "survivorKind": "told",
+      "candidateRoute": "The boy is set to watch the flock. The boy cries wolf for fun. The villagers come running. The boy laughs at them. The boy cries wolf again. They come a second time. The villagers stop believing him. A real wolf approaches. The boy cries wolf.",
+      "candidateState": "The boy is calling for help. The wolf is on the flock. The boy is afraid.",
+      "survivorRoute": "The boy is set to watch the flock. The boy cries wolf for fun. The villagers come running. The boy laughs at them. The boy cries wolf again. They come a second time. The villagers stop believing him. The boy cries wolf truthfully.",
+      "survivorState": "The boy has raised the alarm a third time, and this time it is true.",
+      "pYes": 0.3814340189129465,
+      "pYesByOrder": [
+        0.3843947488691995,
+        0.3784732889566934
+      ],
+      "same": true,
+      "why": "wolf approaches, boy cries: the third true cry"
+    },
+    {
+      "story": "criedWolf",
+      "start": "cw_doubt",
+      "from": "n_38b91e13256513fd",
+      "survivor": "cw_cry3",
+      "survivorKind": "told",
+      "candidateRoute": "The boy is set to watch the flock. The boy cries wolf for fun. The villagers come running. The boy laughs at them. The boy cries wolf again. They come a second time. The villagers stop believing him. A real wolf approaches. The boy cries wolf.",
+      "candidateState": "The boy raises the alarm for the final time. This time there is a wolf.",
+      "survivorRoute": "The boy is set to watch the flock. The boy cries wolf for fun. The villagers come running. The boy laughs at them. The boy cries wolf again. They come a second time. The villagers stop believing him. The boy cries wolf truthfully.",
+      "survivorState": "The boy has raised the alarm a third time, and this time it is true.",
+      "pYes": 0.5854048345993423,
+      "pYesByOrder": [
+        0.597825548278994,
+        0.5729841209196906
+      ],
+      "same": true,
+      "why": "same as #12"
+    },
+    {
+      "story": "criedWolf",
+      "start": "cw_doubt",
+      "from": "n_38b91e13256513fd",
+      "survivor": "cw_cry3",
+      "survivorKind": "told",
+      "candidateRoute": "The boy is set to watch the flock. The boy cries wolf for fun. The villagers come running. The boy laughs at them. The boy cries wolf again. They come a second time. The villagers stop believing him. A real wolf approaches. The boy cries wolf once more.",
+      "candidateState": "The boy raises the alarm for the third time. The villagers still do not believe.",
+      "survivorRoute": "The boy is set to watch the flock. The boy cries wolf for fun. The villagers come running. The boy laughs at them. The boy cries wolf again. They come a second time. The villagers stop believing him. The boy cries wolf truthfully.",
+      "survivorState": "The boy has raised the alarm a third time, and this time it is true.",
+      "pYes": 0.3080845631689855,
+      "pYesByOrder": [
+        0.24363649990931896,
+        0.3725326264286521
+      ],
+      "same": true,
+      "why": "same as #12"
+    },
+    {
+      "story": "criedWolf",
+      "start": "cw_doubt",
+      "from": "n_d92f682c21214782",
+      "survivor": "cw_cry3",
+      "survivorKind": "told",
+      "candidateRoute": "The boy is set to watch the flock. The boy cries wolf for fun. The villagers come running. The boy laughs at them. The boy cries wolf again. They come a second time. The villagers stop believing him. The wolf attacks the flock. The boy cries wolf in panic.",
+      "candidateState": "The boy is calling for help in a panic. The wolf is still attacking.",
+      "survivorRoute": "The boy is set to watch the flock. The boy cries wolf for fun. The villagers come running. The boy laughs at them. The boy cries wolf again. They come a second time. The villagers stop believing him. The boy cries wolf truthfully.",
+      "survivorState": "The boy has raised the alarm a third time, and this time it is true.",
+      "pYes": 0.364874245003168,
+      "pYesByOrder": [
+        0.40587558422697,
+        0.32387290577936606
+      ],
+      "same": false,
+      "why": "wolf already attacking the flock \u2014 a later situation"
+    },
+    {
+      "story": "criedWolf",
+      "start": "cw_doubt",
+      "from": "n_d92f682c21214782",
+      "survivor": "cw_cry3",
+      "survivorKind": "told",
+      "candidateRoute": "The boy is set to watch the flock. The boy cries wolf for fun. The villagers come running. The boy laughs at them. The boy cries wolf again. They come a second time. The villagers stop believing him. The wolf attacks the flock. The boy cries wolf once more.",
+      "candidateState": "The boy has raised the alarm a third time. The villagers are not there to help.",
+      "survivorRoute": "The boy is set to watch the flock. The boy cries wolf for fun. The villagers come running. The boy laughs at them. The boy cries wolf again. They come a second time. The villagers stop believing him. The boy cries wolf truthfully.",
+      "survivorState": "The boy has raised the alarm a third time, and this time it is true.",
+      "pYes": 0.3126953281167714,
+      "pYesByOrder": [
+        0.3766876745700799,
+        0.2487029816634629
+      ],
+      "same": false,
+      "why": "same as #15"
+    },
+    {
+      "story": "trojanHorse",
+      "start": "th_gift",
+      "from": "n_74c562d69e8be198",
+      "survivor": "n_eaacc1596f2a2b9b",
+      "survivorKind": "grown",
+      "candidateRoute": "The Greeks build a wooden horse. Armed men climb inside it. The fleet sails out of sight. The Trojans find the horse. A Trojan prince says to take it in. The Trojans enter it.",
+      "candidateState": "The Trojans move inside the horse, leaving their camp gates open.",
+      "survivorRoute": "The Greeks build a wooden horse. Armed men climb inside it. The fleet sails out of sight. The Trojans find the horse. A Trojan prince says to take it in. The Trojans carry it in their city.",
+      "survivorState": "The horse is placed by the temple of Athena, where the Trojans say the gods will look after it.",
+      "pYes": 0.3252177262678011,
+      "pYesByOrder": [
+        0.36725774296590397,
+        0.2831777095696982
+      ],
+      "same": false,
+      "why": "Trojans enter the horse vs carry it into the city"
+    },
+    {
+      "story": "trojanHorse",
+      "start": "th_lie",
+      "from": "n_cf8defd153c5ae4b",
+      "survivor": "n_0a826bba2fd2305c",
+      "survivorKind": "grown",
+      "candidateRoute": "The Greeks build a wooden horse. Armed men climb inside it. The fleet sails out of sight. The Trojans find the horse. Sinon sells the lie. The Trojans bring it to the city. The Greeks attack during the night.",
+      "candidateState": "The Greeks emerge from the horse. The Trojans are shocked to find themselves in a siege.",
+      "survivorRoute": "The Greeks build a wooden horse. Armed men climb inside it. The fleet sails out of sight. The Trojans find the horse. Sinon sells the lie. The Trojans bring the horse inside. The Greeks open the horse's door.",
+      "survivorState": "A Greek soldier opens the horse and the troops rush into the city.",
+      "pYes": 0.5568531718272306,
+      "pYesByOrder": [
+        0.5351267343141027,
+        0.5785796093403585
+      ],
+      "same": true,
+      "why": "Greeks out of the horse inside the city, both"
+    },
+    {
+      "story": "trojanHorse",
+      "start": "th_lie",
+      "from": "n_f8828477188df119",
+      "survivor": "n_0a826bba2fd2305c",
+      "survivorKind": "grown",
+      "candidateRoute": "The Greeks build a wooden horse. Armed men climb inside it. The fleet sails out of sight. The Trojans find the horse. Sinon sells the lie. The Trojans bring the horse into the city. The Greeks emerge and burn the city.",
+      "candidateState": "The hidden Greeks are now outside the walls. They set the city alight.",
+      "survivorRoute": "The Greeks build a wooden horse. Armed men climb inside it. The fleet sails out of sight. The Trojans find the horse. Sinon sells the lie. The Trojans bring the horse inside. The Greeks open the horse's door.",
+      "survivorState": "A Greek soldier opens the horse and the troops rush into the city.",
+      "pYes": 0.439385485621966,
+      "pYesByOrder": [
+        0.5169114305789005,
+        0.3618595406650314
+      ],
+      "same": false,
+      "why": "city burning vs troops just out"
+    },
+    {
+      "story": "trojanHorse",
+      "start": "th_seer",
+      "from": "n_a7a9c6fd2726df8b",
+      "survivor": "n_047f52e292e47d34",
+      "survivorKind": "grown",
+      "candidateRoute": "The Greeks build a wooden horse. Armed men climb inside it. The fleet sails out of sight. The Trojans find the horse. Sinon sells the lie. Cassandra names it a trap. The horse is brought inside the city. The Greeks emerge and burn the city.",
+      "candidateState": "The soldiers inside the horse emerge at night, burn down the city, and slaughter the Trojans.",
+      "survivorRoute": "The Greeks build a wooden horse. Armed men climb inside it. The fleet sails out of sight. The Trojans find the horse. Sinon sells the lie. Cassandra names it a trap. The horse is taken into Troy. The trapped greeks kill the Trojans.",
+      "survivorState": "The Trojans are in the horse, and inside the walls. The Greeks are out.",
+      "pYes": 0.5472302941408135,
+      "pYesByOrder": [
+        0.6023119808944167,
+        0.49214860738721017
+      ],
+      "same": false,
+      "why": "city burnt and slaughter vs troops out (survivor state garbled)"
+    },
+    {
+      "story": "trojanHorse",
+      "start": "th_seer",
+      "from": "n_a7a9c6fd2726df8b",
+      "survivor": "n_bcddd788487de0b6",
+      "survivorKind": "grown",
+      "candidateRoute": "The Greeks build a wooden horse. Armed men climb inside it. The fleet sails out of sight. The Trojans find the horse. Sinon sells the lie. Cassandra names it a trap. The horse is brought inside the city. The Greeks open it from within.",
+      "candidateState": "Soldiers run from inside the horse into the city, after the Trojans have left.",
+      "survivorRoute": "The Greeks build a wooden horse. Armed men climb inside it. The fleet sails out of sight. The Trojans find the horse. Sinon sells the lie. Cassandra names it a trap. The horse is taken into Troy. The horse opens.",
+      "survivorState": "The horses is opened. The trapped soldiers pour out and take the city.",
+      "pYes": 0.5097419390936337,
+      "pYesByOrder": [
+        0.46801045350897136,
+        0.5514734246782961
+      ],
+      "same": true,
+      "why": "soldiers out of the horse into the city, both"
+    }
+  ]
+}

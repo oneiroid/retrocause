@@ -84,6 +84,11 @@ const DEFAULT_BASE_URL = process.env.LLAMA_URL || "http://127.0.0.1:8080";
 // null, not false, so `stop_type` is the only reliable truncation signal (§5.3).
 const STOP_TYPE_TRUNCATED = "limit";
 
+// How many next-token alternatives nextTokenLogprobs asks for. Enough that a
+// one-word answer's casing/spacing variants (" yes", " Yes", "yes") all
+// appear when any of them is plausible.
+const DEFAULT_TOP_LOGPROBS = 20;
+
 function createClient({
   baseUrl = DEFAULT_BASE_URL,
   fetch = globalThis.fetch,
@@ -160,19 +165,13 @@ function createClient({
     return path.join(cacheDir, `${key}.json`);
   }
 
-  // One completion. Resolves to { content, stopType, cached, cacheKey }.
-  // Truncation is a HARD failure (error with `.truncated = true`), never a
-  // silent retry with a bigger cap — that would make the run irreproducible.
-  //
-  // `bypassCache` skips the cache READ but still records: this is what makes
-  // `grow:replay` cache-cold (§4.2) while leaving fresh fixtures behind.
-  async function complete(prompt, schema, { bypassCache = false, seed, grammar } = {}) {
-    const body = requestBody(prompt, schema, { seed, grammar });
+  // POST one body, through the cache. Resolves to { response, key, cached }.
+  async function post(body, bypassCache) {
     const key = cacheKeyFor(body, await fingerprint());
 
     if (cacheDir && !bypassCache && fs.existsSync(cachePath(key))) {
       const entry = JSON.parse(fs.readFileSync(cachePath(key), "utf8"));
-      return finish(entry.response, key, true);
+      return { response: entry.response, key, cached: true };
     }
 
     const res = await fetch(`${baseUrl}/completion`, {
@@ -190,7 +189,33 @@ function createClient({
         JSON.stringify({ request: body, response, recordedAt: new Date().toISOString() }, null, 2),
       );
     }
-    return finish(response, key, false);
+    return { response, key, cached: false };
+  }
+
+  // One completion. Resolves to { content, stopType, cached, cacheKey }.
+  // Truncation is a HARD failure (error with `.truncated = true`), never a
+  // silent retry with a bigger cap — that would make the run irreproducible.
+  //
+  // `bypassCache` skips the cache READ but still records: this is what makes
+  // `grow:replay` cache-cold (§4.2) while leaving fresh fixtures behind.
+  async function complete(prompt, schema, { bypassCache = false, seed, grammar } = {}) {
+    const { response, key, cached } = await post(requestBody(prompt, schema, { seed, grammar }), bypassCache);
+    return finish(response, key, cached);
+  }
+
+  // The model's distribution over the NEXT token only: [{ token, logprob }],
+  // most likely first, `n` entries. For one-token judgements (same_judge.js)
+  // read straight off the logits — no sampling decides the answer.
+  //
+  // On this build the reported logprobs are pre-sampling: a top_k 1 request
+  // still lists the alternatives. One generated token always stops on the
+  // limit, so this deliberately bypasses `finish`'s truncation check.
+  async function nextTokenLogprobs(prompt, { n = DEFAULT_TOP_LOGPROBS, bypassCache = false } = {}) {
+    const body = { ...requestBody(prompt, null), n_predict: 1, n_probs: n };
+    const { response } = await post(body, bypassCache);
+    const [first] = response.completion_probabilities || [];
+    if (!first) throw new Error("no completion_probabilities in the response");
+    return first.top_logprobs.map(({ token, logprob }) => ({ token, logprob }));
   }
 
   function finish(response, key, cached) {
@@ -208,7 +233,7 @@ function createClient({
     return { content: response.content, stopType: response.stop_type, cached, cacheKey: key };
   }
 
-  return { props, complete, sampling: pinned, baseUrl };
+  return { props, complete, nextTokenLogprobs, sampling: pinned, baseUrl };
 }
 
 module.exports = { createClient, REFERENCE_SAMPLING, SAMPLED_SAMPLING };

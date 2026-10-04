@@ -34,9 +34,13 @@
   // reachable from / could reach the survivor through the victim — which would
   // have made victim and survivor comparable and blocked the merge.
   // Returns { merged:true, into } or { merged:false }.
-  function collapseIfSame(graph, nodeId) {
+  //
+  // `refuse` names survivors a caller has ruled out (the grower's judge, which
+  // may only veto merges the predicate proposes). The next survivor in graph
+  // order is still eligible.
+  function collapseIfSame(graph, nodeId, refuse = new Set()) {
     const survivor = graph.nodes.find(
-      (other) => other.id !== nodeId && Predicate.sameInContext(graph, nodeId, other.id),
+      (other) => other.id !== nodeId && !refuse.has(other.id) && Predicate.sameInContext(graph, nodeId, other.id),
     );
     if (!survivor) return { merged: false };
 
@@ -99,7 +103,7 @@
   //   { merged:false, node, edge }  — kept as a genuinely new state
   //   { ok:false, message }         — bad input (e.g. `from` not in graph)
   //   { ok:false, reason:"null_transition" } — restates `from`; nothing added
-  function insertContinuation(graph, { from, node, type, label } = {}) {
+  function insertContinuation(graph, { from, node, type, label, refuse } = {}) {
     const source = graph.nodes.find((n) => n.id === from);
     if (!source) return { ok: false, message: `Source node ${from} is missing` };
     if (!node) return { ok: false, message: "Continuation has no node" };
@@ -119,18 +123,36 @@
     }
     const edge = graph.edges[graph.edges.length - 1];
 
-    const collapsed = collapseIfSame(graph, node.id);
+    const collapsed = collapseIfSame(graph, node.id, refuse);
     if (!collapsed.merged) return { merged: false, node, edge };
     return { merged: true, into: collapsed.into, edge: graph.edges[graph.edges.length - 1] };
   }
 
+  // Never a content id (those are `n_<hash>`), so it cannot collide.
+  const PROBE_ID = "__merge_probe__";
+
+  // The survivors `node`, drawn from `from`, WOULD collapse into — in the
+  // order collapseIfSame tries them — without changing the graph. Asked of the
+  // predicate itself on a scratch copy, so it cannot drift from what the
+  // insert will do. [] for a null transition or bad input.
+  function mergeCandidates(graph, { from, node } = {}) {
+    const source = graph.nodes.find((n) => n.id === from);
+    if (!source || !node || isNullTransition(source, node)) return [];
+    const scratch = { ...graph, nodes: [...graph.nodes], edges: [...graph.edges] };
+    const probe = { ...node, id: PROBE_ID };
+    scratch.nodes.push(probe);
+    if (!Engine.addEdge(scratch, { from, to: PROBE_ID, type: "choice" }).ok) return [];
+    return scratch.nodes
+      .filter((other) => other.id !== PROBE_ID && Predicate.sameInContext(scratch, PROBE_ID, other.id))
+      .map((other) => other.id);
+  }
   // Apply several continuations in order. Order is significant: a later
   // candidate can merge into a node added earlier in the same call.
   function grow(graph, continuations) {
     return (continuations || []).map((c) => insertContinuation(graph, c));
   }
 
-  const api = { insertContinuation, grow, collapseIfSame, isNullTransition };
+  const api = { insertContinuation, grow, collapseIfSame, isNullTransition, mergeCandidates };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   root.StoryDagGrowth = api;
 })(typeof window !== "undefined" ? window : globalThis);

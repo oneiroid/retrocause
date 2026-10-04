@@ -4,7 +4,7 @@
 //
 //   npm run grow -- --story red [--from red_start] [--depth 3] [--width 2]
 //                   [--max-nodes 24] [--seed 7] [--out runs]
-//                   [--prompt branch.v4]
+//                   [--prompt branch.v4] [--no-judge]
 //   npm run grow:replay -- runs/<runId>/growth_manifest.json [--cached]
 //
 // Replay re-runs from the manifest and diffs canonical JSON. It is
@@ -24,6 +24,7 @@ const Engine = require(path.join(REPO, "story_builder_engine.js"));
 const Ids = require(path.join(REPO, "ids.js"));
 const { createClient, SAMPLED_SAMPLING } = require(path.join(REPO, "llm_client.js"));
 const { growGraph, formatForPrompt } = require(path.join(REPO, "grower.js"));
+const { createJudge, SAME_THRESHOLD, JUDGE_PROMPT } = require(path.join(REPO, "same_judge.js"));
 const { seeds } = require(path.join(REPO, "seeds.js"));
 
 // branch.v4 is the only template. v1–v3 were deleted 2026-09-29 (instruction
@@ -35,6 +36,9 @@ const PROFILE = "sampled";
 const DEFAULTS = { depth: 3, width: 2, maxNodes: 24, seed: 7, out: "runs" };
 const GRAPH_FILE = "grown_graph.json";
 const MANIFEST_FILE = "growth_manifest.json";
+// Every prompt sent and completion received, per expansion (grower `trace`),
+// including the merge judge's verdicts. The Lab panel shows it.
+const TRACE_FILE = "trace.json";
 
 function parseArgs(argv) {
   const args = { cached: false, positional: [] };
@@ -42,6 +46,7 @@ function parseArgs(argv) {
     const a = argv[i];
     if (a === "--replay") args.replay = true;
     else if (a === "--cached") args.cached = true;
+    else if (a === "--no-judge") args.noJudge = true;
     else if (a.startsWith("--")) args[a.slice(2).replace(/-([a-z])/g, (_, c) => c.toUpperCase())] = argv[++i];
     else args.positional.push(a);
   }
@@ -93,7 +98,7 @@ function sha256File(file) {
 // every recorded runId — is exactly what it was before sources existed.
 async function buildConfig({
   story = null, graph = null, from, depth, width, maxNodes, client,
-  promptVersion = DEFAULT_PROMPT_VERSION, source = null,
+  promptVersion = DEFAULT_PROMPT_VERSION, source = null, judge = null,
 }) {
   const props = await client.props();
 
@@ -130,8 +135,22 @@ async function buildConfig({
     traversal: { from, depth, width, maxNodes },
     input: { seed: story, graphSha256: sha256(Ids.canonicalJson(inputGraph)) },
     ...(source ? { source } : {}),
+    // The merge judge's config block (createRunJudge), when the run had one.
+    ...(judge ? { judge } : {}),
   };
   return { config, promptText, inputGraph };
+}
+
+// The confirm-before-merge judge for a model run, plus the manifest block that
+// records it. Its client is the reference profile: the verdict is read off
+// next-token logprobs, so its sampler never decides anything, and it must not
+// inherit the growth profile's seed or temperature.
+function createRunJudge({ makeClient, threshold = SAME_THRESHOLD }) {
+  const template = fs.readFileSync(promptPathOf(JUDGE_PROMPT), "utf8");
+  return {
+    judge: createJudge({ client: makeClient(), template, threshold }),
+    config: { prompt: JUDGE_PROMPT, sha256: sha256(template), threshold },
+  };
 }
 
 function runIdOf(config) {
@@ -155,13 +174,18 @@ async function grow(args) {
     cacheDir: path.join(REPO, "cache"),
     sampling: { ...SAMPLED_SAMPLING, seed: samplingSeed },
   });
+  // On by default; `--no-judge` grows with the surface key alone.
+  const runJudge = args.noJudge ? null : createRunJudge({
+    makeClient: () => createClient({ baseUrl: args.baseUrl, cacheDir: path.join(REPO, "cache") }),
+  });
   const { config, promptText, inputGraph } = await buildConfig({
     story, from, depth, width, maxNodes, client,
     promptVersion: args.prompt || DEFAULT_PROMPT_VERSION,
+    judge: runJudge && runJudge.config,
   });
   const runId = runIdOf(config);
 
-  const { graph, stats, validation } = await growGraph({
+  const { graph, stats, validation, trace } = await growGraph({
     graph: inputGraph,
     client,
     promptTemplate: promptText,
@@ -171,11 +195,13 @@ async function grow(args) {
     width,
     maxNodes,
     runId,
+    judge: runJudge && runJudge.judge,
   });
 
   const outDir = path.join(REPO, args.out || DEFAULTS.out, runId);
   fs.mkdirSync(outDir, { recursive: true });
   fs.writeFileSync(path.join(outDir, GRAPH_FILE), Ids.canonicalJson(graph));
+  fs.writeFileSync(path.join(outDir, TRACE_FILE), JSON.stringify(trace, null, 2));
   const manifest = {
     runId,
     createdAt: new Date().toISOString(),
@@ -186,8 +212,8 @@ async function grow(args) {
       rejectedNullTransitions: stats.rejectedNullTransitions,
       mergedDuplicates: stats.mergedDuplicates,
       truncated: stats.truncated,
-      droppedRejoins: stats.droppedRejoins,
       expansions: stats.expansions,
+      mergesRefused: stats.mergesRefused,
     },
   };
   fs.writeFileSync(path.join(outDir, MANIFEST_FILE), JSON.stringify(manifest, null, 2));
@@ -227,6 +253,10 @@ async function replay(args) {
     // template swap as a replay failure.
     promptVersion: manifest.prompt.template,
   });
+  const runJudge = manifest.judge ? createRunJudge({
+    makeClient: () => createClient({ baseUrl: args.baseUrl, cacheDir: path.join(REPO, "cache") }),
+    threshold: manifest.judge.threshold,
+  }) : null;
 
   // A replay against a drifted configuration would diff graphs grown by two
   // different instruments and call the difference "the model". Fail loudly.
@@ -234,6 +264,7 @@ async function replay(args) {
     ["prompt", manifest.prompt.sha256, config.prompt.sha256],
     ["input graph", manifest.input.graphSha256, config.input.graphSha256],
     ["model", manifest.model.sha256, config.model.sha256],
+    ["judge prompt", manifest.judge && manifest.judge.sha256, runJudge && runJudge.config.sha256],
   ]) {
     if (recorded && current && recorded !== current) {
       console.error(`REPLAY INVALID — ${name} hash differs from the manifest`);
@@ -253,6 +284,7 @@ async function replay(args) {
     maxNodes: manifest.traversal.maxNodes,
     runId: manifest.runId,
     bypassCache: !args.cached,
+    judge: runJudge && runJudge.judge,
   });
 
   const replayed = Ids.canonicalJson(graph);
@@ -281,4 +313,5 @@ if (require.main === module) {
 // writer would drift.
 module.exports = {
   buildConfig, runIdOf, sha256, sha256File, promptPathOf, DEFAULT_PROMPT_VERSION, DEFAULTS, GRAPH_FILE, MANIFEST_FILE,
+  createRunJudge, TRACE_FILE,
 };
