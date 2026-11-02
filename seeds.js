@@ -10,7 +10,7 @@
 // ── v2, 2026-08-17: one node = one event, and `state` is not commentary ──
 //
 // v1 nodes were overloaded in two ways at once, and both showed up as
-// grower failures (LOCAL_LLM.md §8, "context starvation"):
+// grower failures ("context starvation"):
 //
 //   1. Each node bundled several events. `deceive(wolf, red)` was labelled
 //      "Wolf learns destination" — expr and label disagreed because the node
@@ -53,7 +53,7 @@
 // Hence hand-authored rather than model-extracted — seeds are the ground
 // truth that grown graphs are scored against, and a corpus written by the
 // model under test measures its self-consistency, not its correctness.
-// Extraction at runtime, for grown nodes, is a different question (§8).
+// Extraction at runtime, for grown nodes, is a different question.
 //
 // Note criedWolf: all three `cry(boy, wolf)` nodes carry the SAME effects,
 // `boy.crying_wolf=yes, alarm.heeded=pending` (each cry is a fresh alarm;
@@ -425,17 +425,11 @@
 
   const seeds = { red, criedWolf, trojanHorse };
 
-  // ── entities: the closed character list per story ───────────────────────
+  // ── entities: the character list per story ───────────────────────
   //
   // Who can ACT in the story — not everything mentioned (`the flock` owns
-  // effects in criedWolf but never acts). branch.v4 renders it into the story
-  // file's header line as `characters`; nothing constrains to it since v3.
-  //
-  // Closed on purpose, and the cost is real: no generated alternative can be
-  // driven by a character the author did not list. What it buys was measured
-  // on the (removed) frames boundary: sampling collapses onto one or two
-  // actors, and restricting the actor to one entity recovers continuations
-  // the sampler never proposes (experiments/NOTES.md, "--fill-actors").
+  // effects in criedWolf but never acts). The grower shows it to the model as
+  // the story's characters; nothing constrains output to it.
   red.entities = ["Red", "Red's mother", "Red's grandmother", "the wolf", "the woodcutter"];
   criedWolf.entities = ["the boy", "the villagers", "the wolf"];
   trojanHorse.entities = ["the Greeks", "the Trojans", "Sinon", "Cassandra"];

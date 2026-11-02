@@ -54,7 +54,69 @@
     return true;
   }
 
-  const api = { sameInContext, defaultContentKey };
+  // ── Proposals for the model's judge ─────────────────────────────────────────
+  //
+  // A chat model rarely writes the same sentence for the same event twice, so
+  // the surface key alone almost never fires on what it grows. Instead, the nodes
+  // worth asking the judge about: their last event looks like this one, by shared
+  // words in the label, and their states are not strangers. Every proposal costs
+  // a model call that stalls running generations, so this errs toward missing a
+  // merge.
+
+  // Shared-word share (Jaccard) at which a pair is worth one judge call. States
+  // repeat carried-over facts, so their bar is low: over 195 judged pairs, 0.2
+  // dropped a quarter of the calls and none of the 23 confirmed merges. Label bar:
+  // over 674 judged pairs, 0.5 to 0.6 held 250 calls and 10 merges, most of them
+  // false ("The boy thanks the villagers" into "The boy apologizes to the villagers").
+  const PROPOSAL_MIN_SIMILARITY = 0.6;
+  const PROPOSAL_MIN_STATE_SIMILARITY = 0.2;
+  const PROPOSAL_LIMIT = 8;
+  const STOPWORDS = new Set(("a an and are as at be but by for from has have her his in into is it its of on or "
+    + "she he that the their them they this to was were who with").split(" "));
+
+  function wordsOf(value) {
+    const text = String(value || "").toLowerCase();
+    return new Set(text.split(/[^a-z0-9']+/).filter((w) => w.length > 1 && !STOPWORDS.has(w)));
+  }
+
+  function similarity(a, b) {
+    if (!a.size || !b.size) return 0;
+    let shared = 0;
+    a.forEach((w) => { if (b.has(w)) shared += 1; });
+    return shared / (a.size + b.size - shared);
+  }
+
+  // Survivors for `node`, drawn from `from`, most similar first. `from` and its
+  // ancestors are out: an edge into them is a cycle. The target's own children
+  // and descendants stay in, since a fresh node is comparable to neither.
+  function mergeProposals(graph, from, node) {
+    const ancestors = new Set([from]);
+    for (let frontier = [from]; frontier.length;) {
+      const next = [];
+      graph.edges.forEach((e) => {
+        if (frontier.includes(e.to) && !ancestors.has(e.from)) {
+          ancestors.add(e.from);
+          next.push(e.from);
+        }
+      });
+      frontier = next;
+    }
+    const key = defaultContentKey(node);
+    const words = wordsOf(node.label);
+    const stateWords = wordsOf(node.state);
+    return graph.nodes
+      .filter((other) => !ancestors.has(other.id) && similarity(stateWords, wordsOf(other.state)) >= PROPOSAL_MIN_STATE_SIMILARITY)
+      .map((other) => {
+        const overlap = similarity(words, wordsOf(other.label));
+        return { id: other.id, score: key && key === defaultContentKey(other) ? 1 + overlap : overlap };
+      })
+      .filter((c) => c.score >= PROPOSAL_MIN_SIMILARITY)
+      .sort((a, b) => (b.score - a.score) || String(a.id).localeCompare(String(b.id)))
+      .slice(0, PROPOSAL_LIMIT)
+      .map((c) => c.id);
+  }
+
+  const api = { sameInContext, defaultContentKey, mergeProposals, similarity, wordsOf };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   root.MergePredicate = api;
 })(typeof window !== "undefined" ? window : globalThis);

@@ -177,14 +177,16 @@ label.check input { width: auto; }
 .metrics th, .metrics td { text-align: right; padding: 2px 4px; border-bottom: 1px solid var(--line); }
 .metrics th:first-child, .metrics td:first-child { text-align: left; }
 .node.fresh rect { stroke: #4ade80; stroke-width: 2.5; }
-.probe-history { font-size: 12px; color: var(--muted); line-height: 1.45; max-height: 22vh; overflow: auto; margin: 10px 0; }
-.probe-list { display: grid; gap: 8px; max-height: 48vh; overflow: auto; }
-.probe-item { border: 1px solid var(--line); border-radius: 8px; padding: 8px; background: #0a1322; display: grid; gap: 6px; }
-.probe-item.done { border-color: #1e3a5f; }
-.probe-text { color: #f1f5f9; font-size: 13px; line-height: 1.4; }
-.probe-controls { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; font-size: 12px; color: var(--muted); }
-.probe-controls button { padding: 3px 9px; font-size: 12px; }
-.probe-controls button.on-yes { background: #14532d; border-color: #4ade80; }
-.probe-controls button.on-no { background: #5f1726; border-color: #fb7185; }
-.arm-tag { font-size: 11px; padding: 1px 7px; border-radius: 999px; border: 1px solid #9d174d; color: #f9a8d4; }
-#probeDialog { overflow: auto; }
+.node.ending rect { stroke: #fb7185; stroke-width: 2.5; }
+#layeredBtn.active { border-color: var(--green); color: #d8f7e8; }
+#growBar { width: 100%; height: 8px; accent-color: var(--green); }
+.grow-active { display: grid; gap: 2px; font-size: 11px; line-height: 1.35; color: var(--muted); max-height: 220px; overflow: hidden; }
+.grow-active > div { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.active-from { color: #cbd5e1; }
+.grow-log { font-size: 11px; line-height: 1.5; color: var(--muted); max-height: 200px; overflow: auto; }
+.grow-log:empty { display: none; }
+.log-link { cursor: pointer; }
+.log-link:hover { color: #f8fafc; }
+.propose-list { display: grid; gap: 6px; }
+.propose-item { border: 1px solid var(--line); border-radius: 8px; padding: 8px; background: #0a1322; display: grid; gap: 4px; font-size: 12px; line-height: 1.4; }
+.propose-item button { justify-self: start; padding: 3px 9px; font-size: 12px; }

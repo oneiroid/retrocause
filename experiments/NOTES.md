@@ -2195,3 +2195,80 @@ The judge's examples stay foreign. Same-story examples were considered: a
 could write. A judge shown only identical "yes" pairs would learn "any
 difference is no" — its existing weakness (it already refuses paraphrase
 merges) made worse.
+
+---
+
+## 2026-11-02: base models retired, chat model in (Nemotron 3.5 Bolt E4B)
+
+Everything above was measured on base models (qwen3/smollm2) with document
+prompts and is kept as the record. The code it refers to (`continue_probe.js`,
+`grade.js`, `gen_probe.js`, `eval.js`, `same_judge.js`, `prompts/branch.v*`,
+`experiments/out/`, the response cache) was deleted on this date; it is all in
+git at `5188d1f` except `cache/` and `runs/`, which were never tracked.
+
+The model: `NVIDIA-Nemotron-3.5-Bolt-E4B-UD-Q4_K_XL.gguf`, 5.06 GB, Gemma 4 chat
+template with a thinking channel, on the existing llama.cpp build (f5b9bd3), all
+layers on the 6 GB RTX 3000.
+
+**Throughput, total tok/s by concurrent requests** (real prompt, thinking off):
+1 → 21–27, 4 → 43, 8 → 70, 16 → 90–150, 24 → 165, 32 slots do not load. So 16
+slots. It varies between runs with temperature; `nvidia-smi` shows the graphics
+clock at 600–950 MHz of a 2100 maximum under load, in P2. Not investigated: it is
+a machine setting.
+
+**What did not help:** GBNF grammars (slower, 48 vs 66 tok/s at 8, and without an
+example in the prompt a forced mid-word start ran away into one 300-char "word"; a
+chat model follows a stated format on its own, zero malformed lines in hundreds);
+`backend_sampling` and a shorter sampler chain (no change); `--batch-size 1024`
+(no change).
+
+**What did:** the cost is prompt evaluation, about 500 tok/s total, and it stalls
+every running generation.
+- Output format from four labelled fields to `event | state`, dropping the formal
+  `verb(args)` nothing downstream reads, and exprs out of the prompt's path.
+- Judge asks one order, routes from where they part. AUC on the 22 labelled merges
+  of 2026-10-04: whole routes both orders 0.79, one order 0.74, parted routes one
+  order **0.90**, at half the tokens; at P ≥ 0.5, 6 true and 0 false.
+- Judge calls off the insert path: they were serialized behind a lock and 16 workers
+  queued behind it. Optimistic instead (synchronous re-check before insert).
+- Merge proposals by event words, not state words; state similarity ≥ 0.2 as a
+  second bar dropped a quarter of the calls and none of 23 confirmed merges.
+
+Result: 60 nodes from `red_woods` went 115 s → 35 s.
+
+**The critic (prune) is off by default.** One more call per expansion, and on read
+it cut good events ("Red decides to skip the path and follow a stream": contradiction)
+and missed static ones ("A bird flies overhead"). Selectable in the Lab.
+
+**Known weaknesses.** States drift: the model reads only the latest state, so a
+fact can come back ("Red has abandoned the basket" … "carrying the basket").
+Merge precision reads well by eye but the only labels are the 22 base-model cases.
+
+### Runs from `red_woods`, 16 slots (2026-11-02)
+
+| depth / width / beam / cap | merge | nodes | merged | refused | max depth | endings | time | nodes/s |
+|---|---|---|---|---|---|---|---|---|
+| 12 / 4 / 24 / 400 | off | 400 | 0 | 0 | 7 | 18 | 107 s | 3.73 |
+| 12 / 4 / 24 / 400 | on, before limits | 400 | 26 | 373 | 7 | 24 | 306 s | 1.31 |
+| 12 / 4 / 24 / 400 | on, tightened | 400 | 21 | 155 | 7 | 25 | 219 s | 1.83 |
+| 16 / 3 / 8 / 300 | on, tightened | 300 | 14 | 103 | 16 | 60 | 204 s | 1.47 |
+
+Depth 8 / width 3 / beam 12 / cap 150, before limits: Red 110 s (5 merged, 102
+refused), Wolf 117 s (10, 87), Troy 74 s (2, 27).
+
+**The judge is the main cost of merging on.** Judging took 65% of the 400-node run.
+Over 674 judged pairs from five runs, merge rate does not rise with label similarity:
+7% at ≥ 0.5, 10% at exact label. 163 exact-label pairs were judged and 16 merged, so
+the refusals are mostly the same event on a different route, as designed.
+
+Two limits came from those traces: label bar 0.5 → 0.6 (the band held 250 calls and 10
+merges; of the 7 listed at exactly 0.5, read by eye, most were false: "The boy thanks
+the villagers" into "The boy apologizes to the villagers"), and one judged target per
+candidate instead of two (the top proposal held 38 of 45 merges). Result: 399 → 176
+calls (56% fewer), 26 → 21 merges, 306 → 219 s. Judging is still about half the run. False merges remain ("The woodcutter binds the
+wolf's wound" into "binds the wolf's legs", P 0.99). Merge precision has no labels on
+this model.
+
+Width and beam spend the node cap before depth: beam 24 stopped at depth 7 of 12, beam
+8 reached 16 of 16. Throughput with merge off is 93 tok/s, the low end of the 90–150
+measured on full slots; with merge on, 48.

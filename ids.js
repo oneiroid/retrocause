@@ -1,4 +1,4 @@
-// Content-addressed ids and canonical serialization (LOCAL_LLM.md §3).
+// Content-addressed ids and canonical serialization.
 //
 // The problem: every id in this codebase used to be minted from
 // `Date.now()` + `Math.random()`, and every export stamped `savedAt`. Two

@@ -1,6 +1,6 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { insertContinuation, grow, collapseIfSame } = require('../growth');
+const { insertContinuation, grow, collapseIfSame, attach, rejoin } = require('../growth');
 const Engine = require('../story_builder_engine');
 
 // Tiny graph builder. nodes: [id, expr]  edges: [from, to]
@@ -199,4 +199,28 @@ test('a missing source node is rejected and leaves the graph unchanged', () => {
 
   assert.equal(r.ok, false);
   assert.equal(graph.nodes.length, before);
+});
+
+// ── THE GROWER'S MOVES ──────────────────────────────────────────────────────
+
+test('attach keeps the candidate without asking the surface key', () => {
+  const graph = g([['root', 'start'], ['x', 'same']], [['root', 'x']]);
+  const { node, edge } = attach(graph, { from: 'root', node: { expr: 'same', label: 'same' } });
+  assert.ok(graph.nodes.includes(node));
+  assert.equal(edge.to, node.id);
+  assert.equal(edge.type, 'choice');
+});
+
+test('rejoin adds a rejoins edge, once', () => {
+  const graph = g([['root', 'start'], ['x', 'a'], ['y', 'b']], [['root', 'x'], ['root', 'y']]);
+  const edge = rejoin(graph, { from: 'x', into: 'y', label: 'same point' });
+  assert.equal(edge.type, 'rejoins');
+  assert.equal(edge.label, 'same point');
+  assert.equal(rejoin(graph, { from: 'x', into: 'y' }), null);
+  assert.equal(graph.edges.filter((e) => e.to === 'y').length, 2);
+});
+
+test('rejoin refuses a cycle', () => {
+  const graph = g([['root', 'start'], ['x', 'a']], [['root', 'x']]);
+  assert.equal(rejoin(graph, { from: 'x', into: 'root' }), null);
 });

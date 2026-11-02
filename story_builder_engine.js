@@ -20,7 +20,7 @@
     }));
     // Minted ids accumulate into `taken` so a second edge between the same
     // pair gets `_2` rather than colliding — index-free, so the id survives a
-    // reordering of the edge list (LOCAL_LLM.md §3.1).
+    // reordering of the edge list.
     const taken = new Set((clone.edges || []).map((edge) => edge.id).filter(Boolean));
     clone.edges = (clone.edges || []).map((edge) => {
       const type = edge.type || "causes";
@@ -77,7 +77,7 @@
       ...branch
     };
     // Minted AFTER the defaults are applied, so the id hashes the `expr` the
-    // node actually ends up with rather than an absent one (LOCAL_LLM.md §3.1).
+    // node actually ends up with rather than an absent one.
     if (!newNode.id) newNode.id = Ids.nodeId({ parentId: sourceId, expr: newNode.expr, label: newNode.label }, graph);
     graph.nodes.push(newNode);
     const choice = addEdge(graph, { from: sourceId, to: newNode.id, type: "choice", label: newNode.delta || "alternative branch", branchId: newNode.id });
@@ -102,8 +102,7 @@
     });
     // One Kahn pass. Nodes that never reach in-degree 0 are exactly the ones
     // on or behind a cycle; the edges among them name it. The previous
-    // remove-one-edge reachability sweep was O(E²·V), which is what kept
-    // corpus-scale runs off the table (LOCAL_LLM.md §8) — this is O(V+E).
+    // remove-one-edge reachability sweep was O(E²·V); this is O(V+E).
     const indegree = {};
     const adj = {};
     graph.nodes.forEach((node) => { indegree[node.id] = 0; adj[node.id] = []; });
@@ -131,6 +130,39 @@
     return { ok: errors.length === 0, errors: Array.from(new Set(errors)), warnings: Array.from(new Set(warnings)) };
   }
 
+  // The lexicographically-first shortest path from the graph's root to `to`. A
+  // node in a DAG can be reached several ways; this picks one the same way every
+  // time. An unreachable node gets a path of just itself.
+  function ancestorPath(graph, to) {
+    const from = graph.root;
+    if (!from || from === to) return [to];
+    // Distance to the target over reversed edges, so the forward walk can tell
+    // which successors still lead there.
+    const distance = { [to]: 0 };
+    for (let queue = [to]; queue.length;) {
+      const next = [];
+      for (const id of queue) {
+        for (const edge of graph.edges) {
+          if (edge.to !== id || distance[edge.from] !== undefined) continue;
+          distance[edge.from] = distance[id] + 1;
+          next.push(edge.from);
+        }
+      }
+      queue = next;
+    }
+    if (distance[from] === undefined) return [to];
+    const path = [from];
+    for (let cur = from; cur !== to;) {
+      const [step] = graph.edges
+        .filter((e) => e.from === cur && distance[e.to] === distance[cur] - 1)
+        .map((e) => e.to)
+        .sort((a, b) => String(a).localeCompare(String(b)));
+      path.push(step);
+      cur = step;
+    }
+    return path;
+  }
+
   function topoRanks(graph) {
     const indegree = {};
     const adj = {};
@@ -156,7 +188,7 @@
 
   // Canonical, not chronological: sorted, fixed key order, no `savedAt`. Two
   // identical graphs must export to identical bytes, which is the whole
-  // definition of "this run reproduced" (LOCAL_LLM.md §3.2). A wall-clock
+  // definition of "this run reproduced". A wall-clock
   // stamp is provenance and belongs in the run manifest, not in the content.
   function exportGraph(graph) {
     return Ids.canonicalJson(graph);
@@ -174,7 +206,7 @@
     return graph;
   }
 
-  const api = { EDGE_TYPES, normalizeGraph, reachable, wouldCreateCycle, addEdge, addBranch, validateGraph, topoRanks, exportGraph, importGraph };
+  const api = { EDGE_TYPES, normalizeGraph, reachable, wouldCreateCycle, addEdge, addBranch, validateGraph, ancestorPath, topoRanks, exportGraph, importGraph };
 
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   root.StoryDagEngine = api;

@@ -4,22 +4,28 @@
 # running until Ctrl-C — which stops both. If either one dies, the other is
 # stopped too.
 #
-#   ./tools/lab.sh                         # qwen3-4b-cuda on :8080
-#   PROFILE=ref-1.7b-cpu ./tools/lab.sh    # any serve_reference.sh profile
+#   ./tools/lab.sh                         # tools/serve_model.sh on :8080
 #   LLAMA_PORT=8090 ./tools/lab.sh         # if 8080 is taken
+#   MODEL=/path/to.gguf ./tools/lab.sh     # another model
+#   ./tools/lab.sh --no-model              # page + bridge only, for recorded runs
 #
 # Logs go to $LOG_DIR (default /tmp/retrocause-lab), not the terminal: the
 # model server is too chatty to share a screen with anything.
 set -euo pipefail
 
 REPO="$(cd "$(dirname "$0")/.." && pwd)"
-PROFILE="${PROFILE:-qwen3-4b-cuda}"
 LLAMA_PORT="${LLAMA_PORT:-8080}"
 # Fixed: story_builder_app.js has the bridge URL hardcoded (GROW_SERVER_URL).
 BRIDGE_PORT=8081
 LOG_DIR="${LOG_DIR:-${TMPDIR:-/tmp}/retrocause-lab}"
-# Hashing the GGUF and loading it onto the GPU takes tens of seconds; the
-# CPU profile longer. Past this, something is wrong rather than slow.
+WITH_MODEL=1
+case "${1:-}" in
+  "") ;;
+  --no-model) WITH_MODEL=0 ;;
+  *) echo "usage: $0 [--no-model]" >&2; exit 2 ;;
+esac
+# Loading the GGUF onto the GPU takes seconds to tens of seconds. Past this,
+# something is wrong rather than slow.
 READY_TIMEOUT_S=300
 
 LLAMA_URL="http://127.0.0.1:$LLAMA_PORT"
@@ -32,7 +38,9 @@ port_in_use() {
   (exec 3<>"/dev/tcp/127.0.0.1/$1") 2>/dev/null
 }
 
-for port in "$LLAMA_PORT" "$BRIDGE_PORT"; do
+PORTS="$BRIDGE_PORT"
+[ "$WITH_MODEL" = 1 ] && PORTS="$LLAMA_PORT $BRIDGE_PORT"
+for port in $PORTS; do
   if port_in_use "$port"; then
     echo "port $port is already in use — stop whatever holds it first" >&2
     exit 1
@@ -69,11 +77,13 @@ wait_ready() {
   echo "$name ready at $url" >&2
 }
 
-# serve_reference.sh execs llama-server, so this pid is the server itself.
-PROFILE="$PROFILE" PORT="$LLAMA_PORT" "$REPO/tools/serve_reference.sh" >"$LLAMA_LOG" 2>&1 &
-LLAMA_PID=$!
-echo "model server ($PROFILE) starting — log: $LLAMA_LOG" >&2
-wait_ready "model server" "$LLAMA_URL" "$LLAMA_PID" "$LLAMA_LOG"
+if [ "$WITH_MODEL" = 1 ]; then
+  # serve_model.sh execs llama-server, so this pid is the server itself.
+  PORT="$LLAMA_PORT" "$REPO/tools/serve_model.sh" >"$LLAMA_LOG" 2>&1 &
+  LLAMA_PID=$!
+  echo "model server starting — log: $LLAMA_LOG" >&2
+  wait_ready "model server" "$LLAMA_URL" "$LLAMA_PID" "$LLAMA_LOG"
+fi
 
 LLAMA_URL="$LLAMA_URL" GROW_PORT="$BRIDGE_PORT" node "$REPO/tools/grow_server.js" >"$BRIDGE_LOG" 2>&1 &
 BRIDGE_PID=$!
@@ -82,7 +92,7 @@ wait_ready "grow bridge" "$BRIDGE_URL" "$BRIDGE_PID" "$BRIDGE_LOG"
 
 xdg-open "file://$REPO/story_builder.html" >/dev/null 2>&1 &
 
-echo "running — Ctrl-C stops both" >&2
+echo "running — Ctrl-C stops it" >&2
 # Returns as soon as either process exits; the EXIT trap stops the other.
-wait -n "$LLAMA_PID" "$BRIDGE_PID" || true
+wait -n $LLAMA_PID "$BRIDGE_PID" || true
 echo "a process exited — see $LOG_DIR" >&2

@@ -1,6 +1,6 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { sameInContext } = require('../merge_predicate');
+const { sameInContext , mergeProposals } = require('../merge_predicate');
 
 // Tiny graph builder. nodes: [id, expr, kind?]  edges: [from, to]
 function g(nodes, edges) {
@@ -93,4 +93,33 @@ test('same content, diverging futures — still the same state (merge forms a bo
     [['root', 's1'], ['root', 's2'], ['s1', 'rescue'], ['s2', 'death']],
   );
   assert.equal(sameInContext(graph, 's1', 's2'), true);
+});
+
+// ── PROPOSALS FOR THE JUDGE ─────────────────────────────────────────────────
+
+const labelled = (id, label, state = 'shared words about the woods') => ({ id, label, state, expr: id });
+
+test('mergeProposals: similar events, most similar first, never an ancestor', () => {
+  const graph = {
+    root: 'root',
+    nodes: [
+      labelled('root', 'The wolf bites Red hard'),
+      labelled('from', 'The wolf bites Red again'),
+      labelled('close', 'The wolf bites Red'),
+      labelled('far', 'The wolf bites Red and runs away from the angry hunter'),
+      labelled('other', 'Grandmother opens the door'),
+    ],
+    edges: [['root', 'from'], ['root', 'close'], ['root', 'far'], ['root', 'other']].map(([from, to]) => ({ from, to })),
+  };
+  const proposals = mergeProposals(graph, 'from', labelled('new', 'The wolf bites Red'));
+  assert.deepEqual(proposals, ['close']);
+});
+
+test('mergeProposals: same event in a different world is not worth asking', () => {
+  const graph = {
+    root: 'root',
+    nodes: [labelled('root', 'Start'), labelled('x', 'The wolf bites Red', 'Everyone sleeps at the palace tonight')],
+    edges: [{ from: 'root', to: 'x' }],
+  };
+  assert.deepEqual(mergeProposals(graph, 'root', labelled('new', 'The wolf bites Red', 'The village burns down completely')), []);
 });

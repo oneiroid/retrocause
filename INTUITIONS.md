@@ -149,11 +149,11 @@ choosing which node to branch and which path to follow. Resolution and
 an explicit agency model are not implemented, which is why this is
 `partial`, not `operational`.
 
-A second agency function is now designed but not built (`LOCAL_LLM.md`):
-a local model that selects continuations at branch points, with
-traversal depth and width as an explicit, tunable *resolution* — the
-first time §7's "resolution" would be a parameter rather than a word.
-The tag stays `partial` until that code exists and runs.
+A second agency function now runs (`LOCAL_LLM.md`): a local model proposes
+continuations at branch points, with depth, width and beam as an explicit,
+tunable *resolution*, so §7's "resolution" is a parameter rather than a word.
+The tag stays `partial`: the model chooses events, and nothing yet models
+agency within the story.
 
 Free will, in these terms, is the agency function — whether it is
 determined by G's structure (the appearance of choice is an artifact

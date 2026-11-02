@@ -58,20 +58,16 @@ surfaces that commit to different things.
 JSON. Opened from disk: no backend, no key, and no model call from
 inside the page. This commitment is unchanged.
 
-*The grower* — designed, not yet built (`LOCAL_LLM.md`): a Node-side
-module that grows the DAG automatically by calling a small local model
-through `llama.cpp`, emitting a graph the page imports through its
-existing path. It is planned because the project's own open questions
-need a *corpus* of graphs, and hand-building them one form submission at
-a time does not get there.
+*The grower* (`LOCAL_LLM.md`): a Node-side module that grows the DAG
+automatically by calling a local model through `llama.cpp`, driven from the
+page's Lab panel through a loopback bridge. It exists because the project's
+open questions need a *corpus* of graphs, and hand-building them one form
+submission at a time does not get there.
 
-What this changes is the **commitment**, ahead of the code. The project
-previously ruled a generator out; it no longer does. It rules out a
-generator *in the page*. The artifact is still a reusable story-world
-object — there will simply be two ways to produce one, and
-machine-produced graphs are required to carry a run manifest saying
-exactly how, so that a grown graph can be re-derived rather than taken
-on trust.
+The project once ruled a generator out; it now rules out only a generator *in
+the page*. Machine-grown graphs carry a run record saying how they were grown
+(model, parameters, prompts, every request and completion), so they can be
+inspected rather than taken on trust. They are records, not replays.
 
 ## How to read this repository
 

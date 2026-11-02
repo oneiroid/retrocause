@@ -47,6 +47,7 @@
         <div class="button-row">
           <button id="addManualBtn" type="button" class="secondary">Add node / edge</button>
           <button id="deleteSelectedBtn" type="button" class="danger">Delete selected</button>
+          <button id="deleteSubtreeBtn" type="button" class="danger">Delete with descendants</button>
         </div>
       </details>
     </aside>
@@ -56,6 +57,7 @@
         <div class="toolbar-group">
           <button id="fitBtn" type="button">Fit</button>
           <button id="reheatBtn" type="button">Reheat</button>
+          <button id="layeredBtn" type="button">Layered</button>
           <button id="validateBtn" type="button">Validate</button>
           <button id="toggleLabelsBtn" type="button">Edge labels</button>
         </div>
@@ -103,35 +105,25 @@
 
         <h3 class="lab-head">Grow from selected node</h3>
         <div class="field-row">
-          <label>Source<select id="growSource">
-            <option value="model">model</option>
-            <option value="baseline">baseline (no model)</option>
-          </select></label>
-          <label>Prompt<select id="growPrompt">
-            <option value="branch.v6">branch.v6 (JSON lines)</option>
-            <option value="branch.v4">branch.v4 (JSON lines + example story)</option>
-            <option value="branch.v5">branch.v5 (prose)</option>
-          </select></label>
+          <label>Depth<input id="growDepth" type="number" value="4" min="1" max="60"></label>
+          <label>Width<input id="growWidth" type="number" value="3" min="1" max="8"></label>
+          <label title="Most nodes expanded at each depth. Lower reaches deeper for the same cost.">Beam<input id="growBeam" type="number" value="8" min="1" max="200"></label>
+          <label>Max nodes<input id="growMaxNodes" type="number" value="60" min="1" max="1000"></label>
+          <label>Temp<input id="growTemperature" type="number" value="0.8" min="0" max="2" step="0.1"></label>
         </div>
-        <div class="field-row">
-          <label>Depth<input id="growDepth" type="number" value="2" min="1" max="4"></label>
-          <label>Width<input id="growWidth" type="number" value="2" min="1" max="3"></label>
-          <label>Max nodes<input id="growMaxNodes" type="number" value="8" min="1" max="64"></label>
-          <label>Seed<input id="growSeed" type="number" value="7" min="1"></label>
-        </div>
-        <button id="autoGrowBtn" type="button" class="primary">Grow</button>
-        <div id="growReport" class="report"></div>
-
-        <h3 class="lab-head">Continuations: every prompt version, blind</h3>
-        <div class="field-row">
-          <label>K<input id="probeK" type="number" value="5" min="1" max="20"></label>
-          <label>Seed<input id="probeSeed" type="number" value="7" min="1"></label>
-        </div>
+        <label class="check" title="Ask the model whether a new event reached the same point in the story as a similar node; if so, connect to that node instead of adding one."><input id="growMerge" type="checkbox" checked>Merge same situations</label>
+        <label class="check" title="One more model call per expansion: drops alternatives it finds contradictory, static or off-story. Slower, and it does cut good ones."><input id="growPrune" type="checkbox">Prune bad branches</label>
         <div class="button-row">
-          <button id="probeBtn" type="button" class="primary">Draw continuations</button>
-          <button id="probeShowBtn" type="button" class="secondary" disabled>Open last batch</button>
+          <button id="autoGrowBtn" type="button" class="primary">Grow</button>
+          <button id="stopGrowBtn" type="button" class="danger" disabled>Stop</button>
+          <button id="undoGrowBtn" type="button" class="secondary" disabled>Undo grow</button>
+          <button id="proposeBtn" type="button" class="secondary">Propose only</button>
         </div>
-        <div id="probeReport" class="report"></div>
+        <progress id="growBar" hidden></progress>
+        <div id="growReport" class="report"></div>
+        <div id="growActive" class="grow-active"></div>
+        <div id="proposeList" class="propose-list"></div>
+        <div id="growLog" class="grow-log"></div>
 
         <h3 class="lab-head">Recorded runs</h3>
         <select id="runSelect" aria-label="Recorded runs"></select>
@@ -173,22 +165,6 @@
       </header>
       <pre id="dialogBody"></pre>
     </form>
-  </dialog>
-
-  <dialog id="probeDialog">
-    <form method="dialog">
-      <header class="dialog-head">
-        <h2 id="probeTitle">Alternatives</h2>
-        <button value="close" aria-label="Close dialog">×</button>
-      </header>
-    </form>
-    <ol id="probeHistory" class="probe-history"></ol>
-    <p class="muted">consistent: nothing contradicts the history above. advances: something is true after it that was not true before.</p>
-    <div id="probeList" class="probe-list"></div>
-    <div class="button-row">
-      <button id="saveGradesBtn" type="button" class="primary">Save grades and show arms</button>
-    </div>
-    <div id="probeTally" class="report"></div>
   </dialog>
 
   <script src="ids.js"></script>

@@ -12,9 +12,8 @@
 // that makes the two nodes comparable and blocks the merge. So merge and
 // acyclicity are the same condition — no extra cycle guard is needed.
 //
-// v0 deliberately has no continuation *generator*: candidates are hand-fed by
-// tests (and, later, the manual branch form). Grow the Red DAG by hand and look
-// at the convergence before building anything that produces continuations.
+// The manual branch form uses insertContinuation. The automatic grower decides
+// merges with the model (grower.js) and uses attach / rejoin.
 
 (function attachGrowth(root) {
   const Engine = (typeof require !== "undefined")
@@ -34,13 +33,9 @@
   // reachable from / could reach the survivor through the victim — which would
   // have made victim and survivor comparable and blocked the merge.
   // Returns { merged:true, into } or { merged:false }.
-  //
-  // `refuse` names survivors a caller has ruled out (the grower's judge, which
-  // may only veto merges the predicate proposes). The next survivor in graph
-  // order is still eligible.
-  function collapseIfSame(graph, nodeId, refuse = new Set()) {
+  function collapseIfSame(graph, nodeId) {
     const survivor = graph.nodes.find(
-      (other) => other.id !== nodeId && !refuse.has(other.id) && Predicate.sameInContext(graph, nodeId, other.id),
+      (other) => other.id !== nodeId && Predicate.sameInContext(graph, nodeId, other.id),
     );
     if (!survivor) return { merged: false };
 
@@ -61,9 +56,9 @@
   // advances nothing: the edge carries no information and the child is a
   // restatement, not an event. Observed as `leave(red, basket) -> leave(red,
   // basket)` and as a four-node chain of `watch(red, woods)` — 8 of 34 edges
-  // in one real run (LOCAL_LLM.md §8).
+  // in one real run.
   //
-  // This is NOT a second definition of "same state" (§5.5.4). Two different
+  // This is NOT a second definition of "same state" . Two different
   // questions:
   //   - "are these two nodes the same state?"  — identity. sameInContext owns
   //     it, and its answer for a chain is `recurrence, do not merge`, which
@@ -89,7 +84,7 @@
   // for an event that is still impossible — leaving a basket already left,
   // a thing Red has exactly one of — would pass it. Preconditions and
   // consumption need a world model, the machinery this repo has twice
-  // declined to build (§1.1). This catches laziness, not incoherence.
+  // declined to build. This catches laziness, not incoherence.
   function isNullTransition(source, node) {
     const expr = Ids.normalizedContent(source.expr);
     const state = Ids.normalizedContent(source.state);
@@ -103,7 +98,7 @@
   //   { merged:false, node, edge }  — kept as a genuinely new state
   //   { ok:false, message }         — bad input (e.g. `from` not in graph)
   //   { ok:false, reason:"null_transition" } — restates `from`; nothing added
-  function insertContinuation(graph, { from, node, type, label, refuse } = {}) {
+  function insertContinuation(graph, { from, node, type, label } = {}) {
     const source = graph.nodes.find((n) => n.id === from);
     if (!source) return { ok: false, message: `Source node ${from} is missing` };
     if (!node) return { ok: false, message: "Continuation has no node" };
@@ -112,7 +107,7 @@
     }
     // Content-addressed, hashing the node `from` was reached under. This is
     // the id site that fires most — once per inserted continuation — so it is
-    // the one that decides whether a grown graph replays at all (§3).
+    // the one that decides whether a grown graph replays at all.
     if (!node.id) node.id = Ids.nodeId({ parentId: from, expr: node.expr, label: node.label }, graph);
 
     graph.nodes.push(node);
@@ -123,36 +118,36 @@
     }
     const edge = graph.edges[graph.edges.length - 1];
 
-    const collapsed = collapseIfSame(graph, node.id, refuse);
+    const collapsed = collapseIfSame(graph, node.id);
     if (!collapsed.merged) return { merged: false, node, edge };
     return { merged: true, into: collapsed.into, edge: graph.edges[graph.edges.length - 1] };
   }
 
-  // Never a content id (those are `n_<hash>`), so it cannot collide.
-  const PROBE_ID = "__merge_probe__";
-
-  // The survivors `node`, drawn from `from`, WOULD collapse into — in the
-  // order collapseIfSame tries them — without changing the graph. Asked of the
-  // predicate itself on a scratch copy, so it cannot drift from what the
-  // insert will do. [] for a null transition or bad input.
-  function mergeCandidates(graph, { from, node } = {}) {
-    const source = graph.nodes.find((n) => n.id === from);
-    if (!source || !node || isNullTransition(source, node)) return [];
-    const scratch = { ...graph, nodes: [...graph.nodes], edges: [...graph.edges] };
-    const probe = { ...node, id: PROBE_ID };
-    scratch.nodes.push(probe);
-    if (!Engine.addEdge(scratch, { from, to: PROBE_ID, type: "choice" }).ok) return [];
-    return scratch.nodes
-      .filter((other) => other.id !== PROBE_ID && Predicate.sameInContext(scratch, PROBE_ID, other.id))
-      .map((other) => other.id);
+  // The grower's two moves, once it has decided: keep the candidate as a new
+  // state, or send the edge to a state the judge confirmed. Unlike
+  // insertContinuation, neither asks the surface key anything.
+  function attach(graph, { from, node, type = "choice", label = "" }) {
+    if (!node.id) node.id = Ids.nodeId({ parentId: from, expr: node.expr, label: node.label }, graph);
+    graph.nodes.push(node);
+    Engine.addEdge(graph, { from, to: node.id, type, label });
+    return { node, edge: graph.edges[graph.edges.length - 1] };
   }
+
+  // Returns the new edge, or null when `from` already leads to `into`.
+  function rejoin(graph, { from, into, label = "" }) {
+    if (graph.edges.some((e) => e.from === from && e.to === into)) return null;
+    return Engine.addEdge(graph, { from, to: into, type: "rejoins", label }).ok
+      ? graph.edges[graph.edges.length - 1]
+      : null;
+  }
+
   // Apply several continuations in order. Order is significant: a later
   // candidate can merge into a node added earlier in the same call.
   function grow(graph, continuations) {
     return (continuations || []).map((c) => insertContinuation(graph, c));
   }
 
-  const api = { insertContinuation, grow, collapseIfSame, isNullTransition, mergeCandidates };
+  const api = { insertContinuation, grow, collapseIfSame, isNullTransition, attach, rejoin };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   root.StoryDagGrowth = api;
 })(typeof window !== "undefined" ? window : globalThis);

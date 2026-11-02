@@ -3,13 +3,12 @@
   const EDGE_TYPES = ["causes", "leads_to", "choice", "rejoins"];
   const STORAGE_KEY = "retrocause.storyDagBuilder.v2";
 
-  // The Node-side grow bridge (tools/grow_server.js). The page never calls
-  // the model itself — it POSTs "grow from this node" here and imports the
-  // grown graph the bridge returns. Optional: without the bridge running,
-  // Auto-grow fails with a toast and everything else works as before.
+  // The Node-side grow bridge (tools/grow_server.js). The page never calls the
+  // model itself. Optional: without the bridge running, the Lab panel says so
+  // and everything else works as before.
   const GROW_SERVER_URL = "http://127.0.0.1:8081";
 
-  // Content-addressed ids and canonical export (ids.js, LOCAL_LLM.md §3).
+  // Content-addressed ids and canonical export (ids.js).
   // Loaded as a plain script before this one; the page has no module system.
   const ids = window.StoryDagIds;
 
@@ -39,6 +38,16 @@
     dragAlphaTarget: 0.35,   // simulation "heat" held while a drag is in progress (lower =
                              //   calmer give-way, the node sits more still where dropped)
     restAlphaDecay: 0.0228,  // d3's default cooling rate, restored after a reheat
+    growAlpha: 0.25,         // heat of each redraw while a grow streams: low, or every
+                             //   batch of new nodes would shake the whole graph
+
+    // Layered view: columns by causal rank, rows by a tidy tree walk. What a large
+    // grown DAG needs; force layout packs it into an unreadable blob.
+    layered: {
+      columnGap: 340,        // px between ranks; wider than the widest node (300)
+      rowGap: 84,            // px between leaf rows; node height is 64
+      strength: 0.5,         // pull toward the target position, so moves ease
+    },
 
     // Reheat = an "untangle" pass: shake out of the current local minimum,
     // stretch hard, cool slowly, then relax back to the resting forces.
@@ -54,6 +63,8 @@
       fitDelayMs: 700,       // re-frame the result this long after relaxing
     },
   };
+  // Layered positions ease in over about this long; frame the result after it.
+  const LAYERED_FIT_DELAY_MS = 500;
   const NODE_COLORS = {
     root: "#38bdf8",
     story: "#38bdf8",
@@ -94,7 +105,13 @@
     lockedIds: new Set(),
     // Nodes a drag dropped in place (kept fx/fy so they STAY put). Distinct
     // from lockedIds (dblclick hard-lock): soft pins are released by Reheat.
-    softPinnedIds: new Set()
+    softPinnedIds: new Set(),
+    layered: false,
+    followGrow: false,
+    growAbort: null,
+    undoGraph: null,
+    proposal: null,
+    healthTimer: null
   };
 
   const el = Object.fromEntries(Array.from(document.querySelectorAll("[id]")).map((item) => [item.id, item]));
@@ -122,7 +139,11 @@
   const edgeLayer = graphLayer.append("g").attr("class", "edge-layer");
   const labelLayer = graphLayer.append("g").attr("class", "edge-label-layer");
   const nodeLayer = graphLayer.append("g").attr("class", "node-layer");
-  const zoom = d3.zoom().scaleExtent([0.15, 3]).on("zoom", (event) => graphLayer.attr("transform", event.transform));
+  const zoom = d3.zoom().scaleExtent([0.05, 3]).on("zoom", (event) => {
+    graphLayer.attr("transform", event.transform);
+    // A pan or zoom by hand ends the auto-framing of a running grow.
+    if (event.sourceEvent) state.followGrow = false;
+  });
   svg.call(zoom);
 
   let simulation;
@@ -138,7 +159,7 @@
     renderEdgeTypeOptions();
     bindEvents();
     renderAll();
-    setTimeout(fitGraph, 350);
+    setTimeout(() => fitGraph(), 350);
     checkBridge();
     window.__storyDagApp = {
       getGraph: () => structuredClone(state.graph),
@@ -197,7 +218,7 @@
         state.selectedId = state.graph.root;
         renderSeeds();
         renderAll();
-        setTimeout(fitGraph, 100);
+        setTimeout(() => fitGraph(), 100);
         toast(`Loaded ${seed.title}`);
       });
       el.seedList.appendChild(button);
@@ -213,18 +234,28 @@
     el.addManualBtn.addEventListener("click", addManualEdit);
     el.deleteSelectedBtn.addEventListener("click", deleteSelectedNode);
     el.validateBtn.addEventListener("click", () => showValidation(validateGraph()));
-    el.fitBtn.addEventListener("click", fitGraph);
+    el.fitBtn.addEventListener("click", () => fitGraph());
     el.reheatBtn.addEventListener("click", untangleReheat);
+    el.layeredBtn.addEventListener("click", () => {
+      setLayered(!state.layered);
+      setTimeout(() => fitGraph(), LAYERED_FIT_DELAY_MS);
+    });
     el.toggleLabelsBtn.addEventListener("click", () => { state.showEdgeLabels = !state.showEdgeLabels; renderGraph(); });
     el.searchInput.addEventListener("input", () => { state.search = el.searchInput.value.trim().toLowerCase(); renderGraph(); });
     el.viewMode.addEventListener("change", () => { state.viewMode = el.viewMode.value; renderAll(); });
     el.saveNodeBtn.addEventListener("click", saveSelectedNodeEdits);
     el.importJsonBtn.addEventListener("click", importFromTextArea);
     el.autoGrowBtn.addEventListener("click", autoGrow);
-    el.probeBtn.addEventListener("click", runProbe);
-    el.probeShowBtn.addEventListener("click", openProbe);
-    el.probeList.addEventListener("click", onProbeClick);
-    el.saveGradesBtn.addEventListener("click", saveGrades);
+    el.stopGrowBtn.addEventListener("click", stopGrow);
+    el.undoGrowBtn.addEventListener("click", undoGrow);
+    el.proposeBtn.addEventListener("click", propose);
+    el.proposeList.addEventListener("click", onProposeClick);
+    el.growLog.addEventListener("click", (event) => {
+      const id = event.target.dataset && event.target.dataset.node;
+      if (id && getNode(id)) selectNode(id);
+    });
+    el.deleteSubtreeBtn.addEventListener("click", deleteSelectedSubtree);
+    el.promptPanel.addEventListener("toggle", () => { if (el.promptPanel.open) renderPromptLog(); });
     el.loadRunBtn.addEventListener("click", loadRun);
     el.refreshRunsBtn.addEventListener("click", loadRuns);
     el.promptPreviewBtn.addEventListener("click", previewPrompt);
@@ -327,7 +358,14 @@
         const rank = state.ranks[item.id] || 0;
         const rankIndex = rankBuckets.get(rank) || 0;
         rankBuckets.set(rank, rankIndex + 1);
-        const old = oldPositions.get(item.id);
+        // A node added to a laid-out graph starts beside its parent, so a growing
+        // graph extends where it grows rather than reshuffling.
+        const parent = state.graph.edges.find((edge) => edge.to === item.id && oldPositions.has(edge.from));
+        const parentPos = parent && oldPositions.get(parent.from);
+        const old = oldPositions.get(item.id) || (parentPos && {
+          x: parentPos.x + LAYOUT.linkDistance,
+          y: parentPos.y + (Math.random() - 0.5) * LAYOUT.laneGapMax
+        });
         const x = old?.x ?? 120 + (rank / maxRank) * (dimensions.width - 240);
         // laneY: the simulation's vertical target (per-rank fan-out). x is
         // governed separately by a strong rank force (left→right causal order).
@@ -347,10 +385,19 @@
       .filter((item) => nodeById.has(item.from) && nodeById.has(item.to))
       .map((item) => ({ ...item, source: nodeById.get(item.from), target: nodeById.get(item.to) }));
 
+    if (state.layered) {
+      const targets = layeredTargets();
+      state.nodes.forEach((node) => {
+        const target = targets.get(node.id);
+        node.targetX = target.x;
+        node.targetY = target.y;
+      });
+    }
+
     if (simulation) simulation.stop();
     simulation = d3.forceSimulation(state.nodes);
     applyForces();
-    simulation.on("tick", ticked).alpha(0.9).restart();
+    simulation.on("tick", ticked).alpha(state.growAbort ? LAYOUT.growAlpha : 0.9).restart();
 
     edgeSelection = edgeLayer.selectAll("path.link").data(state.edges, (item) => item.id);
     edgeSelection.exit().remove();
@@ -398,7 +445,8 @@
       .classed("search-hit", (item) => matchesSearch(item))
       .classed("dimmed", (item) => state.search && !matchesSearch(item))
       .classed("locked", (item) => state.lockedIds.has(item.id))
-      .classed("fresh", (item) => !!state.lastRunId && item.runId === state.lastRunId);
+      .classed("fresh", (item) => !!state.lastRunId && item.runId === state.lastRunId)
+      .classed("ending", (item) => (item.tags || []).includes("ending"));
 
     nodeSelection.select("rect")
       .attr("width", (item) => nodeWidth(item))
@@ -520,6 +568,7 @@
   // resting forces and re-frames the untangled, stretched DAG.
   function untangleReheat() {
     if (!simulation) return;
+    if (state.layered) setLayered(false);
     state.nodes.forEach((node) => {
       if (state.lockedIds.has(node.id)) return; // respect hard locks (dblclick)
       // Release soft pins (drag-drop) so the shake can actually move them —
@@ -542,11 +591,20 @@
       if (!simulation) return;
       applyForces();                                 // restore the resting force balance
       simulation.alphaDecay(LAYOUT.restAlphaDecay);  // d3 default cooling rate
-      setTimeout(fitGraph, LAYOUT.reheat.fitDelayMs); // re-frame the stretched result
+      setTimeout(() => fitGraph(), LAYOUT.reheat.fitDelayMs); // re-frame the stretched result
     }, LAYOUT.reheat.settleMs);
   }
 
   function applyForces() {
+    if (state.layered) {
+      simulation
+        .force("link", null)
+        .force("charge", null)
+        .force("collide", null)
+        .force("x", d3.forceX((item) => item.targetX).strength(LAYOUT.layered.strength))
+        .force("y", d3.forceY((item) => item.targetY).strength(LAYOUT.layered.strength));
+      return;
+    }
     // Left→right order is enforced by enforceEdgeDirection (§LTR, a hard
     // per-edge constraint), NOT by pinning nodes to rank columns — so a node
     // stays where it is dragged instead of snapping back to a column. The
@@ -561,6 +619,42 @@
       .force("collide", d3.forceCollide((item) => nodeWidth(item) / 2 + LAYOUT.collidePadding).strength(1).iterations(LAYOUT.collideIterations))
       .force("x", null) // no rank-column pull — removed; it made the DAG rigid
       .force("y", d3.forceY((item) => (item.laneY != null ? item.laneY : graphDimensions().height / 2)).strength(LAYOUT.yStrength));
+  }
+
+  // Targets for the layered view. Rows come from a walk over a spanning tree: a
+  // leaf takes the next row, a parent sits at the middle of its children, and a
+  // merged node hangs under the first parent the walk reaches. Told children go
+  // first, so the told story reads as a line along the top of its branches.
+  function layeredTargets() {
+    const { columnGap, rowGap } = LAYOUT.layered;
+    const children = new Map(state.graph.nodes.map((node) => [node.id, []]));
+    state.graph.edges.forEach((edge) => children.get(edge.from)?.push(edge.to));
+    const byId = new Map(state.graph.nodes.map((node) => [node.id, node]));
+    const told = (id) => (byId.get(id)?.createdBy === "grown" ? 1 : 0);
+    children.forEach((list) => list.sort((a, b) => told(a) - told(b)));
+
+    const targets = new Map();
+    const placed = new Set();
+    let nextRow = 0;
+    const walk = (id) => {
+      placed.add(id);
+      const rows = [];
+      for (const child of children.get(id) || []) {
+        if (!placed.has(child)) rows.push(walk(child));
+      }
+      const row = rows.length ? (rows[0] + rows[rows.length - 1]) / 2 : nextRow++;
+      targets.set(id, { x: (state.ranks[id] || 0) * columnGap, y: row * rowGap });
+      return row;
+    };
+    walk(state.graph.root);
+    state.graph.nodes.forEach((node) => { if (!placed.has(node.id)) walk(node.id); });
+    return targets;
+  }
+
+  function setLayered(on) {
+    state.layered = on;
+    el.layeredBtn.classList.toggle("active", on);
+    renderGraph();
   }
 
   // Vertical target for a node: fan same-rank siblings out around the
@@ -672,7 +766,7 @@
   }
 
   // One insertion path for every branch source — the form, pasted JSON and
-  // probe candidates: content id, choice edge, optional rejoin, auto-merge.
+  // proposed alternatives: content id, choice edge, optional rejoin, auto-merge.
   // Returns { id, merged } or { error }.
   function insertBranch(sourceId, fields, rejoinTarget = "") {
     const expr = fields.expr || `alternate(${sourceId})`;
@@ -780,6 +874,31 @@
     state.selectedId = state.graph.root;
     renderAll();
     toast("Selected node deleted");
+  }
+
+  // The selected node, plus every descendant that no other path keeps in the
+  // graph. For cutting a bad branch out of a grown DAG in one click.
+  function deleteSelectedSubtree() {
+    const selected = getNode(state.selectedId);
+    if (!selected) return;
+    if (selected.id === state.graph.root) return toast("The root node cannot be deleted", true);
+    const doomed = new Set([selected.id]);
+    for (let changed = true; changed;) {
+      changed = false;
+      for (const node of state.graph.nodes) {
+        if (doomed.has(node.id)) continue;
+        const incoming = state.graph.edges.filter((edge) => edge.to === node.id);
+        if (incoming.length && incoming.every((edge) => doomed.has(edge.from))) {
+          doomed.add(node.id);
+          changed = true;
+        }
+      }
+    }
+    state.graph.nodes = state.graph.nodes.filter((item) => !doomed.has(item.id));
+    state.graph.edges = state.graph.edges.filter((item) => !doomed.has(item.from) && !doomed.has(item.to));
+    state.selectedId = state.graph.root;
+    renderAll();
+    toast(`Deleted ${doomed.size} node${doomed.size === 1 ? "" : "s"}`);
   }
 
   function saveSelectedNodeEdits() {
@@ -892,26 +1011,24 @@
   }
 
   // ── Lab: the grow bridge (tools/grow_server.js) ─────────────────────────
-  // The page never calls the model: it POSTs the graph to the bridge, which
-  // runs the grower or the continuation probe Node-side and records the run
-  // exactly as the CLI would.
+  // The page never calls the model: it streams a grow from the bridge and adds
+  // each node to the graph as it lands.
 
-  // Growth prompt versions (prompts/branch.v*.txt). Grow and the preview use
-  // the one picked; the continuations A/B draws from all of them.
-  const PROMPT_VERSIONS = ["branch.v4", "branch.v5", "branch.v6"];
-  const pickedPrompt = () => el.growPrompt.value;
+  // Redrawing the graph per node would thrash the layout while a run streams.
+  const GROW_RENDER_INTERVAL_MS = 400;
+  const GROW_FIT_INTERVAL_MS = 1500;
+  // Health re-check while the model server is still coming up.
+  const HEALTH_POLL_MS = 3000;
+  const GROW_LOG_MAX = 300;
+  // Shown from each expansion being written: the tail of its text.
+  const ACTIVE_TEXT_CHARS = 90;
 
-  // "told next 3/9 · told later 1/9": how often draws reproduce the told
-  // story — its next event, or one further on (surface match on the action).
-  const toldShare = (toldNext, toldLater, total) => (total
-    ? `told next ${toldNext}/${total}${toldLater ? ` · told later ${toldLater}/${total}` : ""}`
-    : "");
-
-  async function bridge(pathname, body) {
-    const response = await fetch(`${GROW_SERVER_URL}${pathname}`, body === undefined ? {} : {
+  async function bridge(pathname, body, signal) {
+    const response = await fetch(`${GROW_SERVER_URL}${pathname}`, body === undefined ? { signal } : {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body)
+      body: JSON.stringify(body),
+      signal
     });
     if (!response.ok) {
       const data = await response.json().catch(() => ({}));
@@ -921,111 +1038,278 @@
   }
 
   function bridgeError(error, what) {
+    if (error.name === "AbortError") return;
     const offline = error instanceof TypeError;
-    toast(offline ? "Grow bridge not reachable — run: npm run grow:serve" : `${what} failed: ${error.message}`, true);
+    toast(offline ? "Grow bridge not reachable — run: ./run.sh" : `${what} failed: ${error.message}`, true);
     if (offline) setLabStatus(false);
   }
 
-  function setLabStatus(online, modelFile = null) {
-    el.labStatus.className = `report ${online && modelFile ? "good" : online ? "" : "bad"}`;
+  function setLabStatus(online, info = {}) {
+    el.labStatus.className = `report ${online && info.model ? "good" : "bad"}`;
     el.labStatus.textContent = !online
-      ? "Bridge offline — run: npm run grow:serve"
-      : modelFile
-        ? `Model: ${modelFile}`
-        : "Model server offline — run: ./tools/serve_reference.sh (baseline source still works)";
+      ? "Bridge offline — run: ./run.sh"
+      : info.model
+        ? `Model: ${info.modelFile} · ${info.slots} slots`
+        : "Model server offline or loading — run: ./tools/serve_model.sh";
   }
 
   async function checkBridge() {
+    clearTimeout(state.healthTimer);
+    let ready = false;
     try {
       const data = await (await bridge("/health")).json();
-      setLabStatus(true, data.model ? data.modelFile : null);
+      setLabStatus(true, data);
+      ready = data.model;
       loadRuns();
     } catch {
       setLabStatus(false);
     }
+    if (!ready) state.healthTimer = setTimeout(checkBridge, HEALTH_POLL_MS);
   }
 
-  // Runs a long bridge call with the button disabled and an elapsed-time
-  // label, restoring both whatever happens.
-  async function busy(button, task) {
-    const label = button.textContent;
-    const started = Date.now();
-    button.disabled = true;
-    const timer = setInterval(() => { button.textContent = `${label} · ${Math.round((Date.now() - started) / 1000)}s`; }, 1000);
-    try {
-      return await task();
-    } finally {
-      clearInterval(timer);
-      button.textContent = label;
-      button.disabled = false;
+  async function readNdjson(response, onEvent) {
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffered = "";
+    for (;;) {
+      const { value, done } = await reader.read();
+      buffered += decoder.decode(value || new Uint8Array(), { stream: !done });
+      const lines = buffered.split("\n");
+      buffered = lines.pop();
+      lines.filter(Boolean).forEach((line) => onEvent(JSON.parse(line)));
+      if (done) break;
     }
   }
 
   const fmt = (value) => (value === null || value === undefined ? "—" : typeof value === "number" ? String(+value.toFixed(2)) : String(value));
+  const seconds = (ms) => `${Math.round(ms / 1000)}s`;
 
-  // The §6 metric rows eval.js prints, this run beside the model-free
-  // baseline grown to the same node count through the same traversal.
-  const METRIC_ROWS = [
-    ["grown nodes", (s) => s.grownNodes],
-    ["merge rate", (s) => s.mergeRate],
-    ["null transitions", (s) => s.nullTransitionRate],
-    ["duplicate expr", (s) => s.dupExprRate],
-    ["branch diversity", (s) => s.branchDiversity],
-    ["rejoin validity", (s) => s.rejoinValidity],
-    ["rank spread (n, max)", (s) => `${s.maxRankSpread} (${s.scoredRanks}, ${s.maxRankSize})`],
-    ["contradictions", (s) => s.contradictionRate]
-  ];
-
-  function metricsTable(score, baseline, label) {
-    const head = `<tr><th>metric</th><th>${escapeHtml(label)}</th>${baseline ? `<th>baseline@${baseline.grownNodes}</th>` : ""}</tr>`;
-    const rows = METRIC_ROWS.map(([name, pick]) => `<tr><td>${name}</td><td>${escapeHtml(fmt(pick(score)))}</td>${baseline ? `<td>${escapeHtml(fmt(pick(baseline)))}</td>` : ""}</tr>`).join("");
-    return `<table class="metrics">${head}${rows}</table>`;
+  function growParams() {
+    return {
+      depth: +el.growDepth.value || 1,
+      width: +el.growWidth.value || 1,
+      beam: +el.growBeam.value || 1,
+      maxNodes: +el.growMaxNodes.value || 1,
+      temperature: +el.growTemperature.value,
+      merge: el.growMerge.checked,
+      prune: el.growPrune.checked
+    };
   }
 
-  // Loads a grown graph and marks the run's own nodes (`.fresh`).
-  function showGrown(graph, runId, from) {
-    importGraph(graph, `Loaded ${runId} — its nodes are outlined green`);
-    state.lastRunId = runId;
-    if (from && getNode(from)) state.selectedId = from;
-    renderAll();
-    setTimeout(fitGraph, 350);
+  function setRunning(running) {
+    el.autoGrowBtn.disabled = running;
+    el.proposeBtn.disabled = running;
+    el.stopGrowBtn.disabled = !running;
+    el.growBar.hidden = !running;
+    if (!running) {
+      el.growBar.removeAttribute("value");
+      el.growActive.innerHTML = "";
+    }
+  }
+
+  function growLogLine(text, nodeId = "") {
+    const line = document.createElement("div");
+    line.textContent = text;
+    if (nodeId) {
+      line.dataset.node = nodeId;
+      line.className = "log-link";
+    }
+    el.growLog.prepend(line);
+    while (el.growLog.childElementCount > GROW_LOG_MAX) el.growLog.lastElementChild.remove();
+  }
+
+  function statsLine(stats) {
+    const parts = [
+      `+${stats.created ?? 0} nodes`,
+      `${stats.merged ?? stats.mergedDuplicates ?? 0} merged`,
+      ...(stats.mergesRefused ? [`${stats.mergesRefused} merges refused`] : []),
+      ...(stats.pruned ? [`${stats.pruned} pruned`] : []),
+      ...(stats.endings ? [`${stats.endings} endings`] : []),
+      ...(stats.maxDepth ? [`depth ${stats.maxDepth}`] : []),
+      ...(stats.expansions ? [`${stats.expansions} expansions`] : []),
+      ...(stats.beamDropped ? [`${stats.beamDropped} left past the beam`] : []),
+      ...(stats.toldNext ? [`${stats.toldNext} told next event`] : []),
+      ...(stats.malformed ? [`${stats.malformed} malformed`] : []),
+      ...(stats.truncated ? [`${stats.truncated} cut at the token limit`] : []),
+      ...(stats.tokens ? [`${stats.tokens} tokens`] : []),
+      ...(stats.elapsedMs ? [seconds(stats.elapsedMs)] : []),
+      ...(stats.stopped ? ["stopped"] : [])
+    ];
+    return parts.join(" · ");
+  }
+
+  // Batches redraws, and keeps the growth in frame until the user pans or zooms.
+  let growRenderTimer = null;
+  let lastGrowFit = 0;
+  function scheduleGrowRender() {
+    if (growRenderTimer) return;
+    growRenderTimer = setTimeout(() => {
+      growRenderTimer = null;
+      renderAll();
+      if (state.followGrow && Date.now() - lastGrowFit > GROW_FIT_INTERVAL_MS) {
+        lastGrowFit = Date.now();
+        fitGraph(inGrownRun);
+      }
+    }, GROW_RENDER_INTERVAL_MS);
+  }
+
+  // The run's nodes and the node it grew from: what to keep in frame.
+  const inGrownRun = (item) => item.runId === state.lastRunId || item.id === state.selectedId;
+
+  function renderGrowProgress(event) {
+    const { stats, planned, elapsedMs, active, tokensPerSecond } = event;
+    el.growBar.max = planned;
+    el.growBar.value = stats.expansions;
+    // Average pace so far, against the most this run can still do.
+    const left = planned - stats.expansions;
+    const eta = stats.expansions && left > 0 ? ` · at most ${seconds(left * elapsedMs / stats.expansions)} left` : "";
+    el.growReport.textContent = `${stats.expansions}/${planned} expansions · ${stats.created} nodes · ${stats.merged} merged`
+      + `${stats.pruned ? ` · ${stats.pruned} pruned` : ""} · ${Math.round(tokensPerSecond)} tok/s · ${seconds(elapsedMs)}${eta}`;
+    el.growActive.innerHTML = active.map((a) => {
+      const lastLine = a.text.split("\n").filter(Boolean).at(-1) || "";
+      return `<div><span class="active-from">${escapeHtml(truncate(a.label, 28))}</span> ${escapeHtml(lastLine.slice(-ACTIVE_TEXT_CHARS))}</div>`;
+    }).join("");
+  }
+
+  function onGrowEvent(event) {
+    if (event.type === "start") {
+      state.lastRunId = event.runId;
+      el.labStatus.textContent = `Model: ${event.modelFile} · ${event.slots} slots · ${event.runId}`;
+    } else if (event.type === "progress") {
+      renderGrowProgress(event);
+    } else if (event.type === "node") {
+      state.graph.nodes.push({ delta: "", invariants: "", ...event.node });
+      state.graph.edges.push(event.edge);
+      growLogLine(`+ ${event.depth}  ${event.node.label}`, event.node.id);
+      scheduleGrowRender();
+    } else if (event.type === "merge") {
+      if (event.edge) state.graph.edges.push(event.edge);
+      growLogLine(`= ${event.label} → ${nodeLabel(event.into)} (P ${fmt(event.pYes)})`, event.into);
+      scheduleGrowRender();
+    } else if (event.type === "pruned") {
+      growLogLine(`x ${event.label} (${event.reason})`);
+    } else if (event.type === "expansion") {
+      logPrompts([expansionEntry("grow", event.record)]);
+    }
   }
 
   async function autoGrow() {
     const from = state.selectedId;
     if (!from) return toast("Select a node to grow from", true);
-    const source = el.growSource.value;
-    await busy(el.autoGrowBtn, async () => {
-      try {
-        const data = await (await bridge("/grow", {
-          graph: state.graph,
-          from,
-          source,
-          depth: +el.growDepth.value || 1,
-          width: +el.growWidth.value || 1,
-          maxNodes: +el.growMaxNodes.value || 1,
-          seed: +el.growSeed.value || 1,
-          prompt: pickedPrompt()
-        })).json();
-        showGrown(data.graph, data.runId, from);
-        logTrace(`grow ${data.runId}`, data.trace);
-        el.growReport.innerHTML = `<div>${escapeHtml(data.runId)} · +${data.stats.created} nodes, ${data.stats.mergedDuplicates} merged, ${data.stats.mergesRefused || 0} merges refused by the judge, ${data.stats.rejectedNullTransitions || 0} null, ${data.stats.rejectedCycles} cyclic</div>`
-          + `<div>${escapeHtml(toldShare(data.stats.toldNext, data.stats.toldLater, data.stats.draws))}</div>`
-          + metricsTable(data.score, data.baseline, source === "baseline" ? "baseline" : pickedPrompt());
-        loadRuns();
-      } catch (error) {
-        bridgeError(error, "Grow");
-      }
+    state.undoGraph = structuredClone(state.graph);
+    el.undoGrowBtn.disabled = false;
+    state.growAbort = new AbortController();
+    state.followGrow = true;
+    el.growLog.innerHTML = "";
+    setRunning(true);
+    el.growReport.textContent = "Starting…";
+    if (!state.layered) setLayered(true);
+    let finished = null;
+    try {
+      const response = await bridge("/grow", { graph: state.graph, from, ...growParams() }, state.growAbort.signal);
+      await readNdjson(response, (event) => {
+        if (event.type === "done" || event.type === "error") finished = event;
+        else onGrowEvent(event);
+      });
+    } catch (error) {
+      bridgeError(error, "Grow");
+    }
+    clearTimeout(growRenderTimer);
+    growRenderTimer = null;
+    setRunning(false);
+    state.followGrow = false;
+    if (finished && finished.graph) state.graph = normalizeGraph(finished.graph);
+    renderAll();
+    setTimeout(() => fitGraph(inGrownRun), LAYERED_FIT_DELAY_MS);
+    if (finished && finished.type === "error") toast(`Grow failed: ${finished.error}`, true);
+    el.growReport.textContent = finished && finished.stats
+      ? `${finished.runId} · ${statsLine(finished.stats)}`
+      : state.growAbort.signal.aborted ? "Stopped. Nodes grown so far are in the graph." : (finished ? finished.error : "");
+    state.growAbort = null;
+    loadRuns();
+  }
+
+  function stopGrow() {
+    if (state.growAbort) state.growAbort.abort();
+  }
+
+  function undoGrow() {
+    if (!state.undoGraph) return;
+    state.graph = state.undoGraph;
+    state.undoGraph = null;
+    el.undoGrowBtn.disabled = true;
+    el.growReport.textContent = "";
+    el.growLog.innerHTML = "";
+    if (!getNode(state.selectedId)) state.selectedId = state.graph.root;
+    renderAll();
+    setTimeout(() => fitGraph(), LAYERED_FIT_DELAY_MS);
+  }
+
+  // One expansion from the selected node, listed instead of inserted.
+  async function propose() {
+    const from = state.selectedId;
+    if (!from) return toast("Select a node to continue from", true);
+    state.growAbort = new AbortController();
+    setRunning(true);
+    el.proposeList.innerHTML = "";
+    el.growReport.textContent = "Writing…";
+    try {
+      const { width, temperature } = growParams();
+      const response = await bridge("/propose", { graph: state.graph, from, width, temperature }, state.growAbort.signal);
+      await readNdjson(response, (event) => {
+        if (event.type === "progress") {
+          el.growReport.textContent = `${event.tokens} tokens`;
+          el.growActive.textContent = event.text.split("\n").filter(Boolean).at(-1) || "";
+        } else if (event.type === "error") {
+          throw new Error(event.error);
+        } else if (event.type === "done") {
+          state.proposal = { from, alternatives: event.alternatives };
+          logPrompts([expansionEntry("propose", { from, ...event })]);
+          renderProposal();
+          el.growReport.textContent = `${event.alternatives.length} alternatives`;
+        }
+      });
+    } catch (error) {
+      bridgeError(error, "Propose");
+    }
+    setRunning(false);
+    state.growAbort = null;
+  }
+
+  function renderProposal() {
+    const { alternatives } = state.proposal;
+    el.proposeList.innerHTML = alternatives.map((a, i) => `<div class="propose-item">
+      <div><strong>${escapeHtml(a.label)}</strong>${a.ending ? ' <span class="tag">ending</span>' : ""}</div>
+      <div class="muted">${escapeHtml(a.state)}</div>
+      <button type="button" class="secondary" data-add="${i}">Add to graph</button>
+    </div>`).join("");
+  }
+
+  function onProposeClick(event) {
+    const button = event.target.closest("button[data-add]");
+    if (!button) return;
+    const { from, alternatives } = state.proposal;
+    const a = alternatives[+button.dataset.add];
+    const made = insertBranch(from, {
+      label: a.label,
+      expr: a.expr,
+      state: a.state,
+      tags: a.ending ? ["counterfactual", "ending"] : ["counterfactual"],
+      createdBy: "grown"
     });
+    if (made.error) return toast(made.error, true);
+    button.disabled = true;
+    state.selectedId = made.merged ? made.merged.into : made.id;
+    renderAll();
+    toast(made.merged ? "Same content on a parallel path — merged" : "Added as a branch");
   }
 
   async function loadRuns() {
     try {
       const { runs } = await (await bridge("/runs")).json();
       el.runSelect.innerHTML = runs.map((run) => `<option value="${escapeHtml(run.runId)}">${escapeHtml([
-        String(run.createdAt || "").slice(0, 16).replace("T", " "),
-        run.source,
-        run.story || "ui graph",
+        run.createdAt ? new Date(run.createdAt).toLocaleString("sv-SE").slice(0, 16) : "",
+        run.story || "graph",
         `from ${run.from}`,
         `+${run.created}`
       ].join(" · "))}</option>`).join("");
@@ -1039,69 +1323,54 @@
     if (!runId) return toast("No recorded run selected", true);
     try {
       const data = await (await bridge(`/runs/${encodeURIComponent(runId)}`)).json();
-      showGrown(data.graph, runId, data.manifest.traversal && data.manifest.traversal.from);
-      if (data.trace) logTrace(`run ${runId}`, data.trace);
-      else logPrompts([{ title: `run ${runId} · no trace`, parts: [{ name: "", text: "No trace.json: the run was grown before tracing, or from the CLI." }] }]);
-      const label = data.manifest.source ? data.manifest.source.name : data.manifest.prompt.template;
-      el.growReport.innerHTML = `<div>${escapeHtml(runId)} (recorded)</div>` + metricsTable(data.score, null, label);
+      importGraph(data.graph, `Loaded ${runId} — its nodes are outlined green`);
+      state.lastRunId = runId;
+      const from = data.manifest.traversal && data.manifest.traversal.from;
+      if (from && getNode(from)) state.selectedId = from;
+      renderAll();
+      setTimeout(() => fitGraph(), 350);
+      logPrompts((data.trace || []).filter((record) => record.user).map((record) => expansionEntry(runId, record)));
+      el.growReport.textContent = `${runId} · ${statsLine(data.manifest.result || {})}`;
     } catch (error) {
       bridgeError(error, "Load run");
     }
   }
 
   // ── Lab: prompts ───────────────────────────────────────────────────────
-  // Every prompt the page caused the model to see, as sent, with its grammar
-  // and the raw completions — newest first. Plus a no-model preview for the
-  // selected node and the raw templates in prompts/.
-  const PROMPT_LOG_MAX = 60; // entries kept; one grow adds one per expansion
+  // Every prompt the page caused the model to see, with the completions, newest
+  // first. Plus a no-model preview for the selected node and the raw templates.
+  const PROMPT_LOG_MAX = 200;
 
   const nodeLabel = (id) => getNode(id)?.label || id;
 
-  // The request parts every entry shares: the prompt and whichever
-  // constraint it carried.
-  function constraintParts(request) {
-    return [
-      { name: "prompt", text: request.prompt },
-      ...(request.grammar ? [{ name: "grammar (GBNF)", text: request.grammar }] : []),
-      ...(request.schema ? [{ name: "JSON schema", text: JSON.stringify(request.schema, null, 2) }] : [])
-    ];
-  }
-
-  function logTrace(prefix, trace) {
-    logPrompts((trace || []).map((expansion) => ({
-      title: `${prefix} · ${nodeLabel(expansion.from)} · ${expansion.draws.length} draw${expansion.draws.length === 1 ? "" : "s"}`,
+  function expansionEntry(prefix, record) {
+    return {
+      title: `${prefix} · ${nodeLabel(record.from)}`,
       parts: [
-        ...constraintParts(expansion),
-        {
-          name: "completions",
-          text: expansion.draws.map((d) => [
-            `seed ${d.seed}${d.truncated ? " (truncated)" : ""}${d.told ? ` · = told ${d.told.kind}: ${nodeLabel(d.told.id)}` : ""}`,
-            d.content.trimEnd(),
-            ...(d.expr ? [`→ ${d.expr}`] : [])
-          ].join("\n")).join("\n\n")
-        },
-        ...expansion.draws.filter((d) => d.formalPrompt).slice(0, 1).map((d) => ({
-          name: "formalization prompt (first draw; the others differ only in the last line)",
-          text: d.formalPrompt
-        })),
-        ...(expansion.judgements || []).flatMap((j) => [
-          {
-            name: `merge judgement: "${j.label}" into ${nodeLabel(j.survivor)} — P(same) ${fmt(j.pYes)}, ${j.same ? "merged" : "refused"}`,
-            text: j.orders.map((o, i) => `order ${i + 1}: P(yes) ${fmt(o.pYes)}\n${o.prompt}`).join("\n\n")
-          }
-        ])
+        { name: "system", text: record.system },
+        { name: "user", text: record.user },
+        { name: "completion", text: record.completion },
+        ...(record.critic ? [
+          { name: "critic: user", text: record.critic.user },
+          { name: "critic: completion", text: record.critic.completion }
+        ] : []),
+        ...(record.judgements || []).map((j) => ({
+          name: `same point? "${j.label}" and "${nodeLabel(j.survivor)}": P ${fmt(j.pYes)}, ${j.same ? "merged" : "refused"}`,
+          text: j.question
+        }))
       ]
-    })));
+    };
   }
 
-  // A batch goes on top in its own order (a grow's expansions read top-down).
+  // A batch goes on top in its own order.
   function logPrompts(entries) {
-    state.promptLog = [...entries, ...(state.promptLog || [])].slice(0, PROMPT_LOG_MAX);
-    renderPromptLog();
+    state.promptLog = [...entries, ...state.promptLog].slice(0, PROMPT_LOG_MAX);
+    if (el.promptPanel.open) renderPromptLog();
+    else el.promptSummary.textContent = `Prompts (${state.promptLog.length})`;
   }
 
   function renderPromptLog() {
-    const log = state.promptLog || [];
+    const log = state.promptLog;
     el.promptSummary.textContent = log.length ? `Prompts (${log.length})` : "Prompts";
     el.promptLog.innerHTML = log.map((entry) => `<details class="prompt-entry">
       <summary>${escapeHtml(entry.title)}</summary>
@@ -1113,8 +1382,8 @@
     const from = state.selectedId;
     if (!from) return toast("Select a node", true);
     try {
-      const data = await (await bridge("/prompt", { graph: state.graph, from, prompt: pickedPrompt() })).json();
-      logPrompts([{ title: `preview · ${data.promptVersion} · ${nodeLabel(from)}`, parts: constraintParts(data) }]);
+      const data = await (await bridge("/prompt", { graph: state.graph, from, width: growParams().width })).json();
+      logPrompts([{ title: `preview · ${nodeLabel(from)}`, parts: [{ name: "system", text: data.system }, { name: "user", text: data.user }] }]);
       el.promptPanel.open = true;
     } catch (error) {
       bridgeError(error, "Preview");
@@ -1132,151 +1401,6 @@
     } catch (error) {
       bridgeError(error, "Templates");
     }
-  }
-
-  // ── Lab: continuations (experiments/continue_probe.js + grade.js) ──────
-  // Draws K continuations per prompt version at the selected node, shows them
-  // in grade.js's seeded shuffle with the version hidden, and records y/n
-  // answers as a grade.js graded file. Versions are revealed once saved.
-  // One version today; the arm machinery stays for the next A/B.
-  const PROBE_ARMS = PROMPT_VERSIONS;
-
-  const GRADE_KEYS = ["consistent", "advances"];
-
-  async function runProbe() {
-    const from = state.selectedId;
-    if (!from) return toast("Select a node to continue from", true);
-    await busy(el.probeBtn, async () => {
-      try {
-        const response = await bridge("/continue", {
-          graph: state.graph,
-          from,
-          arms: PROBE_ARMS,
-          k: +el.probeK.value || 1,
-          seed: +el.probeSeed.value || 1
-        });
-        let done = null;
-        await readNdjson(response, (event) => {
-          if (event.type === "progress") {
-            el.probeReport.textContent = Object.entries(event.counts)
-              .map(([arm, c]) => `${arm}: ${c.samples} kept / ${c.attempts} drawn`).join(" · ");
-          } else if (event.type === "error") {
-            throw new Error(event.error);
-          } else if (event.type === "done") {
-            done = event;
-          }
-        });
-        if (!done) throw new Error("bridge closed the stream early");
-        state.probe = { ...done, from, revealed: Object.keys(done.answers).length > 0 };
-        logPrompts((done.prompts || []).map((p) => ({
-          title: `draw · ${p.arm} · ${nodeLabel(from)}`,
-          parts: constraintParts(p)
-        })));
-        el.probeReport.textContent = Object.entries(done.stats)
-          .map(([arm, c]) => `${arm}: ${c.samples} kept / ${c.attempts} drawn${c.saturated ? " (saturated)" : ""}, ${toldShare(c.toldNext, c.toldLater, c.usable)}`).join(" · ");
-        el.probeShowBtn.disabled = false;
-        openProbe();
-      } catch (error) {
-        bridgeError(error, "Draw");
-      }
-    });
-  }
-
-  async function readNdjson(response, onEvent) {
-    const reader = response.body.getReader();
-    const decoder = new TextDecoder();
-    let buffered = "";
-    for (;;) {
-      const { value, done } = await reader.read();
-      buffered += decoder.decode(value || new Uint8Array(), { stream: !done });
-      const lines = buffered.split("\n");
-      buffered = lines.pop();
-      lines.filter(Boolean).forEach((line) => onEvent(JSON.parse(line)));
-      if (done) break;
-    }
-  }
-
-  function openProbe() {
-    const probe = state.probe;
-    if (!probe) return;
-    el.probeTitle.textContent = `Continuations after “${getNode(probe.from)?.label || probe.from}”`;
-    el.probeHistory.innerHTML = probe.history.map((line) => `<li>${escapeHtml(line)}</li>`).join("");
-    renderProbeList();
-    renderTally(probe.tally);
-    if (!el.probeDialog.open) el.probeDialog.showModal();
-  }
-
-  function renderProbeList() {
-    const probe = state.probe;
-    el.probeList.innerHTML = probe.pool.map((item, index) => {
-      const given = probe.answers[item.labelKey] || {};
-      const complete = GRADE_KEYS.every((key) => typeof given[key] === "boolean");
-      const toggles = GRADE_KEYS.map((key) => `${key}
-        <button type="button" data-i="${index}" data-key="${key}" data-value="yes" class="${given[key] === true ? "on-yes" : ""}">y</button>
-        <button type="button" data-i="${index}" data-key="${key}" data-value="no" class="${given[key] === false ? "on-no" : ""}">n</button>`).join(" ");
-      const arm = probe.revealed
-        ? `<span class="arm-tag">${escapeHtml(item.arm)}</span>`
-        : "";
-      return `<div class="probe-item${complete ? " done" : ""}">
-        <div class="probe-text">${index + 1}. ${escapeHtml(item.display)}</div>
-        <div class="probe-controls">${toggles} ${arm}
-          <button type="button" data-i="${index}" data-add="1">Add to graph</button></div>
-      </div>`;
-    }).join("");
-  }
-
-  function onProbeClick(event) {
-    const button = event.target.closest("button[data-i]");
-    if (!button) return;
-    const item = state.probe.pool[+button.dataset.i];
-    if (button.dataset.add) return addProbeCandidate(item);
-    const answers = state.probe.answers;
-    answers[item.labelKey] = { ...(answers[item.labelKey] || {}), [button.dataset.key]: button.dataset.value === "yes" };
-    renderProbeList();
-  }
-
-  // A candidate becomes the node the grower would make from it.
-  function addProbeCandidate(item) {
-    const branch = item.branch;
-    const made = insertBranch(state.probe.from, {
-      label: branch.label || branch.expr,
-      expr: branch.expr,
-      state: branch.state || "",
-      tags: ["counterfactual", "probe"],
-      createdBy: "probe"
-    });
-    if (made.error) return toast(made.error, true);
-    state.selectedId = made.merged ? made.merged.into : made.id;
-    renderAll();
-    toast(made.merged ? "Same state in context — merged" : "Added as a branch");
-  }
-
-  async function saveGrades() {
-    const probe = state.probe;
-    const complete = probe.pool.filter((item) => GRADE_KEYS.every((key) => typeof (probe.answers[item.labelKey] || {})[key] === "boolean"));
-    if (!complete.length) return toast("Answer both questions for at least one candidate", true);
-    try {
-      const data = await (await bridge("/grades", { file: probe.file, answers: probe.answers })).json();
-      probe.revealed = true;
-      probe.tally = data;
-      renderProbeList();
-      renderTally(data);
-      toast(`Saved ${data.graded}/${probe.pool.length} graded → experiments/out/ui/${data.gradedFile}`);
-    } catch (error) {
-      bridgeError(error, "Save grades");
-    }
-  }
-
-  function tallyTable(title, summaries) {
-    const rows = Object.entries(summaries || {}).filter(([, s]) => s).map(([arm, s]) =>
-      `<tr><td>${escapeHtml(arm)}</td><td>${s.n}</td><td>${fmt(s.consistent)}</td><td>${fmt(s.advances)}</td><td>${fmt(s.usable)}</td></tr>`).join("");
-    return `<table class="metrics"><tr><th>${escapeHtml(title)}</th><th>n</th><th>consistent</th><th>advances</th><th>usable</th></tr>${rows}</table>`;
-  }
-
-  function renderTally(data) {
-    el.probeTally.innerHTML = data
-      ? tallyTable("this batch", data.summary) + tallyTable(`all UI batches (${data.cumulative.batches})`, data.cumulative.arms)
-      : "";
   }
 
   function exportJson() {
@@ -1347,15 +1471,17 @@
     if (typeof el.jsonDialog.showModal === "function") el.jsonDialog.showModal();
   }
 
-  function fitGraph() {
-    if (!state.nodes.length) return;
+  // Frames the whole graph, or just `only` when given.
+  function fitGraph(only = null) {
+    const framed = only ? state.nodes.filter(only) : state.nodes;
+    if (!framed.length) return;
     const dimensions = graphDimensions();
-    const xExtent = d3.extent(state.nodes, (item) => item.x);
-    const yExtent = d3.extent(state.nodes, (item) => item.y);
+    const xExtent = d3.extent(framed, (item) => item.x);
+    const yExtent = d3.extent(framed, (item) => item.y);
     const padding = 140;
     const width = Math.max(1, xExtent[1] - xExtent[0] + padding * 2);
     const height = Math.max(1, yExtent[1] - yExtent[0] + padding * 2);
-    const scale = Math.min(2, Math.max(0.18, Math.min(dimensions.width / width, dimensions.height / height) * 0.92));
+    const scale = Math.min(2, Math.max(0.05, Math.min(dimensions.width / width, dimensions.height / height) * 0.92));
     const centerX = (xExtent[0] + xExtent[1]) / 2;
     const centerY = (yExtent[0] + yExtent[1]) / 2;
     svg.transition().duration(450).call(zoom.transform, d3.zoomIdentity.translate(dimensions.width / 2 - centerX * scale, dimensions.height / 2 - centerY * scale).scale(scale));
@@ -1412,7 +1538,7 @@
   // deterministic `_2` suffix. Replaces the old `uniqueId`, which retried with
   // a fresh `Date.now()` + `Math.random()` draw — meaning two identical
   // editing sessions produced graphs that differed on every id and could not
-  // be compared at all (LOCAL_LLM.md §3).
+  // be compared at all.
   function contentId({ parentId, expr, label }) {
     return ids.nodeId({ parentId, expr, label }, state.graph);
   }

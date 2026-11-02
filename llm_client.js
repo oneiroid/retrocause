@@ -1,239 +1,100 @@
-// llama-server transport (LOCAL_LLM.md §5.2). Owns the determinism profile
-// and the response cache. Node-only — this is deliberately the first module
-// in the repo that breaks the dual-mode convention, because it does HTTP and
-// disk I/O; it exports via `module.exports` and is never added to the page.
+// llama-server transport for chat models. Node-only: it does HTTP, so it is
+// never loaded by the page.
 //
-// Everything reproducibility-critical that llama.cpp treats as a *request*
-// field is pinned here, because it cannot be pinned in the server launcher:
-// `cache_prompt` in particular is not even reported by `/props`, so the run
-// manifest must record it from the request this client actually sent (§5.4).
+// Calls go through /v1/chat/completions so the GGUF's own chat template is
+// applied. Thinking is off on every call: reasoning tokens cost generation
+// time and the grower reads none of them.
 
 "use strict";
 
-const fs = require("fs");
-const path = require("path");
-const Ids = require("./ids.js");
-
-// The reference sampling profile (§4.1, §5.4). Every field is set explicitly
-// rather than left to a server default, because on this build (f5b9bd3) the
-// defaults are not neutral: temperature 0.8, top_k 40, seed 4294967295. A
-// request that forgets to pin one is silently sampling.
-//
-//   temperature 0 / top_k 1  — greedy decoding
-//   seed                     — explicit integer, never the -1 default
-//   samplers                 — explicit order; with top_k 1 the chain is
-//                              greedy regardless, but an implicit order is a
-//                              hidden hyperparameter that varies across builds
-//   repeat_penalty 1, dry_multiplier 0
-//                            — repetition machinery off, stated not defaulted
-//   n_predict                — capped; a length-stopped completion is invalid
-//                              JSON with the grammar working perfectly (§5.3)
-//   cache_prompt false       — KV-cache reuse mixes batch sizes and destroys
-//                              bit-replay; it defaults to TRUE upstream (§4.1)
-const REFERENCE_SAMPLING = {
-  temperature: 0,
-  top_k: 1,
-  seed: 7,
-  samplers: ["top_k", "temperature"],
-  repeat_penalty: 1.0,
-  dry_multiplier: 0,
-  n_predict: 512,
-  cache_prompt: false,
-};
-
-// The sampled profile — what the grower and the continuation probe run under
-// since branch.v4 (2026-09-29). v4 branches by drawing one line several
-// times; under the greedy reference profile every draw is the same line and
-// a grower run cannot branch at all. Still replayable: every draw carries an
-// explicit derived seed, the server has one slot, and cache_prompt is off.
-//
-//   temperature 1.0 / min_p 0.05  — min_p scales the cutoff with the top
-//                                   token's own probability, so a confident
-//                                   position does not admit noise.
-//   top_k 0                       — off, or it re-imposes greedy truncation.
-//   samplers                      — explicit order, same reason as above.
-//
-// The reference profile stays the default for everything else (the
-// same-state judge and the extractor are greedy by design).
-const SAMPLED_SAMPLING = {
-  ...REFERENCE_SAMPLING,
-  temperature: 1.0,
-  top_k: 0,
-  min_p: 0.05,
-  samplers: ["top_k", "min_p", "temperature"],
-};
-
-// Sampling fields that are NOT part of the reference profile and are emitted
-// into the request body only when a caller sets them (continuation plan v3).
-// They are optional rather than defaulted for one reason: the serialized body
-// is the cache key, so adding a key unconditionally — even set to a llama.cpp
-// default — orphans every recorded response and every manifest that replays
-// against one. A client that sets none of these produces a byte-identical
-// body to the one this module sent before they existed.
-//
-// The order here is the emission order, and it is fixed for the same reason
-// the reference block's order is (§5.5.2).
-const OPTIONAL_SAMPLING_KEYS = ["min_p", "top_p", "stop"];
-
-// Overridable because ports collide. Where the server listens is not part of
-// the request body, so it is not part of the cache key or of any manifest.
 const DEFAULT_BASE_URL = process.env.LLAMA_URL || "http://127.0.0.1:8080";
 
-// On this build a completion that ends at EOS reports
-// `"stop_type": "eos", "stopped_limit": null` — the boolean-looking field is
-// null, not false, so `stop_type` is the only reliable truncation signal (§5.3).
-const STOP_TYPE_TRUNCATED = "limit";
+const THINKING_OFF = { enable_thinking: false };
+// How many next-token alternatives yesProbability asks for. Enough that an
+// answer's casing and spacing variants all appear when any of them is plausible.
+const TOP_LOGPROBS = 20;
+const SSE_DATA = "data: ";
+const SSE_DONE = "[DONE]";
 
-// How many next-token alternatives nextTokenLogprobs asks for. Enough that a
-// one-word answer's casing/spacing variants (" yes", " Yes", "yes") all
-// appear when any of them is plausible.
-const DEFAULT_TOP_LOGPROBS = 20;
-
-function createClient({
-  baseUrl = DEFAULT_BASE_URL,
-  fetch = globalThis.fetch,
-  cacheDir = null,
-  sampling = {},
-} = {}) {
+function createClient({ baseUrl = DEFAULT_BASE_URL, fetch = globalThis.fetch } = {}) {
   if (typeof fetch !== "function") throw new Error("llm_client needs a fetch implementation");
 
-  // Overrides are merged once at construction so every request in a run
-  // shares one sampling block — the block the manifest records.
-  const pinned = { ...REFERENCE_SAMPLING, ...sampling };
-
-  let propsPromise = null;
-
-  // `/props` is read once per run (§0). It is the record of every server-side
-  // default the requests did NOT override — exactly the class of hidden
-  // hyperparameter §4.2 is about — so callers capture it wholesale.
-  function props() {
-    if (!propsPromise) {
-      propsPromise = fetch(`${baseUrl}/props`).then((res) => {
-        if (!res.ok) throw new Error(`/props returned ${res.status}`);
-        return res.json();
-      });
-    }
-    return propsPromise;
+  async function props() {
+    const res = await fetch(`${baseUrl}/props`);
+    if (!res.ok) throw new Error(`/props returned ${res.status}`);
+    return res.json();
   }
 
-  // The model fingerprint folds into every cache key: a recorded response is
-  // only a valid stand-in for the same weights on the same build.
-  async function fingerprint() {
-    const p = await props();
-    return [p.build_info || "", p.model_path || "", p.model_ftype || ""].join("|");
-  }
-
-  // The request body is CONSTRUCTED in a fixed key order (§5.5.2):
-  // JSON.stringify preserves insertion order, and the serialized body is the
-  // cache key, so a reordered body would be a cache miss and a different run.
-  // `seed` and `grammar` are the only PER-REQUEST overrides. Everything else
-  // is fixed at construction, so one run is one sampling block.
-  //
-  // seed:    drawing K samples from one prompt requires K seeds. With the
-  //          block's single pinned seed, a temperature>0 run would return the
-  //          same completion K times — silently, and looking like a
-  //          degenerate model rather than a degenerate request.
-  // grammar: a GBNF grammar is content-dependent (it may enumerate one
-  //          story's entities), so it cannot be pinned per client.
-  //
-  // Both fold into the cache key by construction: they are part of the body.
-  function requestBody(prompt, schema, { seed, grammar } = {}) {
-    const body = {
-      prompt: String(prompt),
-      temperature: pinned.temperature,
-      top_k: pinned.top_k,
-      seed: seed === undefined ? pinned.seed : seed,
-      samplers: pinned.samplers,
-      repeat_penalty: pinned.repeat_penalty,
-      dry_multiplier: pinned.dry_multiplier,
-      n_predict: pinned.n_predict,
-      cache_prompt: pinned.cache_prompt,
-    };
-    for (const key of OPTIONAL_SAMPLING_KEYS) {
-      if (pinned[key] !== undefined) body[key] = pinned[key];
-    }
-    if (grammar) body.grammar = String(grammar);
-    if (schema) body.json_schema = schema;
-    return body;
-  }
-
-  function cacheKeyFor(body, modelFingerprint) {
-    return Ids.shortHash(`${modelFingerprint}\n${JSON.stringify(body)}`);
-  }
-
-  function cachePath(key) {
-    return path.join(cacheDir, `${key}.json`);
-  }
-
-  // POST one body, through the cache. Resolves to { response, key, cached }.
-  async function post(body, bypassCache) {
-    const key = cacheKeyFor(body, await fingerprint());
-
-    if (cacheDir && !bypassCache && fs.existsSync(cachePath(key))) {
-      const entry = JSON.parse(fs.readFileSync(cachePath(key), "utf8"));
-      return { response: entry.response, key, cached: true };
-    }
-
-    const res = await fetch(`${baseUrl}/completion`, {
+  function request(messages, fields, signal) {
+    return fetch(`${baseUrl}/v1/chat/completions`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
+      // cache_prompt lets siblings reuse the evaluated story prefix on a slot.
+      body: JSON.stringify({ messages, chat_template_kwargs: THINKING_OFF, cache_prompt: true, ...fields }),
+      signal,
     });
-    if (!res.ok) throw new Error(`/completion returned ${res.status}`);
-    const response = await res.json();
+  }
 
-    if (cacheDir) {
-      fs.mkdirSync(cacheDir, { recursive: true });
-      fs.writeFileSync(
-        cachePath(key),
-        JSON.stringify({ request: body, response, recordedAt: new Date().toISOString() }, null, 2),
-      );
+  // One streamed completion. onToken(piece, textSoFar) fires per token, which
+  // is what the Lab's progress runs on. A length stop is not an error: the
+  // grower keeps whatever complete alternatives came before the cut.
+  async function chat({ system, user, maxTokens, temperature, signal, onToken }) {
+    const messages = [{ role: "system", content: system }, { role: "user", content: user }];
+    const res = await request(messages, { max_tokens: maxTokens, temperature, stream: true }, signal);
+    if (!res.ok) throw new Error(`/v1/chat/completions returned ${res.status}: ${await res.text()}`);
+
+    const decoder = new TextDecoder();
+    const result = { content: "", finishReason: null, tokens: 0, promptTokens: 0, cachedTokens: 0 };
+    let buffered = "";
+    const onLine = (line) => {
+      if (!line.startsWith(SSE_DATA)) return;
+      const data = line.slice(SSE_DATA.length).trim();
+      if (data === SSE_DONE) return;
+      const chunk = JSON.parse(data);
+      const choice = chunk.choices && chunk.choices[0];
+      const piece = choice && choice.delta && choice.delta.content;
+      if (piece) {
+        result.content += piece;
+        result.tokens += 1;
+        if (onToken) onToken(piece, result.content);
+      }
+      if (choice && choice.finish_reason) result.finishReason = choice.finish_reason;
+      if (chunk.timings) {
+        result.promptTokens = chunk.timings.prompt_n;
+        result.cachedTokens = chunk.timings.cache_n;
+      }
+    };
+    for await (const bytes of res.body) {
+      buffered += decoder.decode(bytes, { stream: true });
+      const lines = buffered.split("\n");
+      buffered = lines.pop();
+      lines.forEach(onLine);
     }
-    return { response, key, cached: false };
+    onLine(buffered);
+    return result;
   }
 
-  // One completion. Resolves to { content, stopType, cached, cacheKey }.
-  // Truncation is a HARD failure (error with `.truncated = true`), never a
-  // silent retry with a bigger cap — that would make the run irreproducible.
-  //
-  // `bypassCache` skips the cache READ but still records: this is what makes
-  // `grow:replay` cache-cold (§4.2) while leaving fresh fixtures behind.
-  async function complete(prompt, schema, { bypassCache = false, seed, grammar } = {}) {
-    const { response, key, cached } = await post(requestBody(prompt, schema, { seed, grammar }), bypassCache);
-    return finish(response, key, cached);
-  }
-
-  // The model's distribution over the NEXT token only: [{ token, logprob }],
-  // most likely first, `n` entries. For one-token judgements (same_judge.js)
-  // read straight off the logits — no sampling decides the answer.
-  //
-  // On this build the reported logprobs are pre-sampling: a top_k 1 request
-  // still lists the alternatives. One generated token always stops on the
-  // limit, so this deliberately bypasses `finish`'s truncation check.
-  async function nextTokenLogprobs(prompt, { n = DEFAULT_TOP_LOGPROBS, bypassCache = false } = {}) {
-    const body = { ...requestBody(prompt, null), n_predict: 1, n_probs: n };
-    const { response } = await post(body, bypassCache);
-    const [first] = response.completion_probabilities || [];
-    if (!first) throw new Error("no completion_probabilities in the response");
-    return first.top_logprobs.map(({ token, logprob }) => ({ token, logprob }));
-  }
-
-  function finish(response, key, cached) {
-    if (response.stop_type === STOP_TYPE_TRUNCATED) {
-      const error = new Error(`completion truncated at n_predict=${pinned.n_predict}`);
-      error.truncated = true;
-      // The partial text rides along. For the grower a truncation is a run
-      // failure and the content is noise; for the unconstrained diagnostic
-      // probe, a truncated sample IS data (continue_probe.js records it as an
-      // unusable sample), and losing its text would lose the finding.
-      error.content = response.content;
-      error.cacheKey = key;
-      throw error;
+  // P(yes | yes or no) for a one-word answer, read off the first token's
+  // distribution so no sampler decides it. null when neither word is among the
+  // alternatives: the model did not take the question.
+  async function yesProbability({ system, user, signal }) {
+    const messages = [{ role: "system", content: system }, { role: "user", content: user }];
+    const res = await request(messages, { max_tokens: 1, temperature: 0, logprobs: true, top_logprobs: TOP_LOGPROBS }, signal);
+    if (!res.ok) throw new Error(`/v1/chat/completions returned ${res.status}: ${await res.text()}`);
+    const { choices } = await res.json();
+    const first = choices[0].logprobs && choices[0].logprobs.content[0];
+    if (!first) throw new Error("no logprobs in the response");
+    let yes = 0;
+    let no = 0;
+    for (const { token, logprob } of first.top_logprobs) {
+      const word = String(token).trim().toLowerCase();
+      if (word === "yes") yes += Math.exp(logprob);
+      else if (word === "no") no += Math.exp(logprob);
     }
-    return { content: response.content, stopType: response.stop_type, cached, cacheKey: key };
+    return yes + no > 0 ? yes / (yes + no) : null;
   }
 
-  return { props, complete, nextTokenLogprobs, sampling: pinned, baseUrl };
+  return { props, chat, yesProbability, baseUrl };
 }
 
-module.exports = { createClient, REFERENCE_SAMPLING, SAMPLED_SAMPLING };
+module.exports = { createClient };
