@@ -23,6 +23,11 @@
 // exists to expose (INTUITIONS §5). If two same-content states really differ
 // in the present, express that in a richer contentKey; never consult the
 // future. See the resolved case in tests/merge_predicate.test.js.
+//
+// Flagged against INTUITIONS §5 (2026-11-26): if a state is defined by its
+// possible futures, as the thesis and Propp's functions suggest, this rule looks
+// the wrong way. The disagreement is kept as data; the proposed test is to sample
+// futures from each candidate rather than read them from the graph.
 
 (function attachMergePredicate(root) {
   const Engine = (typeof require !== "undefined")

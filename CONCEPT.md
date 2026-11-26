@@ -1,8 +1,39 @@
 # Retrocause: The Concept
 
+## Core idea
+
+The human brain is a learning network, and myths are what tens of
+thousands of years of human learners kept. They are the longest-trained
+human representation of reality, and the base stories in them are few
+in shape, however many they are in content. Retrocause exists to find
+those base stories as structure, to tell which parts of them are
+imprints of the world and which are imprints of the mind that kept
+them, and to make that recipe usable by modern neural networks.
+
+Three layers: **mind** is the learner, **language** is the shared space
+minds write into, and **stories** are the durable checkpoint inside
+language, what survived being rewritten by billions of learners. The
+target is the recipe for mind read off that checkpoint; the world is
+reached through it, not around it. Evolution shaped the brain, so the
+human prior is a compressed record of the world, but one selected for
+fitness at human scale rather than for accuracy.
+
+Why expect a recipe to be there: learners trained on different data and
+objectives appear to converge on one representation of what they
+observe (Huh, Cheung, Wang, Isola, "The Platonic Representation
+Hypothesis", ICML 2024). Myths are that convergence, run on human
+brains over the longest time available. See `INTUITIONS.md` §9 and §10.
+
+How the graph serves this: base stories show up as the convergence
+nodes of a story graph, the states many different tellings are forced
+through (§5). Propp defined his functions the same way, by what an act
+does to what follows, which is the sense of "same state" the grower is
+moving toward.
+
 ## Claim
 
-Narrative structure is ontologically primary. Story-shaped causality is
+The strongest version of the core idea: narrative structure is
+ontologically primary. Story-shaped causality is
 not what brains do with matter — it is what matter looks like at the
 event scale, perceived sequentially by a narrow agentic read-head.
 
