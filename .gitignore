@@ -1,1 +1,7 @@
 .claude/*
+experiments/gen_*.json
+
+# runs/ holds grown graphs + manifests.
+cache/
+runs/
+live/

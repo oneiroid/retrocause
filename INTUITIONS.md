@@ -107,6 +107,17 @@ first-class, branches can rejoin them, and the layout makes the
 shared-destination structure visible. This claim is the core of the
 name **retrocause**.
 
+> **Flag (disagreement kept as data, 2026-11-26).** If a state is
+> defined by its possible futures (the Myhill–Nerode rule, and Propp's
+> definition of a function by its significance for the course of the
+> action), then a convergence node is the set of pasts that a shared
+> future makes identical. That is the precise sense of "retrocause". The
+> merge rule in `merge_predicate.js` deliberately never consults the
+> future (2026-07-05), and `judges.js` compares the routes so far. The
+> thesis looks forward; the code looks back. Proposed test: sample a few
+> continuations from each candidate and merge when the futures are
+> indistinguishable.
+
 ---
 
 ## 6. Archetypes are parametrized templates `open`
@@ -123,7 +134,10 @@ on a small finite set of archetypes would be evidence that the
 templates correspond to genuine topological features of G rather than
 cultural conventions, and the framework predicts the same instrument
 pointed at non-narrative DAGs should find templates of similar count.
-It cannot yet do so.
+It cannot yet do so — one hand-built eight-node story is not a corpus,
+and no extraction procedure exists. `LOCAL_LLM.md` addresses the corpus
+half of that gap only; §6 stays `open` regardless, and would still be
+`open` with a thousand grown graphs and no extractor.
 
 The number ~7 (Booker), ~6 (Vonnegut), 1 (Campbell) is *not* a claim
 the framework defends. The framework claims only: the count is small
@@ -145,6 +159,12 @@ The app exercises a fragment: the user *is* the agency function,
 choosing which node to branch and which path to follow. Resolution and
 an explicit agency model are not implemented, which is why this is
 `partial`, not `operational`.
+
+A second agency function now runs (`LOCAL_LLM.md`): a local model proposes
+continuations at branch points, with depth, width and beam as an explicit,
+tunable *resolution*, so §7's "resolution" is a parameter rather than a word.
+The tag stays `partial`: the model chooses events, and nothing yet models
+agency within the story.
 
 Free will, in these terms, is the agency function — whether it is
 determined by G's structure (the appearance of choice is an artifact
@@ -172,6 +192,17 @@ Two consequences the project takes seriously:
   The current seed (the Red story) is a familiar narrative used to
   exercise the editor, not yet such a test.
 
+  Machine-grown graphs (`LOCAL_LLM.md`) do **not** escape this. A model
+  trained on human text carries human narrative priors — plausibly a
+  compressed average of exactly the assumptions this section warns
+  about. Automating growth *launders* the sand-castle problem rather
+  than removing it: finding a monomyth in graphs grown by a model
+  trained on monomyth criticism would prove nothing. What it does buy is
+  that the assumptions stop being *this* analyst's, become legible
+  (pinned weights, versioned prompts, recorded runs), and get cheap
+  enough to vary deliberately — which is a precondition for the external
+  test, not a substitute for it.
+
 - **Observable-domain insight.** Domains that show clear convergence
   patterns (ecology, markets, gene networks) do so because their
   internal dynamics make branch differences *visible* (extinction,
@@ -182,6 +213,64 @@ Two consequences the project takes seriously:
 This claim is `partial` because the project applies the constraint as
 methodology but has not yet performed a test that uses external DAGs
 in a way that could falsify the framework's predictions.
+
+---
+
+## 9. Observers converge on the same event structure `open`
+
+Different learners, built differently and trained on different
+projections, appear to converge on one representation of what they
+observe (Huh et al. 2024, "The Platonic Representation Hypothesis").
+That paper's formal world is a sequence of discrete events, and the
+structure learners converge to is relational: which events occur near
+which (a pointwise mutual information kernel over events).
+
+Retrocause reads this as convergence one level up from §5: many routes
+(data, objective, modality) into one destination, with the destination
+constraining the routes. The paper's reading is realist (a world behind
+the events); §1's is that the event structure is the world. The paper
+does not decide between them.
+
+The claim is `open`: the app has no measurement of agreement between
+observers. It would move to `partial` if convergence nodes grown by
+different model families coincide more than chance, with a
+non-narrative control (§8: shared human text is a shared sand castle).
+
+---
+
+## 10. Myths are the longest-trained checkpoint of the recipe for mind `open`
+
+This is the project's core idea (`CONCEPT.md`). The brain is a learning
+network; myths are what survived tens of thousands of years of
+transmission between such networks. Old tale types and motifs recur
+across cultures with no contact, which is §9's evidence pattern with
+brains as the learners. Stories are many in content (over 2,000 tale
+types in the ATU catalogue) but few in shape (Propp's 31 functions;
+a handful of emotional arcs), which is what §6 predicts: few
+convergence topologies, many node contents.
+
+What survival selects for is retellability, so a myth carries two
+imprints. The human prior is not noise on top of the world: evolution
+shaped the brain, so the prior is a compressed record of the world, but
+of the world as it mattered for survival at human scale, and cultural
+selection over a few thousand years is selection by brains. Myths are
+therefore the clearest available imprint of how a mind is built, and an
+imprint of reality only through that. For modern networks, which learn
+from the same checkpoint, the recipe for mind may be the more valuable
+of the two.
+
+The test sorts the two imprints rather than discarding one. Base-story
+shapes that also appear in event graphs no human told (ecology,
+markets, gene regulation) are imprints of the world and support §1.
+Shapes found only in human-made material, and in models trained on it,
+are imprints of the mind recipe.
+
+The claim is `open`: the app has no tale corpus and no extractor (open
+question 8). First steps, none built: embed tale types with local
+models of increasing size and measure alignment with tale-type and
+Propp-function structure; seed the grower with tale types from several
+cultures and check whether grown convergence nodes fall on Propp
+functions.
 
 ---
 
@@ -219,6 +308,10 @@ for. Listed so the framework cannot quietly pretend it does.
    frames the question.
 8. **Template extraction.** Can recurring subgraph templates be found
    in a corpus automatically? Until they can, claim §6 stays `open`.
+   The blocker has two halves, and only one is now addressed: there is
+   no extractor, *and* there was no corpus to point one at. The grower
+   (`LOCAL_LLM.md`) is aimed at the second half. The extractor remains
+   unbuilt and undesigned.
 
 The promotion of any open question to `partial` or `operational` is a
 measurable advance for the project. Demoting an `operational` claim to

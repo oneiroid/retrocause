@@ -1,8 +1,39 @@
 # Retrocause: The Concept
 
+## Core idea
+
+The human brain is a learning network, and myths are what tens of
+thousands of years of human learners kept. They are the longest-trained
+human representation of reality, and the base stories in them are few
+in shape, however many they are in content. Retrocause exists to find
+those base stories as structure, to tell which parts of them are
+imprints of the world and which are imprints of the mind that kept
+them, and to make that recipe usable by modern neural networks.
+
+Three layers: **mind** is the learner, **language** is the shared space
+minds write into, and **stories** are the durable checkpoint inside
+language, what survived being rewritten by billions of learners. The
+target is the recipe for mind read off that checkpoint; the world is
+reached through it, not around it. Evolution shaped the brain, so the
+human prior is a compressed record of the world, but one selected for
+fitness at human scale rather than for accuracy.
+
+Why expect a recipe to be there: learners trained on different data and
+objectives appear to converge on one representation of what they
+observe (Huh, Cheung, Wang, Isola, "The Platonic Representation
+Hypothesis", ICML 2024). Myths are that convergence, run on human
+brains over the longest time available. See `INTUITIONS.md` §9 and §10.
+
+How the graph serves this: base stories show up as the convergence
+nodes of a story graph, the states many different tellings are forced
+through (§5). Propp defined his functions the same way, by what an act
+does to what follows, which is the sense of "same state" the grower is
+moving toward.
+
 ## Claim
 
-Narrative structure is ontologically primary. Story-shaped causality is
+The strongest version of the core idea: narrative structure is
+ontologically primary. Story-shaped causality is
 not what brains do with matter — it is what matter looks like at the
 event scale, perceived sequentially by a narrow agentic read-head.
 
@@ -51,10 +82,23 @@ attached: every claim is tagged `operational` (the app exercises it),
 discipline prevents the philosophy from drifting into free-form
 speculation.
 
-**CODE / APP** commits to direct manipulability. A browser, D3, one
-story DAG, branch from any node, export JSON. No backend, no LLM call
-from inside the page. The artifact is a reusable story-world object,
-not a generator.
+**CODE / APP** commits to direct manipulability, and splits across two
+surfaces that commit to different things.
+
+*The page* — a browser, D3, one story DAG, branch from any node, export
+JSON. Opened from disk: no backend, no key, and no model call from
+inside the page. This commitment is unchanged.
+
+*The grower* (`LOCAL_LLM.md`): a Node-side module that grows the DAG
+automatically by calling a local model through `llama.cpp`, driven from the
+page's Lab panel through a loopback bridge. It exists because the project's
+open questions need a *corpus* of graphs, and hand-building them one form
+submission at a time does not get there.
+
+The project once ruled a generator out; it now rules out only a generator *in
+the page*. Machine-grown graphs carry a run record saying how they were grown
+(model, parameters, prompts, every request and completion), so they can be
+inspected rather than taken on trust. They are records, not replays.
 
 ## How to read this repository
 
@@ -63,6 +107,7 @@ not a generator.
 | The thesis | `CONCEPT.md` (this file) |
 | The philosophy, disciplined | `INTUITIONS.md` |
 | The product spec | `RESEARCH_AND_DESIGN.md` |
+| The automatic grower | `LOCAL_LLM.md` |
 
 When the code and the intuitions disagree, the **disagreement is the
 data** — it tells you either the intuition is wrong, or the code is
@@ -71,7 +116,11 @@ defeats the point of the project.
 
 ## What this project is not
 
-- Not a generative-narrative engine. It does not write stories.
+- Not a prose generator. It does not write stories. The grower, when it
+  exists, is to propose *structure* — nodes, edges, what changed, what
+  stayed true — and every proposal is a graph operation the editor could
+  equally have received from a human. Nothing in the project produces
+  narrative text, and that constraint is not up for revision.
 - Not a literary-theory contribution. It does not claim to settle
   questions about narrative ontology; it claims those questions
   are sharp enough to build instruments for.

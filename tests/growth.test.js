@@ -1,6 +1,6 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { insertContinuation, grow, collapseIfSame } = require('../growth');
+const { insertContinuation, grow, collapseIfSame, attach, rejoin } = require('../growth');
 const Engine = require('../story_builder_engine');
 
 // Tiny graph builder. nodes: [id, expr]  edges: [from, to]
@@ -38,6 +38,51 @@ test('two parallel continuations with the same content converge', () => {
 test('a continuation matching an ancestor is recurrence, not convergence', () => {
   // root─►a(camp).  A later continuation from a that re-reaches "camp" is a
   // look-alike in a changed world: a reaches it, so they are comparable.
+  const graph = g([['root', 'start'], ['a', 'camp(red)']], [['root', 'a']]);
+
+  const r = insertContinuation(graph, { from: 'a', node: { id: 'a2', expr: 'camp(red)' } });
+
+  assert.equal(r.merged, false);
+  assert.ok(graph.nodes.some((n) => n.id === 'a2'));
+});
+
+// ── NULL TRANSITIONS ────────────────────────────────────────────────────────
+//
+// The pair that defines the rule: same expr, and the state decides. Different
+// state is recurrence — the same act in a changed world, which is criedWolf's
+// whole structure. Same state is a proposal that said nothing.
+
+test('same expr but a changed world is recurrence, and is kept', () => {
+  const graph = g([['root', 'start'], ['a', 'cry(boy, wolf)']], [['root', 'a']]);
+  graph.nodes[1].state = 'The boy has raised the alarm. There is no wolf.';
+
+  const r = insertContinuation(graph, {
+    from: 'a',
+    node: { id: 'a2', expr: 'cry(boy, wolf)', state: 'The boy has raised the alarm again and belief is thinner.' },
+  });
+
+  assert.equal(r.merged, false);
+  assert.ok(graph.nodes.some((n) => n.id === 'a2'));
+});
+
+test('same expr and same state is a null transition: refused, nothing added', () => {
+  const graph = g([['root', 'start'], ['a', 'leave(red, basket)']], [['root', 'a']]);
+  graph.nodes[1].state = 'Red has left the basket behind.';
+  const before = JSON.stringify(graph);
+
+  const r = insertContinuation(graph, {
+    from: 'a',
+    node: { id: 'a2', expr: 'leave(red, basket)', state: '  Red has LEFT the basket behind.  ' },
+  });
+
+  assert.equal(r.ok, false);
+  assert.equal(r.reason, 'null_transition');
+  assert.equal(JSON.stringify(graph), before); // no node, no edge, no id minted
+});
+
+test('an unstated source claims nothing — same expr, no state, still recurrence', () => {
+  // Both sides content-free: that is not evidence nothing changed, it is
+  // evidence nothing was said. The rule must not fire here.
   const graph = g([['root', 'start'], ['a', 'camp(red)']], [['root', 'a']]);
 
   const r = insertContinuation(graph, { from: 'a', node: { id: 'a2', expr: 'camp(red)' } });
@@ -154,4 +199,28 @@ test('a missing source node is rejected and leaves the graph unchanged', () => {
 
   assert.equal(r.ok, false);
   assert.equal(graph.nodes.length, before);
+});
+
+// ── THE GROWER'S MOVES ──────────────────────────────────────────────────────
+
+test('attach keeps the candidate without asking the surface key', () => {
+  const graph = g([['root', 'start'], ['x', 'same']], [['root', 'x']]);
+  const { node, edge } = attach(graph, { from: 'root', node: { expr: 'same', label: 'same' } });
+  assert.ok(graph.nodes.includes(node));
+  assert.equal(edge.to, node.id);
+  assert.equal(edge.type, 'choice');
+});
+
+test('rejoin adds a rejoins edge, once', () => {
+  const graph = g([['root', 'start'], ['x', 'a'], ['y', 'b']], [['root', 'x'], ['root', 'y']]);
+  const edge = rejoin(graph, { from: 'x', into: 'y', label: 'same point' });
+  assert.equal(edge.type, 'rejoins');
+  assert.equal(edge.label, 'same point');
+  assert.equal(rejoin(graph, { from: 'x', into: 'y' }), null);
+  assert.equal(graph.edges.filter((e) => e.to === 'y').length, 2);
+});
+
+test('rejoin refuses a cycle', () => {
+  const graph = g([['root', 'start'], ['x', 'a']], [['root', 'x']]);
+  assert.equal(rejoin(graph, { from: 'x', into: 'root' }), null);
 });

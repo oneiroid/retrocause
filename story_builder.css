@@ -160,3 +160,33 @@ dialog::backdrop { background: rgba(2, 6, 23, .72); backdrop-filter: blur(3px); 
   .app-shell { grid-template-columns: 330px 1fr; }
   .panel-right { position: absolute; right: 0; top: 0; bottom: 0; width: 380px; transform: translateX(0); z-index: 9; }
 }
+
+/* Lab panel */
+.lab-head { margin: 6px 0 0; font-size: 12px; color: #cbd5e1; }
+.subpanel { border-top: 1px solid var(--line); padding-top: 6px; }
+.subpanel > summary { cursor: pointer; font-size: 12px; color: #cbd5e1; text-transform: none; letter-spacing: normal; }
+.prompt-log { display: grid; gap: 4px; margin-top: 6px; }
+.prompt-entry { border: 1px solid var(--line); border-radius: 6px; background: #0a1322; padding: 4px 6px; }
+.prompt-entry > summary { cursor: pointer; font-size: 11px; color: #cbd5e1; text-transform: none; letter-spacing: normal; }
+.prompt-part { margin: 6px 0 2px; font-size: 11px; color: var(--muted); }
+.prompt-text { margin: 0; max-height: 320px; overflow: auto; white-space: pre-wrap; word-break: break-word; font-size: 11px; line-height: 1.4; background: #050b16; padding: 6px; border-radius: 4px; }
+.field-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(64px, 1fr)); gap: 8px; }
+label.check { display: flex; align-items: center; gap: 7px; }
+label.check input { width: auto; }
+.metrics { width: 100%; border-collapse: collapse; font-size: 11px; }
+.metrics th, .metrics td { text-align: right; padding: 2px 4px; border-bottom: 1px solid var(--line); }
+.metrics th:first-child, .metrics td:first-child { text-align: left; }
+.node.fresh rect { stroke: #4ade80; stroke-width: 2.5; }
+.node.ending rect { stroke: #fb7185; stroke-width: 2.5; }
+#layeredBtn.active { border-color: var(--green); color: #d8f7e8; }
+#growBar { width: 100%; height: 8px; accent-color: var(--green); }
+.grow-active { display: grid; gap: 2px; font-size: 11px; line-height: 1.35; color: var(--muted); max-height: 220px; overflow: hidden; }
+.grow-active > div { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.active-from { color: #cbd5e1; }
+.grow-log { font-size: 11px; line-height: 1.5; color: var(--muted); max-height: 200px; overflow: auto; }
+.grow-log:empty { display: none; }
+.log-link { cursor: pointer; }
+.log-link:hover { color: #f8fafc; }
+.propose-list { display: grid; gap: 6px; }
+.propose-item { border: 1px solid var(--line); border-radius: 8px; padding: 8px; background: #0a1322; display: grid; gap: 4px; font-size: 12px; line-height: 1.4; }
+.propose-item button { justify-self: start; padding: 3px 9px; font-size: 12px; }

@@ -3,6 +3,15 @@
   const EDGE_TYPES = ["causes", "leads_to", "choice", "rejoins"];
   const STORAGE_KEY = "retrocause.storyDagBuilder.v2";
 
+  // The Node-side grow bridge (tools/grow_server.js). The page never calls the
+  // model itself. Optional: without the bridge running, the Lab panel says so
+  // and everything else works as before.
+  const GROW_SERVER_URL = "http://127.0.0.1:8081";
+
+  // Content-addressed ids and canonical export (ids.js).
+  // Loaded as a plain script before this one; the page has no module system.
+  const ids = window.StoryDagIds;
+
   // ── Force-layout tuning ───────────────────────────────────────────────
   // Every graph-layout magic number lives here, named and explained, instead
   // of being scattered through the simulation code. Adjust layout feel here.
@@ -29,6 +38,16 @@
     dragAlphaTarget: 0.35,   // simulation "heat" held while a drag is in progress (lower =
                              //   calmer give-way, the node sits more still where dropped)
     restAlphaDecay: 0.0228,  // d3's default cooling rate, restored after a reheat
+    growAlpha: 0.25,         // heat of each redraw while a grow streams: low, or every
+                             //   batch of new nodes would shake the whole graph
+
+    // Layered view: columns by causal rank, rows by a tidy tree walk. What a large
+    // grown DAG needs; force layout packs it into an unreadable blob.
+    layered: {
+      columnGap: 340,        // px between ranks; wider than the widest node (300)
+      rowGap: 84,            // px between leaf rows; node height is 64
+      strength: 0.5,         // pull toward the target position, so moves ease
+    },
 
     // Reheat = an "untangle" pass: shake out of the current local minimum,
     // stretch hard, cool slowly, then relax back to the resting forces.
@@ -44,6 +63,8 @@
       fitDelayMs: 700,       // re-frame the result this long after relaxing
     },
   };
+  // Layered positions ease in over about this long; frame the result after it.
+  const LAYERED_FIT_DELAY_MS = 500;
   const NODE_COLORS = {
     root: "#38bdf8",
     story: "#38bdf8",
@@ -73,18 +94,24 @@
     graph: makeGraph(seeds.red),
     activeSeed: "red",
     selectedId: "red_start",
+    promptLog: [],
     nodes: [],
     edges: [],
     ranks: {},
     showEdgeLabels: true,
     search: "",
     viewMode: "all",
-    promptText: "",
     draggingId: null,
     lockedIds: new Set(),
     // Nodes a drag dropped in place (kept fx/fy so they STAY put). Distinct
     // from lockedIds (dblclick hard-lock): soft pins are released by Reheat.
-    softPinnedIds: new Set()
+    softPinnedIds: new Set(),
+    layered: false,
+    followGrow: false,
+    growAbort: null,
+    undoGraph: null,
+    proposal: null,
+    healthTimer: null
   };
 
   const el = Object.fromEntries(Array.from(document.querySelectorAll("[id]")).map((item) => [item.id, item]));
@@ -112,7 +139,11 @@
   const edgeLayer = graphLayer.append("g").attr("class", "edge-layer");
   const labelLayer = graphLayer.append("g").attr("class", "edge-label-layer");
   const nodeLayer = graphLayer.append("g").attr("class", "node-layer");
-  const zoom = d3.zoom().scaleExtent([0.15, 3]).on("zoom", (event) => graphLayer.attr("transform", event.transform));
+  const zoom = d3.zoom().scaleExtent([0.05, 3]).on("zoom", (event) => {
+    graphLayer.attr("transform", event.transform);
+    // A pan or zoom by hand ends the auto-framing of a running grow.
+    if (event.sourceEvent) state.followGrow = false;
+  });
   svg.call(zoom);
 
   let simulation;
@@ -128,12 +159,14 @@
     renderEdgeTypeOptions();
     bindEvents();
     renderAll();
-    setTimeout(fitGraph, 350);
+    setTimeout(() => fitGraph(), 350);
+    checkBridge();
     window.__storyDagApp = {
       getGraph: () => structuredClone(state.graph),
       exportJson,
       importGraph,
       validateGraph,
+      autoGrow,
       selectNode: (id) => { state.selectedId = id; renderAll(); }
     };
   }
@@ -185,7 +218,7 @@
         state.selectedId = state.graph.root;
         renderSeeds();
         renderAll();
-        setTimeout(fitGraph, 100);
+        setTimeout(() => fitGraph(), 100);
         toast(`Loaded ${seed.title}`);
       });
       el.seedList.appendChild(button);
@@ -201,15 +234,33 @@
     el.addManualBtn.addEventListener("click", addManualEdit);
     el.deleteSelectedBtn.addEventListener("click", deleteSelectedNode);
     el.validateBtn.addEventListener("click", () => showValidation(validateGraph()));
-    el.fitBtn.addEventListener("click", fitGraph);
+    el.fitBtn.addEventListener("click", () => fitGraph());
     el.reheatBtn.addEventListener("click", untangleReheat);
+    el.layeredBtn.addEventListener("click", () => {
+      setLayered(!state.layered);
+      setTimeout(() => fitGraph(), LAYERED_FIT_DELAY_MS);
+    });
     el.toggleLabelsBtn.addEventListener("click", () => { state.showEdgeLabels = !state.showEdgeLabels; renderGraph(); });
     el.searchInput.addEventListener("input", () => { state.search = el.searchInput.value.trim().toLowerCase(); renderGraph(); });
     el.viewMode.addEventListener("change", () => { state.viewMode = el.viewMode.value; renderAll(); });
     el.saveNodeBtn.addEventListener("click", saveSelectedNodeEdits);
-    el.buildPromptBtn.addEventListener("click", () => showPrompt(true));
-    el.copyPromptBtn.addEventListener("click", copyPrompt);
     el.importJsonBtn.addEventListener("click", importFromTextArea);
+    el.autoGrowBtn.addEventListener("click", autoGrow);
+    el.stopGrowBtn.addEventListener("click", stopGrow);
+    el.undoGrowBtn.addEventListener("click", undoGrow);
+    el.proposeBtn.addEventListener("click", propose);
+    el.proposeList.addEventListener("click", onProposeClick);
+    el.growLog.addEventListener("click", (event) => {
+      const id = event.target.dataset && event.target.dataset.node;
+      if (id && getNode(id)) selectNode(id);
+    });
+    el.deleteSubtreeBtn.addEventListener("click", deleteSelectedSubtree);
+    el.promptPanel.addEventListener("toggle", () => { if (el.promptPanel.open) renderPromptLog(); });
+    el.loadRunBtn.addEventListener("click", loadRun);
+    el.refreshRunsBtn.addEventListener("click", loadRuns);
+    el.promptPreviewBtn.addEventListener("click", previewPrompt);
+    el.promptTemplatesBtn.addEventListener("click", showTemplates);
+    el.promptClearBtn.addEventListener("click", () => { state.promptLog = []; renderPromptLog(); });
     el.exportJsonBtn.addEventListener("click", showExportJson);
     el.downloadJsonBtn.addEventListener("click", downloadJson);
     el.saveLocalBtn.addEventListener("click", saveLocal);
@@ -307,7 +358,14 @@
         const rank = state.ranks[item.id] || 0;
         const rankIndex = rankBuckets.get(rank) || 0;
         rankBuckets.set(rank, rankIndex + 1);
-        const old = oldPositions.get(item.id);
+        // A node added to a laid-out graph starts beside its parent, so a growing
+        // graph extends where it grows rather than reshuffling.
+        const parent = state.graph.edges.find((edge) => edge.to === item.id && oldPositions.has(edge.from));
+        const parentPos = parent && oldPositions.get(parent.from);
+        const old = oldPositions.get(item.id) || (parentPos && {
+          x: parentPos.x + LAYOUT.linkDistance,
+          y: parentPos.y + (Math.random() - 0.5) * LAYOUT.laneGapMax
+        });
         const x = old?.x ?? 120 + (rank / maxRank) * (dimensions.width - 240);
         // laneY: the simulation's vertical target (per-rank fan-out). x is
         // governed separately by a strong rank force (left→right causal order).
@@ -327,10 +385,19 @@
       .filter((item) => nodeById.has(item.from) && nodeById.has(item.to))
       .map((item) => ({ ...item, source: nodeById.get(item.from), target: nodeById.get(item.to) }));
 
+    if (state.layered) {
+      const targets = layeredTargets();
+      state.nodes.forEach((node) => {
+        const target = targets.get(node.id);
+        node.targetX = target.x;
+        node.targetY = target.y;
+      });
+    }
+
     if (simulation) simulation.stop();
     simulation = d3.forceSimulation(state.nodes);
     applyForces();
-    simulation.on("tick", ticked).alpha(0.9).restart();
+    simulation.on("tick", ticked).alpha(state.growAbort ? LAYOUT.growAlpha : 0.9).restart();
 
     edgeSelection = edgeLayer.selectAll("path.link").data(state.edges, (item) => item.id);
     edgeSelection.exit().remove();
@@ -377,7 +444,9 @@
       .classed("selected", (item) => item.id === state.selectedId)
       .classed("search-hit", (item) => matchesSearch(item))
       .classed("dimmed", (item) => state.search && !matchesSearch(item))
-      .classed("locked", (item) => state.lockedIds.has(item.id));
+      .classed("locked", (item) => state.lockedIds.has(item.id))
+      .classed("fresh", (item) => !!state.lastRunId && item.runId === state.lastRunId)
+      .classed("ending", (item) => (item.tags || []).includes("ending"));
 
     nodeSelection.select("rect")
       .attr("width", (item) => nodeWidth(item))
@@ -499,6 +568,7 @@
   // resting forces and re-frames the untangled, stretched DAG.
   function untangleReheat() {
     if (!simulation) return;
+    if (state.layered) setLayered(false);
     state.nodes.forEach((node) => {
       if (state.lockedIds.has(node.id)) return; // respect hard locks (dblclick)
       // Release soft pins (drag-drop) so the shake can actually move them —
@@ -521,11 +591,20 @@
       if (!simulation) return;
       applyForces();                                 // restore the resting force balance
       simulation.alphaDecay(LAYOUT.restAlphaDecay);  // d3 default cooling rate
-      setTimeout(fitGraph, LAYOUT.reheat.fitDelayMs); // re-frame the stretched result
+      setTimeout(() => fitGraph(), LAYOUT.reheat.fitDelayMs); // re-frame the stretched result
     }, LAYOUT.reheat.settleMs);
   }
 
   function applyForces() {
+    if (state.layered) {
+      simulation
+        .force("link", null)
+        .force("charge", null)
+        .force("collide", null)
+        .force("x", d3.forceX((item) => item.targetX).strength(LAYOUT.layered.strength))
+        .force("y", d3.forceY((item) => item.targetY).strength(LAYOUT.layered.strength));
+      return;
+    }
     // Left→right order is enforced by enforceEdgeDirection (§LTR, a hard
     // per-edge constraint), NOT by pinning nodes to rank columns — so a node
     // stays where it is dragged instead of snapping back to a column. The
@@ -540,6 +619,42 @@
       .force("collide", d3.forceCollide((item) => nodeWidth(item) / 2 + LAYOUT.collidePadding).strength(1).iterations(LAYOUT.collideIterations))
       .force("x", null) // no rank-column pull — removed; it made the DAG rigid
       .force("y", d3.forceY((item) => (item.laneY != null ? item.laneY : graphDimensions().height / 2)).strength(LAYOUT.yStrength));
+  }
+
+  // Targets for the layered view. Rows come from a walk over a spanning tree: a
+  // leaf takes the next row, a parent sits at the middle of its children, and a
+  // merged node hangs under the first parent the walk reaches. Told children go
+  // first, so the told story reads as a line along the top of its branches.
+  function layeredTargets() {
+    const { columnGap, rowGap } = LAYOUT.layered;
+    const children = new Map(state.graph.nodes.map((node) => [node.id, []]));
+    state.graph.edges.forEach((edge) => children.get(edge.from)?.push(edge.to));
+    const byId = new Map(state.graph.nodes.map((node) => [node.id, node]));
+    const told = (id) => (byId.get(id)?.createdBy === "grown" ? 1 : 0);
+    children.forEach((list) => list.sort((a, b) => told(a) - told(b)));
+
+    const targets = new Map();
+    const placed = new Set();
+    let nextRow = 0;
+    const walk = (id) => {
+      placed.add(id);
+      const rows = [];
+      for (const child of children.get(id) || []) {
+        if (!placed.has(child)) rows.push(walk(child));
+      }
+      const row = rows.length ? (rows[0] + rows[rows.length - 1]) / 2 : nextRow++;
+      targets.set(id, { x: (state.ranks[id] || 0) * columnGap, y: row * rowGap });
+      return row;
+    };
+    walk(state.graph.root);
+    state.graph.nodes.forEach((node) => { if (!placed.has(node.id)) walk(node.id); });
+    return targets;
+  }
+
+  function setLayered(on) {
+    state.layered = on;
+    el.layeredBtn.classList.toggle("active", on);
+    renderGraph();
   }
 
   // Vertical target for a node: fan same-rank siblings out around the
@@ -617,7 +732,9 @@
     el.selectedNode.innerHTML = `
       <h3>${escapeHtml(selected.label)}</h3>
       <div class="expr">${escapeHtml(selected.expr)}</div>
+      ${selected.actor ? `<div><strong>Actor:</strong> ${escapeHtml(selected.actor)}</div>` : ""}
       <div>${escapeHtml(selected.state || "No state note.")}</div>
+      ${selected.reading ? `<div class="muted">${escapeHtml(selected.reading)}</div>` : ""}
       ${selected.delta ? `<div><strong>Changed:</strong> ${escapeHtml(selected.delta)}</div>` : ""}
       ${selected.invariants ? `<div><strong>Invariant:</strong> ${escapeHtml(selected.invariants)}</div>` : ""}
       <div class="tag-row">${(selected.tags || []).map((tag) => `<span class="tag">${escapeHtml(tag)}</span>`).join("")}</div>
@@ -648,40 +765,54 @@
     return result.merged ? result : null;
   }
 
+  // One insertion path for every branch source — the form, pasted JSON and
+  // proposed alternatives: content id, choice edge, optional rejoin, auto-merge.
+  // Returns { id, merged } or { error }.
+  function insertBranch(sourceId, fields, rejoinTarget = "") {
+    const expr = fields.expr || `alternate(${sourceId})`;
+    const id = contentId({ parentId: sourceId, expr, label: fields.label });
+    const branch = {
+      kind: "branch",
+      tags: ["counterfactual"],
+      createdBy: "human",
+      state: "",
+      delta: "",
+      invariants: "",
+      ...fields,
+      id,
+      expr
+    };
+    state.graph.nodes.push(branch);
+    const choice = addEdge({ from: sourceId, to: id, type: "choice", label: branch.delta || "alternative branch", branchId: id });
+    if (!choice.ok) {
+      state.graph.nodes = state.graph.nodes.filter((item) => item.id !== id);
+      return { error: choice.message };
+    }
+    if (rejoinTarget) {
+      const rejoin = addEdge({ from: id, to: rejoinTarget, type: "rejoins", label: "rejoins the story", branchId: id });
+      if (!rejoin.ok) toast(rejoin.message, true);
+    }
+    return { id, merged: tryAutoMerge(id) };
+  }
+
   function addBranchFromForm() {
     const source = getNode(state.selectedId);
     if (!source) return toast("Select a source node first", true);
     const label = el.branchLabel.value.trim();
     if (!label) return toast("Branch title is required", true);
-    const id = uniqueId("branch");
-    const branch = {
-      id,
+    const made = insertBranch(source.id, {
       label,
-      expr: el.branchExpr.value.trim() || `alternate(${source.id})`,
+      expr: el.branchExpr.value.trim(),
       state: el.branchState.value.trim(),
       delta: el.branchDelta.value.trim(),
-      invariants: el.branchInvariants.value.trim(),
-      kind: "branch",
-      tags: ["counterfactual"],
-      createdBy: "human"
-    };
-    state.graph.nodes.push(branch);
-    const choice = addEdge({ from: source.id, to: id, type: "choice", label: branch.delta || "alternative branch", branchId: id });
-    if (!choice.ok) {
-      state.graph.nodes = state.graph.nodes.filter((item) => item.id !== id);
-      return toast(choice.message, true);
-    }
-    const rejoinTarget = el.rejoinSelect.value;
-    if (rejoinTarget) {
-      const rejoin = addEdge({ from: id, to: rejoinTarget, type: "rejoins", label: "rejoins the story", branchId: id });
-      if (!rejoin.ok) toast(rejoin.message, true);
-    }
+      invariants: el.branchInvariants.value.trim()
+    }, el.rejoinSelect.value);
+    if (made.error) return toast(made.error, true);
     [el.branchLabel, el.branchExpr, el.branchState, el.branchDelta, el.branchInvariants].forEach((input) => { input.value = ""; });
-    const merged = tryAutoMerge(id);
-    state.selectedId = merged ? merged.into : id;
+    state.selectedId = made.merged ? made.merged.into : made.id;
     renderAll();
-    toast(merged
-      ? `Same state in context — merged into “${getNode(merged.into)?.label || merged.into}”`
+    toast(made.merged
+      ? `Same state in context — merged into “${getNode(made.merged.into)?.label || made.merged.into}”`
       : "Branch added");
   }
 
@@ -693,11 +824,12 @@
     if (to === "__new__") {
       const nodeLabel = el.manualNodeLabel.value.trim();
       if (!nodeLabel) return toast("New node label is required", true);
-      const id = uniqueId("node");
+      const expr = `event(${slug(nodeLabel)})`;
+      const id = contentId({ parentId: from, expr, label: nodeLabel });
       state.graph.nodes.push({
         id,
         label: nodeLabel,
-        expr: `event(${slug(nodeLabel)})`,
+        expr,
         state: "",
         kind: "story",
         tags: [],
@@ -728,7 +860,7 @@
   function addEdge(edgeItem) {
     if (!getNode(edgeItem.from) || !getNode(edgeItem.to)) return { ok: false, message: "Edge endpoint is missing" };
     if (wouldCreateCycle(edgeItem.from, edgeItem.to)) return { ok: false, message: "Rejected because that edge would create a cycle" };
-    edgeItem.id = edgeItem.id || uniqueId(`edge_${edgeItem.type}`);
+    edgeItem.id = edgeItem.id || ids.edgeId({ from: edgeItem.from, to: edgeItem.to, type: edgeItem.type }, state.graph);
     state.graph.edges.push(edgeItem);
     return { ok: true };
   }
@@ -742,6 +874,31 @@
     state.selectedId = state.graph.root;
     renderAll();
     toast("Selected node deleted");
+  }
+
+  // The selected node, plus every descendant that no other path keeps in the
+  // graph. For cutting a bad branch out of a grown DAG in one click.
+  function deleteSelectedSubtree() {
+    const selected = getNode(state.selectedId);
+    if (!selected) return;
+    if (selected.id === state.graph.root) return toast("The root node cannot be deleted", true);
+    const doomed = new Set([selected.id]);
+    for (let changed = true; changed;) {
+      changed = false;
+      for (const node of state.graph.nodes) {
+        if (doomed.has(node.id)) continue;
+        const incoming = state.graph.edges.filter((edge) => edge.to === node.id);
+        if (incoming.length && incoming.every((edge) => doomed.has(edge.from))) {
+          doomed.add(node.id);
+          changed = true;
+        }
+      }
+    }
+    state.graph.nodes = state.graph.nodes.filter((item) => !doomed.has(item.id));
+    state.graph.edges = state.graph.edges.filter((item) => !doomed.has(item.from) && !doomed.has(item.to));
+    state.selectedId = state.graph.root;
+    renderAll();
+    toast(`Deleted ${doomed.size} node${doomed.size === 1 ? "" : "s"}`);
   }
 
   function saveSelectedNodeEdits() {
@@ -806,59 +963,8 @@
     return ranks;
   }
 
-  function fillBranchForm(suggestion) {
-    el.branchLabel.value = suggestion.label;
-    el.branchExpr.value = suggestion.expr;
-    el.branchState.value = suggestion.state;
-    el.branchDelta.value = suggestion.delta || "";
-    el.branchInvariants.value = suggestion.invariants || "";
-  }
-
-  function showPrompt(openDialog = false) {
-    const selected = getNode(state.selectedId);
-    if (!selected) return toast("Select a node first", true);
-    const downstream = state.graph.edges.filter((edgeItem) => edgeItem.from === selected.id).map((edgeItem) => getNode(edgeItem.to)).filter(Boolean);
-    state.promptText = `You are helping enrich a causal narrative DAG. Return only JSON.\n\n${JSON.stringify({
-      task: el.assistInstruction.value,
-      story: state.graph.meta.title,
-      selected,
-      downstream,
-      allowedEdgeTypes: EDGE_TYPES,
-      requiredJsonShape: {
-        branches: [{
-          label: "short node label",
-          expr: "expression(actor, object)",
-          state: "state after this branch",
-          delta: "what changed from the original story",
-          invariants: "facts preserved from the original story",
-          tags: ["counterfactual"],
-          rejoinTargetId: "optional existing node id"
-        }]
-      },
-      constraints: [
-        "Preserve DAG acyclicity.",
-        "Make causal change explicit, not just a prose variation.",
-        "Prefer one branch that rejoins a later node and one branch that remains open.",
-        "Do not rewrite upstream nodes."
-      ]
-    }, null, 2)}`;
-    if (openDialog) showDialog("LLM assist prompt", state.promptText);
-    return state.promptText;
-  }
-
-  async function copyPrompt() {
-    const text = showPrompt(false);
-    try {
-      await navigator.clipboard.writeText(text);
-      toast("Prompt copied");
-    } catch {
-      showDialog("LLM assist prompt", text);
-      toast("Clipboard unavailable; opened prompt", true);
-    }
-  }
-
   function importFromTextArea() {
-    const raw = el.importText.value.trim() || el.jsonText.value.trim();
+    const raw = el.jsonText.value.trim();
     if (!raw) return toast("Paste JSON first", true);
     let data;
     try {
@@ -868,31 +974,27 @@
     }
     if (Array.isArray(data.branches)) {
       const origin = state.selectedId;
+      const failures = [];
       data.branches.forEach((branch) => {
-        state.selectedId = origin;
-        fillBranchForm({
+        const made = insertBranch(origin, {
           label: branch.label || "Assisted branch",
           expr: branch.expr || "alternate(?)",
           state: branch.state || "",
           delta: branch.delta || "LLM-assisted branch",
-          invariants: branch.invariants || ""
-        });
-        el.rejoinSelect.value = branch.rejoinTargetId || "";
-        addBranchFromForm();
-        const made = getNode(state.selectedId);
-        if (made) {
-          made.createdBy = "assist";
-          made.tags = Array.isArray(branch.tags) ? branch.tags : ["counterfactual", "assist"];
-        }
+          invariants: branch.invariants || "",
+          tags: Array.isArray(branch.tags) ? branch.tags : ["counterfactual", "assist"],
+          createdBy: "assist"
+        }, branch.rejoinTargetId || "");
+        if (made.error) failures.push(made.error);
       });
       renderAll();
-      toast("Imported assisted branches");
+      toast(failures.length ? `Imported with ${failures.length} rejected: ${failures[0]}` : "Imported assisted branches", failures.length > 0);
       return;
     }
     importGraph(data);
   }
 
-  function importGraph(data) {
+  function importGraph(data, message = "Graph JSON restored") {
     const candidate = normalizeGraph(structuredClone(data));
     const result = validateGraph(candidate);
     if (!result.ok) {
@@ -905,14 +1007,404 @@
     renderSeeds();
     renderAll();
     showValidation(result);
-    toast("Graph JSON restored");
+    toast(message);
+  }
+
+  // ── Lab: the grow bridge (tools/grow_server.js) ─────────────────────────
+  // The page never calls the model: it streams a grow from the bridge and adds
+  // each node to the graph as it lands.
+
+  // Redrawing the graph per node would thrash the layout while a run streams.
+  const GROW_RENDER_INTERVAL_MS = 400;
+  const GROW_FIT_INTERVAL_MS = 1500;
+  // Health re-check while the model server is still coming up.
+  const HEALTH_POLL_MS = 3000;
+  const GROW_LOG_MAX = 300;
+  // Shown from each expansion being written: the tail of its text.
+  const ACTIVE_TEXT_CHARS = 90;
+
+  async function bridge(pathname, body, signal) {
+    const response = await fetch(`${GROW_SERVER_URL}${pathname}`, body === undefined ? { signal } : {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+      signal
+    });
+    if (!response.ok) {
+      const data = await response.json().catch(() => ({}));
+      throw new Error(data.error || `bridge returned ${response.status}`);
+    }
+    return response;
+  }
+
+  function bridgeError(error, what) {
+    if (error.name === "AbortError") return;
+    const offline = error instanceof TypeError;
+    toast(offline ? "Grow bridge not reachable — run: ./run.sh" : `${what} failed: ${error.message}`, true);
+    if (offline) setLabStatus(false);
+  }
+
+  function setLabStatus(online, info = {}) {
+    el.labStatus.className = `report ${online && info.model ? "good" : "bad"}`;
+    el.labStatus.textContent = !online
+      ? "Bridge offline — run: ./run.sh"
+      : info.model
+        ? `Model: ${info.modelFile} · ${info.slots} slots`
+        : "Model server offline or loading — run: ./tools/serve_model.sh";
+  }
+
+  async function checkBridge() {
+    clearTimeout(state.healthTimer);
+    let ready = false;
+    try {
+      const data = await (await bridge("/health")).json();
+      setLabStatus(true, data);
+      ready = data.model;
+      loadRuns();
+    } catch {
+      setLabStatus(false);
+    }
+    if (!ready) state.healthTimer = setTimeout(checkBridge, HEALTH_POLL_MS);
+  }
+
+  async function readNdjson(response, onEvent) {
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffered = "";
+    for (;;) {
+      const { value, done } = await reader.read();
+      buffered += decoder.decode(value || new Uint8Array(), { stream: !done });
+      const lines = buffered.split("\n");
+      buffered = lines.pop();
+      lines.filter(Boolean).forEach((line) => onEvent(JSON.parse(line)));
+      if (done) break;
+    }
+  }
+
+  const fmt = (value) => (value === null || value === undefined ? "—" : typeof value === "number" ? String(+value.toFixed(2)) : String(value));
+  const seconds = (ms) => `${Math.round(ms / 1000)}s`;
+
+  function growParams() {
+    return {
+      depth: +el.growDepth.value || 1,
+      width: +el.growWidth.value || 1,
+      beam: +el.growBeam.value || 1,
+      maxNodes: +el.growMaxNodes.value || 1,
+      temperature: +el.growTemperature.value,
+      merge: el.growMerge.checked,
+      prune: el.growPrune.checked
+    };
+  }
+
+  function setRunning(running) {
+    el.autoGrowBtn.disabled = running;
+    el.proposeBtn.disabled = running;
+    el.stopGrowBtn.disabled = !running;
+    el.growBar.hidden = !running;
+    if (!running) {
+      el.growBar.removeAttribute("value");
+      el.growActive.innerHTML = "";
+    }
+  }
+
+  function growLogLine(text, nodeId = "") {
+    const line = document.createElement("div");
+    line.textContent = text;
+    if (nodeId) {
+      line.dataset.node = nodeId;
+      line.className = "log-link";
+    }
+    el.growLog.prepend(line);
+    while (el.growLog.childElementCount > GROW_LOG_MAX) el.growLog.lastElementChild.remove();
+  }
+
+  function statsLine(stats) {
+    const parts = [
+      `+${stats.created ?? 0} nodes`,
+      `${stats.merged ?? stats.mergedDuplicates ?? 0} merged`,
+      ...(stats.mergesRefused ? [`${stats.mergesRefused} merges refused`] : []),
+      ...(stats.pruned ? [`${stats.pruned} pruned`] : []),
+      ...(stats.endings ? [`${stats.endings} endings`] : []),
+      ...(stats.maxDepth ? [`depth ${stats.maxDepth}`] : []),
+      ...(stats.expansions ? [`${stats.expansions} expansions`] : []),
+      ...(stats.beamDropped ? [`${stats.beamDropped} left past the beam`] : []),
+      ...(stats.toldNext ? [`${stats.toldNext} told next event`] : []),
+      ...(stats.malformed ? [`${stats.malformed} malformed`] : []),
+      ...(stats.truncated ? [`${stats.truncated} cut at the token limit`] : []),
+      ...(stats.tokens ? [`${stats.tokens} tokens`] : []),
+      ...(stats.elapsedMs ? [seconds(stats.elapsedMs)] : []),
+      ...(stats.stopped ? ["stopped"] : [])
+    ];
+    return parts.join(" · ");
+  }
+
+  // Batches redraws, and keeps the growth in frame until the user pans or zooms.
+  let growRenderTimer = null;
+  let lastGrowFit = 0;
+  function scheduleGrowRender() {
+    if (growRenderTimer) return;
+    growRenderTimer = setTimeout(() => {
+      growRenderTimer = null;
+      renderAll();
+      if (state.followGrow && Date.now() - lastGrowFit > GROW_FIT_INTERVAL_MS) {
+        lastGrowFit = Date.now();
+        fitGraph(inGrownRun);
+      }
+    }, GROW_RENDER_INTERVAL_MS);
+  }
+
+  // The run's nodes and the node it grew from: what to keep in frame.
+  const inGrownRun = (item) => item.runId === state.lastRunId || item.id === state.selectedId;
+
+  function renderGrowProgress(event) {
+    const { stats, planned, elapsedMs, active, tokensPerSecond } = event;
+    el.growBar.max = planned;
+    el.growBar.value = stats.expansions;
+    // Average pace so far, against the most this run can still do.
+    const left = planned - stats.expansions;
+    const eta = stats.expansions && left > 0 ? ` · at most ${seconds(left * elapsedMs / stats.expansions)} left` : "";
+    el.growReport.textContent = `${stats.expansions}/${planned} expansions · ${stats.created} nodes · ${stats.merged} merged`
+      + `${stats.pruned ? ` · ${stats.pruned} pruned` : ""} · ${Math.round(tokensPerSecond)} tok/s · ${seconds(elapsedMs)}${eta}`;
+    el.growActive.innerHTML = active.map((a) => {
+      const lastLine = a.text.split("\n").filter(Boolean).at(-1) || "";
+      return `<div><span class="active-from">${escapeHtml(truncate(a.label, 28))}</span> ${escapeHtml(lastLine.slice(-ACTIVE_TEXT_CHARS))}</div>`;
+    }).join("");
+  }
+
+  function onGrowEvent(event) {
+    if (event.type === "start") {
+      state.lastRunId = event.runId;
+      el.labStatus.textContent = `Model: ${event.modelFile} · ${event.slots} slots · ${event.runId}`;
+    } else if (event.type === "progress") {
+      renderGrowProgress(event);
+    } else if (event.type === "node") {
+      state.graph.nodes.push({ delta: "", invariants: "", ...event.node });
+      state.graph.edges.push(event.edge);
+      growLogLine(`+ ${event.depth}  ${event.node.label}`, event.node.id);
+      scheduleGrowRender();
+    } else if (event.type === "merge") {
+      if (event.edge) state.graph.edges.push(event.edge);
+      growLogLine(`= ${event.label} → ${nodeLabel(event.into)} (P ${fmt(event.pYes)})`, event.into);
+      scheduleGrowRender();
+    } else if (event.type === "pruned") {
+      growLogLine(`x ${event.label} (${event.reason})`);
+    } else if (event.type === "expansion") {
+      logPrompts([expansionEntry("grow", event.record)]);
+    }
+  }
+
+  async function autoGrow() {
+    const from = state.selectedId;
+    if (!from) return toast("Select a node to grow from", true);
+    state.undoGraph = structuredClone(state.graph);
+    el.undoGrowBtn.disabled = false;
+    state.growAbort = new AbortController();
+    state.followGrow = true;
+    el.growLog.innerHTML = "";
+    setRunning(true);
+    el.growReport.textContent = "Starting…";
+    if (!state.layered) setLayered(true);
+    let finished = null;
+    try {
+      const response = await bridge("/grow", { graph: state.graph, from, ...growParams() }, state.growAbort.signal);
+      await readNdjson(response, (event) => {
+        if (event.type === "done" || event.type === "error") finished = event;
+        else onGrowEvent(event);
+      });
+    } catch (error) {
+      bridgeError(error, "Grow");
+    }
+    clearTimeout(growRenderTimer);
+    growRenderTimer = null;
+    setRunning(false);
+    state.followGrow = false;
+    if (finished && finished.graph) state.graph = normalizeGraph(finished.graph);
+    renderAll();
+    setTimeout(() => fitGraph(inGrownRun), LAYERED_FIT_DELAY_MS);
+    if (finished && finished.type === "error") toast(`Grow failed: ${finished.error}`, true);
+    el.growReport.textContent = finished && finished.stats
+      ? `${finished.runId} · ${statsLine(finished.stats)}`
+      : state.growAbort.signal.aborted ? "Stopped. Nodes grown so far are in the graph." : (finished ? finished.error : "");
+    state.growAbort = null;
+    loadRuns();
+  }
+
+  function stopGrow() {
+    if (state.growAbort) state.growAbort.abort();
+  }
+
+  function undoGrow() {
+    if (!state.undoGraph) return;
+    state.graph = state.undoGraph;
+    state.undoGraph = null;
+    el.undoGrowBtn.disabled = true;
+    el.growReport.textContent = "";
+    el.growLog.innerHTML = "";
+    if (!getNode(state.selectedId)) state.selectedId = state.graph.root;
+    renderAll();
+    setTimeout(() => fitGraph(), LAYERED_FIT_DELAY_MS);
+  }
+
+  // One expansion from the selected node, listed instead of inserted.
+  async function propose() {
+    const from = state.selectedId;
+    if (!from) return toast("Select a node to continue from", true);
+    state.growAbort = new AbortController();
+    setRunning(true);
+    el.proposeList.innerHTML = "";
+    el.growReport.textContent = "Writing…";
+    try {
+      const { width, temperature } = growParams();
+      const response = await bridge("/propose", { graph: state.graph, from, width, temperature }, state.growAbort.signal);
+      await readNdjson(response, (event) => {
+        if (event.type === "progress") {
+          el.growReport.textContent = `${event.tokens} tokens`;
+          el.growActive.textContent = event.text.split("\n").filter(Boolean).at(-1) || "";
+        } else if (event.type === "error") {
+          throw new Error(event.error);
+        } else if (event.type === "done") {
+          state.proposal = { from, alternatives: event.alternatives };
+          logPrompts([expansionEntry("propose", { from, ...event })]);
+          renderProposal();
+          el.growReport.textContent = `${event.alternatives.length} alternatives`;
+        }
+      });
+    } catch (error) {
+      bridgeError(error, "Propose");
+    }
+    setRunning(false);
+    state.growAbort = null;
+  }
+
+  function renderProposal() {
+    const { alternatives } = state.proposal;
+    el.proposeList.innerHTML = alternatives.map((a, i) => `<div class="propose-item">
+      <div><strong>${escapeHtml(a.label)}</strong>${a.ending ? ' <span class="tag">ending</span>' : ""}</div>
+      <div class="muted">${escapeHtml(a.state)}</div>
+      <button type="button" class="secondary" data-add="${i}">Add to graph</button>
+    </div>`).join("");
+  }
+
+  function onProposeClick(event) {
+    const button = event.target.closest("button[data-add]");
+    if (!button) return;
+    const { from, alternatives } = state.proposal;
+    const a = alternatives[+button.dataset.add];
+    const made = insertBranch(from, {
+      label: a.label,
+      expr: a.expr,
+      state: a.state,
+      tags: a.ending ? ["counterfactual", "ending"] : ["counterfactual"],
+      createdBy: "grown"
+    });
+    if (made.error) return toast(made.error, true);
+    button.disabled = true;
+    state.selectedId = made.merged ? made.merged.into : made.id;
+    renderAll();
+    toast(made.merged ? "Same content on a parallel path — merged" : "Added as a branch");
+  }
+
+  async function loadRuns() {
+    try {
+      const { runs } = await (await bridge("/runs")).json();
+      el.runSelect.innerHTML = runs.map((run) => `<option value="${escapeHtml(run.runId)}">${escapeHtml([
+        run.createdAt ? new Date(run.createdAt).toLocaleString("sv-SE").slice(0, 16) : "",
+        run.story || "graph",
+        `from ${run.from}`,
+        `+${run.created}`
+      ].join(" · "))}</option>`).join("");
+    } catch {
+      el.runSelect.innerHTML = "";
+    }
+  }
+
+  async function loadRun() {
+    const runId = el.runSelect.value;
+    if (!runId) return toast("No recorded run selected", true);
+    try {
+      const data = await (await bridge(`/runs/${encodeURIComponent(runId)}`)).json();
+      importGraph(data.graph, `Loaded ${runId} — its nodes are outlined green`);
+      state.lastRunId = runId;
+      const from = data.manifest.traversal && data.manifest.traversal.from;
+      if (from && getNode(from)) state.selectedId = from;
+      renderAll();
+      setTimeout(() => fitGraph(), 350);
+      logPrompts((data.trace || []).filter((record) => record.user).map((record) => expansionEntry(runId, record)));
+      el.growReport.textContent = `${runId} · ${statsLine(data.manifest.result || {})}`;
+    } catch (error) {
+      bridgeError(error, "Load run");
+    }
+  }
+
+  // ── Lab: prompts ───────────────────────────────────────────────────────
+  // Every prompt the page caused the model to see, with the completions, newest
+  // first. Plus a no-model preview for the selected node and the raw templates.
+  const PROMPT_LOG_MAX = 200;
+
+  const nodeLabel = (id) => getNode(id)?.label || id;
+
+  function expansionEntry(prefix, record) {
+    return {
+      title: `${prefix} · ${nodeLabel(record.from)}`,
+      parts: [
+        { name: "system", text: record.system },
+        { name: "user", text: record.user },
+        { name: "completion", text: record.completion },
+        ...(record.critic ? [
+          { name: "critic: user", text: record.critic.user },
+          { name: "critic: completion", text: record.critic.completion }
+        ] : []),
+        ...(record.judgements || []).map((j) => ({
+          name: `same point? "${j.label}" and "${nodeLabel(j.survivor)}": P ${fmt(j.pYes)}, ${j.same ? "merged" : "refused"}`,
+          text: j.question
+        }))
+      ]
+    };
+  }
+
+  // A batch goes on top in its own order.
+  function logPrompts(entries) {
+    state.promptLog = [...entries, ...state.promptLog].slice(0, PROMPT_LOG_MAX);
+    if (el.promptPanel.open) renderPromptLog();
+    else el.promptSummary.textContent = `Prompts (${state.promptLog.length})`;
+  }
+
+  function renderPromptLog() {
+    const log = state.promptLog;
+    el.promptSummary.textContent = log.length ? `Prompts (${log.length})` : "Prompts";
+    el.promptLog.innerHTML = log.map((entry) => `<details class="prompt-entry">
+      <summary>${escapeHtml(entry.title)}</summary>
+      ${entry.parts.map((part) => `${part.name ? `<div class="prompt-part">${escapeHtml(part.name)}</div>` : ""}<pre class="prompt-text">${escapeHtml(part.text)}</pre>`).join("")}
+    </details>`).join("");
+  }
+
+  async function previewPrompt() {
+    const from = state.selectedId;
+    if (!from) return toast("Select a node", true);
+    try {
+      const data = await (await bridge("/prompt", { graph: state.graph, from, width: growParams().width })).json();
+      logPrompts([{ title: `preview · ${nodeLabel(from)}`, parts: [{ name: "system", text: data.system }, { name: "user", text: data.user }] }]);
+      el.promptPanel.open = true;
+    } catch (error) {
+      bridgeError(error, "Preview");
+    }
+  }
+
+  async function showTemplates() {
+    try {
+      const { templates } = await (await bridge("/prompts")).json();
+      logPrompts(templates.map((t) => ({
+        title: `template ${t.name} · sha256 ${t.sha256.slice(0, 12)}`,
+        parts: [{ name: "", text: t.text }]
+      })));
+      el.promptPanel.open = true;
+    } catch (error) {
+      bridgeError(error, "Templates");
+    }
   }
 
   function exportJson() {
-    return JSON.stringify({
-      ...state.graph,
-      meta: { ...state.graph.meta, savedAt: new Date().toISOString() }
-    }, null, 2);
+    return ids.canonicalJson(state.graph);
   }
 
   function showExportJson() {
@@ -979,15 +1471,17 @@
     if (typeof el.jsonDialog.showModal === "function") el.jsonDialog.showModal();
   }
 
-  function fitGraph() {
-    if (!state.nodes.length) return;
+  // Frames the whole graph, or just `only` when given.
+  function fitGraph(only = null) {
+    const framed = only ? state.nodes.filter(only) : state.nodes;
+    if (!framed.length) return;
     const dimensions = graphDimensions();
-    const xExtent = d3.extent(state.nodes, (item) => item.x);
-    const yExtent = d3.extent(state.nodes, (item) => item.y);
+    const xExtent = d3.extent(framed, (item) => item.x);
+    const yExtent = d3.extent(framed, (item) => item.y);
     const padding = 140;
     const width = Math.max(1, xExtent[1] - xExtent[0] + padding * 2);
     const height = Math.max(1, yExtent[1] - yExtent[0] + padding * 2);
-    const scale = Math.min(2, Math.max(0.18, Math.min(dimensions.width / width, dimensions.height / height) * 0.92));
+    const scale = Math.min(2, Math.max(0.05, Math.min(dimensions.width / width, dimensions.height / height) * 0.92));
     const centerX = (xExtent[0] + xExtent[1]) / 2;
     const centerY = (yExtent[0] + yExtent[1]) / 2;
     svg.transition().duration(450).call(zoom.transform, d3.zoomIdentity.translate(dimensions.width / 2 - centerX * scale, dimensions.height / 2 - centerY * scale).scale(scale));
@@ -1040,12 +1534,13 @@
     return [item.label, item.expr, item.state, ...(item.tags || [])].join(" ").toLowerCase().includes(state.search);
   }
 
-  function uniqueId(prefix) {
-    let id;
-    do {
-      id = `${prefix}_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 6)}`;
-    } while (getNode(id) || state.graph.edges.some((item) => item.id === id));
-    return id;
+  // Content-addressed node id, against the live graph so collisions get a
+  // deterministic `_2` suffix. Replaces the old `uniqueId`, which retried with
+  // a fresh `Date.now()` + `Math.random()` draw — meaning two identical
+  // editing sessions produced graphs that differed on every id and could not
+  // be compared at all.
+  function contentId({ parentId, expr, label }) {
+    return ids.nodeId({ parentId, expr, label }, state.graph);
   }
 
   function unique(items) {

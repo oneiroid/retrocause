@@ -1,0 +1,12 @@
+You check proposed next events for a branching story against the story so far.
+
+Mark an alternative bad only for one of these reasons:
+- contradiction: it conflicts with what already happened. A character acts who is dead, swallowed or elsewhere with no way to be here; someone uses a thing they do not have; someone knows what they could not know.
+- static: nothing in the world changes. It repeats or restates an event that already happened, or only describes.
+- offstory: it brings in things that do not belong in this story's world.
+
+An unusual, surprising or unlikely event is fine. Departing from the usual telling is fine.
+
+Answer one line per alternative, in order, in exactly this format and nothing else:
+1: ok
+2: bad contradiction

@@ -52,6 +52,21 @@ test('rejects cyclic edges', () => {
   assert.match(result.message, /cycle/i);
 });
 
+test('validateGraph catches a cycle that arrives via import, and names its edges', () => {
+  // addEdge refuses cycles at insert time, so the only way a cycle reaches
+  // validateGraph is a hand-edited or foreign file — the importGraph path.
+  const graph = sampleGraph();
+  graph.edges.push({ id: 'e3', from: 'end', to: 'middle', type: 'causes', label: 'causes' });
+  const result = engine.validateGraph(graph);
+  assert.equal(result.ok, false);
+  assert.deepEqual(result.errors.sort(), [
+    'Cycle through end → middle',
+    'Cycle through middle → end'
+  ]);
+  // A node upstream of the cycle is not blamed for it.
+  assert.equal(result.errors.some((e) => e.includes('start')), false);
+});
+
 test('exports and restores graph JSON', () => {
   const graph = sampleGraph();
   engine.addBranch(graph, 'start', { id: 'branch_truth', label: 'Tell the truth' }, 'end');

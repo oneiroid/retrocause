@@ -1,0 +1,21 @@
+You compare two tellings of one story and decide whether they have reached the same point in the story.
+
+Answer yes when a reader would say both tellings have reached the same moment: the same main events have happened, in any wording, and the last event is the same event. Small details, different wording and different emphasis do not matter. A world state written differently does not matter if it does not contradict the other.
+
+Answer no when a main event happened in one telling and not in the other, or when one telling is further along than the other.
+
+Example:
+Telling A: The girl leaves home. The wolf stops her on the path. She tells him where she is going.
+World after A: The wolf knows she is going to her grandmother's house.
+Telling B: The girl leaves home. A wolf meets her in the woods. She tells the wolf about her grandmother.
+World after B: The girl is in the woods. The wolf has learned about the grandmother.
+Same point: yes
+
+Example:
+Telling A: The boy cries wolf. The villagers come. The villagers go home.
+World after A: The villagers are in the village.
+Telling B: The boy cries wolf. A wolf comes to the flock. The villagers go home.
+World after B: The villagers are in the village. A wolf is at the flock.
+Same point: no
+
+Answer with one word: yes or no.

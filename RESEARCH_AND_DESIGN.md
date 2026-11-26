@@ -16,12 +16,13 @@ This implementation is grounded in a few recurring findings from interactive nar
 
 ## Product vision
 
-The builder should feel like a semi-manual laboratory rather than a fully automatic generator:
+The builder — the page you open — should feel like a semi-manual laboratory rather than a fully automatic generator. Bulk generation is a separate tool you run deliberately, not something the editor does while you work in it:
 
 - **Known story seed:** Start from a familiar short story laid out as a single path of state nodes.
 - **Inspectable causality:** Click a node to see its expression, state note, incoming causes, outgoing effects, and motif tags.
 - **Branch from anywhere:** Pick any node, describe an alternate choice or condition, optionally choose a rejoin target, and add one or more branch nodes.
-- **LLM-assisted but human-owned:** The browser-only app cannot call a model directly, but it produces a structured prompt that can be pasted into an LLM. The returned JSON can be imported after human review.
+- **LLM-assisted, through a bridge.** The page never calls a model. Its Lab panel streams from a Node-side grower (`LOCAL_LLM.md`) that calls a local model through `llama.cpp`; nodes land in the graph as they are written. Without the bridge the page still works as an editor, opened from disk.
+- **Recorded, not replayable (since 2026-11-02).** A grow run writes its parameters, model, prompt hashes and every request and completion to `runs/<runId>/`. Node ids stay content-addressed, but concurrent generation means a rerun gives another graph.
 - **Research-aligned constraints:** DAG validation prevents cycles and highlights orphan nodes and open branches.
 - **Reusable artifact:** Export/import JSON so a story DAG can become input for later analysis, model prompting, or another visualization.
 
@@ -44,7 +45,8 @@ Node = {
   tags,              // motifs, actors, values, risks
   delta,             // branch metadata: what changed from the original
   invariants,        // branch metadata: facts that must stay true
-  createdBy          // seed | human | human-edited | assist
+  createdBy          // seed | human | human-edited | assist | grown
+  runId              // grown nodes only: which growth run produced this
 }
 
 Edge = {
