@@ -5,7 +5,8 @@ into counterfactual alternatives.
 
 **Doc stack (philosophy-first ordering — read in this order):**
 
-1. `CONCEPT.md` — the project's thesis (narrative-as-substrate) and the
+1. `CONCEPT.md` — the core idea (myths as the longest-trained human
+   representation, few base stories), the thesis (narrative-as-substrate) and the
    dependency between layers: intuitions → code.
 2. `INTUITIONS.md` — the philosophical core. Each claim tagged
    `operational` / `partial` / `open` by how far the app actually

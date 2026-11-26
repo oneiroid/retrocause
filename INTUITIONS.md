@@ -107,6 +107,17 @@ first-class, branches can rejoin them, and the layout makes the
 shared-destination structure visible. This claim is the core of the
 name **retrocause**.
 
+> **Flag (disagreement kept as data, 2026-11-26).** If a state is
+> defined by its possible futures (the Myhill–Nerode rule, and Propp's
+> definition of a function by its significance for the course of the
+> action), then a convergence node is the set of pasts that a shared
+> future makes identical. That is the precise sense of "retrocause". The
+> merge rule in `merge_predicate.js` deliberately never consults the
+> future (2026-07-05), and `judges.js` compares the routes so far. The
+> thesis looks forward; the code looks back. Proposed test: sample a few
+> continuations from each candidate and merge when the futures are
+> indistinguishable.
+
 ---
 
 ## 6. Archetypes are parametrized templates `open`
@@ -202,6 +213,64 @@ Two consequences the project takes seriously:
 This claim is `partial` because the project applies the constraint as
 methodology but has not yet performed a test that uses external DAGs
 in a way that could falsify the framework's predictions.
+
+---
+
+## 9. Observers converge on the same event structure `open`
+
+Different learners, built differently and trained on different
+projections, appear to converge on one representation of what they
+observe (Huh et al. 2024, "The Platonic Representation Hypothesis").
+That paper's formal world is a sequence of discrete events, and the
+structure learners converge to is relational: which events occur near
+which (a pointwise mutual information kernel over events).
+
+Retrocause reads this as convergence one level up from §5: many routes
+(data, objective, modality) into one destination, with the destination
+constraining the routes. The paper's reading is realist (a world behind
+the events); §1's is that the event structure is the world. The paper
+does not decide between them.
+
+The claim is `open`: the app has no measurement of agreement between
+observers. It would move to `partial` if convergence nodes grown by
+different model families coincide more than chance, with a
+non-narrative control (§8: shared human text is a shared sand castle).
+
+---
+
+## 10. Myths are the longest-trained checkpoint of the recipe for mind `open`
+
+This is the project's core idea (`CONCEPT.md`). The brain is a learning
+network; myths are what survived tens of thousands of years of
+transmission between such networks. Old tale types and motifs recur
+across cultures with no contact, which is §9's evidence pattern with
+brains as the learners. Stories are many in content (over 2,000 tale
+types in the ATU catalogue) but few in shape (Propp's 31 functions;
+a handful of emotional arcs), which is what §6 predicts: few
+convergence topologies, many node contents.
+
+What survival selects for is retellability, so a myth carries two
+imprints. The human prior is not noise on top of the world: evolution
+shaped the brain, so the prior is a compressed record of the world, but
+of the world as it mattered for survival at human scale, and cultural
+selection over a few thousand years is selection by brains. Myths are
+therefore the clearest available imprint of how a mind is built, and an
+imprint of reality only through that. For modern networks, which learn
+from the same checkpoint, the recipe for mind may be the more valuable
+of the two.
+
+The test sorts the two imprints rather than discarding one. Base-story
+shapes that also appear in event graphs no human told (ecology,
+markets, gene regulation) are imprints of the world and support §1.
+Shapes found only in human-made material, and in models trained on it,
+are imprints of the mind recipe.
+
+The claim is `open`: the app has no tale corpus and no extractor (open
+question 8). First steps, none built: embed tale types with local
+models of increasing size and measure alignment with tale-type and
+Propp-function structure; seed the grower with tale types from several
+cultures and check whether grown convergence nodes fall on Propp
+functions.
 
 ---
 
