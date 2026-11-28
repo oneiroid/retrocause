@@ -101,10 +101,19 @@ async function main() {
   if (args.prune !== undefined) params.prune = args.prune !== false && args.prune !== "no";
 
   let lastLine = 0;
+  // Ctrl-C stops the run the way the Lab's Stop does: what grew is written to
+  // runs/<runId>/. A second Ctrl-C exits at once.
+  const controller = new AbortController();
+  process.once("SIGINT", () => {
+    console.log("stopping: writing what grew (Ctrl-C again to quit now)");
+    controller.abort();
+    process.once("SIGINT", () => process.exit(130));
+  });
   const { runId, stats, error } = await runGrow({
     graph: seed,
     from,
     params,
+    signal: controller.signal,
     onEvent: (event) => {
       if (event.type === "node") console.log(`+ d${event.depth} ${event.node.label}  [${event.node.effects || event.node.state}]`);
       if (event.type === "merge") console.log(`= ${event.how} "${event.label}" -> ${event.into}${event.pYes === undefined ? "" : ` P=${event.pYes.toFixed(2)}`}`);
