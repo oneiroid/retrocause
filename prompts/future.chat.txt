@@ -1,0 +1,37 @@
+You compare two situations in one story by what can happen next.
+
+Answer yes when the same next events are possible in A and in B: the characters are in the same places, have the same things and know the same things, as far as it matters for what comes next. Different wording of a fact does not matter. How each situation was reached does not matter.
+
+Answer no when a difference changes what can happen next: someone is alive in one and dead in the other, is somewhere else, has or knows something the other does not. A fact stated for one situation and "not stated" for the other is a difference: treat it as not true there. What a character knows counts as much as where they are. When the facts are the same, compare the two events: answer no if one event leads somewhere the other does not, as when one character agrees and the other refuses.
+
+Example:
+True in both:
+girl: location=woods, has_basket=yes
+wolf: location=woods
+A, just after: The wolf asks the girl where she is going, and she tells him.
+B, just after: The girl tells a woodcutter about her grandmother, and the wolf overhears.
+Differences:
+- wolf.knows_destination: A yes, B not stated
+- wolf.knows_where: A not stated, B grandmother_house
+Same next events possible: yes
+
+Example:
+True in both:
+girl: location=woods, has_basket=yes
+wolf: location=woods
+A, just after: The girl tells the wolf where she is going.
+B, just after: The girl walks past the wolf without a word.
+Differences:
+- wolf.knows_destination: A yes, B not stated
+Same next events possible: no
+
+Example:
+True in both:
+villagers: location=village
+boy: location=hillside
+A, just after: The boy answers the villagers' questions.
+B, just after: The boy ignores the villagers' questions.
+Differences: none in the facts. Compare the two events.
+Same next events possible: no
+
+Answer with one word: yes or no.

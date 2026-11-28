@@ -735,11 +735,26 @@
       ${selected.actor ? `<div><strong>Actor:</strong> ${escapeHtml(selected.actor)}</div>` : ""}
       <div>${escapeHtml(selected.state || "No state note.")}</div>
       ${selected.reading ? `<div class="muted">${escapeHtml(selected.reading)}</div>` : ""}
+      ${worldHtml(selected)}
       ${selected.delta ? `<div><strong>Changed:</strong> ${escapeHtml(selected.delta)}</div>` : ""}
       ${selected.invariants ? `<div><strong>Invariant:</strong> ${escapeHtml(selected.invariants)}</div>` : ""}
       <div class="tag-row">${(selected.tags || []).map((tag) => `<span class="tag">${escapeHtml(tag)}</span>`).join("")}</div>
       <div class="muted"><strong>Incoming</strong><br>${incoming}</div>
       <div class="muted"><strong>Outgoing</strong><br>${outgoing}</div>`;
+  }
+
+  // The selected node's folded world (facts.js): what is true here, by the
+  // effects on the way. Changes made by this event are marked.
+  function worldHtml(selected) {
+    const Facts = window.StoryFacts;
+    if (!Facts) return "";
+    const world = Facts.worldsOf(state.graph).get(selected.id);
+    if (!world || !world.size) return "";
+    const changed = new Set(Facts.effectsOf(selected).map(([key]) => key));
+    const facts = [...world.entries()].sort(([a], [b]) => (a < b ? -1 : 1))
+      .map(([key, value]) => `<span class="fact${changed.has(key) ? " changed" : ""}">${escapeHtml(key)}=${escapeHtml(value)}</span>`)
+      .join(" ");
+    return `<div class="world"><strong>World here</strong> <span class="muted">(${selected.createdBy === "grown" ? "facts written by the model" : "authored facts"})</span><br>${facts}</div>`;
   }
 
   function edgeSummary(edgeItem) {
@@ -1091,7 +1106,7 @@
       beam: +el.growBeam.value || 1,
       maxNodes: +el.growMaxNodes.value || 1,
       temperature: +el.growTemperature.value,
-      merge: el.growMerge.checked,
+      merge: el.growMerge.value,
       prune: el.growPrune.checked
     };
   }
@@ -1122,7 +1137,13 @@
     const parts = [
       `+${stats.created ?? 0} nodes`,
       `${stats.merged ?? stats.mergedDuplicates ?? 0} merged`,
+      ...(stats.mergedOnFacts ? [`${stats.mergedOnFacts} on the same world`] : []),
+      ...(stats.mergedByFutures ? [`${stats.mergedByFutures} on the same futures`] : []),
+      ...(stats.convergent ? [`${stats.convergent} convergences`] : []),
+      ...(stats.judgeCalls ? [`${stats.judgeCalls} judge calls`] : []),
       ...(stats.mergesRefused ? [`${stats.mergesRefused} merges refused`] : []),
+      ...(stats.recurrences ? [`${stats.recurrences} returns to an earlier world`] : []),
+      ...(stats.withoutFacts ? [`${stats.withoutFacts} without facts`] : []),
       ...(stats.pruned ? [`${stats.pruned} pruned`] : []),
       ...(stats.endings ? [`${stats.endings} endings`] : []),
       ...(stats.maxDepth ? [`depth ${stats.maxDepth}`] : []),
@@ -1184,7 +1205,15 @@
       scheduleGrowRender();
     } else if (event.type === "merge") {
       if (event.edge) state.graph.edges.push(event.edge);
-      growLogLine(`= ${event.label} → ${nodeLabel(event.into)} (P ${fmt(event.pYes)})`, event.into);
+      growLogLine(`= ${event.label} → ${nodeLabel(event.into)} (${event.how || "merged"}${event.pYes === undefined ? "" : `, P ${fmt(event.pYes)}`})`, event.into);
+      scheduleGrowRender();
+    } else if (event.type === "collapse") {
+      const gone = new Set(event.removedEdges);
+      state.graph.edges = state.graph.edges.filter((item) => !gone.has(item.id));
+      state.graph.nodes = state.graph.nodes.filter((item) => item.id !== event.victim);
+      state.graph.edges.push(...event.addedEdges);
+      if (state.selectedId === event.victim) state.selectedId = event.into;
+      growLogLine(`≡ ${event.label} → ${nodeLabel(event.into)} (same futures, P ${fmt(event.pYes)})`, event.into);
       scheduleGrowRender();
     } else if (event.type === "pruned") {
       growLogLine(`x ${event.label} (${event.reason})`);
@@ -1294,6 +1323,7 @@
       label: a.label,
       expr: a.expr,
       state: a.state,
+      ...(a.effects ? { effects: a.effects } : {}),
       tags: a.ending ? ["counterfactual", "ending"] : ["counterfactual"],
       createdBy: "grown"
     });
@@ -1355,7 +1385,7 @@
           { name: "critic: completion", text: record.critic.completion }
         ] : []),
         ...(record.judgements || []).map((j) => ({
-          name: `same point? "${j.label}" and "${nodeLabel(j.survivor)}": P ${fmt(j.pYes)}, ${j.same ? "merged" : "refused"}`,
+          name: `${j.kind === "futures" ? "same futures?" : j.kind === "future" ? "same future?" : "same point?"} "${j.label}" and "${nodeLabel(j.survivor)}": P ${fmt(j.pYes)}, ${j.same ? "merged" : "refused"}`,
           text: j.question
         }))
       ]

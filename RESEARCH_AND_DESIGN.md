@@ -61,10 +61,11 @@ The graph is kept acyclic by testing whether a proposed edge `from -> to` would 
 
 ## Story seed
 
-The app ships one seed — “Little Red Riding Hood” — a short,
-high-familiarity story with clear state transitions and branch points.
-It is laid out as a single path of state nodes; counterfactual branches
-are added in the UI, not shipped in the seed.
+The app ships three seeds — “Little Red Riding Hood”, “The Boy Who Cried
+Wolf” and “The Trojan Horse” — short, high-familiarity stories with clear
+state transitions and branch points. Each is a single path of state nodes
+with hand-authored `effects` facts; counterfactual branches are added in
+the UI or grown, not shipped in the seed.
 
 ## Implemented scope
 

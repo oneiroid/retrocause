@@ -224,3 +224,20 @@ test('rejoin refuses a cycle', () => {
   const graph = g([['root', 'start'], ['x', 'a']], [['root', 'x']]);
   assert.equal(rejoin(graph, { from: 'x', into: 'root' }), null);
 });
+
+test("collapseInto moves a node's edges onto the survivor, the way in as rejoins", () => {
+  const Growth = require("../growth.js");
+  const graph = {
+    root: "r",
+    nodes: ["r", "a", "b", "x", "y", "c"].map((id) => ({ id, label: id })),
+    edges: [
+      { id: "1", from: "r", to: "a", type: "choice" }, { id: "2", from: "r", to: "b", type: "choice" },
+      { id: "3", from: "a", to: "x", type: "choice" }, { id: "4", from: "b", to: "y", type: "choice" },
+      { id: "5", from: "x", to: "c", type: "choice" },
+    ],
+  };
+  const { removed, added } = Growth.collapseInto(graph, "x", "y", "same");
+  assert.deepStrictEqual(removed.map((e) => e.id).sort(), ["3", "5"]);
+  assert.deepStrictEqual(added.map((e) => [e.from, e.to, e.type]), [["a", "y", "rejoins"], ["y", "c", "choice"]]);
+  assert.ok(!graph.nodes.some((n) => n.id === "x"));
+});

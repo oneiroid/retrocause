@@ -93,6 +93,29 @@
       && Ids.normalizedContent(node.state) === state;
   }
 
+  // Fold `victimId` into `survivorId`: every edge into the victim now goes into
+  // the survivor (as `rejoins`: the routes meet there), every edge out of it now
+  // leaves the survivor, and the victim is removed. Acyclic when the two are
+  // incomparable, for the reason collapseIfSame gives. Returns the edges removed
+  // and the edges added, so a caller showing the graph can apply the same change.
+  function collapseInto(graph, victimId, survivorId, label = "") {
+    const removed = graph.edges.filter((e) => e.from === victimId || e.to === victimId);
+    graph.edges = graph.edges.filter((e) => e.from !== victimId && e.to !== victimId);
+    graph.nodes = graph.nodes.filter((n) => n.id !== victimId);
+    const added = [];
+    removed.forEach((e) => {
+      const incoming = e.to === victimId;
+      const from = incoming ? e.from : survivorId;
+      const to = incoming ? survivorId : e.to;
+      if (from === to || graph.edges.some((other) => other.from === from && other.to === to)) return;
+      const result = Engine.addEdge(graph, {
+        from, to, type: incoming ? "rejoins" : e.type, label: incoming ? (label || e.label || "") : (e.label || ""),
+      });
+      if (result.ok) added.push(graph.edges[graph.edges.length - 1]);
+    });
+    return { removed, added };
+  }
+
   // Insert one continuation. Returns:
   //   { merged:true,  into, edge }  — collapsed into an existing parallel state
   //   { merged:false, node, edge }  — kept as a genuinely new state
@@ -147,7 +170,7 @@
     return (continuations || []).map((c) => insertContinuation(graph, c));
   }
 
-  const api = { insertContinuation, grow, collapseIfSame, isNullTransition, attach, rejoin };
+  const api = { insertContinuation, grow, collapseIfSame, collapseInto, isNullTransition, attach, rejoin };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   root.StoryDagGrowth = api;
 })(typeof window !== "undefined" ? window : globalThis);

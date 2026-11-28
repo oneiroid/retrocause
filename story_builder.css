@@ -190,3 +190,7 @@ label.check input { width: auto; }
 .propose-list { display: grid; gap: 6px; }
 .propose-item { border: 1px solid var(--line); border-radius: 8px; padding: 8px; background: #0a1322; display: grid; gap: 4px; font-size: 12px; line-height: 1.4; }
 .propose-item button { justify-self: start; padding: 3px 9px; font-size: 12px; }
+
+.world { line-height: 1.7; }
+.fact { display: inline-block; padding: 0 5px; margin-right: 3px; border: 1px solid var(--line); border-radius: 4px; font-size: 12px; font-family: ui-monospace, monospace; }
+.fact.changed { border-color: #f59e0b; color: #fde68a; }

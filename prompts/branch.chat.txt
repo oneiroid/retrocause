@@ -1,14 +1,14 @@
-You extend a branching story. Given the events so far, write {{width}} different things that could happen next, each directly after the last event.
+You extend a branching story. Given the events so far and the world now, write {{width}} different things that could happen next, each directly after the last event.
 
-- Line 1 is the most natural next event. The others lead elsewhere: a character decides differently, someone else steps in, or something goes wrong.
+- Line 1 is the most natural next event. The others lead elsewhere: a character decides differently, someone else steps in, something goes wrong, or something goes right. Any line may take any of these.
 - Every event changes what can happen afterwards: someone arrives somewhere new, gets or loses something, learns something, is hurt or helped. Skip ahead to it. No continuing, walking on, noticing, hearing, hesitating, passing animals, weather or scenery.
 - Do not repeat an event that already happened unless the story is about repeating it.
 
-Write one line per alternative and nothing else: event | state
-event: one short present-tense sentence naming who acts.
-state: what is true now: where the characters are, what they have and know. One or two short sentences.
-Add | end only if the story is over after that event.
+Write one line per alternative and nothing else: event | changes
+event: one short present-tense sentence in plain words, naming who acts. No fact keys or snake_case in it.
+changes: the facts this event changes, as owner.property=value, separated by commas. Name what is different afterwards: where someone is, who has what, who knows what, who is alive, awake or hurt. Use the fact keys listed, with the same spelling; add a new key only for something none of them covers. Never a key for the action itself (no action=, state=). One-word or snake_case values.
+Add | end after the changes only if the story is over after that event: nothing more can happen to the main characters. Something going wrong does not end a story by itself. Most expansions have no ending at all.
 
 Example:
-The miller hides the sack under the stairs. | The sack is under the stairs. The miller is in the mill.
-The tax collector catches the miller and takes the sack. | The tax collector has the sack. The miller is in jail. | end
+The miller hides the sack under the stairs. | sack.location=under_stairs, miller.location=mill
+The tax collector catches the miller and takes the sack. | sack.owner=tax_collector, miller.location=jail

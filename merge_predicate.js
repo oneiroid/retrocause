@@ -28,6 +28,11 @@
 // possible futures, as the thesis and Propp's functions suggest, this rule looks
 // the wrong way. The disagreement is kept as data; the proposed test is to sample
 // futures from each candidate rather than read them from the graph.
+//
+// Since 2026-11-28 the grower does not use this predicate by default: it merges
+// on folded world state (facts.js) and asks a near match about the future
+// (judges.js, createFutureJudge). This rule still serves manual inserts, and
+// mergeProposals still serves the grower's `routes` mode.
 
 (function attachMergePredicate(root) {
   const Engine = (typeof require !== "undefined")

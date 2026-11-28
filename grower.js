@@ -20,7 +20,8 @@ const Engine = require("./story_builder_engine.js");
 const Growth = require("./growth.js");
 const Predicate = require("./merge_predicate.js");
 const Ids = require("./ids.js");
-const { createJudge, createCritic } = require("./judges.js");
+const Facts = require("./facts.js");
+const { createJudge, createFutureJudge, createGrownFuturesJudge, createCritic } = require("./judges.js");
 
 // Generation budget per alternative; a line runs to about 35 tokens.
 const TOKENS_PER_ALTERNATIVE = 80;
@@ -40,13 +41,46 @@ const MAX_JUDGED_PER_CANDIDATE = 1;
 const MAX_PATH_EVENTS = 40;
 const PATH_HEAD_EVENTS = 5;
 
+// Merge modes. "facts": a candidate whose folded world equals a node's merges
+// into it with no model call; one that differs from a node in at most
+// NEAR_FACTS facts is put to the future judge. "routes": the earlier judge,
+// which compares the routes and so refuses two routes into one situation by
+// design; kept for comparison. "futures": nothing merges on insert; once a node
+// has been expanded, it is compared with one expanded lookalike (nearest world,
+// then most similar event) by what was found to happen next after each, and
+// folded into it when the judge says each one's next events could follow the
+// other. "off": a plain tree.
+const MERGE_MODES = ["facts", "futures", "routes", "off"];
+// Two, so a fact renamed on the way (a.scared=yes against a.afraid=yes) is near.
+const NEAR_FACTS = 2;
+// Mode "futures": the fewest distinct next events each side must have before
+// their futures count as evidence. A told seed node has one, and "could this one
+// event also follow A?" is nearly always yes: 4 of 5 false folds on 2026-11-28.
+const MIN_FUTURES = 2;
+// Events of each side's own past the futures judge sees.
+const FUTURES_PAST_EVENTS = 3;
+// Lookalikes one expanded node is put to the judge against. Each is one call;
+// at threshold 0.8 one per node found 2 folds in 51 calls.
+const MAX_FUTURES_PER_NODE = 2;
+
 const DEFAULTS = {
-  depth: 4, width: 3, beam: 8, maxNodes: 60, merge: true, prune: false, temperature: DEFAULT_TEMPERATURE,
+  depth: 4, width: 3, beam: 8, maxNodes: 60, merge: "futures", prune: false, temperature: DEFAULT_TEMPERATURE,
 };
+
+// `true` and `false` from older callers: on is "facts".
+function mergeMode(value) {
+  if (value === true || value === undefined || value === null) return "facts";
+  if (value === false) return "off";
+  if (!MERGE_MODES.includes(value)) throw new Error(`unknown merge mode: ${value}`);
+  return value;
+}
 
 // The story so far as the model reads it. The path comes first and the request
 // last, so siblings and cousins share an evaluated prefix on the server.
-function storySoFar(graph, sourceId) {
+// `world`: the source's folded facts; folded here from the graph when not given.
+function storySoFar(graph, sourceId, world = null) {
+  if (!world) world = Facts.worldsOf(graph).get(sourceId) || null;
+  const vocabulary = Facts.renderVocabulary(graph);
   const byId = new Map(graph.nodes.map((n) => [n.id, n]));
   const title = graph.title || (graph.meta && graph.meta.title) || "Untitled";
   const entities = Array.isArray(graph.entities) ? graph.entities : [];
@@ -62,12 +96,15 @@ function storySoFar(graph, sourceId) {
     "Events so far:",
     events,
     "",
-    `World state now: ${(path.at(-1) || {}).state || "(not stated)"}`,
+    ...(world && world.size
+      ? ["World now:", Facts.renderWorld(world)]
+      : [`World state now: ${(path.at(-1) || {}).state || "(not stated)"}`]),
+    ...(vocabulary ? ["", `Fact keys in this story: ${vocabulary}`] : []),
   ].join("\n");
 }
 
-function expansionRequest(graph, source, width, template) {
-  const story = storySoFar(graph, source.id);
+function expansionRequest(graph, source, width, template, world = null) {
+  const story = storySoFar(graph, source.id, world);
   return {
     story,
     system: String(template).replaceAll("{{width}}", String(width)).trim(),
@@ -94,22 +131,46 @@ const LIST_MARKER = /^[\s*>#-]*(\d+[.)]\s*)?/;
 const FIELD_SEPARATOR = /\s*\|\s*/;
 const END_MARK = /^end\b/i;
 
-// The alternatives in a completion: `event | state`, or `event | state | end`.
-// A non-empty line without both fields is a fragment (the tail of a length stop,
-// say), counted as malformed by the caller.
+// The alternatives in a completion: `event | changes`, or `event | changes | end`,
+// where changes are `owner.property=value` facts. A second field with no fact in
+// it is read as a prose state (the older format), and the alternative carries no
+// effects. A non-empty line without both fields is a fragment (the tail of a
+// length stop, say), counted as malformed by the caller.
+// A line the model wrote without its pipe: "wolf flees wolf.location=path", or the
+// event on one line and its facts on the next. Both seen on 2026-11-28.
+const FACTS_TAIL = /^(.*?[a-z)'"])\s+([a-z0-9_]+\.[a-z0-9_.]+\s*=.*)$/i;
+const FACTS_ONLY = /^[a-z0-9_]+\.[a-z0-9_.]+\s*=/i;
+
+function repairLines(content) {
+  const lines = String(content).split("\n").map((raw) => raw.replace(LIST_MARKER, "").trim()).filter(Boolean);
+  const out = [];
+  for (let i = 0; i < lines.length; i += 1) {
+    const line = lines[i];
+    if (line.includes("|")) out.push(line);
+    else if (lines[i + 1] && FACTS_ONLY.test(lines[i + 1]) && !FACTS_ONLY.test(line)) {
+      out.push(`${line} | ${lines[i + 1]}`);
+      i += 1;
+    } else {
+      const tail = line.match(FACTS_TAIL);
+      out.push(tail ? `${tail[1]} | ${tail[2]}` : line);
+    }
+  }
+  return out;
+}
+
 function parseAlternatives(content) {
   const alternatives = [];
   let malformed = 0;
-  for (const raw of String(content).split("\n")) {
-    const line = raw.replace(LIST_MARKER, "").trim();
-    if (!line) continue;
+  for (const line of repairLines(content)) {
     const [event, state, mark] = line.split(FIELD_SEPARATOR);
     if (!event || !state || END_MARK.test(state)) {
       malformed += 1;
       continue;
     }
     const label = sentenceCase(event);
-    alternatives.push({ label, expr: exprOf(label), state, ending: END_MARK.test(mark || "") });
+    const { pairs } = Facts.parseEffects(state);
+    const effects = pairs.length ? Facts.formatEffects(pairs) : "";
+    alternatives.push({ label, expr: exprOf(label), state: effects || state, effects, changes: pairs, ending: END_MARK.test(mark || "") });
   }
   return { alternatives, malformed };
 }
@@ -123,8 +184,8 @@ function plannedExpansions({ depth, width, beam, maxNodes }) {
 }
 
 // One model call, for the grower and for the Lab's "propose" list.
-async function proposeAlternatives({ graph, source, width, temperature, client, template, signal, onToken }) {
-  const request = expansionRequest(graph, source, width, template);
+async function proposeAlternatives({ graph, source, width, temperature, client, template, signal, onToken, world = null }) {
+  const request = expansionRequest(graph, source, width, template, world);
   const completion = await client.chat({
     system: request.system,
     user: request.user,
@@ -164,11 +225,25 @@ async function growGraph({
 } = {}) {
   const graph = Engine.normalizeGraph(inputGraph);
   if (!graph.nodes.some((n) => n.id === from)) throw new Error(`from node not in graph: ${from}`);
+  const mode = mergeMode(merge);
 
   const stats = {
+    mergeMode: mode,
     created: 0,
     merged: 0,
+    // Of `merged`: on an equal folded world with no model call (only when no
+    // future judge is loaded); and by a judge, equal worlds included.
+    mergedOnFacts: 0,
+    mergedByJudge: 0,
+    // Of `merged`, in mode "futures": expanded nodes folded into a lookalike.
+    mergedByFutures: 0,
     mergesRefused: 0,
+    judgeCalls: 0,
+    // Candidates whose world equals a node on their own route: a return to an
+    // earlier state, kept as a new node because an edge back would be a cycle.
+    recurrences: 0,
+    // Alternatives written without facts, so they cannot merge on them.
+    withoutFacts: 0,
     pruned: 0,
     nullTransitions: 0,
     malformed: 0,
@@ -181,6 +256,8 @@ async function growGraph({
     maxDepth: 0,
     // Nodes left unexpanded because their depth had used up the beam.
     beamDropped: 0,
+    // Nodes with more than one way in, at the end: the convergences.
+    convergent: 0,
     elapsedMs: 0,
     stopped: false,
   };
@@ -197,8 +274,56 @@ async function growGraph({
   }
   let error = null;
 
-  const judge = merge ? createJudge({ client, system: templates.same, signal: internal.signal }) : null;
+  const judge = mode === "routes" ? createJudge({ client, system: templates.same, signal: internal.signal }) : null;
+  const futureJudge = mode === "facts" && templates.future
+    ? createFutureJudge({ client, system: templates.future, signal: internal.signal })
+    : null;
+  const grownFuturesJudge = mode === "futures" && templates.futures
+    ? createGrownFuturesJudge({ client, system: templates.futures, signal: internal.signal })
+    : null;
   const critic = prune ? createCritic({ client, system: templates.critic, signal: internal.signal }) : null;
+
+  // ── worlds ────────────────────────────────────────────────────────────────
+  // Each node's folded world, and the nodes that hold each world. Only nodes
+  // that state facts are indexed: a node without effects inherits its parent's
+  // world, and merging into it would be merging into its parent.
+  const worlds = Facts.worldsOf(graph);
+  const byWorld = new Map();
+  const indexWorld = (node) => {
+    if (!Facts.effectsOf(node).length && node.kind !== "root") return;
+    const key = Facts.worldKey(worlds.get(node.id));
+    if (!key) return;
+    if (!byWorld.has(key)) byWorld.set(key, []);
+    byWorld.get(key).push(node.id);
+  };
+  graph.nodes.forEach(indexWorld);
+  const ancestorsOf = (id) => {
+    const seen = new Set([id]);
+    for (let frontier = [id]; frontier.length;) {
+      const next = [];
+      graph.edges.forEach((e) => {
+        if (frontier.includes(e.to) && !seen.has(e.from)) {
+          seen.add(e.from);
+          next.push(e.from);
+        }
+      });
+      frontier = next;
+    }
+    return seen;
+  };
+  // Indexed nodes whose world differs from `world` in 1..NEAR_FACTS facts, fewest
+  // first. A linear scan: a run's cap is 1000 nodes.
+  const nearWorlds = (world, excluded) => {
+    const near = [];
+    byWorld.forEach((ids) => {
+      const other = worlds.get(ids[0]);
+      const diff = Facts.worldDiff(world, other);
+      if (diff.length >= 1 && diff.length <= NEAR_FACTS) {
+        ids.filter((id) => !excluded.has(id)).forEach((id) => near.push({ id, diff }));
+      }
+    });
+    return near.sort((a, b) => (a.diff.length - b.diff.length) || String(a.id).localeCompare(String(b.id)));
+  };
 
   // ── progress ──────────────────────────────────────────────────────────────
   const live = new Map();
@@ -229,6 +354,14 @@ async function growGraph({
     });
   };
 
+  function mergeInto(sourceId, intoId, node, how, extra = {}) {
+    const edge = Growth.rejoin(graph, { from: sourceId, into: intoId, label: extra.edgeLabel || how });
+    stats.merged += 1;
+    if (extra.pYes === undefined) stats.mergedOnFacts += 1;
+    else stats.mergedByJudge += 1;
+    onEvent({ type: "merge", from: sourceId, into: intoId, edge, label: node.label, how, ...extra });
+  }
+
   async function insertCandidate(sourceId, itemDepth, candidate, index, record) {
     if (stats.created >= maxNodes) return;
     const source = graph.nodes.find((n) => n.id === sourceId);
@@ -237,6 +370,7 @@ async function growGraph({
       kind: "branch",
       expr: candidate.expr,
       state: candidate.state,
+      ...(candidate.effects ? { effects: candidate.effects } : {}),
       tags: candidate.ending ? ["counterfactual", "ending"] : ["counterfactual"],
       createdBy: "grown",
       ...(runId ? { runId } : {}),
@@ -245,35 +379,80 @@ async function growGraph({
       stats.nullTransitions += 1;
       return;
     }
+    const sourceWorld = worlds.get(sourceId) || new Map();
+    const world = Facts.fold(sourceWorld, candidate.changes || []);
+    const key = candidate.changes && candidate.changes.length ? Facts.worldKey(world) : "";
+    if (!key) stats.withoutFacts += 1;
+    // An event that changes no fact changes nothing the grower can see.
+    if (key && key === Facts.worldKey(sourceWorld)) {
+      stats.nullTransitions += 1;
+      return;
+    }
     if (tellsNext(sourceId, node.expr)) stats.toldNext += 1;
 
-    // Everything from `mergeProposals` to the insert below runs without an
-    // await, so no node can slip in between "nothing left to ask" and the insert.
-    const asked = new Set();
-    for (;;) {
-      if (!judge) break;
-      const open = Predicate.mergeProposals(graph, sourceId, node).filter((id) => !asked.has(id));
-      if (!open.length || asked.size >= MAX_JUDGED_PER_CANDIDATE) break;
-      const batch = open.slice(0, MAX_JUDGED_PER_CANDIDATE - asked.size);
-      batch.forEach((id) => asked.add(id));
-      const verdicts = await Promise.all(batch.map((id) => judge(graph, id, sourceId, node)));
-      let same = null;
-      verdicts.forEach((verdict, i) => {
-        record.judgements.push({ label: node.label, survivor: batch[i], ...verdict });
-        if (verdict.same && (!same || verdict.pYes > same.verdict.pYes)) same = { id: batch[i], verdict };
-        if (!verdict.same) stats.mergesRefused += 1;
-      });
-      if (same) {
-        const label = `same point, P=${same.verdict.pYes.toFixed(2)}`;
-        const edge = Growth.rejoin(graph, { from: sourceId, into: same.id, label });
-        stats.merged += 1;
-        onEvent({ type: "merge", from: sourceId, into: same.id, edge, label: node.label, pYes: same.verdict.pYes });
-        return;
+    // Everything from the last check to the insert below runs without an await,
+    // so no node can slip in between "nothing left to ask" and the insert.
+    if (mode === "facts" && key) {
+      const asked = new Set();
+      for (;;) {
+        const route = ancestorsOf(sourceId);
+        const holders = byWorld.get(key) || [];
+        const same = holders.filter((id) => !route.has(id) && !asked.has(id));
+        if (holders.length && holders.every((id) => route.has(id))) stats.recurrences += 1;
+        // Without a judge an equal world merges at once. With one, it is asked
+        // too: the facts are what the model chose to write, and on 2026-11-28 free
+        // merges on them were the least precise kind (3 of 11 true, mostly
+        // siblings whose thin changes matched: "answers" and "ignores" the wolf).
+        if (same.length && !futureJudge) {
+          mergeInto(sourceId, same[0], node, "same world");
+          return;
+        }
+        if (!futureJudge || asked.size >= MAX_JUDGED_PER_CANDIDATE) break;
+        const near = same.length
+          ? { id: same[0], diff: [] }
+          : nearWorlds(world, new Set([...route, ...asked]))[0];
+        if (!near) break;
+        asked.add(near.id);
+        stats.judgeCalls += 1;
+        const target = graph.nodes.find((n) => n.id === near.id);
+        const verdict = await futureJudge({
+          graph, a: { node, world }, b: { node: target, world: worlds.get(near.id) }, diff: near.diff,
+        });
+        record.judgements.push({ label: node.label, survivor: near.id, kind: "future", ...verdict });
+        if (verdict.same) {
+          const how = near.diff.length ? "same future" : "same world";
+          mergeInto(sourceId, near.id, node, how, { pYes: verdict.pYes, edgeLabel: `${how}, P=${verdict.pYes.toFixed(2)}` });
+          return;
+        }
+        stats.mergesRefused += 1;
+        if (stats.created >= maxNodes) return;
       }
-      if (stats.created >= maxNodes) return;
+    } else if (judge) {
+      const asked = new Set();
+      for (;;) {
+        const open = Predicate.mergeProposals(graph, sourceId, node).filter((id) => !asked.has(id));
+        if (!open.length || asked.size >= MAX_JUDGED_PER_CANDIDATE) break;
+        const batch = open.slice(0, MAX_JUDGED_PER_CANDIDATE - asked.size);
+        batch.forEach((id) => asked.add(id));
+        stats.judgeCalls += batch.length;
+        const verdicts = await Promise.all(batch.map((id) => judge(graph, id, sourceId, node)));
+        let same = null;
+        verdicts.forEach((verdict, i) => {
+          record.judgements.push({ label: node.label, survivor: batch[i], kind: "routes", ...verdict });
+          if (verdict.same && (!same || verdict.pYes > same.verdict.pYes)) same = { id: batch[i], verdict };
+          if (!verdict.same) stats.mergesRefused += 1;
+        });
+        if (same) {
+          mergeInto(sourceId, same.id, node, "same point", { pYes: same.verdict.pYes, edgeLabel: `same point, P=${same.verdict.pYes.toFixed(2)}` });
+          return;
+        }
+        if (stats.created >= maxNodes) return;
+      }
     }
 
     const { node: created, edge } = Growth.attach(graph, { from: sourceId, node, type: "choice" });
+    worlds.set(created.id, key ? world : sourceWorld);
+    if (key) indexWorld(created);
     stats.created += 1;
     stats.maxDepth = Math.max(stats.maxDepth, itemDepth + 1);
     if (candidate.ending) stats.endings += 1;
@@ -283,13 +462,115 @@ async function growGraph({
     }
   }
 
+  // ── merging by grown futures ──────────────────────────────────────────────
+  // Distinct by label: a fold can leave two children saying the same thing.
+  const childrenOf = (id) => {
+    const seen = new Set();
+    return graph.edges.filter((e) => e.from === id)
+      .map((e) => graph.nodes.find((n) => n.id === e.to))
+      .filter((n) => n && !seen.has(Ids.normalizedContent(n.label)) && seen.add(Ids.normalizedContent(n.label)));
+  };
+  const pastOf = (id) => Engine.ancestorPath(graph, id).slice(0, -1).slice(-FUTURES_PAST_EVENTS)
+    .map((pid) => (graph.nodes.find((n) => n.id === pid) || {}).label).filter(Boolean);
+  const descendantsOf = (id) => {
+    const seen = new Set([id]);
+    for (let frontier = [id]; frontier.length;) {
+      const next = [];
+      graph.edges.forEach((e) => {
+        if (frontier.includes(e.from) && !seen.has(e.to)) {
+          seen.add(e.to);
+          next.push(e.to);
+        }
+      });
+      frontier = next;
+    }
+    return seen;
+  };
+  const askedPairs = new Set();
+  const labelWords = (node) => Predicate.wordsOf(node.label);
+
+  // The expanded nodes most like `x`, best first: most shared event words, then
+  // fewest differing facts. Never on x's route or below it, so a fold cannot make
+  // a cycle, and never a step next to x on another branch (x's event in y's past,
+  // or y's among x's next events, or the other way round): fewest facts alone
+  // picked mostly those on 2026-11-28, and they are consecutive steps, not one.
+  function futuresCandidates(x) {
+    const xWorld = worlds.get(x.id) || new Map();
+    const xWords = labelWords(x);
+    const xLabel = Ids.normalizedContent(x.label);
+    const xPast = new Set(pastOf(x.id).map(Ids.normalizedContent));
+    const xNext = new Set(childrenOf(x.id).map((n) => Ids.normalizedContent(n.label)));
+    const out = new Set([...ancestorsOf(x.id), ...descendantsOf(x.id)]);
+    const found = [];
+    for (const y of graph.nodes) {
+      if (out.has(y.id) || askedPairs.has(`${x.id}|${y.id}`)) continue;
+      const kids = childrenOf(y.id);
+      if (kids.length < MIN_FUTURES) continue;
+      const diff = Facts.worldDiff(xWorld, worlds.get(y.id) || new Map());
+      if (diff.length > NEAR_FACTS) continue;
+      const yLabel = Ids.normalizedContent(y.label);
+      const adjacent = xPast.has(yLabel) || xNext.has(yLabel)
+        || pastOf(y.id).map(Ids.normalizedContent).includes(xLabel)
+        || kids.some((n) => Ids.normalizedContent(n.label) === xLabel);
+      if (adjacent) continue;
+      found.push({ y, kids, diff, words: Predicate.similarity(xWords, labelWords(y)) });
+    }
+    return found.sort((a, b) => (b.words - a.words) || (a.diff.length - b.diff.length) || String(a.y.id).localeCompare(String(b.y.id)));
+  }
+
+  async function mergeByFutures(xId, record) {
+    const x = graph.nodes.find((n) => n.id === xId);
+    if (!x || stats.created >= maxNodes) return;
+    const xKids = childrenOf(xId);
+    if (xKids.length < MIN_FUTURES) return;
+    for (const found of futuresCandidates(x).slice(0, MAX_FUTURES_PER_NODE)) {
+      if (await askFutures(x, xKids, found, record)) return;
+    }
+  }
+
+  // One question; true when x was folded into found.y.
+  async function askFutures(x, xKids, found, record) {
+    const xId = x.id;
+    if (!graph.nodes.some((n) => n.id === found.y.id) || !graph.nodes.some((n) => n.id === xId)) return false;
+    askedPairs.add(`${x.id}|${found.y.id}`).add(`${found.y.id}|${x.id}`);
+    stats.judgeCalls += 1;
+    const verdict = await grownFuturesJudge({
+      graph,
+      a: { label: x.label, next: xKids.map((n) => n.label), before: pastOf(x.id) },
+      b: { label: found.y.label, next: found.kids.map((n) => n.label), before: pastOf(found.y.id) },
+      diff: found.diff,
+    });
+    record.judgements.push({ label: x.label, survivor: found.y.id, kind: "futures", ...verdict });
+    if (!verdict.same) {
+      stats.mergesRefused += 1;
+      return false;
+    }
+    // The graph moved during the await: both must still be there, and apart.
+    const y = graph.nodes.find((n) => n.id === found.y.id);
+    if (!y || !graph.nodes.some((n) => n.id === xId)) return false;
+    if (Engine.reachable(graph, xId, y.id) || Engine.reachable(graph, y.id, xId)) return false;
+    const { removed, added } = Growth.collapseInto(graph, xId, y.id, `same futures, P=${verdict.pYes.toFixed(2)}`);
+    const key = Facts.worldKey(worlds.get(xId) || new Map());
+    if (byWorld.has(key)) byWorld.set(key, byWorld.get(key).filter((id) => id !== xId));
+    stats.merged += 1;
+    stats.mergedByJudge += 1;
+    stats.mergedByFutures += 1;
+    onEvent({
+      type: "collapse", victim: xId, into: y.id, label: x.label, pYes: verdict.pYes,
+      removedEdges: removed.map((e) => e.id), addedEdges: added,
+    });
+    return true;
+  }
+
   async function expand(item) {
     const source = graph.nodes.find((n) => n.id === item.id);
     const entry = { from: item.id, label: source.label, text: "", tokens: 0 };
     live.set(item.id, entry);
     progress();
+    const known = worlds.get(item.id);
     const proposal = await proposeAlternatives({
       graph, source, width, temperature, client, template: templates.branch, signal: internal.signal,
+      world: known && known.size ? known : null,
       onToken: (piece, text) => {
         entry.text = text;
         entry.tokens += 1;
@@ -329,6 +610,7 @@ async function growGraph({
     }
 
     await Promise.all(kept.map((candidate, index) => insertCandidate(item.id, item.depth, candidate, index, record)));
+    if (grownFuturesJudge) await mergeByFutures(item.id, record);
     onEvent({ type: "expansion", record });
     progress(true);
   }
@@ -392,11 +674,14 @@ async function growGraph({
   if (signal) signal.removeEventListener("abort", onUserStop);
   stats.stopped = !!(signal && signal.aborted);
   stats.elapsedMs = Date.now() - started;
+  const inDegree = new Map();
+  graph.edges.forEach((e) => inDegree.set(e.to, (inDegree.get(e.to) || 0) + 1));
+  stats.convergent = [...inDegree.values()].filter((n) => n > 1).length;
   progress(true);
   return { graph, stats, validation: Engine.validateGraph(graph), trace, error };
 }
 
 module.exports = {
   growGraph, proposeAlternatives, parseAlternatives, exprOf, storySoFar, expansionRequest,
-  plannedExpansions, DEFAULTS, TOKENS_PER_ALTERNATIVE,
+  plannedExpansions, mergeMode, DEFAULTS, MERGE_MODES, NEAR_FACTS, MIN_FUTURES, TOKENS_PER_ALTERNATIVE,
 };
