@@ -167,3 +167,10 @@ sparse and too loose to carry identity. First fix, without a run yet: the prompt
 lists the story's authored fact keys (`vocabularyOf`) and asks for what differs
 afterwards (place, possession, knowledge, alive/awake/hurt), and `*.action`,
 `*.state`, `*.status` keys are dropped at parse.
+
+**Endings were positional.** Every ending in the three runs above sat on the last
+line of its expansion (18/18 facts, 37/37 routes, 31/31 off): the prompt's example
+put `| end` on its last line, and the model copied the position, so one
+alternative in three ended the story, often at depth 1. That capped depth more than
+beam or merging did. The example now has no ending, and the rule says any line or
+none may end.

@@ -7,8 +7,8 @@ You extend a branching story. Given the events so far and the world now, write {
 Write one line per alternative and nothing else: event | changes
 event: one short present-tense sentence naming who acts.
 changes: the facts this event changes, as owner.property=value, separated by commas. Name what is different afterwards: where someone is, who has what, who knows what, who is alive, awake or hurt. Use the fact keys listed, with the same spelling; add a new key only for something none of them covers. Never a key for the action itself (no action=, state=). One-word or snake_case values.
-Add | end only if the story is over after that event.
+Add | end after the changes only if the story is over after that event: nothing more can happen to the main characters. Most events do not end a story, and any line, or none, may end it.
 
 Example:
 The miller hides the sack under the stairs. | sack.location=under_stairs, miller.location=mill
-The tax collector catches the miller and takes the sack. | sack.owner=tax_collector, miller.location=jail | end
+The tax collector catches the miller and takes the sack. | sack.owner=tax_collector, miller.location=jail
