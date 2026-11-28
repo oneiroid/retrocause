@@ -5,7 +5,7 @@
 //   npm run grow:serve            # needs ./tools/serve_model.sh running
 //
 //   GET  /health   → { ok, model, modelFile, slots }
-//   POST /grow     { graph, from, depth?, width?, beam?, maxNodes?, merge?, prune?, temperature? }
+//   POST /grow     { graph, from, depth?, width?, beam?, maxNodes?, merge? (facts|routes|off), prune?, temperature? }
 //                  → NDJSON: start, then node | merge | pruned | expansion | progress
 //                    as they happen, then done { runId, graph, stats, validation }
 //                    or error { error, runId?, graph?, stats? }.
@@ -29,7 +29,7 @@ const path = require("path");
 const REPO = path.join(__dirname, "..");
 const Engine = require(path.join(REPO, "story_builder_engine.js"));
 const { createClient } = require(path.join(REPO, "llm_client.js"));
-const { proposeAlternatives, expansionRequest, DEFAULTS } = require(path.join(REPO, "grower.js"));
+const { proposeAlternatives, expansionRequest, mergeMode, DEFAULTS } = require(path.join(REPO, "grower.js"));
 const {
   runGrow, loadTemplates, serverInfo, sha256, PROMPT_DIR, GRAPH_FILE, MANIFEST_FILE, TRACE_FILE,
 } = require(path.join(REPO, "tools", "grow.js"));
@@ -75,7 +75,7 @@ function growParams(body) {
     width: positiveInt(body.width, DEFAULTS.width),
     beam: positiveInt(body.beam, DEFAULTS.beam),
     maxNodes: Math.min(positiveInt(body.maxNodes, DEFAULTS.maxNodes), MAX_UI_NODES),
-    merge: body.merge === undefined ? DEFAULTS.merge : !!body.merge,
+    merge: mergeMode(body.merge === undefined ? DEFAULTS.merge : body.merge),
     prune: body.prune === undefined ? DEFAULTS.prune : !!body.prune,
     temperature: positiveNumber(body.temperature, DEFAULTS.temperature),
   };

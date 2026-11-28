@@ -60,6 +60,21 @@ artifacts of a real structural feature: convergence in the graph.
 The name picks out one phenomenon the framework predicts. The
 framework is more than its name.
 
+## Working scope (2026-11-28)
+
+What the instrument can test now, and what is parked. Parked claims stay in
+`INTUITIONS.md`; they are background, not roadmap, until something in the
+app can move one of them.
+
+- **Now:** convergence as merging on world state (§5), and with it the
+  question whether automatic growth produces convergence nodes at all.
+- **Next, made cheap by that:** grow the same seed with two local models and
+  check whether their convergence nodes coincide (§9). It is the first test
+  of the core idea that needs neither a tale corpus nor an extractor.
+- **Parked:** §1 (substrate), §4 (space as embedding), §6 and §10's
+  extraction work (no corpus, no extractor), and open questions 1–7. The
+  "myth probe" waits on a tale corpus.
+
 ## Two layers, in dependency order
 
 ```
@@ -116,11 +131,13 @@ defeats the point of the project.
 
 ## What this project is not
 
-- Not a prose generator. It does not write stories. The grower, when it
-  exists, is to propose *structure* — nodes, edges, what changed, what
-  stayed true — and every proposal is a graph operation the editor could
-  equally have received from a human. Nothing in the project produces
-  narrative text, and that constraint is not up for revision.
+- Not a prose generator. It does not write stories. The grower proposes
+  *structure*: nodes, edges, and what each event changed, as facts; every
+  proposal is a graph operation the editor could equally have received
+  from a human. It does write one sentence per event, as the node's
+  label, because a node needs a name. (Revised 2026-11-28: this used to
+  say nothing in the project produces narrative text, which stopped being
+  true when the grower arrived.)
 - Not a literary-theory contribution. It does not claim to settle
   questions about narrative ontology; it claims those questions
   are sharp enough to build instruments for.

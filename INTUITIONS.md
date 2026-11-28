@@ -15,7 +15,7 @@ drifting into free speculation. When a claim moves from `open` to
 
 ---
 
-## 1. The graph is the substrate, not a model of it `open`
+## 1. The graph is the substrate, not a model of it `open` · parked
 
 Base reality is a causality DAG — call it G — taken as ontologically
 primary rather than as a representation of something else. Events are
@@ -66,7 +66,7 @@ which path you read differs.
 
 ---
 
-## 4. Time = thread position; space = perceptual embedding `partial`
+## 4. Time = thread position; space = perceptual embedding `partial` · space parked
 
 **Time** is the segment counter along a threading. There is no global
 clock in G; "before" and "after" exist only relative to a chosen
@@ -117,6 +117,15 @@ name **retrocause**.
 > thesis looks forward; the code looks back. Proposed test: sample a few
 > continuations from each candidate and merge when the futures are
 > indistinguishable.
+>
+> **Update (2026-11-28).** The grower now merges on folded world state
+> (`facts.js`), and asks a near match "can the same things happen next?"
+> (`prompts/future.chat.txt`). A state that is defined by its facts is the
+> Markov stand-in for one defined by its futures: if the facts hold
+> everything that matters, equal facts mean equal futures. It is a proxy,
+> and it fails exactly where the facts leave something out. The route judge
+> that refused different routes into one situation is now an optional mode.
+> Sampling futures stays the stronger test, not yet built.
 
 ---
 
@@ -277,7 +286,9 @@ functions.
 ## Open questions
 
 These are conjectures the project explicitly does not have apparatus
-for. Listed so the framework cannot quietly pretend it does.
+for. Listed so the framework cannot quietly pretend it does. Questions 1–7
+are parked (2026-11-28): nothing planned moves them, and they are not on the
+roadmap (`CONCEPT.md`, "Working scope").
 
 1. **The eternal melody.** Why does G have *this* self-similar
    topology and not some other? The deepest question; no handle.

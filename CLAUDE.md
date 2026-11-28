@@ -16,8 +16,9 @@ into counterfactual alternatives.
 4. `LOCAL_LLM.md` — the Node-side grower: automatic DAG growth with a local
    chat model through `llama.cpp`. How one run works, the knobs, the server.
 5. `experiments/NOTES.md` — the running log for the continuation-generation
-   work: every config that produced a number. Everything before 2026-11-02 was
-   measured on base models with code since deleted (it is in git at `5188d1f`).
+   work: every config that produced a number, from 2026-11-02 on. The base-model
+   era (code since deleted, in git at `5188d1f`) is in
+   `experiments/ARCHIVE_base_models.md`.
 
 **Priorities (human decision, 2026-09-24, restated 2026-11-01):** automatic
 branching from a selected node, deeper, wider and faster, comes first; merging and
@@ -25,6 +26,12 @@ pruning serve it. Reproducibility is welcome, not a gate: grow runs are labelled
 non-replayable, while content ids and canonical JSON stay because they are cheap.
 Models stay **local** — hosted-only models are out. Every generation and other slow
 step shows progress, and every implemented function is reachable from the UI.
+
+**What a merge means (2026-11-28).** Two nodes are the same state when their
+folded worlds (`effects`) are equal, or, a fact or two apart, when a judge says the
+same things can happen next. How each was reached does not count: two routes into
+one world is the convergence the project exists to find (INTUITIONS §5). The older
+route judge refused exactly that and is kept only as merge mode `routes`.
 
 **Conflict resolution:** when the intuitions and the code disagree, the
 disagreement is data — flag it in both, don't silently absorb either
@@ -46,7 +53,7 @@ side. See `CONCEPT.md` §"What each layer commits to".
 - The weights and llama.cpp builds live outside this repo, in the sibling
   `llmfinetune` workspace.
 - **Lab panel** (right side of the page), from the selected node: **Grow** (depth, width,
-  beam, max nodes, temperature, merge, prune; nodes land live, with a progress bar,
+  beam, max nodes, temperature, merge mode (same world / same route / off), prune; nodes land live, with a progress bar,
   what each slot is writing, Stop, Undo), **Propose only** (one expansion listed, add
   the ones you want), **Recorded runs**, and **Prompts** (every prompt and completion,
   a no-model preview, the templates). The toolbar's **Layered** view turns on by itself
@@ -59,22 +66,24 @@ side. See `CONCEPT.md` §"What each layer commits to".
 | File | Role |
 |------|------|
 | `story_builder.html` / `.css` / `story_builder_app.js` | D3 UI shell |
+| `facts.js` | The fact layer: `parseEffects` (normalized `owner.property=value`), `fold`, `worldKey`, `worldDiff`, `renderWorld`, `worldsOf` (every node's folded world). Dual-mode; the page shows the selected node's world with it |
 | `ids.js` | Content-addressed ids (`nodeId`, `edgeId`) + `canonicalJson`; owns `normalizedContent`, the one content key. Requires nothing — it is the leaf everything else imports |
 | `story_builder_engine.js` | Graph ops: add/remove nodes & edges, cycle checks, branch composition |
 | `merge_predicate.js` | `sameInContext`: same content + parallel paths ⇒ same state (merge), used by manual inserts. `mergeProposals`: the lookalikes worth asking the model's judge about |
 | `growth.js` | Merge-on-insert for manual branches (`insertContinuation`), and the grower's two moves once it has decided: `attach` a new node, `rejoin` to an existing one. Refuses **null transitions** — a continuation matching its source in both `expr` and `state` advances nothing |
 | `seeds.js` | Seed story DAGs (nodes + edges). One node = one event; `state` is world state (the model reads it), written as positive facts because models imitate it; `reading` is the authored gloss (no prompt includes it). Each story carries an `entities` character list, shown to the model |
 | `llm_client.js` | llama-server transport over `/v1/chat/completions`: streamed `chat`, `yesProbability` from first-token logprobs. Thinking off, prompt cache on. **Node-only** — never loaded by the page |
-| `grower.js` | The traversal: a concurrent work queue over the server's slots, one model call per expansion writing `width` alternatives, `parseAlternatives` for its `event \| state \| end` lines, merge and prune decisions, events for the Lab. Node-only |
-| `judges.js` | The model's checks. `createJudge`: same point in the story? Both routes from where they part, P(yes) ≥ `SAME_THRESHOLD`. `createCritic`: marks alternatives contradictory, static or off-story. Node-only |
+| `grower.js` | The traversal: a concurrent work queue over the server's slots, one model call per expansion writing `width` alternatives, `parseAlternatives` for its `event \| changes \| end` lines, merge (`facts` / `routes` / `off`) and prune decisions, events for the Lab. Node-only |
+| `judges.js` | The model's checks. `createFutureJudge`: can the same things happen next? Shared facts plus each side's own, no routes (merge mode `facts`). `createJudge`: same point in the story? Both routes from where they part (mode `routes`). Both P(yes) ≥ `SAME_THRESHOLD`. `createCritic`: marks alternatives contradictory, static or off-story. Node-only |
 | `prompts/branch.chat.txt` | Expansion system prompt (`{{width}}`) |
-| `prompts/same.chat.txt` | Judge system prompt, with two worked examples |
+| `prompts/future.chat.txt` | Future judge system prompt, with two worked examples |
+| `prompts/same.chat.txt` | Route judge system prompt (mode `routes`), with two worked examples |
 | `prompts/critic.chat.txt` | Critic system prompt |
 | `tools/grow.js` | `runGrow`: one recorded run to `runs/<runId>/` (graph, manifest, trace), shared by the bridge and the CLI |
 | `tools/grow_server.js` | `npm run grow:serve` — loopback bridge (:8081) behind the Lab panel. `/grow` and `/propose` stream NDJSON; closing the request stops the run. Also `/health`, `/prompt`, `/prompts`, `/runs`, `/runs/:id` |
 | `tools/serve_model.sh` | Starts `llama-server` with the grower's flags (16 slots, shared context) |
 | `tools/lab.sh`, `run.sh` | One command for the model server, the bridge and the page |
-| `experiments/NOTES.md` | Running log: every config that produced a number |
+| `experiments/NOTES.md` | Running log: every config that produced a number. `ARCHIVE_base_models.md` holds the base-model era |
 | `tests/*.test.js` | `node --test` unit tests |
 
 ## Conventions
@@ -98,17 +107,21 @@ side. See `CONCEPT.md` §"What each layer commits to".
   a kind — it is derived from topology each render (in-degree > 2 and the
   flow re-widens at or below the node). A grown node's `expr` is a slug of its
   label; a grown ending carries the tag `ending` and is not expanded.
-- **`effects` is the canonical fact layer.** Seed nodes carry
-  `owner.property=value` assignments naming what the event changed. Folded
-  last-write-wins along a path they give a node's world state — a *set* of
-  changes would be a log, not a state. Hand-authored on seeds by design:
-  they are the ground truth grown graphs are scored against, so the model
-  under test must not write them. Distinct from `delta`, which is
+- **`effects` is the canonical fact layer.** A node's `effects` are
+  `owner.property=value` assignments naming what its event changed. Folded
+  last-write-wins along a path (`facts.js`) they give the node's world — a
+  *set* of changes would be a log, not a state. On seeds they are
+  hand-authored ground truth. On grown nodes the model writes them
+  (`createdBy: "grown"`), because merging needs a world for every node; so a
+  grown world measures the model's consistency, not the story's truth, and
+  any score against the seeds must say which it compares. (Revised
+  2026-11-28: the rule was "the model must not write them", which left the
+  grower nothing comparable to merge on.) Distinct from `delta`, which is
   counterfactual-relative ("differs from the told story").
 - **`state` is world state, `reading` is commentary.** `state` says what
-  is true in the story after the event, in the story's own terms — it is
-  what the grower shows the model, so a gloss there teaches the model to
-  produce gloss. The interpretive layer lives in the optional `reading` field, which has no
+  is true in the story after the event, in the story's own terms. The grower
+  shows the model the folded `effects` when a path has them and the last
+  `state` only when it has none; a grown node's `state` is its changes. The interpretive layer lives in the optional `reading` field, which has no
   default and is never rendered into a prompt.
 - **One node, one event.** If a node's `label` and `expr` disagree, it is
   usually bundling several events and wants splitting — that mismatch is

@@ -5,12 +5,17 @@
 //                as an existing node? Reads both routes as prose, because the
 //                difference between two situations is often not in either node
 //                but in what happened on the way there.
+//   future judge — before a merge in "facts" mode, for a candidate whose world
+//                differs from a node's in a fact or two. Can the same things
+//                happen next from both? How each was reached is left out: two
+//                routes into one situation are the merge the project is after.
 //   critic     — before an insert. Does each proposed event contradict the
 //                story so far, or change nothing?
 
 "use strict";
 
 const Engine = require("./story_builder_engine.js");
+const Facts = require("./facts.js");
 
 // P(yes) at or above this confirms a merge. On the 22 labelled merges from
 // 2026-10-04 (11 true, base-model nodes), 0.5 keeps 6 true and lets no false one
@@ -56,6 +61,39 @@ function createJudge({ client, system, threshold = SAME_THRESHOLD, signal }) {
   };
 }
 
+// The two situations as the future judge reads them: the facts they share once,
+// then each one's last event and the facts only it holds.
+function futureQuestion({ title, a, b, diff }) {
+  const differing = new Set(diff.map((d) => d.key));
+  const shared = new Map([...a.world].filter(([k]) => !differing.has(k)));
+  const only = (side) => diff
+    .filter((d) => d[side] !== undefined)
+    .map((d) => `${d.key}=${d[side]}`)
+    .join(", ") || "(nothing)";
+  return [
+    ...(title ? [`Story: ${title}`] : []),
+    "True in both:",
+    Facts.renderWorld(shared) || "(nothing)",
+    "",
+    `A, just after: ${a.label}. Only in A: ${only("a")}`,
+    `B, just after: ${b.label}. Only in B: ${only("b")}`,
+    "",
+    "Can the same things happen next in A and in B?",
+  ].join("\n");
+}
+
+// futureJudge({ graph, a: { node, world }, b: { node, world }, diff }) → { pYes, same, question }.
+function createFutureJudge({ client, system, threshold = SAME_THRESHOLD, signal }) {
+  return async function futureJudge({ graph, a, b, diff }) {
+    const title = graph.title || (graph.meta && graph.meta.title) || "";
+    const question = futureQuestion({
+      title, a: { label: a.node.label, world: a.world }, b: { label: b.node.label, world: b.world }, diff,
+    });
+    const pYes = await client.yesProbability({ system, user: question, signal });
+    return { pYes, same: pYes !== null && pYes >= threshold, question };
+  };
+}
+
 // Verdicts by alternative, in order: { bad: reason | null }. A line the critic
 // did not write keeps the alternative: a missed bad one costs one node, and the
 // user can see and delete it.
@@ -84,4 +122,6 @@ function createCritic({ client, system, signal }) {
   };
 }
 
-module.exports = { createJudge, createCritic, parseVerdicts, pairQuestion, telling, SAME_THRESHOLD };
+module.exports = {
+  createJudge, createFutureJudge, createCritic, parseVerdicts, pairQuestion, futureQuestion, telling, SAME_THRESHOLD,
+};

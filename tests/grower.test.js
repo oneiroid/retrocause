@@ -145,14 +145,14 @@ test("a null transition is refused and counted", async () => {
   assert.strictEqual(stats.created, 1);
 });
 
-test("a confirmed judge merges: an edge to the survivor, no new node", async () => {
+test("routes mode: a confirmed judge merges, an edge to the survivor, no new node", async () => {
   const graph = seed();
   graph.nodes.push({ id: "p", label: "The wolf bites Red", expr: "bite(wolf, red)", state: "Red is hurt by the wolf.", kind: "story" });
   graph.edges.push({ id: "e2", from: "r", to: "p", type: "causes" });
   const write = () => "The wolf bites Red hard | Red is hurt by the wolf.";
   const events = [];
   const client = scripted({ write, pYes: () => 0.9 });
-  const result = await run({ graph, client, merge: true, depth: 1, width: 1, onEvent: (e) => events.push(e) });
+  const result = await run({ graph, client, merge: "routes", depth: 1, width: 1, onEvent: (e) => events.push(e) });
   assert.strictEqual(result.stats.merged, 1);
   assert.strictEqual(result.stats.created, 0);
   assert.strictEqual(result.graph.nodes.length, 3);
@@ -162,24 +162,24 @@ test("a confirmed judge merges: an edge to the survivor, no new node", async () 
   assert.strictEqual(result.trace[0].judgements[0].survivor, "p");
 });
 
-test("a refused judge keeps the candidate as a new node", async () => {
+test("routes mode: a refused judge keeps the candidate as a new node", async () => {
   const graph = seed();
   graph.nodes.push({ id: "p", label: "The wolf bites Red", expr: "bite(wolf, red)", state: "Red is hurt by the wolf.", kind: "story" });
   graph.edges.push({ id: "e2", from: "r", to: "p", type: "causes" });
   const write = () => "The wolf bites Red hard | Red is hurt by the wolf.";
-  const { stats } = await run({ graph, client: scripted({ write, pYes: () => 0.1 }), merge: true, depth: 1, width: 1 });
+  const { stats } = await run({ graph, client: scripted({ write, pYes: () => 0.1 }), merge: "routes", depth: 1, width: 1 });
   assert.strictEqual(stats.mergesRefused, 1);
   assert.strictEqual(stats.created, 1);
 });
 
-test("parallel expansions cannot both add the same state unasked", async () => {
+test("routes mode: parallel expansions cannot both add the same state unasked", async () => {
   // Round 1 gives two parents; round 2 expands both at once, and both write the
   // same event. Whichever lands second must be asked about the first.
   const write = (system, user, call) => (call === 1
     ? "Alder rises high | Kettles boil over.\nGrandfather sleeps soundly | Lanterns dim slowly."
     : "The wolf bites Red | Red is hurt by the wolf.");
   const client = scripted({ write, pYes: () => 0.9 });
-  const { graph, stats } = await run({ client, merge: true, depth: 2, width: 2, beam: 100, maxNodes: 100, concurrency: 2 });
+  const { graph, stats } = await run({ client, merge: "routes", depth: 2, width: 2, beam: 100, maxNodes: 100, concurrency: 2 });
   assert.strictEqual(stats.merged, 1);
   const bites = graph.nodes.filter((n) => n.label === "The wolf bites Red");
   assert.strictEqual(bites.length, 1);
@@ -253,4 +253,100 @@ test("progress events carry the counters the Lab shows", async () => {
   assert.strictEqual(last.stats.expansions, 1);
   assert.strictEqual(last.stats.created, 3);
   assert.deepStrictEqual(last.active, []);
+});
+
+// ── facts mode ──────────────────────────────────────────────────────────────
+
+const factSeed = () => ({
+  title: "T",
+  entities: ["a", "b"],
+  root: "r",
+  nodes: [
+    { id: "r", label: "Start", expr: "start(a)", state: "A is home.", kind: "root", effects: "a.location=home, b.location=hill" },
+    { id: "m", label: "Middle", expr: "middle(a)", state: "A is out.", kind: "story", effects: "a.location=road" },
+  ],
+  edges: [{ id: "e1", from: "r", to: "m", type: "causes" }],
+});
+
+test("parseAlternatives reads facts into effects, and keeps a prose state without them", () => {
+  const { alternatives } = parseAlternatives("A runs to the hill | A.location = the hill, b.scared=yes\nA waits | A is still.");
+  assert.strictEqual(alternatives[0].effects, "a.location=hill, b.scared=yes");
+  assert.strictEqual(alternatives[0].state, "a.location=hill, b.scared=yes");
+  assert.deepStrictEqual(alternatives[1].changes, []);
+  assert.strictEqual(alternatives[1].state, "A is still.");
+});
+
+test("storySoFar shows the folded world when the path has facts", () => {
+  const text = storySoFar(factSeed(), "m");
+  assert.match(text, /World now:\na: location=road\nb: location=hill/);
+});
+
+test("facts mode: two routes into one world merge with no model call", async () => {
+  // Round 1: two different events from m. Round 2: each child writes an event
+  // that lands in the same world, so the second becomes a rejoin into the first.
+  const write = (system, user, call) => {
+    if (call === 1) return "A meets b | a.location=hill\nB comes down | b.location=road";
+    if (/a: location=hill/.test(user)) return "B greets a | a.greeted=yes, a.location=hill";
+    return "A walks up with b | a.location=hill, b.location=hill, a.greeted=yes";
+  };
+  const events = [];
+  const client = scripted({ write, pYes: () => 1 });
+  const { graph, stats } = await run({
+    graph: factSeed(), client, merge: "facts", depth: 2, width: 2, beam: 100, maxNodes: 100, concurrency: 1,
+    onEvent: (e) => events.push(e),
+  });
+  assert.strictEqual(stats.mergedOnFacts, 1);
+  assert.strictEqual(stats.judgeCalls, 0);
+  assert.strictEqual(client.calls.judge, 0);
+  assert.strictEqual(stats.convergent, 1);
+  const merge = events.find((e) => e.type === "merge");
+  assert.strictEqual(merge.how, "same world");
+  assert.strictEqual(graph.edges.filter((e) => e.to === merge.into).length, 2);
+  assert.ok(validateGraph(graph).ok);
+});
+
+test("facts mode: an event that changes no fact is a null transition", async () => {
+  const write = () => "A stands still | a.location=road\nA leaves | a.location=town";
+  const { stats } = await run({ graph: factSeed(), client: scripted({ write }), merge: "facts", depth: 1, width: 2 });
+  assert.strictEqual(stats.nullTransitions, 1);
+  assert.strictEqual(stats.created, 1);
+});
+
+test("facts mode: a return to a world on its own route is kept as a new node", async () => {
+  const write = () => "A goes home | a.location=home";
+  const { stats, graph } = await run({ graph: factSeed(), client: scripted({ write }), merge: "facts", depth: 1, width: 1 });
+  assert.strictEqual(stats.created, 1);
+  assert.strictEqual(stats.recurrences, 1);
+  assert.ok(validateGraph(graph).ok);
+});
+
+test("facts mode: a world one fact away goes to the future judge, which decides", async () => {
+  const graph = factSeed();
+  graph.nodes.push({ id: "p", label: "A is chased home", expr: "chase(b, a)", state: "", kind: "story", effects: "a.location=home, a.scared=yes" });
+  graph.edges.push({ id: "e2", from: "r", to: "p", type: "causes" });
+  const write = () => "A runs home in fear | a.location=home, a.afraid=yes";
+  const templates = { ...TEMPLATES, future: "future?" };
+  let asked = "";
+  const yes = await run({
+    graph: structuredClone(graph), templates, client: scripted({ write, pYes: (user) => { asked = user; return 0.8; } }),
+    merge: "facts", depth: 1, width: 1,
+  });
+  assert.strictEqual(yes.stats.mergedByJudge, 1);
+  assert.strictEqual(yes.stats.judgeCalls, 1);
+  assert.match(asked, /Only in A: a\.afraid=yes/);
+  assert.match(asked, /Only in B: a\.scared=yes/);
+  assert.ok(yes.graph.edges.some((e) => e.from === "m" && e.to === "p" && e.type === "rejoins"));
+
+  const no = await run({ graph: structuredClone(graph), templates, client: scripted({ write, pYes: () => 0.2 }), merge: "facts", depth: 1, width: 1 });
+  assert.strictEqual(no.stats.mergesRefused, 1);
+  assert.strictEqual(no.stats.created, 1);
+});
+
+test("merge off grows a plain tree even when worlds coincide", async () => {
+  const write = (system, user, call) => (call === 1 ? "A meets b | a.location=hill\nB comes down | b.location=road"
+    : /a: location=hill/.test(user) ? "X | a.greeted=yes" : "Y | a.location=hill, b.location=hill, a.greeted=yes");
+  const { stats } = await run({ graph: factSeed(), client: scripted({ write }), merge: "off", depth: 2, width: 2, beam: 100, maxNodes: 100 });
+  assert.strictEqual(stats.merged, 0);
+  assert.strictEqual(stats.created, 4);
+  assert.strictEqual(stats.convergent, 0);
 });

@@ -23,17 +23,25 @@ to its own graph as the event arrives. `./run.sh` starts everything.
 1. **Work queue.** Starts with the selected node. Shallowest first, first-listed
    sibling first. One worker per server slot, less two kept free for judge calls.
 2. **Expansion.** One model call writes `width` alternatives, one line each:
-   `event | state`, or `event | state | end`. The prompt is the story's events so far
-   plus the current world state. Paths over 40 events keep the opening and the
-   recent 35. Thinking is off.
+   `event | changes`, or `event | changes | end`, the changes being
+   `owner.property=value` facts. The prompt is the story's events so far plus the
+   world folded from every fact on the path (`facts.js`), so the model updates the
+   keys it sees instead of re-describing the world. Paths over 40 events keep the
+   opening and the recent 35. Thinking is off.
 3. **Prune (optional).** One more call marks alternatives bad (contradiction, static,
    off-story). Off by default: see `experiments/NOTES.md`.
-4. **Merge (optional, on by default).** Each candidate's lookalikes are found without
-   the model (`mergeProposals`: shared event words, plus a low bar on shared state
-   words, never an ancestor). The most similar two go to the judge, which reads both
-   routes from where they part and answers yes or no; P(yes) comes from the first
-   token's logprobs. At P ≥ 0.5 the candidate becomes a `rejoins` edge to that node and
-   the branch ends there. Otherwise it is a new node.
+4. **Merge, mode `facts` (the default).** A candidate whose folded world equals its
+   source's changed nothing and is refused. One whose world equals a node off its own
+   route becomes a `rejoins` edge to it, with no model call. One whose world is one or
+   two facts from a node's goes to the future judge: shared facts once, then each
+   side's last event and own facts, and "can the same things happen next in A and in
+   B?"; P(yes) from the first token's logprobs, merge at ≥ 0.5. Routes are not shown:
+   two routes into one world is the merge wanted. A return to a world on its own route
+   is kept as a new node (an edge back would be a cycle).
+
+   Mode `routes` is the earlier judge: lookalikes by shared event words, then "have A
+   and B reached the same point?" over both routes. It refuses different routes into
+   one situation by design, and is kept for comparison. Mode `off` grows a tree.
 5. **Insert.** The step from "nothing left to ask" to the insert runs without an
    await, so two racing expansions cannot both add one state unasked.
 6. **Next.** A new node joins the queue unless it is an ending or at the depth limit.
@@ -49,7 +57,7 @@ to its own graph as the event arrives. `./run.sh` starts everything.
 | Beam | Most expansions at each depth. Lower reaches deeper for the same cost: depth 10 at width 3 is 70 calls at beam 8, 29524 without one |
 | Max nodes | Run budget, up to 1000 |
 | Temp | Sampling temperature for expansions |
-| Merge same situations | The judge, above. Off is faster and gives a plain tree |
+| Merge | `facts` (same world, then the future judge), `routes` (the route judge), `off` |
 | Prune bad branches | The critic, above |
 
 ## Serving
@@ -75,4 +83,7 @@ parent gets the same id.
 
 See `experiments/NOTES.md` for the measurements. In short, prompt evaluation is what
 to watch. It runs near 500 tok/s total and stalls every running generation, so the
-judge's call count sets the speed more than generation does.
+judge's call count sets the speed more than generation does. That is the second
+reason for mode `facts`: an exact world match costs no call, and the run reports
+`judgeCalls`, `mergedOnFacts`, `mergedByJudge` and `convergent` so the trade is
+visible.

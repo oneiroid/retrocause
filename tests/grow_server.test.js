@@ -113,7 +113,7 @@ test("/prompt previews with no model call, /prompts lists the templates", async 
     assert.match(preview.system, /write 3 different things/);
     assert.match(preview.user, /Events so far/);
     const { templates } = await (await fetch(`${base}/prompts`)).json();
-    assert.deepStrictEqual(templates.map((t) => t.name), ["branch.chat", "critic.chat", "same.chat"]);
+    assert.deepStrictEqual(templates.map((t) => t.name), ["branch.chat", "critic.chat", "future.chat", "same.chat"]);
   });
 });
 

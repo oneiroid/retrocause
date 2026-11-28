@@ -6,7 +6,7 @@
 // the server's slots and prompt caching is on, so a rerun gives another graph.
 //
 //   npm run grow -- --story red --from red_woods --depth 4 --width 3 --beam 8 \
-//                   --max-nodes 60 [--no-merge] [--no-prune] [--temperature 0.9]
+//                   --max-nodes 60 [--merge facts|routes|off] [--no-merge] [--prune yes] [--temperature 0.9]
 
 "use strict";
 
@@ -20,7 +20,7 @@ const { createClient } = require(path.join(REPO, "llm_client.js"));
 const { growGraph, DEFAULTS } = require(path.join(REPO, "grower.js"));
 
 const PROMPT_DIR = path.join(REPO, "prompts");
-const TEMPLATE_FILES = { branch: "branch.chat", same: "same.chat", critic: "critic.chat" };
+const TEMPLATE_FILES = { branch: "branch.chat", same: "same.chat", future: "future.chat", critic: "critic.chat" };
 const GRAPH_FILE = "grown_graph.json";
 const MANIFEST_FILE = "growth_manifest.json";
 const TRACE_FILE = "trace.json";
@@ -97,7 +97,8 @@ async function main() {
   for (const [flag, key] of [["depth", "depth"], ["width", "width"], ["beam", "beam"], ["max-nodes", "maxNodes"], ["temperature", "temperature"]]) {
     if (args[flag] !== undefined) params[key] = +args[flag];
   }
-  for (const key of ["merge", "prune"]) if (args[key] === false) params[key] = false;
+  if (args.merge !== undefined) params.merge = args.merge === false ? "off" : args.merge;
+  if (args.prune !== undefined) params.prune = args.prune !== false && args.prune !== "no";
 
   let lastLine = 0;
   const { runId, stats, error } = await runGrow({
@@ -105,8 +106,8 @@ async function main() {
     from,
     params,
     onEvent: (event) => {
-      if (event.type === "node") console.log(`+ d${event.depth} ${event.node.label}  [${event.node.expr}]`);
-      if (event.type === "merge") console.log(`= merged "${event.label}" P=${event.pYes.toFixed(2)}`);
+      if (event.type === "node") console.log(`+ d${event.depth} ${event.node.label}  [${event.node.effects || event.node.state}]`);
+      if (event.type === "merge") console.log(`= ${event.how} "${event.label}" -> ${event.into}${event.pYes === undefined ? "" : ` P=${event.pYes.toFixed(2)}`}`);
       if (event.type === "pruned") console.log(`x pruned (${event.reason}) ${event.label}`);
       if (event.type === "progress" && Date.now() - lastLine > 5000) {
         lastLine = Date.now();

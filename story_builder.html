@@ -111,7 +111,13 @@
           <label>Max nodes<input id="growMaxNodes" type="number" value="60" min="1" max="1000"></label>
           <label>Temp<input id="growTemperature" type="number" value="0.8" min="0" max="2" step="0.1"></label>
         </div>
-        <label class="check" title="Ask the model whether a new event reached the same point in the story as a similar node; if so, connect to that node instead of adding one."><input id="growMerge" type="checkbox" checked>Merge same situations</label>
+        <label title="Same world: the model writes what each event changes; a new event whose world equals a node's joins it with no model call, and one a fact or two away is put to a judge asking whether the same things can happen next. Same route: the older judge, which compares how the two got there. Off: a plain tree.">Merge
+          <select id="growMerge">
+            <option value="facts" selected>Same world (facts, then future judge)</option>
+            <option value="routes">Same route (older judge)</option>
+            <option value="off">Off</option>
+          </select>
+        </label>
         <label class="check" title="One more model call per expansion: drops alternatives it finds contradictory, static or off-story. Slower, and it does cut good ones."><input id="growPrune" type="checkbox">Prune bad branches</label>
         <div class="button-row">
           <button id="autoGrowBtn" type="button" class="primary">Grow</button>
@@ -168,6 +174,7 @@
   </dialog>
 
   <script src="ids.js"></script>
+  <script src="facts.js"></script>
   <script src="story_builder_engine.js"></script>
   <script src="merge_predicate.js"></script>
   <script src="growth.js"></script>
