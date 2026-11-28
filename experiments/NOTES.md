@@ -270,3 +270,22 @@ lists carried duplicate labels after a fold.
 Changed after this (`MIN_FUTURES = 2` distinct next events each side, the last 3
 events before each node shown as "Before that", `FUTURES_THRESHOLD = 0.8`, children
 deduplicated by label, a third prompt example where B's future repeats A's past).
+
+### Runs H, I (2026-11-28, `ee7d655`): precise, nearly blind
+
+| run | nodes | folds | judge calls | convergent | max depth | time |
+|---|---|---|---|---|---|---|
+| H run_011de5ddc3eadeef | 150 | 2 | 25 | 2 | 7 | 89 s |
+| I run_93a6a067d5c4f901 | 150 | 0 | 26 | 0 | 7 | 85 s |
+
+Folds read by Claude: H1 false (two consecutive steps on different branches: "the
+wolf offers Red something" into "Red accepts the shiny object"), H2 true (two routes
+into "Red reaches the grandmother's house", matching futures). I: none, top
+P 0.49. The F/G failure kinds are gone; recall is near zero. The picker spent most
+calls on consecutive-step pairs, because one step changes one or two facts, so
+"fewest differing facts" finds a node's neighbour on another branch.
+
+Changed after this: candidates ranked by shared event words first, then facts;
+pairs where one's event is in the other's past or next events are skipped; up to 2
+candidates per expanded node (`MAX_FUTURES_PER_NODE`). Max depth is 7 in all four
+futures runs against 8 in the facts runs at the same budget; not explained yet.

@@ -59,6 +59,9 @@ const NEAR_FACTS = 2;
 const MIN_FUTURES = 2;
 // Events of each side's own past the futures judge sees.
 const FUTURES_PAST_EVENTS = 3;
+// Lookalikes one expanded node is put to the judge against. Each is one call;
+// at threshold 0.8 one per node found 2 folds in 51 calls.
+const MAX_FUTURES_PER_NODE = 2;
 
 const DEFAULTS = {
   depth: 4, width: 3, beam: 8, maxNodes: 60, merge: "facts", prune: false, temperature: DEFAULT_TEMPERATURE,
@@ -486,25 +489,33 @@ async function growGraph({
   const askedPairs = new Set();
   const labelWords = (node) => Predicate.wordsOf(node.label);
 
-  // The expanded node most like `x`: fewest differing facts, then most shared
-  // event words. Never on x's route or below it, so a fold cannot make a cycle.
-  function futuresCandidate(x) {
+  // The expanded nodes most like `x`, best first: most shared event words, then
+  // fewest differing facts. Never on x's route or below it, so a fold cannot make
+  // a cycle, and never a step next to x on another branch (x's event in y's past,
+  // or y's among x's next events, or the other way round): fewest facts alone
+  // picked mostly those on 2026-11-28, and they are consecutive steps, not one.
+  function futuresCandidates(x) {
     const xWorld = worlds.get(x.id) || new Map();
     const xWords = labelWords(x);
+    const xLabel = Ids.normalizedContent(x.label);
+    const xPast = new Set(pastOf(x.id).map(Ids.normalizedContent));
+    const xNext = new Set(childrenOf(x.id).map((n) => Ids.normalizedContent(n.label)));
     const out = new Set([...ancestorsOf(x.id), ...descendantsOf(x.id)]);
-    let best = null;
+    const found = [];
     for (const y of graph.nodes) {
       if (out.has(y.id) || askedPairs.has(`${x.id}|${y.id}`)) continue;
       const kids = childrenOf(y.id);
       if (kids.length < MIN_FUTURES) continue;
       const diff = Facts.worldDiff(xWorld, worlds.get(y.id) || new Map());
       if (diff.length > NEAR_FACTS) continue;
-      const words = Predicate.similarity(xWords, labelWords(y));
-      if (!best || diff.length < best.diff.length || (diff.length === best.diff.length && words > best.words)) {
-        best = { y, kids, diff, words };
-      }
+      const yLabel = Ids.normalizedContent(y.label);
+      const adjacent = xPast.has(yLabel) || xNext.has(yLabel)
+        || pastOf(y.id).map(Ids.normalizedContent).includes(xLabel)
+        || kids.some((n) => Ids.normalizedContent(n.label) === xLabel);
+      if (adjacent) continue;
+      found.push({ y, kids, diff, words: Predicate.similarity(xWords, labelWords(y)) });
     }
-    return best;
+    return found.sort((a, b) => (b.words - a.words) || (a.diff.length - b.diff.length) || String(a.y.id).localeCompare(String(b.y.id)));
   }
 
   async function mergeByFutures(xId, record) {
@@ -512,8 +523,15 @@ async function growGraph({
     if (!x || stats.created >= maxNodes) return;
     const xKids = childrenOf(xId);
     if (xKids.length < MIN_FUTURES) return;
-    const found = futuresCandidate(x);
-    if (!found) return;
+    for (const found of futuresCandidates(x).slice(0, MAX_FUTURES_PER_NODE)) {
+      if (await askFutures(x, xKids, found, record)) return;
+    }
+  }
+
+  // One question; true when x was folded into found.y.
+  async function askFutures(x, xKids, found, record) {
+    const xId = x.id;
+    if (!graph.nodes.some((n) => n.id === found.y.id) || !graph.nodes.some((n) => n.id === xId)) return false;
     askedPairs.add(`${x.id}|${found.y.id}`).add(`${found.y.id}|${x.id}`);
     stats.judgeCalls += 1;
     const verdict = await grownFuturesJudge({
@@ -525,12 +543,12 @@ async function growGraph({
     record.judgements.push({ label: x.label, survivor: found.y.id, kind: "futures", ...verdict });
     if (!verdict.same) {
       stats.mergesRefused += 1;
-      return;
+      return false;
     }
     // The graph moved during the await: both must still be there, and apart.
     const y = graph.nodes.find((n) => n.id === found.y.id);
-    if (!y || !graph.nodes.some((n) => n.id === xId)) return;
-    if (Engine.reachable(graph, xId, y.id) || Engine.reachable(graph, y.id, xId)) return;
+    if (!y || !graph.nodes.some((n) => n.id === xId)) return false;
+    if (Engine.reachable(graph, xId, y.id) || Engine.reachable(graph, y.id, xId)) return false;
     const { removed, added } = Growth.collapseInto(graph, xId, y.id, `same futures, P=${verdict.pYes.toFixed(2)}`);
     const key = Facts.worldKey(worlds.get(xId) || new Map());
     if (byWorld.has(key)) byWorld.set(key, byWorld.get(key).filter((id) => id !== xId));
@@ -541,6 +559,7 @@ async function growGraph({
       type: "collapse", victim: xId, into: y.id, label: x.label, pYes: verdict.pYes,
       removedEdges: removed.map((e) => e.id), addedEdges: added,
     });
+    return true;
   }
 
   async function expand(item) {
