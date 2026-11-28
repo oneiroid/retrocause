@@ -30,7 +30,7 @@ to its own graph as the event arrives. `./run.sh` starts everything.
    opening and the recent 35. Thinking is off.
 3. **Prune (optional).** One more call marks alternatives bad (contradiction, static,
    off-story). Off by default: see `experiments/NOTES.md`.
-4. **Merge, mode `facts` (the default).** A candidate whose folded world equals its
+4. **Merge, mode `facts`.** A candidate whose folded world equals its
    source's changed nothing and is refused. One whose world equals a node off its own
    route becomes a `rejoins` edge to it, with no model call. One whose world is one or
    two facts from a node's goes to the future judge: shared facts once, then each
@@ -39,7 +39,7 @@ to its own graph as the event arrives. `./run.sh` starts everything.
    two routes into one world is the merge wanted. A return to a world on its own route
    is kept as a new node (an edge back would be a cycle).
 
-   Mode `futures` merges nothing on insert. After a node is expanded, it is put to
+   Mode `futures` (the default since 2026-11-28) merges nothing on insert. After a node is expanded, it is put to
    the judge with one expanded lookalike (fewest differing facts, then most shared
    event words, never on its route or below it) as two lists of what was found to
    happen next, and "could each event after A happen right after B, and the other

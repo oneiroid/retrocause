@@ -289,3 +289,43 @@ Changed after this: candidates ranked by shared event words first, then facts;
 pairs where one's event is in the other's past or next events are skipped; up to 2
 candidates per expanded node (`MAX_FUTURES_PER_NODE`). Max depth is 7 in all four
 futures runs against 8 in the facts runs at the same budget; not explained yet.
+
+### Runs J, K (2026-11-28, `58f30d1`): still nearly blind; `futures` made the default
+
+| run | nodes | folds | judge calls | convergent | max depth | time |
+|---|---|---|---|---|---|---|
+| J run_ad0ca3cf9d5078b1 | 150 | 0 | 42 | 0 | 7 | 89 s |
+| K run_3e87a6a89e55707a | 150 | 1 | 43 | 1 | 7 | 101 s |
+
+One fold in 85 questions (K1, two routes into "Red reaches the grandmother house",
+plausible). A clear true merge refused at 0.19 ("Red tells the wolf about her
+grandmother's house" twice, after the same interception, near-identical futures).
+Consecutive-step pairs still fill the top of the P list: the skip matches exact
+labels only, and paraphrases ("tells wolf about grandmother's location") or
+cross-branch steps (knock vs open) pass it.
+
+**Max depth 7 is the budget.** Nothing merges on insert in this mode, so every
+level fills to about beam × width; depths 1–6 held 139 of J's 150 nodes. Facts runs
+reached 8 because insert-time merges absorbed shallow candidates. Not a bug; a
+larger cap or a lower beam reaches 8.
+
+**Where the day leaves merging**, all reads by Claude, none by a human:
+
+| mode | runs | merges read | true / plausible / false | judge calls per run |
+|---|---|---|---|---|
+| facts, free equal worlds + near judge | A–C | 34 | 14 / 3 / 17 | 71–80 |
+| facts, every merge judged | D, E | 24 | 10 / 6 / 8 | 98–99 |
+| futures, 1 candidate, threshold 0.5 | F, G | 10 | 3 / 2 / 5 | 22–32 |
+| futures, ≥2 next each, past shown, 0.8 | H, I | 2 | 1 / 0 / 1 | 25–26 |
+| futures, word-ranked, 2 tries | J, K | 1 | 0 / 1 / 0 | 42–43 |
+
+`futures` is the default from here: a false merge loses a state for good, and a
+missed one costs a duplicate node, so the safe, cheap mode goes first. It finds
+little. The 4B judge, asked in every form tried today, follows sentence
+similarity and does not reliably read facts or lists. Next, in order:
+(a) score the overlap of the two sets of next events by event words, no model;
+(b) one question per event ("could A's event k happen right after B?"), fold only
+on all yes; (c) the skip by word similarity, not exact label; (d) a human-labelled
+set of ~30 pairs from these runs, so that the next table is not Claude's reading.
+Open, unrelated to merging: every ending in eleven runs sits on the last line of
+its expansion.

@@ -27,11 +27,14 @@ non-replayable, while content ids and canonical JSON stay because they are cheap
 Models stay **local** — hosted-only models are out. Every generation and other slow
 step shows progress, and every implemented function is reachable from the UI.
 
-**What a merge means (2026-11-28).** Two nodes are the same state when their
-folded worlds (`effects`) are equal, or, a fact or two apart, when a judge says the
-same things can happen next. How each was reached does not count: two routes into
-one world is the convergence the project exists to find (INTUITIONS §5). The older
-route judge refused exactly that and is kept only as merge mode `routes`.
+**What a merge means (2026-11-28).** Two nodes are the same state when the same
+things can happen next from both. How each was reached does not count: two routes
+into one situation is the convergence the project exists to find (INTUITIONS §5).
+The default mode, `futures`, asks that of two expanded lookalikes using the next
+events the run grew; mode `facts` asks it of folded worlds before growing. The
+older route judge refused different routes by design and is kept only as mode
+`routes`. Measured precision is in `experiments/NOTES.md`; none of it is
+human-labelled yet.
 
 **Conflict resolution:** when the intuitions and the code disagree, the
 disagreement is data — flag it in both, don't silently absorb either

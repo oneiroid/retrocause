@@ -64,7 +64,7 @@ const FUTURES_PAST_EVENTS = 3;
 const MAX_FUTURES_PER_NODE = 2;
 
 const DEFAULTS = {
-  depth: 4, width: 3, beam: 8, maxNodes: 60, merge: "facts", prune: false, temperature: DEFAULT_TEMPERATURE,
+  depth: 4, width: 3, beam: 8, maxNodes: 60, merge: "futures", prune: false, temperature: DEFAULT_TEMPERATURE,
 };
 
 // `true` and `false` from older callers: on is "facts".
