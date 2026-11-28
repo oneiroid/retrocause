@@ -215,3 +215,36 @@ to a position and says that going wrong does not end a story.
 The deeper fix suggested by these reads: judge identity by the futures the run
 actually grew (once both nodes are expanded, could A's children follow B?), which
 is the test INTUITIONS §5 asks for and costs no extra expansion.
+
+### Runs D, E (2026-11-28, `8265436`): judge in front of every merge
+
+| run | nodes | merged (equal world / near) | judge calls | null | recurrences | convergent | endings | time |
+|---|---|---|---|---|---|---|---|---|
+| D run_eb60e1075f1b08f9 | 124 | 17 | 99 | 21 | 6 | 12 | 17 | 127 s |
+| E run_550b6e79efe8c983 | 145 | 7 | 98 | 22 | 2 | 6 | 21 | 140 s |
+
+Read by Claude, same standard as A–C: **24 merges, 10 true, 6 plausible, 8 false**
+(A–C: 34, 14 / 3 / 17). False share 50% → 33%, all of the gain on near worlds
+(false 10 of 23 → 4 of 18). Equal worlds, now judged: 1 true, 1 plausible, 4 false
+of 6; the judge said 1.00 to "Red collects flowers" vs "Red remembers the warning".
+
+- **The judge follows the event sentences, not the facts.** 12 of 18 near merges
+  carried an "A not stated / B yes" line and were accepted; exact duplicate events
+  ("Red knocks on the door" twice) were refused at 0.01 over a one-sided fact.
+  Refusals are bimodal (almost all P < 0.05, max 0.39).
+- **Endings: 0/0/24 and 0/0/26 by line.** Seven runs, every ending on the last
+  line, whatever the prompt says. The position decides the role.
+- **Values: fixed enough.** Off-seed values on seed keys are mostly legitimate
+  opposites (`wolf.disguised=no`, `red.tempted=no`); garbage 4–5 per run
+  (`red.suspicious=high`, `woodcutter.location=inside_wolf`). New: owner errors
+  (`red.knows_destination`), synonyms (`woodcutter.has_tool|has_axe|has_weapon`),
+  and **the vocabulary leaks into labels**: 9/124 and 32/145 labels hold fact
+  syntax ("Red knocks on grandmother.door"; one event was "Grandmother.door=open").
+- Cost: judge calls 71–80 → 98–99, runs ~110 s → 127–140 s, mostly refusals.
+
+Reading: the fact layer earns its keep for the prompt (vocabulary, no drift) and
+for retrieval (which pairs to ask about). As identity it does not: the facts the
+model writes are too thin to separate events, and this 4B judge cannot use them.
+What it reads well is sentences. So the next test of identity is the one §5 asks
+for, with sentences: once both nodes have grown children, could A's actual next
+events follow B, and B's follow A?
