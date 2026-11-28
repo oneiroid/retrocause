@@ -16,6 +16,10 @@
 (function attachFacts(root) {
   const ASSIGNMENT = /^([a-z0-9_]+)\.([a-z0-9_.]+)=([a-z0-9_.-]+)$/;
   const ARTICLE = /^(the|a|an)_/;
+  // Properties that name the event instead of a state it leaves behind. The
+  // first run (2026-11-28) wrote `wolf.action=wait` on 7 of 57 nodes; such a
+  // fact never recurs, so it splits worlds that are the same.
+  const EVENT_PROPERTY = /(^|\.)(action|actions|activity|doing|event|state|status)$/;
 
   function token(text) {
     return String(text || "")
@@ -40,7 +44,7 @@
       }
       const key = token(part.slice(0, eq));
       const value = token(part.slice(eq + 1)).replace(ARTICLE, "");
-      if (!ASSIGNMENT.test(`${key}=${value}`)) {
+      if (!ASSIGNMENT.test(`${key}=${value}`) || EVENT_PROPERTY.test(key)) {
         rejected += 1;
         continue;
       }
@@ -118,7 +122,15 @@
     return worlds;
   }
 
-  const api = { parseEffects, formatEffects, fold, worldKey, worldDiff, renderWorld, effectsOf, worldsOf, token };
+  // The fact keys the story's authored nodes use, sorted: the vocabulary the
+  // model is asked to write in, so two routes name one fact one way.
+  function vocabularyOf(graph) {
+    const keys = new Set();
+    graph.nodes.filter((n) => n.createdBy !== "grown").forEach((n) => effectsOf(n).forEach(([k]) => keys.add(k)));
+    return [...keys].sort();
+  }
+
+  const api = { vocabularyOf, parseEffects, formatEffects, fold, worldKey, worldDiff, renderWorld, effectsOf, worldsOf, token };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   root.StoryFacts = api;
 })(typeof window !== "undefined" ? window : globalThis);

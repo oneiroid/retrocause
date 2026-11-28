@@ -6,7 +6,7 @@ You extend a branching story. Given the events so far and the world now, write {
 
 Write one line per alternative and nothing else: event | changes
 event: one short present-tense sentence naming who acts.
-changes: the facts this event changes, as owner.property=value, separated by commas. Use the owners and properties already in the world when they fit, with the same spelling; add a new one only for something new. One-word or snake_case values.
+changes: the facts this event changes, as owner.property=value, separated by commas. Name what is different afterwards: where someone is, who has what, who knows what, who is alive, awake or hurt. Use the fact keys listed, with the same spelling; add a new key only for something none of them covers. Never a key for the action itself (no action=, state=). One-word or snake_case values.
 Add | end only if the story is over after that event.
 
 Example:

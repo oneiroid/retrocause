@@ -65,3 +65,18 @@ test("worldsOf takes a merged node's world through its main parent, not a rejoin
   };
   assert.strictEqual(Facts.worldKey(Facts.worldsOf(graph).get("d")), "a.x=1;a.y=2;a.z=4");
 });
+
+test("parseEffects drops keys that name the event instead of a state", () => {
+  const { pairs, rejected } = Facts.parseEffects("wolf.action=wait, red.state=happy, wolf.location=house");
+  assert.deepStrictEqual(pairs, [["wolf.location", "house"]]);
+  assert.strictEqual(rejected, 2);
+});
+
+test("vocabularyOf lists the authored nodes' keys, not the grown ones", () => {
+  const graph = { nodes: [
+    { id: "a", effects: "red.location=home, wolf.alive=yes" },
+    { id: "b", effects: "red.location=woods" },
+    { id: "g", createdBy: "grown", effects: "red.mood=glad" },
+  ], edges: [] };
+  assert.deepStrictEqual(Facts.vocabularyOf(graph), ["red.location", "wolf.alive"]);
+});

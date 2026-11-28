@@ -278,7 +278,7 @@ test("parseAlternatives reads facts into effects, and keeps a prose state withou
 
 test("storySoFar shows the folded world when the path has facts", () => {
   const text = storySoFar(factSeed(), "m");
-  assert.match(text, /World now:\na: location=road\nb: location=hill/);
+  assert.match(text, /World now:\na: location=road\nb: location=hill\n\nFact keys in this story: a.location, b.location/);
 });
 
 test("facts mode: two routes into one world merge with no model call", async () => {

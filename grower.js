@@ -67,6 +67,7 @@ function mergeMode(value) {
 // `world`: the source's folded facts; folded here from the graph when not given.
 function storySoFar(graph, sourceId, world = null) {
   if (!world) world = Facts.worldsOf(graph).get(sourceId) || null;
+  const vocabulary = Facts.vocabularyOf(graph);
   const byId = new Map(graph.nodes.map((n) => [n.id, n]));
   const title = graph.title || (graph.meta && graph.meta.title) || "Untitled";
   const entities = Array.isArray(graph.entities) ? graph.entities : [];
@@ -85,6 +86,7 @@ function storySoFar(graph, sourceId, world = null) {
     ...(world && world.size
       ? ["World now:", Facts.renderWorld(world)]
       : [`World state now: ${(path.at(-1) || {}).state || "(not stated)"}`]),
+    ...(vocabulary.length ? ["", `Fact keys in this story: ${vocabulary.join(", ")}`] : []),
   ].join("\n");
 }
 

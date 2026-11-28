@@ -133,6 +133,37 @@ same world (villagers at the flock, trust `reduced`). They are on one route, so
 it is a recurrence, not a merge, but it shows the authored facts do not record
 how many times the boy has fooled them.
 
-Not measured yet: no run on the model. Next: one short run per mode from
-`red_woods` (depth 8, width 3, beam 12, cap 150), the counters above, and 20
-merges for a human to label.
+### First runs (2026-11-28, Nemotron 3.5 Bolt E4B, 16 slots)
+
+From `red_woods`, depth 8 / width 3 / beam 12 / cap 150, temperature 0.8.
+
+| mode | run | nodes | merged (on facts / judged) | judge calls | null | malformed | convergent | endings | expansions | time |
+|---|---|---|---|---|---|---|---|---|---|---|
+| facts | run_056902c6ba4c4bcc | 57 | 12 (4 / 8) | 43 | 9 | 8 | 9 | 14 | 27 of 50 | 50 s |
+| routes | run_2f5f21a20c252148 | 150 | 6 (0 / 6) | 33 | 19 | 0 | 6 | 30 | 59 | 72 s |
+| off | run_ad887d3a372ceaec | 145 | 0 | 0 | 14 | 0 | 0 | 29 | 53 | 50 s |
+
+Throughput 31–54 tok/s total, under the 90–150 of 2026-11-02; not investigated.
+
+- **The facts run ran out of frontier**, not budget: merged branches stop, and 14
+  of 57 nodes were endings. Merging trades breadth for convergence, as it should,
+  but at this ending rate it starves the queue.
+- **The format holds, the content does not.** Every grown node's effects parse as
+  `owner.property=value`, but read against their events many are wrong or empty:
+  "The wolf ambushes Red" → `wolf.alive=no`; "The wolf waits outside the house" →
+  `wolf.location=deeper_woods`; "Red reaches the house" → only `red.has_basket=yes`.
+  23 distinct keys over 57 nodes; `*.action` keys (event names, not states) on 9.
+- **Merges, read by eye (Claude, not a human), about half false** of the 10 that
+  added an edge: a same-world merge across different events (the facts left the
+  difference out), "ignores the wolf's trick" into "offers the wolf the basket",
+  knocking into reaching the house. The future judge is bimodal (no ≈ 0.00–0.02,
+  yes ≈ 0.75–1.00) and gave one clear false yes across a `has_basket` difference.
+  9 of its first 15 questions compared against one node, the told `red_meet`.
+- Two same-world merges added no edge: one into the told next node by an edge
+  that existed, one into the candidate's own sibling.
+
+Reading: the fold and the merge do what they say; the model's facts are too
+sparse and too loose to carry identity. First fix, without a run yet: the prompt
+lists the story's authored fact keys (`vocabularyOf`) and asks for what differs
+afterwards (place, possession, knowledge, alive/awake/hurt), and `*.action`,
+`*.state`, `*.status` keys are dropped at parse.
