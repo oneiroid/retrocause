@@ -53,7 +53,7 @@ side. See `CONCEPT.md` §"What each layer commits to".
 - The weights and llama.cpp builds live outside this repo, in the sibling
   `llmfinetune` workspace.
 - **Lab panel** (right side of the page), from the selected node: **Grow** (depth, width,
-  beam, max nodes, temperature, merge mode (same world / same route / off), prune; nodes land live, with a progress bar,
+  beam, max nodes, temperature, merge mode (same world / same futures / same route / off), prune; nodes land live, with a progress bar,
   what each slot is writing, Stop, Undo), **Propose only** (one expansion listed, add
   the ones you want), **Recorded runs**, and **Prompts** (every prompt and completion,
   a no-model preview, the templates). The toolbar's **Layered** view turns on by itself
@@ -73,10 +73,11 @@ side. See `CONCEPT.md` §"What each layer commits to".
 | `growth.js` | Merge-on-insert for manual branches (`insertContinuation`), and the grower's two moves once it has decided: `attach` a new node, `rejoin` to an existing one. Refuses **null transitions** — a continuation matching its source in both `expr` and `state` advances nothing |
 | `seeds.js` | Seed story DAGs (nodes + edges). One node = one event; `state` is world state (the model reads it), written as positive facts because models imitate it; `reading` is the authored gloss (no prompt includes it). Each story carries an `entities` character list, shown to the model |
 | `llm_client.js` | llama-server transport over `/v1/chat/completions`: streamed `chat`, `yesProbability` from first-token logprobs. Thinking off, prompt cache on. **Node-only** — never loaded by the page |
-| `grower.js` | The traversal: a concurrent work queue over the server's slots, one model call per expansion writing `width` alternatives, `parseAlternatives` for its `event \| changes \| end` lines, merge (`facts` / `routes` / `off`) and prune decisions, events for the Lab. Node-only |
-| `judges.js` | The model's checks. `createFutureJudge`: can the same things happen next? Shared facts plus each side's own, no routes (merge mode `facts`). `createJudge`: same point in the story? Both routes from where they part (mode `routes`). Both P(yes) ≥ `SAME_THRESHOLD`. `createCritic`: marks alternatives contradictory, static or off-story. Node-only |
+| `grower.js` | The traversal: a concurrent work queue over the server's slots, one model call per expansion writing `width` alternatives, `parseAlternatives` for its `event \| changes \| end` lines, merge (`facts` / `futures` / `routes` / `off`) and prune decisions, events for the Lab. Node-only |
+| `judges.js` | The model's checks. `createFutureJudge`: can the same things happen next? Shared facts plus each side's own, no routes (merge mode `facts`). `createGrownFuturesJudge`: both nodes expanded, could each one's next events follow the other (mode `futures`). `createJudge`: same point in the story? Both routes from where they part (mode `routes`). Both P(yes) ≥ `SAME_THRESHOLD`. `createCritic`: marks alternatives contradictory, static or off-story. Node-only |
 | `prompts/branch.chat.txt` | Expansion system prompt (`{{width}}`) |
-| `prompts/future.chat.txt` | Future judge system prompt, with two worked examples |
+| `prompts/future.chat.txt` | Future judge system prompt (mode `facts`), with worked examples |
+| `prompts/futures.chat.txt` | Grown-futures judge (mode `futures`): could each one's found next events follow the other? |
 | `prompts/same.chat.txt` | Route judge system prompt (mode `routes`), with two worked examples |
 | `prompts/critic.chat.txt` | Critic system prompt |
 | `tools/grow.js` | `runGrow`: one recorded run to `runs/<runId>/` (graph, manifest, trace), shared by the bridge and the CLI |

@@ -6,7 +6,7 @@
 // the server's slots and prompt caching is on, so a rerun gives another graph.
 //
 //   npm run grow -- --story red --from red_woods --depth 4 --width 3 --beam 8 \
-//                   --max-nodes 60 [--merge facts|routes|off] [--no-merge] [--prune yes] [--temperature 0.9]
+//                   --max-nodes 60 [--merge facts|futures|routes|off] [--no-merge] [--prune yes] [--temperature 0.9]
 
 "use strict";
 
@@ -20,7 +20,9 @@ const { createClient } = require(path.join(REPO, "llm_client.js"));
 const { growGraph, DEFAULTS } = require(path.join(REPO, "grower.js"));
 
 const PROMPT_DIR = path.join(REPO, "prompts");
-const TEMPLATE_FILES = { branch: "branch.chat", same: "same.chat", future: "future.chat", critic: "critic.chat" };
+const TEMPLATE_FILES = {
+  branch: "branch.chat", same: "same.chat", future: "future.chat", futures: "futures.chat", critic: "critic.chat",
+};
 const GRAPH_FILE = "grown_graph.json";
 const MANIFEST_FILE = "growth_manifest.json";
 const TRACE_FILE = "trace.json";
@@ -117,6 +119,7 @@ async function main() {
     onEvent: (event) => {
       if (event.type === "node") console.log(`+ d${event.depth} ${event.node.label}  [${event.node.effects || event.node.state}]`);
       if (event.type === "merge") console.log(`= ${event.how} "${event.label}" -> ${event.into}${event.pYes === undefined ? "" : ` P=${event.pYes.toFixed(2)}`}`);
+      if (event.type === "collapse") console.log(`= same futures "${event.label}" folded into ${event.into} P=${event.pYes.toFixed(2)}`);
       if (event.type === "pruned") console.log(`x pruned (${event.reason}) ${event.label}`);
       if (event.type === "progress" && Date.now() - lastLine > 5000) {
         lastLine = Date.now();

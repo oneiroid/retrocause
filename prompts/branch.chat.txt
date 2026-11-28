@@ -5,7 +5,7 @@ You extend a branching story. Given the events so far and the world now, write {
 - Do not repeat an event that already happened unless the story is about repeating it.
 
 Write one line per alternative and nothing else: event | changes
-event: one short present-tense sentence naming who acts.
+event: one short present-tense sentence in plain words, naming who acts. No fact keys or snake_case in it.
 changes: the facts this event changes, as owner.property=value, separated by commas. Name what is different afterwards: where someone is, who has what, who knows what, who is alive, awake or hurt. Use the fact keys listed, with the same spelling; add a new key only for something none of them covers. Never a key for the action itself (no action=, state=). One-word or snake_case values.
 Add | end after the changes only if the story is over after that event: nothing more can happen to the main characters. Something going wrong does not end a story by itself. Most expansions have no ending at all.
 

@@ -1138,6 +1138,7 @@
       `+${stats.created ?? 0} nodes`,
       `${stats.merged ?? stats.mergedDuplicates ?? 0} merged`,
       ...(stats.mergedOnFacts ? [`${stats.mergedOnFacts} on the same world`] : []),
+      ...(stats.mergedByFutures ? [`${stats.mergedByFutures} on the same futures`] : []),
       ...(stats.convergent ? [`${stats.convergent} convergences`] : []),
       ...(stats.judgeCalls ? [`${stats.judgeCalls} judge calls`] : []),
       ...(stats.mergesRefused ? [`${stats.mergesRefused} merges refused`] : []),
@@ -1205,6 +1206,14 @@
     } else if (event.type === "merge") {
       if (event.edge) state.graph.edges.push(event.edge);
       growLogLine(`= ${event.label} → ${nodeLabel(event.into)} (${event.how || "merged"}${event.pYes === undefined ? "" : `, P ${fmt(event.pYes)}`})`, event.into);
+      scheduleGrowRender();
+    } else if (event.type === "collapse") {
+      const gone = new Set(event.removedEdges);
+      state.graph.edges = state.graph.edges.filter((item) => !gone.has(item.id));
+      state.graph.nodes = state.graph.nodes.filter((item) => item.id !== event.victim);
+      state.graph.edges.push(...event.addedEdges);
+      if (state.selectedId === event.victim) state.selectedId = event.into;
+      growLogLine(`≡ ${event.label} → ${nodeLabel(event.into)} (same futures, P ${fmt(event.pYes)})`, event.into);
       scheduleGrowRender();
     } else if (event.type === "pruned") {
       growLogLine(`x ${event.label} (${event.reason})`);
@@ -1376,7 +1385,7 @@
           { name: "critic: completion", text: record.critic.completion }
         ] : []),
         ...(record.judgements || []).map((j) => ({
-          name: `${j.kind === "future" ? "same future?" : "same point?"} "${j.label}" and "${nodeLabel(j.survivor)}": P ${fmt(j.pYes)}, ${j.same ? "merged" : "refused"}`,
+          name: `${j.kind === "futures" ? "same futures?" : j.kind === "future" ? "same future?" : "same point?"} "${j.label}" and "${nodeLabel(j.survivor)}": P ${fmt(j.pYes)}, ${j.same ? "merged" : "refused"}`,
           text: j.question
         }))
       ]

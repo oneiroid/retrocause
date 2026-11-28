@@ -39,6 +39,14 @@ to its own graph as the event arrives. `./run.sh` starts everything.
    two routes into one world is the merge wanted. A return to a world on its own route
    is kept as a new node (an edge back would be a cycle).
 
+   Mode `futures` merges nothing on insert. After a node is expanded, it is put to
+   the judge with one expanded lookalike (fewest differing facts, then most shared
+   event words, never on its route or below it) as two lists of what was found to
+   happen next, and "could each event after A happen right after B, and the other
+   way round?". On yes the node is folded into the lookalike: its way in becomes a
+   `rejoins` edge, its children move over. Identity by futures (INTUITIONS §5),
+   read in sentences, which is what the 4B judge reads well (NOTES, 2026-11-28).
+
    Mode `routes` is the earlier judge: lookalikes by shared event words, then "have A
    and B reached the same point?" over both routes. It refuses different routes into
    one situation by design, and is kept for comparison. Mode `off` grows a tree.
@@ -57,7 +65,7 @@ to its own graph as the event arrives. `./run.sh` starts everything.
 | Beam | Most expansions at each depth. Lower reaches deeper for the same cost: depth 10 at width 3 is 70 calls at beam 8, 29524 without one |
 | Max nodes | Run budget, up to 1000 |
 | Temp | Sampling temperature for expansions |
-| Merge | `facts` (same world, then the future judge), `routes` (the route judge), `off` |
+| Merge | `facts` (same world, then the future judge), `futures` (judged on grown children), `routes` (the route judge), `off` |
 | Prune bad branches | The critic, above |
 
 ## Serving

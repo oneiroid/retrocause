@@ -99,6 +99,38 @@ function createFutureJudge({ client, system, threshold = SAME_THRESHOLD, signal 
   };
 }
 
+// Identity by grown futures: both nodes have been expanded, and the judge reads
+// what the run found could happen next after each, as sentences. On 2026-11-28
+// the judge's verdicts followed the event sentences and barely the facts, so
+// this question gives it sentences to compare.
+function grownFuturesQuestion({ title, a, b, diff }) {
+  const list = (labels) => labels.map((l, i) => `  ${i + 1}. ${l}`).join("\n");
+  const side = (value) => (value === undefined ? "not stated" : value);
+  return [
+    ...(title ? [`Story: ${title}`] : []),
+    `A, just after: ${a.label}`,
+    "Found to happen next after A:",
+    list(a.next),
+    "",
+    `B, just after: ${b.label}`,
+    "Found to happen next after B:",
+    list(b.next),
+    ...(diff.length ? ["", "Facts that differ:", ...diff.map((d) => `- ${d.key}: A ${side(d.a)}, B ${side(d.b)}`)] : []),
+    "",
+    "Could every event found after A also happen right after B, and every event found after B also happen right after A?",
+  ].join("\n");
+}
+
+// grownFuturesJudge({ graph, a: { label, next }, b: { label, next }, diff }) → { pYes, same, question }.
+function createGrownFuturesJudge({ client, system, threshold = SAME_THRESHOLD, signal }) {
+  return async function grownFuturesJudge({ graph, a, b, diff }) {
+    const title = graph.title || (graph.meta && graph.meta.title) || "";
+    const question = grownFuturesQuestion({ title, a, b, diff });
+    const pYes = await client.yesProbability({ system, user: question, signal });
+    return { pYes, same: pYes !== null && pYes >= threshold, question };
+  };
+}
+
 // Verdicts by alternative, in order: { bad: reason | null }. A line the critic
 // did not write keeps the alternative: a missed bad one costs one node, and the
 // user can see and delete it.
@@ -128,5 +160,6 @@ function createCritic({ client, system, signal }) {
 }
 
 module.exports = {
-  createJudge, createFutureJudge, createCritic, parseVerdicts, pairQuestion, futureQuestion, telling, SAME_THRESHOLD,
+  createJudge, createFutureJudge, createGrownFuturesJudge, createCritic,
+  parseVerdicts, pairQuestion, futureQuestion, grownFuturesQuestion, telling, SAME_THRESHOLD,
 };

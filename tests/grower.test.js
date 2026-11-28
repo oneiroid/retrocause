@@ -378,3 +378,43 @@ test("parseAlternatives repairs a missing pipe, on one line or across two", () =
   ]);
   assert.strictEqual(malformed, 1);
 });
+
+// ── futures mode ────────────────────────────────────────────────────────────
+
+test("futures mode: an expanded node is folded into a lookalike when the judge says their futures fit", async () => {
+  const write = (system, user, call) => {
+    if (call === 1) return "A meets b | a.location=hill\nB comes down | b.location=road";
+    return `Next ${call} one | a.mood_${call}=yes\nNext ${call} two | a.tired_${call}=yes`;
+  };
+  const templates = { ...TEMPLATES, futures: "futures?" };
+  const asked = [];
+  const events = [];
+  const { graph, stats } = await run({
+    graph: factSeed(), templates, client: scripted({ write, pYes: (user) => { asked.push(user); return 0.9; } }),
+    merge: "futures", depth: 2, width: 2, beam: 100, maxNodes: 100, concurrency: 1, onEvent: (e) => events.push(e),
+  });
+  assert.strictEqual(stats.mergedByFutures, 1);
+  assert.strictEqual(stats.judgeCalls, 1);
+  assert.match(asked[0], /Found to happen next after A:\n  1\. Next 3 one/);
+  assert.match(asked[0], /Found to happen next after B:\n  1\. Next 2 one/);
+  const collapse = events.find((e) => e.type === "collapse");
+  assert.ok(!graph.nodes.some((n) => n.id === collapse.victim));
+  // Siblings: the one edge in stays one, and the survivor takes all four children.
+  assert.strictEqual(graph.edges.filter((e) => e.to === collapse.into).length, 1);
+  assert.strictEqual(graph.edges.filter((e) => e.from === collapse.into).length, 4);
+  assert.ok(validateGraph(graph).ok);
+});
+
+test("futures mode: a refusal keeps both, and nothing merges on insert", async () => {
+  const write = (system, user, call) => (call === 1
+    ? "A meets b | a.location=hill\nA meets b | a.location=hill"
+    : `Next ${call} | a.mood_${call}=yes`);
+  const templates = { ...TEMPLATES, futures: "futures?" };
+  const { stats, graph } = await run({
+    graph: factSeed(), templates, client: scripted({ write, pYes: () => 0.1 }),
+    merge: "futures", depth: 2, width: 2, beam: 100, maxNodes: 100, concurrency: 1,
+  });
+  assert.strictEqual(stats.merged, 0);
+  assert.strictEqual(stats.mergesRefused, 1);
+  assert.strictEqual(graph.nodes.filter((n) => n.label === "A meets b").length, 2);
+});
