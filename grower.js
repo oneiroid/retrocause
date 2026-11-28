@@ -53,6 +53,12 @@ const PATH_HEAD_EVENTS = 5;
 const MERGE_MODES = ["facts", "futures", "routes", "off"];
 // Two, so a fact renamed on the way (a.scared=yes against a.afraid=yes) is near.
 const NEAR_FACTS = 2;
+// Mode "futures": the fewest distinct next events each side must have before
+// their futures count as evidence. A told seed node has one, and "could this one
+// event also follow A?" is nearly always yes: 4 of 5 false folds on 2026-11-28.
+const MIN_FUTURES = 2;
+// Events of each side's own past the futures judge sees.
+const FUTURES_PAST_EVENTS = 3;
 
 const DEFAULTS = {
   depth: 4, width: 3, beam: 8, maxNodes: 60, merge: "facts", prune: false, temperature: DEFAULT_TEMPERATURE,
@@ -454,8 +460,15 @@ async function growGraph({
   }
 
   // ── merging by grown futures ──────────────────────────────────────────────
-  const childrenOf = (id) => graph.edges.filter((e) => e.from === id)
-    .map((e) => graph.nodes.find((n) => n.id === e.to)).filter(Boolean);
+  // Distinct by label: a fold can leave two children saying the same thing.
+  const childrenOf = (id) => {
+    const seen = new Set();
+    return graph.edges.filter((e) => e.from === id)
+      .map((e) => graph.nodes.find((n) => n.id === e.to))
+      .filter((n) => n && !seen.has(Ids.normalizedContent(n.label)) && seen.add(Ids.normalizedContent(n.label)));
+  };
+  const pastOf = (id) => Engine.ancestorPath(graph, id).slice(0, -1).slice(-FUTURES_PAST_EVENTS)
+    .map((pid) => (graph.nodes.find((n) => n.id === pid) || {}).label).filter(Boolean);
   const descendantsOf = (id) => {
     const seen = new Set([id]);
     for (let frontier = [id]; frontier.length;) {
@@ -483,7 +496,7 @@ async function growGraph({
     for (const y of graph.nodes) {
       if (out.has(y.id) || askedPairs.has(`${x.id}|${y.id}`)) continue;
       const kids = childrenOf(y.id);
-      if (!kids.length) continue;
+      if (kids.length < MIN_FUTURES) continue;
       const diff = Facts.worldDiff(xWorld, worlds.get(y.id) || new Map());
       if (diff.length > NEAR_FACTS) continue;
       const words = Predicate.similarity(xWords, labelWords(y));
@@ -498,15 +511,15 @@ async function growGraph({
     const x = graph.nodes.find((n) => n.id === xId);
     if (!x || stats.created >= maxNodes) return;
     const xKids = childrenOf(xId);
-    if (!xKids.length) return;
+    if (xKids.length < MIN_FUTURES) return;
     const found = futuresCandidate(x);
     if (!found) return;
     askedPairs.add(`${x.id}|${found.y.id}`).add(`${found.y.id}|${x.id}`);
     stats.judgeCalls += 1;
     const verdict = await grownFuturesJudge({
       graph,
-      a: { label: x.label, next: xKids.map((n) => n.label) },
-      b: { label: found.y.label, next: found.kids.map((n) => n.label) },
+      a: { label: x.label, next: xKids.map((n) => n.label), before: pastOf(x.id) },
+      b: { label: found.y.label, next: found.kids.map((n) => n.label), before: pastOf(found.y.id) },
       diff: found.diff,
     });
     record.judgements.push({ label: x.label, survivor: found.y.id, kind: "futures", ...verdict });
@@ -651,5 +664,5 @@ async function growGraph({
 
 module.exports = {
   growGraph, proposeAlternatives, parseAlternatives, exprOf, storySoFar, expansionRequest,
-  plannedExpansions, mergeMode, DEFAULTS, MERGE_MODES, NEAR_FACTS, TOKENS_PER_ALTERNATIVE,
+  plannedExpansions, mergeMode, DEFAULTS, MERGE_MODES, NEAR_FACTS, MIN_FUTURES, TOKENS_PER_ALTERNATIVE,
 };

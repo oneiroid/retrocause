@@ -408,7 +408,7 @@ test("futures mode: an expanded node is folded into a lookalike when the judge s
 test("futures mode: a refusal keeps both, and nothing merges on insert", async () => {
   const write = (system, user, call) => (call === 1
     ? "A meets b | a.location=hill\nA meets b | a.location=hill"
-    : `Next ${call} | a.mood_${call}=yes`);
+    : `Next ${call} | a.mood_${call}=yes\nOther ${call} | a.tired_${call}=yes`);
   const templates = { ...TEMPLATES, futures: "futures?" };
   const { stats, graph } = await run({
     graph: factSeed(), templates, client: scripted({ write, pYes: () => 0.1 }),
@@ -417,4 +417,25 @@ test("futures mode: a refusal keeps both, and nothing merges on insert", async (
   assert.strictEqual(stats.merged, 0);
   assert.strictEqual(stats.mergesRefused, 1);
   assert.strictEqual(graph.nodes.filter((n) => n.label === "A meets b").length, 2);
+});
+
+test("futures mode: a side with one next event is no evidence, and the judge sees each side's past", async () => {
+  const write = (system, user, call) => {
+    if (call === 1) return "A meets b | a.location=hill\nB comes down | b.location=road";
+    return call === 2 ? "Only one | a.x=yes" : "Two one | a.y=yes\nTwo two | a.z=yes";
+  };
+  const templates = { ...TEMPLATES, futures: "futures?" };
+  const thin = await run({
+    graph: factSeed(), templates, client: scripted({ write, pYes: () => 1 }),
+    merge: "futures", depth: 2, width: 2, beam: 100, maxNodes: 100, concurrency: 1,
+  });
+  assert.strictEqual(thin.stats.judgeCalls, 0);
+
+  const asked = [];
+  const both = (system, user, call) => (call === 1 ? write(system, user, 1) : `N${call}a | a.p${call}=yes\nN${call}b | a.q${call}=yes`);
+  await run({
+    graph: factSeed(), templates, client: scripted({ write: both, pYes: (u) => { asked.push(u); return 1; } }),
+    merge: "futures", depth: 2, width: 2, beam: 100, maxNodes: 100, concurrency: 1,
+  });
+  assert.match(asked[0], /Before that: Start\. Middle\.\nA, just after:/);
 });

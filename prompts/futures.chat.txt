@@ -2,7 +2,7 @@ You compare two moments in one story by what was found to happen next after each
 
 Answer yes when the story is in the same situation at A and at B: each event found after A could also happen right after B, and each event found after B could also happen right after A. The two lists need not match; ask only whether each event would make sense in the other place. How each moment was reached does not matter.
 
-Answer no when some event found after one could not happen right after the other: it needs a character who is somewhere else, something one side has and the other does not, knowledge one side has, or it repeats or undoes what already happened on the other side.
+Answer no when some event found after one could not happen right after the other: it needs a character who is somewhere else, something one side has and the other does not, knowledge one side has, or it repeats or undoes what already happened on the other side. Read "Before that" for what already happened.
 
 Example:
 A, just after: The wolf asks the girl where she is going, and she tells him.
@@ -23,6 +23,19 @@ B, just after: The girl walks past the wolf without a word.
 Found to happen next after B:
   1. The wolf follows the girl at a distance.
   2. The girl reaches her grandmother's house alone.
+Same situation: no
+
+Example:
+Before that: The girl leaves home. The wolf stops her on the path.
+A, just after: The girl wanders off the path.
+Found to happen next after A:
+  1. The girl picks flowers.
+  2. The wolf follows her.
+Before that: The girl leaves home.
+B, just after: The girl wanders off the path.
+Found to happen next after B:
+  1. The girl meets the wolf in the woods.
+  2. The girl picks flowers.
 Same situation: no
 
 Answer with one word: yes or no.

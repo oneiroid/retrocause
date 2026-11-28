@@ -248,3 +248,25 @@ model writes are too thin to separate events, and this 4B judge cannot use them.
 What it reads well is sentences. So the next test of identity is the one §5 asks
 for, with sentences: once both nodes have grown children, could A's actual next
 events follow B, and B's follow A?
+
+### Runs F, G (2026-11-28, `3aed505`): merge mode `futures`
+
+| run | nodes | folds | judge calls | refused | convergent | max depth | endings | time |
+|---|---|---|---|---|---|---|---|---|
+| F run_b18e74d933eee9ef | 150 | 8 | 32 | 24 | 6 | 7 | 21 | 85 s |
+| G run_7486115605882400 | 150 | 2 | 22 | 20 | 2 | 7 | 21 | 78 s |
+
+Cheaper (a third of the judge calls of D/E, ~80 s), labels clean (0 of 290 with
+fact syntax, after the prompt asked for plain words), endings still 0/0/22 and
+0/0/23 by line. **Folds, read by Claude: 10 — 3 true, 2 plausible, 5 false**;
+different parents 7 (2 / 1 / 4), siblings 3.
+
+Why: 6 of 10 folds, and 4 of the 5 false, were into a told seed node with one next
+event, which is no evidence; the judge never saw either side's past, so it could
+not apply "repeats what already happened" ("Red meets the wolf" after a route on
+which she had); one fold passed at 0.52 (refusals sit near 0, folds 0.85–1.00);
+lists carried duplicate labels after a fold.
+
+Changed after this (`MIN_FUTURES = 2` distinct next events each side, the last 3
+events before each node shown as "Before that", `FUTURES_THRESHOLD = 0.8`, children
+deduplicated by label, a third prompt example where B's future repeats A's past).

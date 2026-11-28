@@ -103,15 +103,22 @@ function createFutureJudge({ client, system, threshold = SAME_THRESHOLD, signal 
 // what the run found could happen next after each, as sentences. On 2026-11-28
 // the judge's verdicts followed the event sentences and barely the facts, so
 // this question gives it sentences to compare.
+//
+// Each side's recent past is shown too: without it the judge cannot see that one
+// side's future repeats the other's past ("Red meets the wolf" after a route on
+// which she already had), which was the commonest false fold on 2026-11-28.
 function grownFuturesQuestion({ title, a, b, diff }) {
   const list = (labels) => labels.map((l, i) => `  ${i + 1}. ${l}`).join("\n");
   const side = (value) => (value === undefined ? "not stated" : value);
+  const before = (s) => (s.before && s.before.length ? [`Before that: ${telling(s.before.map((label) => ({ label })))}`] : []);
   return [
     ...(title ? [`Story: ${title}`] : []),
+    ...before(a),
     `A, just after: ${a.label}`,
     "Found to happen next after A:",
     list(a.next),
     "",
+    ...before(b),
     `B, just after: ${b.label}`,
     "Found to happen next after B:",
     list(b.next),
@@ -121,8 +128,13 @@ function grownFuturesQuestion({ title, a, b, diff }) {
   ].join("\n");
 }
 
-// grownFuturesJudge({ graph, a: { label, next }, b: { label, next }, diff }) → { pYes, same, question }.
-function createGrownFuturesJudge({ client, system, threshold = SAME_THRESHOLD, signal }) {
+// A fold rewires a subtree, so it asks for more than a merge does: on
+// 2026-11-28 folds were refused near 0 and accepted at 0.85–1.00, with one
+// coin-flip at 0.52 that was false.
+const FUTURES_THRESHOLD = 0.8;
+
+// grownFuturesJudge({ graph, a: { label, next, before }, b: { … }, diff }) → { pYes, same, question }.
+function createGrownFuturesJudge({ client, system, threshold = FUTURES_THRESHOLD, signal }) {
   return async function grownFuturesJudge({ graph, a, b, diff }) {
     const title = graph.title || (graph.meta && graph.meta.title) || "";
     const question = grownFuturesQuestion({ title, a, b, diff });
@@ -161,5 +173,5 @@ function createCritic({ client, system, signal }) {
 
 module.exports = {
   createJudge, createFutureJudge, createGrownFuturesJudge, createCritic,
-  parseVerdicts, pairQuestion, futureQuestion, grownFuturesQuestion, telling, SAME_THRESHOLD,
+  parseVerdicts, pairQuestion, futureQuestion, grownFuturesQuestion, telling, SAME_THRESHOLD, FUTURES_THRESHOLD,
 };
