@@ -278,7 +278,7 @@ test("parseAlternatives reads facts into effects, and keeps a prose state withou
 
 test("storySoFar shows the folded world when the path has facts", () => {
   const text = storySoFar(factSeed(), "m");
-  assert.match(text, /World now:\na: location=road\nb: location=hill\n\nFact keys in this story: a.location, b.location/);
+  assert.match(text, /World now:\na: location=road\nb: location=hill\n\nFact keys in this story: a.location \(home, road\), b.location \(hill\)/);
 });
 
 test("facts mode: two routes into one world merge with no model call", async () => {
@@ -333,8 +333,8 @@ test("facts mode: a world one fact away goes to the future judge, which decides"
   });
   assert.strictEqual(yes.stats.mergedByJudge, 1);
   assert.strictEqual(yes.stats.judgeCalls, 1);
-  assert.match(asked, /Only in A: a\.afraid=yes/);
-  assert.match(asked, /Only in B: a\.scared=yes/);
+  assert.match(asked, /- a\.afraid: A yes, B not stated/);
+  assert.match(asked, /- a\.scared: A not stated, B yes/);
   assert.ok(yes.graph.edges.some((e) => e.from === "m" && e.to === "p" && e.type === "rejoins"));
 
   const no = await run({ graph: structuredClone(graph), templates, client: scripted({ write, pYes: () => 0.2 }), merge: "facts", depth: 1, width: 1 });
@@ -349,4 +349,32 @@ test("merge off grows a plain tree even when worlds coincide", async () => {
   assert.strictEqual(stats.merged, 0);
   assert.strictEqual(stats.created, 4);
   assert.strictEqual(stats.convergent, 0);
+});
+
+test("facts mode: with a future judge loaded, an equal world is asked too, and a no keeps the node", async () => {
+  const write = (system, user, call) => {
+    if (call === 1) return "A meets b | a.location=hill\nB comes down | b.location=road";
+    if (/a: location=hill/.test(user)) return "B greets a | a.greeted=yes, a.location=hill";
+    return "A walks up with b | a.location=hill, b.location=hill, a.greeted=yes";
+  };
+  const templates = { ...TEMPLATES, future: "future?" };
+  const asked = [];
+  const { stats } = await run({
+    graph: factSeed(), templates, client: scripted({ write, pYes: (user) => { asked.push(user); return 0.1; } }),
+    merge: "facts", depth: 2, width: 2, beam: 100, maxNodes: 100, concurrency: 1,
+  });
+  assert.strictEqual(stats.merged, 0);
+  assert.strictEqual(stats.mergesRefused, stats.judgeCalls);
+  assert.ok(asked.some((q) => /Differences: none in the facts/.test(q) && /A walks up with b/.test(q)));
+});
+
+test("parseAlternatives repairs a missing pipe, on one line or across two", () => {
+  const { alternatives, malformed } = parseAlternatives(
+    "wolf flees wolf.location=path, wolf.knows_destination=false\ngrandmother opens the door\ngrandmother.door=open\nRed waits",
+  );
+  assert.deepStrictEqual(alternatives.map((a) => [a.label, a.effects]), [
+    ["Wolf flees", "wolf.location=path, wolf.knows_destination=no"],
+    ["Grandmother opens the door", "grandmother.door=open"],
+  ]);
+  assert.strictEqual(malformed, 1);
 });

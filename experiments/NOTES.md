@@ -174,3 +174,44 @@ put `| end` on its last line, and the model copied the position, so one
 alternative in three ended the story, often at depth 1. That capped depth more than
 beam or merging did. The example now has no ending, and the rule says any line or
 none may end.
+
+### Runs A–C (2026-11-28): vocabulary fixed, merges not
+
+Same budget as above, facts mode. A, B on `338aa17` (key vocabulary); C on
+`54802de` (also no ending in the example).
+
+| run | nodes | merged (free / judged) | judge calls | null | malformed | convergent | endings | time |
+|---|---|---|---|---|---|---|---|---|
+| A run_b2d04449acbdfa37 | 145 | 11 (4 / 7) | 80 | 18 | 0 | 9 | 19 | 107 s |
+| B run_a133cf014388a417 | 150 | 12 (4 / 8) | 71 | 13 | 11 | 7 | 23 | 113 s |
+| C run_0b6efc544d7b5286 | 150 | 11 (3 / 8) | 74 | 8 | 0 | 7 | 17 | 114 s |
+
+- **Vocabulary: fixed.** 87–91% of fact uses are seed keys (yesterday: mostly
+  invented). The weak spot moved to values: `on_path=false` beside `no`,
+  `suspicious=true|high`, `cottage` beside `grandmother_house`. Effects read
+  against events (20 sampled): 13 ok, 5 wrong, 2 thin.
+- **The cap is reached now**, at depth 8, in ~110 s; judge calls roughly doubled.
+- **Endings stay on line 3**: 53/53 in A+B, and 22/22 in C with the ending taken
+  out of the example. Line 3 is the slot the prompt described as "something goes
+  wrong", and the model reads that as the ending slot.
+- **Merges, read by Claude (not a human): 34 — 14 true, 3 plausible, 17 false.**
+  Free equal-world merges were worst: 3 true, 1 plausible, 7 false of 11, mostly
+  siblings whose thin changes matched ("answers" vs "ignores" the wolf's
+  questions; "offers flowers" vs "tells the destination"). The future judge: 11
+  true, 2 plausible, 10 false of 23. Its errors: a fact held by one side read as
+  agreement, and yes when the one differing fact is the decisive one
+  (`wolf.knows_destination`). Most true merges are duplicates or paraphrases;
+  real two-route convergences: 5 (A7, A8, B4, C2, C7).
+- Unparsed lines (11, all in B): the event and its facts on two lines, or no pipe.
+
+Changes after this (not yet run): an equal world is put to the judge too when one
+is loaded (a free merge only without one); the judge's question names each
+difference on both sides, "not stated" included, and its prompt says a one-sided
+fact is a difference and that equal facts send it to the events; `true/false` →
+`yes/no`; the prompt lists each authored key's values; the two pipe-less forms
+are repaired at parse; the branch prompt no longer ties "something goes wrong"
+to a position and says that going wrong does not end a story.
+
+The deeper fix suggested by these reads: judge identity by the futures the run
+actually grew (once both nodes are expanded, could A's children follow B?), which
+is the test INTUITIONS §5 asks for and costs no extra expansion.

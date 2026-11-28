@@ -63,20 +63,25 @@ function createJudge({ client, system, threshold = SAME_THRESHOLD, signal }) {
 
 // The two situations as the future judge reads them: the facts they share once,
 // then each one's last event and the facts only it holds.
+//
+// Each difference is named on both sides, "not stated" included: asked as "only
+// in A / only in B", the judge read a fact missing on one side as agreement, and
+// merged across wolf.knows_destination, the fact the tale turns on.
 function futureQuestion({ title, a, b, diff }) {
   const differing = new Set(diff.map((d) => d.key));
   const shared = new Map([...a.world].filter(([k]) => !differing.has(k)));
-  const only = (side) => diff
-    .filter((d) => d[side] !== undefined)
-    .map((d) => `${d.key}=${d[side]}`)
-    .join(", ") || "(nothing)";
+  const side = (value) => (value === undefined ? "not stated" : value);
   return [
     ...(title ? [`Story: ${title}`] : []),
     "True in both:",
     Facts.renderWorld(shared) || "(nothing)",
     "",
-    `A, just after: ${a.label}. Only in A: ${only("a")}`,
-    `B, just after: ${b.label}. Only in B: ${only("b")}`,
+    `A, just after: ${a.label}`,
+    `B, just after: ${b.label}`,
+    "",
+    diff.length
+      ? ["Differences:", ...diff.map((d) => `- ${d.key}: A ${side(d.a)}, B ${side(d.b)}`)].join("\n")
+      : "Differences: none in the facts. Compare the two events.",
     "",
     "Can the same things happen next in A and in B?",
   ].join("\n");

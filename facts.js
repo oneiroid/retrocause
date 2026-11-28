@@ -20,6 +20,8 @@
   // first run (2026-11-28) wrote `wolf.action=wait` on 7 of 57 nodes; such a
   // fact never recurs, so it splits worlds that are the same.
   const EVENT_PROPERTY = /(^|\.)(action|actions|activity|doing|event|state|status)$/;
+  // One spelling per truth value: runs wrote on_path=false beside on_path=no.
+  const VALUE_ALIASES = { true: "yes", y: "yes", false: "no", n: "no" };
 
   function token(text) {
     return String(text || "")
@@ -43,7 +45,8 @@
         continue;
       }
       const key = token(part.slice(0, eq));
-      const value = token(part.slice(eq + 1)).replace(ARTICLE, "");
+      const raw = token(part.slice(eq + 1)).replace(ARTICLE, "");
+      const value = VALUE_ALIASES[raw] || raw;
       if (!ASSIGNMENT.test(`${key}=${value}`) || EVENT_PROPERTY.test(key)) {
         rejected += 1;
         continue;
@@ -125,12 +128,31 @@
   // The fact keys the story's authored nodes use, sorted: the vocabulary the
   // model is asked to write in, so two routes name one fact one way.
   function vocabularyOf(graph) {
-    const keys = new Set();
-    graph.nodes.filter((n) => n.createdBy !== "grown").forEach((n) => effectsOf(n).forEach(([k]) => keys.add(k)));
-    return [...keys].sort();
+    return [...valuesOf(graph).keys()].sort();
   }
 
-  const api = { vocabularyOf, parseEffects, formatEffects, fold, worldKey, worldDiff, renderWorld, effectsOf, worldsOf, token };
+  // Each authored key with the values the authored nodes give it, so a place is
+  // spelled once (runs wrote `cottage` beside `grandmother_house`).
+  function valuesOf(graph) {
+    const values = new Map();
+    graph.nodes.filter((n) => n.createdBy !== "grown").forEach((n) => effectsOf(n).forEach(([k, v]) => {
+      if (!values.has(k)) values.set(k, new Set());
+      values.get(k).add(v);
+    }));
+    return values;
+  }
+
+  // "red.location (home, woods), wolf.alive (yes, no)": the vocabulary as the
+  // prompt shows it. Yes/no keys are listed without their values.
+  function renderVocabulary(graph) {
+    const values = valuesOf(graph);
+    return [...values.keys()].sort().map((k) => {
+      const vs = [...values.get(k)].sort();
+      return vs.every((v) => v === "yes" || v === "no") ? k : `${k} (${vs.join(", ")})`;
+    }).join(", ");
+  }
+
+  const api = { vocabularyOf, valuesOf, renderVocabulary, parseEffects, formatEffects, fold, worldKey, worldDiff, renderWorld, effectsOf, worldsOf, token };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   root.StoryFacts = api;
 })(typeof window !== "undefined" ? window : globalThis);

@@ -67,7 +67,7 @@ function mergeMode(value) {
 // `world`: the source's folded facts; folded here from the graph when not given.
 function storySoFar(graph, sourceId, world = null) {
   if (!world) world = Facts.worldsOf(graph).get(sourceId) || null;
-  const vocabulary = Facts.vocabularyOf(graph);
+  const vocabulary = Facts.renderVocabulary(graph);
   const byId = new Map(graph.nodes.map((n) => [n.id, n]));
   const title = graph.title || (graph.meta && graph.meta.title) || "Untitled";
   const entities = Array.isArray(graph.entities) ? graph.entities : [];
@@ -86,7 +86,7 @@ function storySoFar(graph, sourceId, world = null) {
     ...(world && world.size
       ? ["World now:", Facts.renderWorld(world)]
       : [`World state now: ${(path.at(-1) || {}).state || "(not stated)"}`]),
-    ...(vocabulary.length ? ["", `Fact keys in this story: ${vocabulary.join(", ")}`] : []),
+    ...(vocabulary ? ["", `Fact keys in this story: ${vocabulary}`] : []),
   ].join("\n");
 }
 
@@ -123,12 +123,32 @@ const END_MARK = /^end\b/i;
 // it is read as a prose state (the older format), and the alternative carries no
 // effects. A non-empty line without both fields is a fragment (the tail of a
 // length stop, say), counted as malformed by the caller.
+// A line the model wrote without its pipe: "wolf flees wolf.location=path", or the
+// event on one line and its facts on the next. Both seen on 2026-11-28.
+const FACTS_TAIL = /^(.*?[a-z)'"])\s+([a-z0-9_]+\.[a-z0-9_.]+\s*=.*)$/i;
+const FACTS_ONLY = /^[a-z0-9_]+\.[a-z0-9_.]+\s*=/i;
+
+function repairLines(content) {
+  const lines = String(content).split("\n").map((raw) => raw.replace(LIST_MARKER, "").trim()).filter(Boolean);
+  const out = [];
+  for (let i = 0; i < lines.length; i += 1) {
+    const line = lines[i];
+    if (line.includes("|")) out.push(line);
+    else if (lines[i + 1] && FACTS_ONLY.test(lines[i + 1]) && !FACTS_ONLY.test(line)) {
+      out.push(`${line} | ${lines[i + 1]}`);
+      i += 1;
+    } else {
+      const tail = line.match(FACTS_TAIL);
+      out.push(tail ? `${tail[1]} | ${tail[2]}` : line);
+    }
+  }
+  return out;
+}
+
 function parseAlternatives(content) {
   const alternatives = [];
   let malformed = 0;
-  for (const raw of String(content).split("\n")) {
-    const line = raw.replace(LIST_MARKER, "").trim();
-    if (!line) continue;
+  for (const line of repairLines(content)) {
     const [event, state, mark] = line.split(FIELD_SEPARATOR);
     if (!event || !state || END_MARK.test(state)) {
       malformed += 1;
@@ -198,7 +218,8 @@ async function growGraph({
     mergeMode: mode,
     created: 0,
     merged: 0,
-    // Of `merged`: on an equal folded world, with no model call; and by a judge.
+    // Of `merged`: on an equal folded world with no model call (only when no
+    // future judge is loaded); and by a judge, equal worlds included.
     mergedOnFacts: 0,
     mergedByJudge: 0,
     mergesRefused: 0,
@@ -318,7 +339,7 @@ async function growGraph({
   function mergeInto(sourceId, intoId, node, how, extra = {}) {
     const edge = Growth.rejoin(graph, { from: sourceId, into: intoId, label: extra.edgeLabel || how });
     stats.merged += 1;
-    if (how === "same world") stats.mergedOnFacts += 1;
+    if (extra.pYes === undefined) stats.mergedOnFacts += 1;
     else stats.mergedByJudge += 1;
     onEvent({ type: "merge", from: sourceId, into: intoId, edge, label: node.label, how, ...extra });
   }
@@ -358,14 +379,20 @@ async function growGraph({
       for (;;) {
         const route = ancestorsOf(sourceId);
         const holders = byWorld.get(key) || [];
-        const same = holders.find((id) => !route.has(id));
-        if (same) {
-          mergeInto(sourceId, same, node, "same world");
+        const same = holders.filter((id) => !route.has(id) && !asked.has(id));
+        if (holders.length && holders.every((id) => route.has(id))) stats.recurrences += 1;
+        // Without a judge an equal world merges at once. With one, it is asked
+        // too: the facts are what the model chose to write, and on 2026-11-28 free
+        // merges on them were the least precise kind (3 of 11 true, mostly
+        // siblings whose thin changes matched: "answers" and "ignores" the wolf).
+        if (same.length && !futureJudge) {
+          mergeInto(sourceId, same[0], node, "same world");
           return;
         }
-        if (holders.length) stats.recurrences += 1;
         if (!futureJudge || asked.size >= MAX_JUDGED_PER_CANDIDATE) break;
-        const [near] = nearWorlds(world, new Set([...route, ...asked]));
+        const near = same.length
+          ? { id: same[0], diff: [] }
+          : nearWorlds(world, new Set([...route, ...asked]))[0];
         if (!near) break;
         asked.add(near.id);
         stats.judgeCalls += 1;
@@ -375,7 +402,8 @@ async function growGraph({
         });
         record.judgements.push({ label: node.label, survivor: near.id, kind: "future", ...verdict });
         if (verdict.same) {
-          mergeInto(sourceId, near.id, node, "same future", { pYes: verdict.pYes, edgeLabel: `same future, P=${verdict.pYes.toFixed(2)}` });
+          const how = near.diff.length ? "same future" : "same world";
+          mergeInto(sourceId, near.id, node, how, { pYes: verdict.pYes, edgeLabel: `${how}, P=${verdict.pYes.toFixed(2)}` });
           return;
         }
         stats.mergesRefused += 1;
